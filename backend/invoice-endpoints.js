@@ -65,37 +65,68 @@ try {
  * 
  * This is called immediately after upload succeeds, so paths should be accurate
  */
-async function updateFilesUploadedCount(supabase, faktur) {
-    try {
-        // Get current invoice data - check BOTH old and new file path columns
-        const { data: invoice, error: queryErr } = await supabase
-            .from('invoice_file_list')
-            .select('uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
-            .eq('faktur', faktur)
-            .single();
-        
-        if (queryErr || !invoice) {
-            console.warn(`[UpdateCount] Invoice not found: ${faktur}`);
-            return null;
+async function updateFilesUploadedCount(supabase, faktur, maxRetries = 5) {
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+            // Get current invoice data - check BOTH old and new file path columns
+            const { data: invoice, error: queryErr } = await supabase
+                .from('invoice_file_list')
+                .select('uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
+                .eq('faktur', faktur)
+                .single();
+            
+            if (queryErr || !invoice) {
+                if (attempt < maxRetries - 1) {
+                    console.warn(`[UpdateCount] Invoice not found (attempt ${attempt + 1}/${maxRetries}), retrying in 500ms...`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    continue;
+                } else {
+                    console.warn(`[UpdateCount] Invoice not found after ${maxRetries} retries: ${faktur}`);
+                    return null;
+                }
+            }
+            
+            // Count actual files - use uploaded_file_path as primary (since invoice_pdf_path has cache issues)
+            let uploadedCount = 0;
+            if (invoice.uploaded_file_path) uploadedCount++;
+            if (invoice.bukti_bayar_path) uploadedCount++;
+            
+            // Faktur pajak hanya untuk PPN
+            const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
+            if (isPPN && invoice.faktur_pajak_path) uploadedCount++;
+            
+            console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount} uploaded (invoice: ${invoice.uploaded_file_path ? 'YES' : 'NO'}, bukti: ${invoice.bukti_bayar_path ? 'YES' : 'NO'}, faktur: ${invoice.faktur_pajak_path ? 'YES' : 'NO'})`);
+            
+            // NOW: UPDATE the files_uploaded_count in database so dashboard sees it
+            const { error: updateErr } = await supabase
+                .from('invoice_file_list')
+                .update({ files_uploaded_count: uploadedCount })
+                .eq('faktur', faktur);
+            
+            if (updateErr) {
+                console.error(`[UpdateCount] Failed to update files_uploaded_count for ${faktur}:`, updateErr.message);
+                if (attempt < maxRetries - 1) {
+                    console.warn(`[UpdateCount] Retrying in 500ms...`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    continue;
+                } else {
+                    return null;
+                }
+            }
+            
+            console.log(`[UpdateCount] ✅ Updated files_uploaded_count to ${uploadedCount} for ${faktur}`);
+            return uploadedCount;
+        } catch (err) {
+            console.error(`[UpdateCount] Error (attempt ${attempt + 1}/${maxRetries}):`, err.message);
+            if (attempt < maxRetries - 1) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
         }
-        
-        // Count actual files - use uploaded_file_path as primary (since invoice_pdf_path has cache issues)
-        let uploadedCount = 0;
-        if (invoice.uploaded_file_path) uploadedCount++;
-        if (invoice.bukti_bayar_path) uploadedCount++;
-        
-        // Faktur pajak hanya untuk PPN
-        const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-        if (isPPN && invoice.faktur_pajak_path) uploadedCount++;
-        
-        console.log(`[UpdateCount] Files for ${faktur}: ${uploadedCount} uploaded (invoice: ${invoice.uploaded_file_path ? 'YES' : 'NO'}, bukti: ${invoice.bukti_bayar_path ? 'YES' : 'NO'}, faktur: ${invoice.faktur_pajak_path ? 'YES' : 'NO'})`);
-        
-        // Return the count
-        return uploadedCount;
-    } catch (err) {
-        console.error(`[UpdateCount] Error:`, err.message);
-        return null;
     }
+    
+    console.error(`[UpdateCount] Failed after ${maxRetries} retries for ${faktur}`);
+    return null;
 }
 
 function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
