@@ -71,7 +71,7 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         // Get invoice details from database
         const { data: invoice, error: invError } = await supabaseClient
             .from('invoice_file_list')
-            .select('keterangan, tanggal, toko')
+            .select('keterangan, tanggal, toko, faktur_pajak_path')
             .eq('faktur', faktur)
             .single();
         
