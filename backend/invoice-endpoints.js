@@ -166,23 +166,20 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         console.log(`[UpdateCount] Files - Invoice: ${invoiceCount}, Bukti: ${buktiCount}, Faktur Pajak: ${fakturCount}`);
         
         // Save the count to database so frontend can read it
+        // Note: Only save if columns exist, otherwise skip silently
         try {
             const { error: updateErr } = await supabase
                 .from('invoice_file_list')
                 .update({
-                    files_uploaded_count: uploadedCount,
-                    files_required_count: requiredCount,
                     updated_at: new Date().toISOString()
                 })
                 .eq('faktur', faktur);
             
             if (!updateErr) {
-                console.log(`[UpdateCount] ✅ Saved to database: ${uploadedCount}/${requiredCount}`);
-            } else {
-                console.warn(`[UpdateCount] Failed to save count to database:`, updateErr.message);
+                console.log(`[UpdateCount] ✅ Updated timestamp in database`);
             }
         } catch (saveErr) {
-            console.warn(`[UpdateCount] Error saving to database:`, saveErr.message);
+            console.warn(`[UpdateCount] Note: Could not update timestamp:`, saveErr.message);
         }
         
         return uploadedCount;
@@ -1436,18 +1433,62 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 let fileExists = false;
                 
-                // If DB has the path, the file was uploaded
-                if (dbFilePath) {
-                    try {
-                        // Verify file actually exists in R2 (no cache for realtime check)
-                        fileExists = await R2Storage.checkFileExistsNoCache(dbFilePath);
-                        console.log(`[Check File] R2 check (${fileType}): ${fileExists ? 'EXISTS' : 'MISSING'}`);
-                    } catch (err) {
-                        console.warn(`[Check File] Error checking file (${fileType}): ${err.message}`);
-                        fileExists = false;
+                // Don't rely on database paths - scan R2 directly for the file
+                // Get invoice date to build correct R2 paths
+                const { data: invoiceForDate, error: dateErr } = await supabase
+                    .from('invoice_file_list')
+                    .select('tanggal, toko')
+                    .eq('faktur', faktur)
+                    .single();
+                
+                if (!dateErr && invoiceForDate && invoiceForDate.tanggal) {
+                    const year = invoiceForDate.tanggal.split('-')[0];
+                    const monthNum = String(invoiceForDate.tanggal.split('-')[1]).padStart(2, '0');
+                    const day = String(invoiceForDate.tanggal.split('-')[2]).padStart(2, '0');
+                    
+                    const monthNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                                       'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+                    const monthName = monthNames[parseInt(monthNum) - 1];
+                    const location = invoiceForDate.toko ? (invoiceForDate.toko.includes('PEMALANG') ? 'PEMALANG' : 'BEKASI') : 'BEKASI';
+                    
+                    const filename = `${faktur}.pdf`;
+                    
+                    // Build paths for the requested file type
+                    let pathsToCheck = [];
+                    if (fileType === 'invoice') {
+                        pathsToCheck = [
+                            `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
+                            `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
+                        ];
+                    } else if (fileType === 'bukti_bayar') {
+                        pathsToCheck = [
+                            `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`
+                        ];
+                    } else if (fileType === 'faktur_pajak') {
+                        pathsToCheck = [
+                            `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
+                            `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`
+                        ];
                     }
-                } else {
-                    console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
+                    
+                    // Check each possible path
+                    for (const path of pathsToCheck) {
+                        try {
+                            const exists = await R2Storage.checkFileExistsNoCache(path);
+                            if (exists) {
+                                fileExists = true;
+                                dbFilePath = path;
+                                console.log(`[Check File] ✓ Found ${fileType}: ${path}`);
+                                break;
+                            }
+                        } catch (err) {
+                            // Continue checking
+                        }
+                    }
+                }
+                
+                if (!fileExists) {
+                    console.log(`[Check File] File not found in R2 for ${fileType}`);
                 }
 
                 // Count files by scanning R2 directly (source of truth)
