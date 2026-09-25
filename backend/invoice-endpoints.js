@@ -165,6 +165,26 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         console.log(`[UpdateCount] ✅ R2 scan complete: ${uploadedCount}/${requiredCount}`);
         console.log(`[UpdateCount] Files - Invoice: ${invoiceCount}, Bukti: ${buktiCount}, Faktur Pajak: ${fakturCount}`);
         
+        // Save the count to database so frontend can read it
+        try {
+            const { error: updateErr } = await supabase
+                .from('invoice_file_list')
+                .update({
+                    files_uploaded_count: uploadedCount,
+                    files_required_count: requiredCount,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('faktur', faktur);
+            
+            if (!updateErr) {
+                console.log(`[UpdateCount] ✅ Saved to database: ${uploadedCount}/${requiredCount}`);
+            } else {
+                console.warn(`[UpdateCount] Failed to save count to database:`, updateErr.message);
+            }
+        } catch (saveErr) {
+            console.warn(`[UpdateCount] Error saving to database:`, saveErr.message);
+        }
+        
         return uploadedCount;
         
     } catch (err) {
