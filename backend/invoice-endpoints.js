@@ -1684,39 +1684,41 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             remotePath = null;
                         }
                         
-                        // Update invoice status in database via RPC (bypasses PostgREST schema cache)
-                        console.log('[Invoice PDF BG] Using RPC to bypass schema cache...');
-                        const { error: updateError, data: rpcResult } = await supabase.rpc('update_invoice_pdf_path', {
-                            p_faktur: faktur,
-                            p_invoice_pdf_path: remotePath || null,
-                            p_uploaded_at: new Date().toISOString(),
-                            p_uploaded_by: req.user.id
-                        });
-                        
-                        if (updateError) {
-                            console.error('[Invoice PDF BG] RPC error:', updateError);
-                            // Fallback: Try direct .from() update (in case RPC not available)
-                            console.log('[Invoice PDF BG] Falling back to direct update...');
-                            const { error: fallbackError } = await supabase
-                                .from('invoice_file_list')
-                                .update({
+                        // Update invoice status in database - Force schema introspection bypass
+                        console.log('[Invoice PDF BG] Updating invoice_pdf_path in database...');
+                        try {
+                            // Direct fetch call to PostgREST bypassing JS SDK cache
+                            const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
+                            const updateResponse = await fetch(updateUrl, {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=representation'
+                                },
+                                body: JSON.stringify({
                                     invoice_pdf_path: remotePath || null,
                                     uploaded_file_path: remotePath || null,
                                     uploaded_at: new Date().toISOString(),
-                                    uploaded_by: req.user.id
+                                    uploaded_by: req.user.id,
+                                    updated_at: new Date().toISOString()
                                 })
-                                .eq('faktur', faktur);
-                            if (fallbackError) {
-                                console.error('[Invoice PDF BG] Fallback update error:', fallbackError);
+                            });
+
+                            if (updateResponse.ok) {
+                                const result = await updateResponse.json();
+                                console.log(`[Invoice PDF BG] ✅ Database updated for faktur: ${faktur}`);
+                                console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
+                                console.log(`[Invoice PDF BG] Response:`, result);
+                                const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
+                                console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
+                            } else {
+                                const errorText = await updateResponse.text();
+                                console.error(`[Invoice PDF BG] Update failed (${updateResponse.status}):`, errorText);
                             }
-                        } else if (rpcResult && rpcResult.length > 0 && rpcResult[0].success) {
-                            console.log(`[Invoice PDF BG] ✅ Database updated via RPC for faktur: ${faktur}`);
-                            console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
-                            console.log(`[Invoice PDF BG] Category in path: ${remotePath ? remotePath.includes('/PPN/') ? 'PPN' : 'NON' : 'N/A'}`);
-                            const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
-                            console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
-                        } else {
-                            console.error('[Invoice PDF BG] RPC returned success=false for faktur:', faktur);
+                        } catch (updateErr) {
+                            console.error('[Invoice PDF BG] Update error:', updateErr.message);
                         }
                     } catch (bgErr) {
                         console.error(`[Invoice PDF BG] Background upload error (non-blocking):`, bgErr.message);
