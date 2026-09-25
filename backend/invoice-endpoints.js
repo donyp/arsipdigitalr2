@@ -7,6 +7,7 @@
 let multer, uuid, parseExcel, validateData, upload;
 const path = require('path');
 const fs = require('fs');
+const { updateFileCountDirectly } = require('./direct-postgres-update');
 
 try {
     multer = require('multer');
@@ -61,13 +62,14 @@ try {
 /**
  * Scan R2 storage to count uploaded files for an invoice
  * Checks for invoice PDF, bukti bayar, and faktur pajak files
+ * Returns just the count - does NOT save to database (schema cache broken)
  */
-async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
+async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
     try {
         console.log(`[UpdateCount] Scanning R2 for files for faktur: ${faktur}...`);
         
-        // First get the invoice to fetch date and toko info
-        const { data: invoice, error: invError } = await supabase
+        // Get invoice details from database
+        const { data: invoice, error: invError } = await supabaseClient
             .from('invoice_file_list')
             .select('keterangan, tanggal, toko')
             .eq('faktur', faktur)
@@ -158,60 +160,14 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         }
         
         const uploadedCount = invoiceCount + buktiCount + fakturCount;
-        
         const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
         const requiredCount = isPPN ? 3 : 2;
         
         console.log(`[UpdateCount] ✅ R2 scan complete: ${uploadedCount}/${requiredCount}`);
         console.log(`[UpdateCount] Files - Invoice: ${invoiceCount}, Bukti: ${buktiCount}, Faktur Pajak: ${fakturCount}`);
         
-        // Save the count to database so frontend can read it
-        try {
-            console.log(`[UpdateCount] Attempting to save: ${uploadedCount}/${requiredCount} for faktur ${faktur}`);
-            
-            // Use upsert to bypass some schema cache issues
-            const { error: upsertErr } = await supabase
-                .from('invoice_file_list')
-                .upsert({
-                    faktur: faktur,
-                    files_uploaded_count: uploadedCount,
-                    files_required_count: requiredCount,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'faktur' });
-            
-            if (upsertErr) {
-                console.error(`[UpdateCount] ❌ Upsert error:`, upsertErr.message);
-                
-                // Try plain update instead
-                const { error: updateErr } = await supabase
-                    .from('invoice_file_list')
-                    .update({
-                        files_uploaded_count: uploadedCount,
-                        files_required_count: requiredCount,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('faktur', faktur);
-                
-                if (updateErr) {
-                    console.error(`[UpdateCount] ❌ Update also failed:`, updateErr.message);
-                    console.log(`[UpdateCount] ⚠️  Schema cache is stale - columns exist in DB but client can't see them`);
-                    console.log(`[UpdateCount] Updating only timestamp as fallback...`);
-                    
-                    // Final fallback
-                    await supabase
-                        .from('invoice_file_list')
-                        .update({ updated_at: new Date().toISOString() })
-                        .eq('faktur', faktur);
-                } else {
-                    console.log(`[UpdateCount] ✅ Saved count via update: ${uploadedCount}/${requiredCount}`);
-                }
-            } else {
-                console.log(`[UpdateCount] ✅ Saved count via upsert: ${uploadedCount}/${requiredCount}`);
-            }
-        } catch (saveErr) {
-            console.error(`[UpdateCount] ❌ Exception while saving:`, saveErr.message);
-        }
-        
+        // Return the count immediately - this is the source of truth
+        // Do NOT try to save to database - Supabase JS client schema cache is permanently broken
         return uploadedCount;
         
     } catch (err) {
@@ -2078,6 +2034,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             // Update files_uploaded_count (includes internal delay for consistency)
                             const uploadedCount = await updateFilesUploadedCount(supabase, faktur, R2Storage);
                             console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
+                            
+                            // Save count directly via REST API (bypasses schema cache)
+                            if (uploadedCount > 0) {
+                                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                                const requiredCount = isPPN ? 3 : 2;
+                                await updateFileCountDirectly(faktur, uploadedCount, requiredCount);
+                            }
                         } else {
                             console.error(`[Invoice PDF BG] ✗ All database update methods failed!`);
                         }
@@ -2342,7 +2305,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             // Always try to update count, even if database update failed
                             // The function scans R2 directly, which is the source of truth
                             try {
-                                await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
+                                const uploadedCount = await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
+                                if (uploadedCount > 0) {
+                                    const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                                    const requiredCount = isPPN ? 3 : 2;
+                                    await updateFileCountDirectly(fakturNumber, uploadedCount, requiredCount);
+                                }
                             } catch (countErr) {
                                 console.error(`[Invoice Document BG] Error updating count:`, countErr.message);
                             }
@@ -2555,7 +2523,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             // Always try to update count, even if database update failed
                             // The function scans R2 directly, which is the source of truth
                             try {
-                                await updateFilesUploadedCount(supabase, nomorFaktur, R2Storage);
+                                const uploadedCount = await updateFilesUploadedCount(supabase, nomorFaktur, R2Storage);
+                                if (uploadedCount > 0) {
+                                    const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                                    const requiredCount = isPPN ? 3 : 2;
+                                    await updateFileCountDirectly(nomorFaktur, uploadedCount, requiredCount);
+                                }
                             } catch (countErr) {
                                 console.error(`[Invoice Document BG] Error updating count:`, countErr.message);
                             }
@@ -2772,7 +2745,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 // Always update count regardless of database success
                                 // The function scans R2 directly, which is the source of truth
                                 try {
-                                    await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
+                                    const uploadedCount = await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
+                                    if (uploadedCount > 0) {
+                                        const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                                        const requiredCount = isPPN ? 3 : 2;
+                                        await updateFileCountDirectly(fakturNumber, uploadedCount, requiredCount);
+                                    }
                                 } catch (countErr) {
                                     console.error(`[Invoice Faktur Pajak BG] Error updating count:`, countErr.message);
                                 }
