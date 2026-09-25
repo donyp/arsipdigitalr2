@@ -1275,11 +1275,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
                 }
 
-                // Calculate file count
+                // Calculate file count - NON doesn't need faktur_pajak
                 let filesUploaded = 0;
                 if (invoice.invoice_pdf_path || invoice.uploaded_file_path) filesUploaded++;
                 if (invoice.bukti_bayar_path) filesUploaded++;
-                if (invoice.faktur_pajak_path) filesUploaded++;
+                
+                // Faktur pajak hanya untuk PPN
+                const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
+                if (isPPN && invoice.faktur_pajak_path) filesUploaded++;
 
                 res.json({
                     exists: fileExists,
@@ -1288,8 +1291,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     filePath: dbFilePath || null,
                     fileCount: {
                         uploaded: filesUploaded,
-                        required: invoice.files_required_count || 3,
-                        status: `${filesUploaded}/${invoice.files_required_count || 3}`
+                        required: invoice.files_required_count || (isPPN ? 3 : 2),
+                        status: `${filesUploaded}/${invoice.files_required_count || (isPPN ? 3 : 2)}`
                     },
                     message: fileExists ? 'File exists' : 'File not found'
                 });
@@ -1328,13 +1331,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(404).json({ error: `Invoice not found: ${faktur}` });
                 }
                 
-                // Calculate actual count from paths
+                // Calculate actual count from paths - NON doesn't need faktur_pajak
                 let actualCount = 0;
                 if (invoice.invoice_pdf_path) actualCount++;
                 if (invoice.bukti_bayar_path) actualCount++;
-                if (invoice.faktur_pajak_path) actualCount++;
+                
+                const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
+                if (isPPN && invoice.faktur_pajak_path) actualCount++;
                 
                 const dbCount = invoice.files_uploaded_count || 0;
+                const requiredCount = invoice.files_required_count || (isPPN ? 3 : 2);
                 const isMismatch = dbCount !== actualCount;
                 
                 // If mismatch, correct it

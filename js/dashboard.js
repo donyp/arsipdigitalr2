@@ -2912,14 +2912,15 @@ async function renderInvoiceTable(invoices) {
         // Check ALL files in batch FIRST before rendering - PARALLEL BATCH
         const batchWithFileStatus = await Promise.all(batchInvoices.map(async (inv) => {
             let actualUploadedCount = 0;
-            const requiredCount = inv.keterangan === 'PPN' ? 3 : 2;
+            const isPPN = inv.keterangan === 'PPN';
+            const requiredCount = isPPN ? 3 : 2;
             const buttons = [];
             
-            // Run file check - for now we only have one file per invoice (uploaded_file_path)
+            // Run file checks for all file types
             const checkPromises = [];
         
-            // Only check the invoice PDF since that's what we're uploading now
-            if (inv.uploaded_file_path) {
+            // Check invoice PDF
+            if (inv.invoice_pdf_path || inv.uploaded_file_path) {
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/invoice?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
@@ -2927,8 +2928,31 @@ async function renderInvoiceTable(invoices) {
                         .then(d => ({ type: 'invoice', exists: d.exists }))
                 );
             } else {
-                // If no uploaded_file_path, file definitely doesn't exist
                 checkPromises.push(Promise.resolve({ type: 'invoice', exists: false }));
+            }
+            
+            // Check bukti bayar
+            if (inv.bukti_bayar_path) {
+                checkPromises.push(
+                    fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/bukti_bayar?t=${Date.now()}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
+                        .then(d => ({ type: 'bukti_bayar', exists: d.exists }))
+                );
+            } else {
+                checkPromises.push(Promise.resolve({ type: 'bukti_bayar', exists: false }));
+            }
+            
+            // Check faktur pajak (only for PPN)
+            if (isPPN && inv.faktur_pajak_path) {
+                checkPromises.push(
+                    fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/faktur_pajak?t=${Date.now()}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
+                        .then(d => ({ type: 'faktur_pajak', exists: d.exists }))
+                );
+            } else if (isPPN) {
+                checkPromises.push(Promise.resolve({ type: 'faktur_pajak', exists: false }));
             }
         
         // Wait for ALL parallel checks
