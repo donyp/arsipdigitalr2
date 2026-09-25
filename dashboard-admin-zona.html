@@ -1909,11 +1909,26 @@
                 }
 
                 // Update welcome name and info IMMEDIATELY (synchronously)
+                // Get time-based greeting
+                const hour = new Date().getHours();
+                let greeting = 'siang';
+                if (hour >= 15 && hour < 18) {
+                    greeting = 'sore';
+                } else if (hour >= 18 || hour < 5) {
+                    greeting = 'malam';
+                }
+                
+                // Get username (fallback to name or full_name)
+                const username = currentUser.name || currentUser.full_name || 'User';
+                
+                // Get zona_id
+                const zonaId = currentUser.zona_id || 'N/A';
+                
                 const welcomeNameEl = document.getElementById('welcome-name');
-                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat siang, Admin ${zonaName} 👋`;
+                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
 
                 const welcomeInfoEl = document.getElementById('welcome-info');
-                if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi data ${zonaName}`;
+                if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
 
                 // Load data in background (don't await - let it run in parallel)
                 loadAllInvoicesAndStats();
@@ -1921,7 +1936,16 @@
             } catch (err) {
                 console.error('Init error:', err);
                 const welcomeNameEl = document.getElementById('welcome-name');
-                if (welcomeNameEl) welcomeNameEl.textContent = 'Selamat siang, Admin 👋';
+                if (welcomeNameEl) {
+                    const hour = new Date().getHours();
+                    let greeting = 'siang';
+                    if (hour >= 15 && hour < 18) {
+                        greeting = 'sore';
+                    } else if (hour >= 18 || hour < 5) {
+                        greeting = 'malam';
+                    }
+                    welcomeNameEl.textContent = `Selamat ${greeting}, User 👋`;
+                }
             }
         });
     </script>
