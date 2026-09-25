@@ -169,46 +169,44 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         try {
             console.log(`[UpdateCount] Attempting to save: ${uploadedCount}/${requiredCount} for faktur ${faktur}`);
             
-            // Try method 1: Update new columns (if they exist)
-            const { data: updateData, error: updateErr } = await supabase
+            // Use upsert to bypass some schema cache issues
+            const { error: upsertErr } = await supabase
                 .from('invoice_file_list')
-                .update({
+                .upsert({
+                    faktur: faktur,
                     files_uploaded_count: uploadedCount,
                     files_required_count: requiredCount,
                     updated_at: new Date().toISOString()
-                })
-                .eq('faktur', faktur);
+                }, { onConflict: 'faktur' });
             
-            if (updateErr && updateErr.message.includes('files_required_count')) {
-                console.log(`[UpdateCount] ⚠️  Columns don't exist yet. Attempting to create them...`);
+            if (upsertErr) {
+                console.error(`[UpdateCount] ❌ Upsert error:`, upsertErr.message);
                 
-                // Try to create the columns dynamically
-                try {
-                    const createColResult = await supabase.rpc('exec_sql', {
-                        sql: `ALTER TABLE invoice_file_list 
-ADD COLUMN IF NOT EXISTS files_uploaded_count INTEGER DEFAULT 0,
-ADD COLUMN IF NOT EXISTS files_required_count INTEGER DEFAULT 2;`
-                    });
-                    console.log(`[UpdateCount] Created columns`);
-                } catch (createErr) {
-                    console.log(`[UpdateCount] Could not create columns dynamically`);
-                }
-                
-                // Fallback: just update timestamp so frontend can at least refresh
-                const { error: tsErr } = await supabase
+                // Try plain update instead
+                const { error: updateErr } = await supabase
                     .from('invoice_file_list')
-                    .update({ updated_at: new Date().toISOString() })
+                    .update({
+                        files_uploaded_count: uploadedCount,
+                        files_required_count: requiredCount,
+                        updated_at: new Date().toISOString()
+                    })
                     .eq('faktur', faktur);
                 
-                if (!tsErr) {
-                    console.log(`[UpdateCount] ✅ Updated timestamp (waiting for schema cache refresh)`);
+                if (updateErr) {
+                    console.error(`[UpdateCount] ❌ Update also failed:`, updateErr.message);
+                    console.log(`[UpdateCount] ⚠️  Schema cache is stale - columns exist in DB but client can't see them`);
+                    console.log(`[UpdateCount] Updating only timestamp as fallback...`);
+                    
+                    // Final fallback
+                    await supabase
+                        .from('invoice_file_list')
+                        .update({ updated_at: new Date().toISOString() })
+                        .eq('faktur', faktur);
                 } else {
-                    console.error(`[UpdateCount] ❌ Even timestamp update failed:`, tsErr.message);
+                    console.log(`[UpdateCount] ✅ Saved count via update: ${uploadedCount}/${requiredCount}`);
                 }
-            } else if (updateErr) {
-                console.error(`[UpdateCount] ❌ Update error:`, updateErr.code, updateErr.message);
             } else {
-                console.log(`[UpdateCount] ✅ Saved count to database: ${uploadedCount}/${requiredCount}`);
+                console.log(`[UpdateCount] ✅ Saved count via upsert: ${uploadedCount}/${requiredCount}`);
             }
         } catch (saveErr) {
             console.error(`[UpdateCount] ❌ Exception while saving:`, saveErr.message);
