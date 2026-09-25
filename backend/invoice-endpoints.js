@@ -1957,6 +1957,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             
                             uploadResult = await R2Storage.uploadInvoicePDF(fileBuffer, filename, year, monthName, day, category, location);
                             
+                            console.log(`[Invoice PDF BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
+                            
                             if (!uploadResult.success) {
                                 throw new Error(uploadResult.error || 'Upload failed');
                             }
@@ -2235,6 +2237,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 location
                             );
 
+                            console.log(`[Invoice Document BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
+
                             if (!uploadResult.success) {
                                 throw new Error(uploadResult.error || 'Upload failed');
                             }
@@ -2442,6 +2446,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 'bukti-bayar',
                                 location
                             );
+
+                            console.log(`[Invoice Document BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
 
                             if (!uploadResult.success) {
                                 throw new Error(uploadResult.error || 'Upload failed');
