@@ -2337,7 +2337,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Fetch invoice data to get the correct date
                     const { data: invoice, error: invoiceError } = await supabase
                         .from('invoice_file_list')
-                        .select('tanggal, bukti_bayar_path')
+                        .select('tanggal, toko')
                         .eq('faktur', nomorFaktur)
                         .single();
 
@@ -2589,7 +2589,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // Fetch invoice data to get the correct date
                 const { data: invoice, error: invoiceError } = await supabase
                     .from('invoice_file_list')
-                    .select('tanggal, faktur_pajak_path')
+                    .select('tanggal, toko')
                     .eq('faktur', fakturNumber)
                     .single();
 
