@@ -514,8 +514,15 @@
                 const result = await loginWithCredentials(username, password);
                 
                 // Get user role from the login response
-                // Both super_admin and admin_zona go to dashboard.html
-                const dashboardPage = (result.user?.role === 'admin_zona' || result.user?.role === 'super_admin') ? '/dashboard.html' : '/dashboard.html';
+                // Route to appropriate dashboard based on role
+                let dashboardPage;
+                if (result.user?.role === 'admin_zona') {
+                    dashboardPage = '/dashboard-admin-zona.html';
+                } else if (result.user?.role === 'super_admin' || result.user?.role === 'moderator') {
+                    dashboardPage = '/dashboard.html';
+                } else {
+                    dashboardPage = '/dashboard.html';
+                }
                 
                 console.log('[Login] User role:', result.user?.role, '→ Redirecting to:', dashboardPage);
                 
