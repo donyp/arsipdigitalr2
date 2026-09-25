@@ -1959,15 +1959,15 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             
                             console.log(`[Invoice PDF BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
                             
-                            if (!uploadResult.success) {
-                                throw new Error(uploadResult.error || 'Upload failed');
+                            // uploadResult is valid if it has storagePath (upload succeeded)
+                            if (!uploadResult || !uploadResult.storagePath) {
+                                throw new Error(uploadResult?.error || 'Upload failed');
                             }
                             
-                            remotePath = uploadResult.path;
-                            console.log(`[Invoice PDF BG] ✅ File uploaded to R2: ${remotePath}`);
+                            console.log(`[Invoice PDF BG] ✅ File uploaded to R2: ${remotePath || uploadResult.storagePath || uploadResult.path}`);
                         } catch (uploadErr) {
                             console.error(`[Invoice PDF BG] Upload error:`, uploadErr.message);
-                            remotePath = null;
+                            remotePath = uploadResult?.storagePath || uploadResult?.path || null;
                         }
                         
                         // Update invoice status in database - try NEW invoice_files table first
@@ -2239,11 +2239,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             console.log(`[Invoice Document BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
 
-                            if (!uploadResult.success) {
-                                throw new Error(uploadResult.error || 'Upload failed');
+                            // uploadResult is valid if it has storagePath (upload succeeded)
+                            if (!uploadResult || !uploadResult.storagePath) {
+                                throw new Error(uploadResult?.error || 'Upload failed');
                             }
 
-                            console.log(`[Invoice Document BG] ✅ Faktur Pajak uploaded: ${uploadResult.path}`);
+                            console.log(`[Invoice Document BG] ✅ Faktur Pajak uploaded: ${uploadResult.storagePath}`);
                             
                             // Update database - try NEW invoice_files table first using REST API
                             let updateSuccess = false;
@@ -2262,7 +2263,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     body: JSON.stringify({
                                         faktur: fakturNumber,
                                         file_type: 'faktur_pajak',
-                                        file_path: uploadResult.path,
+                                        file_path: uploadResult.storagePath,
                                         uploaded_at: new Date().toISOString(),
                                         uploaded_by: req.user.id
                                     })
@@ -2288,7 +2289,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         .upsert({
                                             faktur: fakturNumber,
                                             file_type: 'faktur_pajak',
-                                            file_path: uploadResult.path,
+                                            file_path: uploadResult.storagePath,
                                             uploaded_at: new Date().toISOString(),
                                             uploaded_by: req.user.id
                                         });
@@ -2311,7 +2312,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     const { error: updateError } = await supabase
                                         .from('invoice_file_list')
                                         .update({
-                                            uploaded_file_path: uploadResult.path,
+                                            uploaded_file_path: uploadResult.storagePath,
                                             uploaded_at: new Date().toISOString(),
                                             updated_at: new Date().toISOString(),
                                             uploaded_by: req.user.id
@@ -2449,11 +2450,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             console.log(`[Invoice Document BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
 
-                            if (!uploadResult.success) {
-                                throw new Error(uploadResult.error || 'Upload failed');
+                            // uploadResult is valid if it has storagePath (upload succeeded)
+                            if (!uploadResult || !uploadResult.storagePath) {
+                                throw new Error(uploadResult?.error || 'Upload failed');
                             }
 
-                            console.log(`[Invoice Document BG] ✅ Bukti Bayar uploaded: ${uploadResult.path}`);
+                            console.log(`[Invoice Document BG] ✅ Bukti Bayar uploaded: ${uploadResult.storagePath}`);
                             
                             // Update database - try NEW invoice_files table first using REST API
                             let updateSuccess = false;
@@ -2472,7 +2474,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     body: JSON.stringify({
                                         faktur: nomorFaktur,
                                         file_type: 'bukti_bayar',
-                                        file_path: uploadResult.path,
+                                        file_path: uploadResult.storagePath,
                                         uploaded_at: new Date().toISOString(),
                                         uploaded_by: req.user.id
                                     })
@@ -2498,7 +2500,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         .upsert({
                                             faktur: nomorFaktur,
                                             file_type: 'bukti_bayar',
-                                            file_path: uploadResult.path,
+                                            file_path: uploadResult.storagePath,
                                             uploaded_at: new Date().toISOString(),
                                             uploaded_by: req.user.id
                                         });
@@ -2521,7 +2523,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     const { error: updateError } = await supabase
                                         .from('invoice_file_list')
                                         .update({
-                                            uploaded_file_path: uploadResult.path,
+                                            uploaded_file_path: uploadResult.storagePath,
                                             uploaded_at: new Date().toISOString(),
                                             uploaded_by: req.user.id
                                         })
