@@ -67,17 +67,14 @@ try {
  */
 async function updateFilesUploadedCount(supabase, faktur) {
     try {
-        // Wait for write to be visible (database transactions need time to commit)
-        // Using 1.5 seconds to allow for consistency
+        // Wait for write to be visible
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // WORKAROUND: Try to query with new columns first, fall back to old if they don't exist
-        // The issue is PostgREST schema caching - even though columns exist in DB, cache may not reflect them
-        
+        // Get current invoice data - with schema fallback
         let invoice = null;
         let queryErr = null;
         
-        // Try NEW columns first (invoice_pdf_path, bukti_bayar_path, faktur_pajak_path)
+        // Try NEW columns first
         const { data: newData, error: newError } = await supabase
             .from('invoice_file_list')
             .select('uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
@@ -88,8 +85,8 @@ async function updateFilesUploadedCount(supabase, faktur) {
             invoice = newData;
             console.log(`[UpdateCount] ✅ Using NEW columns (migration applied)`);
         } else if (newError && newError.message.includes('does not exist')) {
-            // Fallback: Migration not applied yet, use only uploaded_file_path
-            console.log(`[UpdateCount] ⚠️  New columns not found, falling back to OLD schema (${newError.message})`);
+            // Fallback: Migration not applied, use only uploaded_file_path
+            console.log(`[UpdateCount] Schema cache issue - falling back to OLD columns`);
             
             const { data: oldData, error: oldError } = await supabase
                 .from('invoice_file_list')
@@ -99,7 +96,6 @@ async function updateFilesUploadedCount(supabase, faktur) {
             
             if (!oldError && oldData) {
                 invoice = oldData;
-                console.log(`[UpdateCount] ✅ Using OLD columns (uploaded_file_path only)`);
             } else {
                 queryErr = oldError;
             }
@@ -108,50 +104,33 @@ async function updateFilesUploadedCount(supabase, faktur) {
         }
         
         if (queryErr || !invoice) {
-            console.warn(`[UpdateCount] Could not query invoice: ${faktur} - ${queryErr?.message || 'unknown error'}`);
+            console.warn(`[UpdateCount] Could not query invoice: ${faktur}`);
             return null;
         }
         
-        // Count actual files - handle both old and new schemas
+        // Count actual files
         let uploadedCount = 0;
         
-        // NEW schema: check the three separate columns
-        if (invoice.invoice_pdf_path) {
-            uploadedCount++;
-            console.log(`[UpdateCount] Found invoice_pdf_path`);
-        }
-        if (invoice.bukti_bayar_path) {
-            uploadedCount++;
-            console.log(`[UpdateCount] Found bukti_bayar_path`);
-        }
+        // Try new columns
+        if (invoice.invoice_pdf_path) uploadedCount++;
+        if (invoice.bukti_bayar_path) uploadedCount++;
         
-        // Faktur pajak hanya untuk PPN
         const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-        if (isPPN && invoice.faktur_pajak_path) {
-            uploadedCount++;
-            console.log(`[UpdateCount] Found faktur_pajak_path`);
-        }
+        if (isPPN && invoice.faktur_pajak_path) uploadedCount++;
         
-        // OLD schema fallback: if no new columns found, check uploaded_file_path
+        // Fallback: if no new columns found, check uploaded_file_path
         if (uploadedCount === 0 && invoice.uploaded_file_path) {
             uploadedCount = 1;
-            console.log(`[UpdateCount] Using OLD schema: uploaded_file_path`);
+            console.log(`[UpdateCount] Using OLD schema: uploaded_file_path found`);
         }
         
         console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}`);
         
-        // Update files_uploaded_count
-        const { error: updateErr } = await supabase
-            .from('invoice_file_list')
-            .update({ files_uploaded_count: uploadedCount })
-            .eq('faktur', faktur);
+        // NOTE: Skip UPDATE to files_uploaded_count since that column also doesn't exist yet
+        // Once the migration properly adds all columns, this will be enabled
+        // For now: just return the calculated count
         
-        if (updateErr) {
-            console.error(`[UpdateCount] Failed to update files_uploaded_count:`, updateErr.message);
-            return null;
-        }
-        
-        console.log(`[UpdateCount] ✅ Updated files_uploaded_count to ${uploadedCount} for ${faktur}`);
+        console.log(`[UpdateCount] ✅ Count calculated (not updating DB since column doesn't exist yet)`);
         return uploadedCount;
         
     } catch (err) {
@@ -1370,23 +1349,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
                 }
 
-                // Calculate file count - handle both old and new schemas
+                // Count files from uploaded_file_path only (the ONLY column that actually exists)
                 let filesUploaded = 0;
-                
-                // NEW schema: check the three separate columns
-                if (invoice.invoice_pdf_path) filesUploaded++;
-                if (invoice.bukti_bayar_path) filesUploaded++;
-                
-                // Faktur pajak hanya untuk PPN
-                const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-                if (isPPN && invoice.faktur_pajak_path) filesUploaded++;
-                
-                // OLD schema fallback: if no new columns found, check uploaded_file_path
-                if (filesUploaded === 0 && invoice.uploaded_file_path) {
+                if (invoice.uploaded_file_path) {
                     filesUploaded = 1;
                 }
                 
-                const requiredCount = invoice.files_required_count || (isPPN ? 3 : 2);
+                const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
+                const requiredCount = isPPN ? 3 : 2;
 
                 res.json({
                     exists: fileExists,
