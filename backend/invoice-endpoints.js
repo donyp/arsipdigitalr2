@@ -1790,10 +1790,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                     const finalFilename = cleanFilename;
                     const location = extractLocationFromToko(invoice?.toko);
-                    console.log(`[Invoice Document] Path: /ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK/${finalFilename}`);
+                    console.log(`[Invoice Document] Path: /ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`);
 
                     // Build expected new path with location
-                    const expectedNewPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK/${finalFilename}`;
+                    const expectedNewPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`;
                     
                     // Check if this is a re-upload of same file (path already matches new structure)
                     const isReuploadWithNewPath = invoice?.faktur_pajak_path === expectedNewPath;
@@ -1925,10 +1925,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     const finalFilename = `${nomorFaktur}.pdf`;
                     const location = extractLocationFromToko(invoice?.toko);
 
-                    console.log(`[Invoice Document] Path: /ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR/${finalFilename}`);
+                    console.log(`[Invoice Document] Path: /ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}/${finalFilename}`);
 
                     // Build expected new path with location
-                    const expectedNewPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR/${finalFilename}`;
+                    const expectedNewPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}/${finalFilename}`;
                     
                     // Check if this is a re-upload of same file (path already matches new structure)
                     const isReuploadWithNewPath = invoice?.bukti_bayar_path === expectedNewPath;
@@ -2135,10 +2135,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const finalFilename = filename;
                 const location = extractLocationFromToko(invoice?.toko);
 
-                console.log(`[Invoice Faktur Pajak] Path: /ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK/${finalFilename}`);
+                console.log(`[Invoice Faktur Pajak] Path: /ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`);
 
                 // Build expected new path with location
-                const expectedNewPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK/${finalFilename}`;
+                const expectedNewPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`;
                 
                 // Check if this is a re-upload of same file (path already matches new structure)
                 const isReuploadWithNewPath = invoice?.faktur_pajak_path === expectedNewPath;
@@ -2640,12 +2640,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 try {
                     // Search for bukti bayar
-                    const buktiSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR`;
+                    const buktiSearchPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}`;
                     console.log(`[Invoice Search] Searching bukti bayar in: ${buktiSearchPath}`);
                     const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                     const buktiFile = buktiFiles.find(f => f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (buktiFile && !buktiFile.is_dir) {
-                        const buktiPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR/${buktiFile.name}`;
+                        const buktiPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}/${buktiFile.name}`;
                         foundFiles.bukti_bayar = buktiPath;
                         console.log(`[Invoice Search] Found bukti bayar: ${buktiPath}`);
                     }
@@ -2655,12 +2655,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 try {
                     // Search for faktur pajak
-                    const fakturSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK`;
+                    const fakturSearchPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}`;
                     console.log(`[Invoice Search] Searching faktur pajak in: ${fakturSearchPath}`);
                     const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                     const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (fakturFile && !fakturFile.is_dir) {
-                        const fakturPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK/${fakturFile.name}`;
+                        const fakturPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${fakturFile.name}`;
                         foundFiles.faktur_pajak = fakturPath;
                         console.log(`[Invoice Search] Found faktur pajak: ${fakturPath}`);
                     }
@@ -2810,7 +2810,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         try {
-                            const buktiSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR`;
+                            const buktiSearchPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}`;
                             const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                             const buktiFile = buktiFiles.find(f => f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (buktiFile && !buktiFile.is_dir) {
@@ -2821,7 +2821,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         try {
-                            const fakturSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK`;
+                            const fakturSearchPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}`;
                             const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                             const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (fakturFile && !fakturFile.is_dir) {

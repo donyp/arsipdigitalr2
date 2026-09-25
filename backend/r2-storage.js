@@ -281,7 +281,7 @@ async function uploadInvoicePDF(buffer, filename, year, month, day, category, lo
         // month can be 'SEPTEMBER', '09', etc - convert to month name if number
         
         const monthName = convertMonthToName(month);
-        const storagePath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}/${filename}`;
+        const storagePath = `ARSIP/${location}/${category}/${year}/${monthName}/${day}/${filename}`;
         
         console.log(`[R2] Uploading invoice PDF: ${storagePath}`);
         
