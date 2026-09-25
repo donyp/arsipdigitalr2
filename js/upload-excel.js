@@ -198,7 +198,7 @@ async function checkData() {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const checkDupResponse = await fetch('http://localhost:5000/api/invoice/check-duplicate-fakturs', {
+        const checkDupResponse = await fetch(`${CONFIG.API_URL}/api/invoice/check-duplicate-fakturs`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({ fakturs: fakturs })
@@ -297,7 +297,7 @@ async function uploadData() {
         // ============================================
         // Upload data (duplicate check already done in checkData)
         // ============================================
-        const response = await fetch('http://localhost:5000/api/invoice/upload-excel-data', {
+        const response = await fetch(`${CONFIG.API_URL}/api/invoice/upload-excel-data`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
@@ -399,7 +399,7 @@ async function generateWhatsappMessages(invoices, batchId) {
         };
 
         // Call backend to generate messages
-        const response = await fetch('http://localhost:5000/api/whatsapp/generate-messages', {
+        const response = await fetch(`${CONFIG.API_URL}/api/whatsapp/generate-messages`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
@@ -554,7 +554,7 @@ async function markAllWhatsappAsSent() {
             'Authorization': `Bearer ${token}`
         };
 
-        const response = await fetch('http://localhost:5000/api/whatsapp/mark-batch-sent', {
+        const response = await fetch(`${CONFIG.API_URL}/api/whatsapp/mark-batch-sent`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({

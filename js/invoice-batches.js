@@ -39,7 +39,7 @@ async function loadBatches() {
     showLoading();
 
     try {
-        const response = await fetch('http://localhost:5000/api/invoice/batches?limit=100&offset=0', {
+        const response = await fetch(`${CONFIG.API_URL}/api/invoice/batches?limit=100&offset=0`, {
             headers: {
                 'Authorization': `Bearer ${getToken()}`
             }

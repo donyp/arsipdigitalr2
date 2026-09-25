@@ -2827,7 +2827,7 @@ async function loadInvoicesInDashboard(page = 1) {
         }
         
         const offset = (page - 1) * INVOICE_PAGE_SIZE;
-        const url = `http://localhost:5000/api/invoice/list?limit=${INVOICE_PAGE_SIZE}&offset=${offset}`;
+        const url = `${CONFIG.API_URL}/api/invoice/list?limit=${INVOICE_PAGE_SIZE}&offset=${offset}`;
         console.log('[LoadInvoices] Fetching from:', url);
         
         const response = await fetch(url, {
@@ -3505,7 +3505,7 @@ async function loadFilterOptions() {
         
         // Get all invoices with high limit to count everything
         // Note: API automatically filters by zona_id for admin_zona users
-        const url = 'http://localhost:5000/api/invoice/list?limit=10000&offset=0';
+        const url = '${CONFIG.API_URL}/api/invoice/list?limit=10000&offset=0';
         console.log('[Filter] Fetching from:', url);
         
         const response = await fetch(url, {
@@ -4008,7 +4008,7 @@ async function applyInvoiceFilters() {
         
         console.log('[Filter] Query params:', params.toString());
         
-        const response = await fetch(`http://localhost:5000/api/invoice/list?${params.toString()}`, {
+        const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
             method: 'GET',
             headers: headers
         });
@@ -4191,7 +4191,7 @@ async function applyAdminZonaFilters() {
         if (year) params.append('year', year);
         if (month) params.append('month', month);
         
-        const url = `http://localhost:5000/api/invoice/list?${params.toString()}`;
+        const url = `${CONFIG.API_URL}/api/invoice/list?${params.toString()}`;
         console.log('[AdminZonaFilter] Calling:', url);
         
         const response = await API.get(url);
@@ -4288,7 +4288,7 @@ async function startInvoiceBackgroundScan() {
         params.append('offset', 0);
         
         // Fetch filtered data
-        const response = await fetch(`http://localhost:5000/api/invoice/list?${params.toString()}`, {
+        const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
             method: 'GET',
             headers: headers
         });

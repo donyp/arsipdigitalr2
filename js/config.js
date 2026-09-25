@@ -4,12 +4,11 @@
 
 const CONFIG = {
     // Backend API URL
-    // For production (Railway/Replit/Custom Domain): use empty string for relative URLs (same domain)
+    // For production: use https://arsipdigitalanka.my.id
     // For local development: use http://localhost:5000
-    // Detect environment: if URL is not localhost/127.0.0.1, use relative URL
-    API_URL: (typeof window !== 'undefined' && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) 
-        ? '' 
-        : 'http://localhost:5000',
+    API_URL: (typeof window !== 'undefined' && window.location.hostname === 'localhost') 
+        ? 'http://localhost:5000'
+        : 'https://arsipdigitalanka.my.id',
 
     // App Constants
     CATEGORIES: [

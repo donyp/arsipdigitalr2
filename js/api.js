@@ -33,7 +33,10 @@ const API = {
         };
 
         // Prepend backend URL if not absolute
-        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+        const backendUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : 'https://arsipdigitalanka.my.id';
+        const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
 
         const response = await fetch(fullUrl, {
             method: 'GET',
@@ -60,7 +63,10 @@ const API = {
         };
 
         // Prepend backend URL if not absolute
-        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+        const backendUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : 'https://arsipdigitalanka.my.id';
+        const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
 
         const response = await fetch(fullUrl, {
             method: 'POST',
@@ -114,7 +120,10 @@ const API = {
         };
 
         // Prepend backend URL if not absolute
-        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+        const backendUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : 'https://arsipdigitalanka.my.id';
+        const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
 
         const response = await fetch(fullUrl, {
             method: 'PUT',
@@ -142,7 +151,10 @@ const API = {
         };
 
         // Prepend backend URL if not absolute
-        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+        const backendUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000' 
+            : 'https://arsipdigitalanka.my.id';
+        const fullUrl = url.startsWith('http') ? url : `${backendUrl}${url}`;
 
         const response = await fetch(fullUrl, {
             method: 'DELETE',
