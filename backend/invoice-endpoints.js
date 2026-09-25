@@ -2919,9 +2919,19 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // Get file path based on type
                 let filePath = null;
                 
-                // For now, all file types return the same uploaded_file_path since we only have one file per invoice
-                // In the future this can be extended to support multiple files (bukti_bayar, faktur_pajak)
-                filePath = invoice.uploaded_file_path;
+                // Use the correct path column based on file type
+                if (fileType === 'invoice') {
+                    filePath = invoice.invoice_pdf_path;
+                } else if (fileType === 'bukti_bayar') {
+                    filePath = invoice.bukti_bayar_path;
+                } else if (fileType === 'faktur_pajak') {
+                    filePath = invoice.faktur_pajak_path;
+                }
+                
+                // Fallback to uploaded_file_path if specific path not found
+                if (!filePath) {
+                    filePath = invoice.uploaded_file_path;
+                }
                 
                 if (!filePath) {
                     return res.status(404).json({ 
@@ -2931,7 +2941,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     });
                 }
                 
-                console.log(`[Invoice Download] File path: ${filePath}`);
+                console.log(`[Invoice Download] File type: ${fileType}, path: ${filePath}`);
                 
                 try {
                     // OPTIMIZATION: Check cache first
