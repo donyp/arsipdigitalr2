@@ -1999,7 +1999,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 throw new Error(uploadResult?.error || 'Upload failed');
                             }
                             
-                            console.log(`[Invoice PDF BG] ✅ File uploaded to R2: ${remotePath || uploadResult.storagePath || uploadResult.path}`);
+                            // Set remotePath on successful upload!
+                            remotePath = uploadResult.storagePath;
+                            console.log(`[Invoice PDF BG] ✅ File uploaded to R2: ${remotePath}`);
                         } catch (uploadErr) {
                             console.error(`[Invoice PDF BG] Upload error:`, uploadErr.message);
                             remotePath = uploadResult?.storagePath || uploadResult?.path || null;
