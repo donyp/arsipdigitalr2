@@ -25,12 +25,14 @@ async function updateFileCountDirectly(faktur, uploadedCount, requiredCount) {
             const hostname = url.hostname;
             
             // Update via direct REST PATCH to the table
+            // IMPORTANT: Use apikey header (not Authorization Bearer) for Supabase REST API
             const options = {
                 hostname: hostname,
                 path: `/rest/v1/invoice_file_list?faktur=eq.${encodeURIComponent(faktur)}`,
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${serviceRoleKey}`,
+                    'apikey': serviceRoleKey,  // Changed from Authorization: Bearer
+                    'Authorization': `Bearer ${serviceRoleKey}`,  // Keep both for safety
                     'Content-Type': 'application/json',
                     'Prefer': 'return=minimal'
                 }
