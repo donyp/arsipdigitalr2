@@ -70,72 +70,81 @@ async function updateFilesUploadedCount(supabase, faktur) {
         // Wait for write to be visible
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Get current invoice data - with schema fallback
-        let invoice = null;
-        let queryErr = null;
+        console.log(`[UpdateCount] Calculating count for ${faktur}...`);
         
-        // Try NEW columns first
+        // Try NEW method: use invoice_files table if it exists
+        try {
+            const { data: fileRecords, error: filesError } = await supabase
+                .from('invoice_files')
+                .select('file_type')
+                .eq('faktur', faktur);
+                
+            if (!filesError && Array.isArray(fileRecords)) {
+                console.log(`[UpdateCount] ✓ Using NEW invoice_files table (${fileRecords.length} files found)`);
+                
+                let uploadedCount = fileRecords.length;
+                
+                // Get invoice to determine required count
+                const { data: invoice, error: invError } = await supabase
+                    .from('invoice_file_list')
+                    .select('keterangan')
+                    .eq('faktur', faktur)
+                    .single();
+                
+                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                const requiredCount = isPPN ? 3 : 2;
+                
+                console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
+                console.log(`[UpdateCount] ✅ Count from invoice_files table`);
+                
+                return uploadedCount;
+            }
+        } catch (newErr) {
+            console.log(`[UpdateCount] invoice_files table not available:`, newErr.message?.substring(0, 50));
+        }
+        
+        // Fallback: OLD method - use uploaded_file_path column
+        console.log(`[UpdateCount] Falling back to OLD schema (uploaded_file_path only)`);
+        
         const { data: newData, error: newError } = await supabase
             .from('invoice_file_list')
-            .select('uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
+            .select('uploaded_file_path, keterangan')
             .eq('faktur', faktur)
             .single();
         
         if (!newError && newData) {
-            invoice = newData;
-            console.log(`[UpdateCount] ✅ Using NEW columns (migration applied)`);
-        } else if (newError && newError.message.includes('does not exist')) {
-            // Fallback: Migration not applied, use only uploaded_file_path
-            console.log(`[UpdateCount] Schema cache issue - falling back to OLD columns`);
+            console.log(`[UpdateCount] Using OLD schema: uploaded_file_path found`);
             
+            let uploadedCount = newData.uploaded_file_path ? 1 : 0;
+            
+            const isPPN = newData.keterangan && newData.keterangan.toUpperCase() === 'PPN';
+            const requiredCount = isPPN ? 3 : 2;
+            
+            console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
+            console.log(`[UpdateCount] ✅ Count calculated from uploaded_file_path`);
+            
+            return uploadedCount;
+        } else if (newError && newError.message.includes('does not exist')) {
+            console.log(`[UpdateCount] Column doesn't exist, trying minimal query`);
             const { data: oldData, error: oldError } = await supabase
                 .from('invoice_file_list')
-                .select('uploaded_file_path, keterangan')
+                .select('id')
                 .eq('faktur', faktur)
                 .single();
             
-            if (!oldError && oldData) {
-                invoice = oldData;
-            } else {
-                queryErr = oldError;
+            if (oldError) {
+                console.error(`[UpdateCount] ✗ Failed to fetch invoice:`, oldError.message);
+                return 0;
             }
-        } else {
-            queryErr = newError;
+            
+            return 1;
         }
         
-        if (queryErr || !invoice) {
-            console.warn(`[UpdateCount] Could not query invoice: ${faktur}`);
-            return null;
-        }
-        
-        // Count actual files
-        let uploadedCount = 0;
-        
-        // Try new columns
-        if (invoice.invoice_pdf_path) uploadedCount++;
-        if (invoice.bukti_bayar_path) uploadedCount++;
-        
-        const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-        if (isPPN && invoice.faktur_pajak_path) uploadedCount++;
-        
-        // Fallback: if no new columns found, check uploaded_file_path
-        if (uploadedCount === 0 && invoice.uploaded_file_path) {
-            uploadedCount = 1;
-            console.log(`[UpdateCount] Using OLD schema: uploaded_file_path found`);
-        }
-        
-        console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}`);
-        
-        // NOTE: Skip UPDATE to files_uploaded_count since that column also doesn't exist yet
-        // Once the migration properly adds all columns, this will be enabled
-        // For now: just return the calculated count
-        
-        console.log(`[UpdateCount] ✅ Count calculated (not updating DB since column doesn't exist yet)`);
-        return uploadedCount;
+        return 0;
         
     } catch (err) {
-        console.error(`[UpdateCount] Error:`, err.message);
-        return null;
+        console.error(`[UpdateCount] Unexpected error:`, err.message);
+        return 0;
     }
 }
 
@@ -1325,14 +1334,36 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Check File] Request: faktur=${faktur}, fileType=${fileType}`);
                 console.log(`[Check File] Invoice keterangan: ${invoice.keterangan}`);
                 
-                // Map fileType to database column
+                // Try to get file path from NEW invoice_files table first
                 let dbFilePath = null;
-                if (fileType === 'invoice') {
-                    dbFilePath = invoice.invoice_pdf_path || invoice.uploaded_file_path;
-                } else if (fileType === 'bukti_bayar') {
-                    dbFilePath = invoice.bukti_bayar_path;
-                } else if (fileType === 'faktur_pajak') {
-                    dbFilePath = invoice.faktur_pajak_path;
+                let fileExistsInNewTable = false;
+                
+                try {
+                    const { data: fileRecord, error: fileError } = await supabase
+                        .from('invoice_files')
+                        .select('file_path')
+                        .eq('faktur', faktur)
+                        .eq('file_type', fileType)
+                        .single();
+                    
+                    if (!fileError && fileRecord) {
+                        dbFilePath = fileRecord.file_path;
+                        fileExistsInNewTable = true;
+                        console.log(`[Check File] ✓ Found in invoice_files table: ${fileType}`);
+                    }
+                } catch (tableErr) {
+                    console.log(`[Check File] invoice_files table not available`);
+                }
+                
+                // Fallback: OLD method - check uploaded_file_path column
+                if (!fileExistsInNewTable) {
+                    if (fileType === 'invoice') {
+                        dbFilePath = invoice.invoice_pdf_path || invoice.uploaded_file_path;
+                    } else if (fileType === 'bukti_bayar') {
+                        dbFilePath = invoice.bukti_bayar_path;
+                    } else if (fileType === 'faktur_pajak') {
+                        dbFilePath = invoice.faktur_pajak_path;
+                    }
                 }
                 
                 let fileExists = false;
@@ -1351,10 +1382,22 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
                 }
 
-                // Count files from uploaded_file_path only (the ONLY column that actually exists)
+                // Count files - try NEW table first
                 let filesUploaded = 0;
-                if (invoice.uploaded_file_path) {
-                    filesUploaded = 1;
+                try {
+                    const { data: allFiles, error: countError } = await supabase
+                        .from('invoice_files')
+                        .select('file_type', { count: 'exact' })
+                        .eq('faktur', faktur);
+                    
+                    if (!countError && allFiles) {
+                        filesUploaded = allFiles.length;
+                        console.log(`[Check File] ✓ File count from invoice_files: ${filesUploaded}`);
+                    }
+                } catch (tableErr) {
+                    // Fallback to OLD method
+                    filesUploaded = invoice.uploaded_file_path ? 1 : 0;
+                    console.log(`[Check File] File count from uploaded_file_path: ${filesUploaded}`);
                 }
                 
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
@@ -1815,41 +1858,76 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             remotePath = null;
                         }
                         
-                        // Update invoice status in database - ONLY use uploaded_file_path (avoid new column schema cache issue)
+                        // Update invoice status in database - try NEW invoice_files table first
                         console.log('[Invoice PDF BG] Updating invoice path in database...');
+                        let updateSuccess = false;
+                        
                         try {
-                            // Update ONLY uploaded_file_path column which is already in schema cache
-                            const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
-                            const updateResponse = await fetch(updateUrl, {
-                                method: 'PATCH',
-                                headers: {
-                                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                                    'Content-Type': 'application/json',
-                                    'Prefer': 'return=representation'
-                                },
-                                body: JSON.stringify({
-                                    uploaded_file_path: remotePath || null,
+                            // Try NEW invoice_files table
+                            const { error: insertError } = await supabase
+                                .from('invoice_files')
+                                .upsert({
+                                    faktur: faktur,
+                                    file_type: 'invoice',
+                                    file_path: remotePath,
                                     uploaded_at: new Date().toISOString(),
-                                    uploaded_by: req.user.id,
-                                    updated_at: new Date().toISOString()
-                                })
-                            });
-
-                            if (updateResponse.ok) {
-                                const result = await updateResponse.json();
-                                console.log(`[Invoice PDF BG] ✅ Database updated for faktur: ${faktur}`);
-                                console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
-                                
-                                // Update files_uploaded_count (includes internal delay for consistency)
-                                const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
-                                console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
+                                    uploaded_by: req.user.id
+                                });
+                            
+                            if (!insertError) {
+                                console.log(`[Invoice PDF BG] ✅ Inserted into invoice_files table`);
+                                updateSuccess = true;
+                            } else if (insertError.message.includes('does not exist')) {
+                                console.log(`[Invoice PDF BG] invoice_files table not available, trying OLD method`);
+                                updateSuccess = false;
                             } else {
-                                const errorText = await updateResponse.text();
-                                console.error(`[Invoice PDF BG] Update failed (${updateResponse.status}):`, errorText);
+                                console.error(`[Invoice PDF BG] Insert error:`, insertError.message);
+                                updateSuccess = false;
                             }
-                        } catch (updateErr) {
-                            console.error('[Invoice PDF BG] Update error:', updateErr.message);
+                        } catch (tableErr) {
+                            console.log(`[Invoice PDF BG] Fallback to OLD method`);
+                            updateSuccess = false;
+                        }
+                        
+                        // Fallback: OLD method - update uploaded_file_path via REST API
+                        if (!updateSuccess) {
+                            try {
+                                const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
+                                const updateResponse = await fetch(updateUrl, {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                                        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'return=representation'
+                                    },
+                                    body: JSON.stringify({
+                                        uploaded_file_path: remotePath || null,
+                                        uploaded_at: new Date().toISOString(),
+                                        uploaded_by: req.user.id,
+                                        updated_at: new Date().toISOString()
+                                    })
+                                });
+
+                                if (updateResponse.ok) {
+                                    console.log(`[Invoice PDF BG] ✅ Updated uploaded_file_path in database`);
+                                    updateSuccess = true;
+                                } else {
+                                    const errorText = await updateResponse.text();
+                                    console.error(`[Invoice PDF BG] Update failed (${updateResponse.status}):`, errorText);
+                                }
+                            } catch (updateErr) {
+                                console.error('[Invoice PDF BG] Update error:', updateErr.message);
+                            }
+                        }
+                        
+                        if (updateSuccess) {
+                            console.log(`[Invoice PDF BG] ✅ Database updated for faktur: ${faktur}`);
+                            console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
+                            
+                            // Update files_uploaded_count (includes internal delay for consistency)
+                            const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
+                            console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
                         }
                     } catch (bgErr) {
                         console.error(`[Invoice PDF BG] Background upload error (non-blocking):`, bgErr.message);
@@ -2021,23 +2099,54 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             console.log(`[Invoice Document BG] ✅ Faktur Pajak uploaded: ${uploadResult.path}`);
                             
-                            // Update database
-                            const { error: updateError } = await supabase
-                                .from('invoice_file_list')
-                                .update({
-                                    faktur_pajak_path: uploadResult.path,
-                                    faktur_pajak_uploaded_at: new Date().toISOString(),
-                                    updated_at: new Date().toISOString(),
-                                    uploaded_by: req.user.id
-                                })
-                                .eq('faktur', fakturNumber);
-                            
-                            if (updateError) {
-                                console.error('[Invoice Document BG] Update error:', updateError);
-                            } else {
-                                console.log(`[Invoice Document BG] ✅ Database updated for faktur: ${fakturNumber}`);
-                                await updateFilesUploadedCount(supabase, fakturNumber);
+                            // Update database - try NEW invoice_files table first
+                            let updateSuccess = false;
+                            try {
+                                const { error: insertError } = await supabase
+                                    .from('invoice_files')
+                                    .upsert({
+                                        faktur: fakturNumber,
+                                        file_type: 'faktur_pajak',
+                                        file_path: uploadResult.path,
+                                        uploaded_at: new Date().toISOString(),
+                                        uploaded_by: req.user.id
+                                    });
+                                
+                                if (!insertError) {
+                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table`);
+                                    updateSuccess = true;
+                                } else if (insertError.message.includes('does not exist')) {
+                                    console.log(`[Invoice Document BG] invoice_files table not available, trying OLD method`);
+                                    updateSuccess = false;
+                                } else {
+                                    console.error(`[Invoice Document BG] Insert error:`, insertError.message);
+                                    updateSuccess = false;
+                                }
+                            } catch (tableErr) {
+                                console.log(`[Invoice Document BG] Fallback to OLD method`);
+                                updateSuccess = false;
                             }
+                            
+                            // Fallback: OLD method - update uploaded_file_path
+                            if (!updateSuccess) {
+                                const { error: updateError } = await supabase
+                                    .from('invoice_file_list')
+                                    .update({
+                                        uploaded_file_path: uploadResult.path,
+                                        uploaded_at: new Date().toISOString(),
+                                        updated_at: new Date().toISOString(),
+                                        uploaded_by: req.user.id
+                                    })
+                                    .eq('faktur', fakturNumber);
+                                
+                                if (updateError) {
+                                    console.error('[Invoice Document BG] Update error:', updateError.message);
+                                } else {
+                                    console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path in database`);
+                                }
+                            }
+                            
+                            await updateFilesUploadedCount(supabase, fakturNumber);
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
                         }
@@ -2156,22 +2265,53 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             console.log(`[Invoice Document BG] ✅ Bukti Bayar uploaded: ${uploadResult.path}`);
                             
-                            // Update database
-                            const { error: updateError } = await supabase
-                                .from('invoice_file_list')
-                                .update({
-                                    bukti_bayar_path: uploadResult.path,
-                                    bukti_bayar_uploaded_at: new Date().toISOString(),
-                                    uploaded_by: req.user.id
-                                })
-                                .eq('faktur', nomorFaktur);
-
-                            if (updateError) {
-                                console.error('[Invoice Document BG] Update error:', updateError);
-                            } else {
-                                console.log(`[Invoice Document BG] ✅ Database updated for faktur: ${nomorFaktur}`);
-                                await updateFilesUploadedCount(supabase, nomorFaktur);
+                            // Update database - try NEW invoice_files table first
+                            let updateSuccess = false;
+                            try {
+                                const { error: insertError } = await supabase
+                                    .from('invoice_files')
+                                    .upsert({
+                                        faktur: nomorFaktur,
+                                        file_type: 'bukti_bayar',
+                                        file_path: uploadResult.path,
+                                        uploaded_at: new Date().toISOString(),
+                                        uploaded_by: req.user.id
+                                    });
+                                
+                                if (!insertError) {
+                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table`);
+                                    updateSuccess = true;
+                                } else if (insertError.message.includes('does not exist')) {
+                                    console.log(`[Invoice Document BG] invoice_files table not available, trying OLD method`);
+                                    updateSuccess = false;
+                                } else {
+                                    console.error(`[Invoice Document BG] Insert error:`, insertError.message);
+                                    updateSuccess = false;
+                                }
+                            } catch (tableErr) {
+                                console.log(`[Invoice Document BG] Fallback to OLD method`);
+                                updateSuccess = false;
                             }
+                            
+                            // Fallback: OLD method - update uploaded_file_path
+                            if (!updateSuccess) {
+                                const { error: updateError } = await supabase
+                                    .from('invoice_file_list')
+                                    .update({
+                                        uploaded_file_path: uploadResult.path,
+                                        uploaded_at: new Date().toISOString(),
+                                        uploaded_by: req.user.id
+                                    })
+                                    .eq('faktur', nomorFaktur);
+
+                                if (updateError) {
+                                    console.error('[Invoice Document BG] Update error:', updateError.message);
+                                } else {
+                                    console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path in database`);
+                                }
+                            }
+                            
+                            await updateFilesUploadedCount(supabase, nomorFaktur);
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
                         }
