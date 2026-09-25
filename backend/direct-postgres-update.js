@@ -83,5 +83,3 @@ async function updateFileCountDirectly(faktur, uploadedCount, requiredCount) {
 }
 
 module.exports = { updateFilePath, updateFileCountDirectly };
-
-module.exports = { updateFileCountDirectly };
