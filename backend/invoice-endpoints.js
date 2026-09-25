@@ -1716,6 +1716,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 const result = await updateResponse.json();
                                 console.log(`[Invoice PDF BG] ✅ Database updated for faktur: ${faktur}`);
                                 console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
+                                
+                                // Wait a bit for database replication/sync before querying
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                                
                                 const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
                                 console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
                             } else {
