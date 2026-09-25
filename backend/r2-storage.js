@@ -406,8 +406,8 @@ async function uploadFile(buffer, remoteDestination, metadata = {}) {
     try {
         console.log(`[R2] Uploading file: ${remoteDestination}`);
         
-        // Check for duplicates
-        const exists = await checkFileExists(remoteDestination);
+        // Check for duplicates (use fresh check for uploads - no cache)
+        const exists = await checkFileExistsNoCache(remoteDestination);
         if (exists) {
             const error = new Error(`File already exists: ${remoteDestination}`);
             error.code = 'DUPLICATE_FILE';
