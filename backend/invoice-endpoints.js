@@ -2273,10 +2273,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 }
                             }
                             
-                            if (updateSuccess) {
+                            // Always try to update count, even if database update failed
+                            // The function scans R2 directly, which is the source of truth
+                            try {
                                 await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
-                            } else {
-                                console.error(`[Invoice Document BG] ✗ All database update methods failed!`);
+                            } catch (countErr) {
+                                console.error(`[Invoice Document BG] Error updating count:`, countErr.message);
                             }
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
@@ -2484,10 +2486,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 }
                             }
                             
-                            if (updateSuccess) {
+                            // Always try to update count, even if database update failed
+                            // The function scans R2 directly, which is the source of truth
+                            try {
                                 await updateFilesUploadedCount(supabase, nomorFaktur, R2Storage);
-                            } else {
-                                console.error(`[Invoice Document BG] ✗ All database update methods failed!`);
+                            } catch (countErr) {
+                                console.error(`[Invoice Document BG] Error updating count:`, countErr.message);
                             }
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
@@ -2697,7 +2701,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     console.error('[Invoice Faktur Pajak BG] Update error:', updateError);
                                 } else {
                                     console.log(`[Invoice Faktur Pajak BG] ✅ Database updated for faktur: ${fakturNumber}`);
+                                }
+                                
+                                // Always update count regardless of database success
+                                // The function scans R2 directly, which is the source of truth
+                                try {
                                     await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
+                                } catch (countErr) {
+                                    console.error(`[Invoice Faktur Pajak BG] Error updating count:`, countErr.message);
                                 }
                             } catch (dbErr) {
                                 console.error('[Invoice Faktur Pajak BG] DB error:', dbErr.message);
