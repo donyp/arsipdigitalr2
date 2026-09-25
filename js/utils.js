@@ -258,16 +258,21 @@ async function initUpdateHistoryNotification() {
     try {
         console.log('[Update Notify] Starting check...');
         
-        // Get latest update
-        const response = await API.get('/api/update-history');
-        console.log('[Update Notify] API response:', response);
-        
-        // Handle different response formats
+        // Get latest update - wrapped in try-catch since table may not exist
         let updates = [];
-        if (response && Array.isArray(response)) {
-            updates = response;
-        } else if (response && response.updates && Array.isArray(response.updates)) {
-            updates = response.updates;
+        try {
+            const response = await API.get('/api/update-history');
+            console.log('[Update Notify] API response:', response);
+            
+            // Handle different response formats
+            if (response && Array.isArray(response)) {
+                updates = response;
+            } else if (response && response.updates && Array.isArray(response.updates)) {
+                updates = response.updates;
+            }
+        } catch (apiErr) {
+            console.log('[Update Notify] Update history endpoint not available (table may not exist):', apiErr.message);
+            return;
         }
         
         if (!updates || updates.length === 0) {

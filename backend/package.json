@@ -1,7 +1,7 @@
 {
     "name": "arsip-digital-backend",
     "version": "2.0.0",
-    "description": "Backend API for Arsip Digital Multi-Zona (Terabox + JWT)",
+    "description": "Backend API for Arsip Digital Multi-Zona (Cloudflare R2 + JWT)",
     "main": "server.js",
     "scripts": {
         "start": "node server.js",
@@ -11,9 +11,12 @@
         "test:watch": "jest --watch"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.500.0",
+        "@aws-sdk/s3-request-presigner": "^3.500.0",
         "@supabase/supabase-js": "^2.109.0",
         "archiver": "^7.0.1",
         "axios": "^1.19.0",
+        "bcrypt": "^6.0.0",
         "bcryptjs": "^2.4.3",
         "busboy": "^1.3.0",
         "cors": "^2.8.5",

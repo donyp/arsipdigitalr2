@@ -49,10 +49,9 @@ steps:
       - '--set-secrets=SUPABASE_URL=arsip-supabase-url:latest'
       - '--set-secrets=SUPABASE_SERVICE_ROLE_KEY=arsip-supabase-key:latest'
       - '--set-secrets=JWT_SECRET=arsip-jwt-secret:latest'
-      - '--set-secrets=TERABOX_WEBDAV_URL=arsip-terabox-url:latest'
-      - '--set-secrets=TERABOX_USER=arsip-terabox-user:latest'
-      - '--set-secrets=TERABOX_PASS=arsip-terabox-pass:latest'
-      - '--set-secrets=TERABOX_CRYPT_PASSWORD=arsip-terabox-crypt:latest'
+      - '--set-secrets=CLOUDFLARE_ACCOUNT_ID=arsip-cloudflare-account-id:latest'
+      - '--set-secrets=CLOUDFLARE_ACCESS_KEY_ID=arsip-cloudflare-access-key-id:latest'
+      - '--set-secrets=CLOUDFLARE_ACCESS_KEY_SECRET=arsip-cloudflare-access-key-secret:latest'
     waitFor: ['push-image']
 
 # Configuration

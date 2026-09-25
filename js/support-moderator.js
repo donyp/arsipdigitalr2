@@ -155,7 +155,7 @@ function updateCachedStats(stats) {
 async function loadZonas() {
     try {
         const token = localStorage.getItem('jwt_token');
-        const response = await fetch('/api/zonas', {
+        const response = await fetch('http://localhost:5000/api/zonas', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -187,7 +187,7 @@ async function populateZonaFilter(zonas) {
     // Load all tickets to get unique zonas
     try {
         const token = localStorage.getItem('jwt_token');
-        const response = await fetch('/api/support/tickets?limit=1000', {
+        const response = await fetch('http://localhost:5000/api/support/tickets?limit=1000', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -268,7 +268,7 @@ async function loadStats() {
             return;
         }
 
-        const response = await fetch('/api/support/tickets/stats', {
+        const response = await fetch('http://localhost:5000/api/support/tickets/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

@@ -32,7 +32,10 @@ const API = {
             ...options.headers
         };
 
-        const response = await fetch(url, {
+        // Prepend backend URL if not absolute
+        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+
+        const response = await fetch(fullUrl, {
             method: 'GET',
             headers,
             ...options
@@ -56,7 +59,10 @@ const API = {
             ...options.headers
         };
 
-        const response = await fetch(url, {
+        // Prepend backend URL if not absolute
+        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+
+        const response = await fetch(fullUrl, {
             method: 'POST',
             headers,
             body: JSON.stringify(data),
@@ -107,7 +113,10 @@ const API = {
             ...options.headers
         };
 
-        const response = await fetch(url, {
+        // Prepend backend URL if not absolute
+        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+
+        const response = await fetch(fullUrl, {
             method: 'PUT',
             headers,
             body: JSON.stringify(data),
@@ -132,7 +141,10 @@ const API = {
             ...options.headers
         };
 
-        const response = await fetch(url, {
+        // Prepend backend URL if not absolute
+        const fullUrl = url.startsWith('http') ? url : `http://localhost:5000${url}`;
+
+        const response = await fetch(fullUrl, {
             method: 'DELETE',
             headers,
             ...options
@@ -143,6 +155,31 @@ const API = {
         }
 
         return response.json();
+    },
+
+    /**
+     * Clear authentication data
+     */
+    clearAuth() {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+    },
+
+    /**
+     * Set authentication (token + user)
+     */
+    setAuth(token, user) {
+        this.setToken(token);
+        localStorage.setItem('user', JSON.stringify(user));
+    },
+
+    /**
+     * Get session ID
+     */
+    getSessionId() {
+        return localStorage.getItem('sessionToken') || 'session-' + Date.now();
     }
 };
 

@@ -2285,6 +2285,8 @@
                 await new Promise(resolve => setTimeout(resolve, 100));
                 
                 const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                // Check role: Only moderator and super_admin can access this dashboard
                 if (user.role === 'admin_zona') {
                     console.log('[Dashboard] Admin_zona user detected, redirecting to dashboard-admin-zona.html');
                     window.location.href = 'dashboard-admin-zona.html';
@@ -2295,6 +2297,13 @@
                 const userAuth = await initAuth();
                 console.log('[Dashboard] User loaded:', userAuth?.role, userAuth?.zona_id);
                 if (!userAuth) return;
+                
+                // Only moderator and super_admin can access main dashboard
+                if (userAuth.role !== 'moderator' && userAuth.role !== 'super_admin') {
+                    console.log('[Dashboard] Unauthorized role:', userAuth.role);
+                    window.location.href = 'index.html';
+                    return;
+                }
 
                 // Set current date/time greeting
                 setCurrentDate();

@@ -2827,7 +2827,7 @@ async function loadInvoicesInDashboard(page = 1) {
         }
         
         const offset = (page - 1) * INVOICE_PAGE_SIZE;
-        const url = `/api/invoice/list?limit=${INVOICE_PAGE_SIZE}&offset=${offset}`;
+        const url = `http://localhost:5000/api/invoice/list?limit=${INVOICE_PAGE_SIZE}&offset=${offset}`;
         console.log('[LoadInvoices] Fetching from:', url);
         
         const response = await fetch(url, {
@@ -2915,35 +2915,21 @@ async function renderInvoiceTable(invoices) {
             const requiredCount = inv.keterangan === 'PPN' ? 3 : 2;
             const buttons = [];
             
-            // Run ALL 3 checks IN PARALLEL (not sequential)
+            // Run file check - for now we only have one file per invoice (uploaded_file_path)
             const checkPromises = [];
         
-        if (inv.invoice_pdf_path) {
-            checkPromises.push(
-                fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/invoice?t=${Date.now()}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                    .then(d => ({ type: 'invoice', exists: d.exists }))
-            );
-        }
-        
-        if (inv.bukti_bayar_path) {
-            checkPromises.push(
-                fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/bukti_bayar?t=${Date.now()}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                    .then(d => ({ type: 'bukti_bayar', exists: d.exists }))
-            );
-        }
-        
-        if (inv.keterangan === 'PPN' && inv.faktur_pajak_path) {
-            checkPromises.push(
-                fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/faktur_pajak?t=${Date.now()}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                    .then(d => ({ type: 'faktur_pajak', exists: d.exists }))
-            );
-        }
+            // Only check the invoice PDF since that's what we're uploading now
+            if (inv.uploaded_file_path) {
+                checkPromises.push(
+                    fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/invoice?t=${Date.now()}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
+                        .then(d => ({ type: 'invoice', exists: d.exists }))
+                );
+            } else {
+                // If no uploaded_file_path, file definitely doesn't exist
+                checkPromises.push(Promise.resolve({ type: 'invoice', exists: false }));
+            }
         
         // Wait for ALL parallel checks
         const results = await Promise.all(checkPromises);
@@ -3519,7 +3505,7 @@ async function loadFilterOptions() {
         
         // Get all invoices with high limit to count everything
         // Note: API automatically filters by zona_id for admin_zona users
-        const url = '/api/invoice/list?limit=10000&offset=0';
+        const url = 'http://localhost:5000/api/invoice/list?limit=10000&offset=0';
         console.log('[Filter] Fetching from:', url);
         
         const response = await fetch(url, {
@@ -4022,7 +4008,7 @@ async function applyInvoiceFilters() {
         
         console.log('[Filter] Query params:', params.toString());
         
-        const response = await fetch(`/api/invoice/list?${params.toString()}`, {
+        const response = await fetch(`http://localhost:5000/api/invoice/list?${params.toString()}`, {
             method: 'GET',
             headers: headers
         });
@@ -4205,7 +4191,7 @@ async function applyAdminZonaFilters() {
         if (year) params.append('year', year);
         if (month) params.append('month', month);
         
-        const url = `/api/invoice/list?${params.toString()}`;
+        const url = `http://localhost:5000/api/invoice/list?${params.toString()}`;
         console.log('[AdminZonaFilter] Calling:', url);
         
         const response = await API.get(url);
@@ -4302,7 +4288,7 @@ async function startInvoiceBackgroundScan() {
         params.append('offset', 0);
         
         // Fetch filtered data
-        const response = await fetch(`/api/invoice/list?${params.toString()}`, {
+        const response = await fetch(`http://localhost:5000/api/invoice/list?${params.toString()}`, {
             method: 'GET',
             headers: headers
         });

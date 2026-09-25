@@ -390,7 +390,7 @@ async function validateAllFiles() {
             console.log(`[PDF Bulk] Validating ${i+1}/${selectedFiles.length}: ${faktur}`);
             
             try {
-                const response = await fetch(`/api/invoice/check-faktur/${faktur}`, {
+                const response = await fetch(`http://localhost:5000/api/invoice/check-faktur/${faktur}`, {
                     method: 'GET',
                     headers: headers
                 });
@@ -403,7 +403,7 @@ async function validateAllFiles() {
                         // File path exists in database, but verify it still exists on Google Drive
                         try {
                             console.log('[PDF Bulk Debug] Verifying file exists on Google Drive:', result.data.invoice_pdf_path);
-                            const checkRes = await fetch(`/api/invoice/check-file/${faktur}/invoice`, {
+                            const checkRes = await fetch(`http://localhost:5000/api/invoice/check-file/${faktur}/invoice`, {
                                 method: 'GET',
                                 headers: headers
                             });
@@ -602,7 +602,7 @@ async function uploadValidFiles() {
                     `${index + 1} of ${validFiles.length} • ${currentProgress}%`
                 );
 
-                const response = await fetch('/api/invoice/upload-pdf', {
+                const response = await fetch('http://localhost:5000/api/invoice/upload-pdf', {
                     method: 'POST',
                     headers: headers,
                     body: formData
@@ -627,7 +627,7 @@ async function uploadValidFiles() {
                                 nominal: result.nominal
                             });
                             
-                            const waResponse = await fetch('/api/whatsapp/generate-invoice-messages', {
+                            const waResponse = await fetch('http://localhost:5000/api/whatsapp/generate-invoice-messages', {
                                 method: 'POST',
                                 headers: {
                                     ...headers,
@@ -884,7 +884,7 @@ async function markAllInvoiceWhatsappAsSent() {
 
         console.log('[PDF] Marking invoice batch', window.currentInvoiceBatchId, 'as sent');
 
-        const response = await fetch('/api/whatsapp/mark-invoice-batch-sent', {
+        const response = await fetch('http://localhost:5000/api/whatsapp/mark-invoice-batch-sent', {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({

@@ -285,7 +285,7 @@ window.uploadExcelFile = async function() {
         }
 
         console.log('[Upload] Posting JSON to /api/invoice/upload-excel-data');
-        const response = await fetch('/api/invoice/upload-excel-data', {
+        const response = await fetch('http://localhost:5000/api/invoice/upload-excel-data', {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
@@ -358,7 +358,7 @@ async function loadInvoices(page = 1) {
         }
         
         const offset = (page - 1) * PAGE_SIZE;
-        const response = await fetch(`/api/invoice/list?limit=${PAGE_SIZE}&offset=${offset}`, {
+        const response = await fetch(`http://localhost:5000/api/invoice/list?limit=${PAGE_SIZE}&offset=${offset}`, {
             method: 'GET',
             headers: headers
         });
@@ -636,7 +636,7 @@ async function uploadBuktiBayarFile() {
         }
         
         console.log('[Bukti Bayar] Posting to /api/invoice/upload-pdf');
-        const response = await fetch('/api/invoice/upload-pdf', {
+        const response = await fetch('http://localhost:5000/api/invoice/upload-pdf', {
             method: 'POST',
             headers: headers,
             body: formData
@@ -704,7 +704,7 @@ async function uploadPdfFile() {
         }
         
         console.log('[PDF] Posting to /api/invoice/upload-pdf');
-        const response = await fetch('/api/invoice/upload-pdf', {
+        const response = await fetch('http://localhost:5000/api/invoice/upload-pdf', {
             method: 'POST',
             headers: headers,
             body: formData
@@ -935,7 +935,7 @@ window.clearTestData = async function() {
         
         console.log('[ClearTest] Sending DELETE request to /api/invoice/clear-test-data');
         
-        const response = await fetch('/api/invoice/clear-test-data', {
+        const response = await fetch('http://localhost:5000/api/invoice/clear-test-data', {
             method: 'DELETE',
             headers: headers
         });

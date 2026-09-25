@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install rclone
-RUN apk add --no-cache rclone curl
+# Install curl for health checks
+RUN apk add --no-cache curl
 
 # Copy package files
 COPY package*.json ./
@@ -13,6 +13,9 @@ RUN npm ci --only=production
 
 # Copy application code
 COPY . .
+
+# Create necessary directories for data and caching
+RUN mkdir -p /app/data /app/backend/tmp /app/backend/download-cache
 
 # Expose port
 EXPOSE 5000

@@ -162,7 +162,7 @@ async function loadStats() {
             return;
         }
 
-        const response = await fetch('/api/support/tickets/stats', {
+        const response = await fetch('http://localhost:5000/api/support/tickets/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -405,7 +405,7 @@ async function submitCreateTicket(e) {
 
         console.log('[Support-Customer] Creating ticket:', { subject, category, priority });
 
-        const response = await fetch('/api/support/tickets', {
+        const response = await fetch('http://localhost:5000/api/support/tickets', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

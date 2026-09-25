@@ -80,7 +80,7 @@ async function executeAutoLogout() {
     try {
         // 1. Get count of active sessions before logout
         const { data: activeSessions, error: selectError } = await supabase
-            .from('active_sessions')
+            .from('user_sessions')
             .select('id, user_id', { count: 'exact' })
             .eq('is_active', true);
 
@@ -91,10 +91,10 @@ async function executeAutoLogout() {
 
         // 2. Invalidate all active sessions
         const { error: updateError } = await supabase
-            .from('active_sessions')
+            .from('user_sessions')
             .update({ 
                 is_active: false, 
-                invalidated_at: new Date().toISOString(),
+                revoked_at: new Date().toISOString(),
                 invalidated_reason: 'Automatic daily logout'
             })
             .eq('is_active', true);

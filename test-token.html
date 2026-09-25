@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Token Storage</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .debug { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Debug: Token Storage</h1>
+    
+    <h2>LocalStorage Contents:</h2>
+    <div class="debug" id="storage"></div>
+
+    <h2>Test /api/auth/me:</h2>
+    <button onclick="testAuthMe()">Test /api/auth/me</button>
+    <div class="debug" id="result"></div>
+
+    <script>
+        // Show all localStorage
+        function showStorage() {
+            const storage = { ...localStorage };
+            document.getElementById('storage').textContent = JSON.stringify(storage, null, 2);
+        }
+
+        async function testAuthMe() {
+            const token = localStorage.getItem('jwt_token');
+            console.log('Token:', token);
+            
+            if (!token) {
+                document.getElementById('result').textContent = 'No token in localStorage!';
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                document.getElementById('result').textContent = `Status: ${response.status}\n${JSON.stringify(data, null, 2)}`;
+            } catch (err) {
+                document.getElementById('result').textContent = `Error: ${err.message}`;
+            }
+        }
+
+        showStorage();
+    </script>
+</body>
+</html>

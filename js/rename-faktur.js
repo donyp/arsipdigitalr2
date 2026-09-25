@@ -184,7 +184,7 @@ async function processFile(file) {
         console.log(`[Rename Faktur] Uploading file: ${file.name}, size: ${file.size}`);
         const uploadStart = performance.now();
 
-        const response = await fetch('/api/invoice/rename-faktur', {
+        const response = await fetch('http://localhost:5000/api/invoice/rename-faktur', {
             method: 'POST',
             body: formData
             // NO Content-Type header - browser will set it with boundary
@@ -230,7 +230,7 @@ async function processFile(file) {
                 try {
                     const token = API.getToken();
                     if (token) {
-                        await fetch('/api/faktur-pajak/log-rename', {
+                        await fetch('http://localhost:5000/api/faktur-pajak/log-rename', {
                             method: 'POST',
                             headers: { 
                                 'Content-Type': 'application/json',
@@ -350,7 +350,7 @@ async function loadLatestHistory() {
         
         // Try to get history by recent updates using a wildcard approach
         // Get recent renames - use a simple prefix "tax" which all renamed files have
-        const response = await fetch('/api/faktur-pajak/rename-history/tax?limit=10', {
+        const response = await fetch('http://localhost:5000/api/faktur-pajak/rename-history/tax?limit=10', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

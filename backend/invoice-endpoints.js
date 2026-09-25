@@ -70,7 +70,7 @@ async function updateFilesUploadedCount(supabase, faktur) {
         // Get current invoice data
         const { data: invoice, error: queryErr } = await supabase
             .from('invoice_file_list')
-            .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
+            .select('uploaded_file_path, keterangan')
             .eq('faktur', faktur)
             .single();
         
@@ -79,63 +79,19 @@ async function updateFilesUploadedCount(supabase, faktur) {
             return null;
         }
         
-        // Count non-null file paths
-        // NOTE: This just counts paths, it does NOT verify actual GDrive existence
-        // That verification happens in the sync job
-        let uploadedCount = 0;
-        console.log(`[UpdateCount] Counting files for ${faktur}:`);
+        // For now, just track if uploaded_file_path is set
+        let uploadedCount = invoice.uploaded_file_path ? 1 : 0;
+        console.log(`[UpdateCount] Files for ${faktur}: ${uploadedCount} uploaded`);
         
-        if (invoice.invoice_pdf_path) {
-            uploadedCount++;
-            console.log(`[UpdateCount]   - invoice_pdf_path: SET (${invoice.invoice_pdf_path})`);
-        } else {
-            console.log(`[UpdateCount]   - invoice_pdf_path: NULL`);
-        }
-        
-        if (invoice.bukti_bayar_path) {
-            uploadedCount++;
-            console.log(`[UpdateCount]   - bukti_bayar_path: SET (${invoice.bukti_bayar_path})`);
-        } else {
-            console.log(`[UpdateCount]   - bukti_bayar_path: NULL`);
-        }
-        
-        if (invoice.faktur_pajak_path) {
-            uploadedCount++;
-            console.log(`[UpdateCount]   - faktur_pajak_path: SET (${invoice.faktur_pajak_path})`);
-        } else {
-            console.log(`[UpdateCount]   - faktur_pajak_path: NULL`);
-        }
-        
-        // Calculate required count
-        const requiredCount = (invoice.keterangan === 'PPN') ? 3 : 2;
-        
-        // Update count in database
-        const { data: updated, error: updateErr } = await supabase
-            .from('invoice_file_list')
-            .update({
-                files_uploaded_count: uploadedCount,
-                files_required_count: requiredCount,
-                updated_at: new Date().toISOString()
-            })
-            .eq('faktur', faktur)
-            .select('files_uploaded_count, files_required_count');
-        
-        if (updateErr) {
-            console.error(`[UpdateCount] Update error for ${faktur}:`, updateErr);
-            return null;
-        }
-        
-        const newCount = updated?.[0]?.files_uploaded_count || 0;
-        console.log(`[UpdateCount] ✅ Updated ${faktur}: ${newCount}/${requiredCount} files`);
-        
-        return newCount;
+        // Just return the count - simplified version
+        return uploadedCount;
     } catch (err) {
         console.error(`[UpdateCount] Error:`, err.message);
         return null;
     }
 }
 
-function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
+function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     
     // Check if dependencies are loaded
     if (!multer || !uuid || !parseExcel) {
@@ -1049,7 +1005,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                 for (const file of filesToDelete) {
                     try {
                         console.log(`[Invoice API] Deleting ${file.name}: ${file.path}`);
-                        await RcloneStorage.deleteFile(file.path);
+                        await R2Storage.deleteFile(file.path);
                         console.log(`[Invoice API] ✅ Deleted ${file.name}`);
                     } catch (deleteErr) {
                         console.warn(`[Invoice API] Warning: Failed to delete ${file.name}:`, deleteErr.message);
@@ -1223,7 +1179,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                 
                 const { data, error } = await supabase
                     .from('invoice_file_list')
-                    .select('faktur, status, toko, tanggal, konsumen, total_jumlah_jual, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path')
+                    .select('faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -1253,7 +1209,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
     // 
     // SIMPLIFIED STRATEGY 1 ONLY: Database-driven approach
     // 1. Check if database has file path (invoice_pdf_path, bukti_bayar_path, faktur_pajak_path)
-    // 2. If path exists → verify file really exists via RcloneStorage.checkFileExists()
+    // 2. If path exists → verify file really exists via R2Storage.checkFileExists()
     // 3. If file exists → return exists: true
     // 4. If database path is NULL → return exists: false with message about uploading via Moderator Dashboard
     // 
@@ -1282,7 +1238,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                 // Get invoice data from database
                 const { data: invoice, error: queryError } = await supabase
                     .from('invoice_file_list')
-                    .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, files_uploaded_count, files_required_count, keterangan')
+                    .select('uploaded_file_path, status, keterangan')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -1291,55 +1247,32 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                 }
                 
                 console.log(`[Check File] Request: faktur=${faktur}, fileType=${fileType}`);
-                console.log(`[Check File] Invoice keterangan: ${invoice.keterangan}, Files uploaded count: ${invoice.files_uploaded_count}/${invoice.files_required_count}`);
+                console.log(`[Check File] Invoice keterangan: ${invoice.keterangan}`);
                 
-                // Get file path from database (if it exists)
-                let dbFilePath = null;
-                
-                switch (fileType) {
-                    case 'invoice':
-                        dbFilePath = invoice.invoice_pdf_path;
-                        break;
-                    case 'bukti_bayar':
-                        dbFilePath = invoice.bukti_bayar_path;
-                        break;
-                    case 'faktur_pajak':
-                        dbFilePath = invoice.faktur_pajak_path;
-                        break;
-                }
-                
-                console.log(`[Check File] DB path (${fileType}): ${dbFilePath || 'NULL'}`);
-                
+                // Get file path from database
+                let dbFilePath = invoice.uploaded_file_path;
                 let fileExists = false;
-                let filePath = dbFilePath;
-                let message = null;
                 
-                // STRATEGY 1 ONLY: If DB has a path, check if file really exists
+                // If DB has the path, the file was uploaded
                 if (dbFilePath) {
                     try {
-                        // Use NO-CACHE check to ensure we get fresh result from Google Drive
-                        // This prevents stale cache from blocking re-uploads after file deletion
-                        fileExists = await RcloneStorage.checkFileExistsNoCache(dbFilePath);
-                        console.log(`[Check File] GDrive check via DB path (${fileType}): ${fileExists ? 'EXISTS' : 'MISSING'}`);
+                        // Verify file actually exists in R2
+                        fileExists = await R2Storage.checkFileExistsNoCache(dbFilePath);
+                        console.log(`[Check File] R2 check via DB path: ${fileExists ? 'EXISTS' : 'MISSING'}`);
                     } catch (err) {
                         console.warn(`[Check File] Error checking DB path: ${err.message}`);
                         fileExists = false;
                     }
                 } else {
-                    // Database path is NULL - file must be uploaded via Moderator Dashboard
-                    message = 'File must be uploaded via Moderator Dashboard';
-                    console.log(`[Check File] Database path is NULL for ${fileType}. Message: ${message}`);
+                    console.log(`[Check File] Database path is NULL - file not uploaded`);
                 }
 
                 res.json({
                     exists: fileExists,
                     faktur: faktur,
                     fileType: fileType,
-                    filePath: filePath,
-                    message: message,
-                    method: fileExists ? 'db_path' : 'none',
-                    dbCount: invoice.files_uploaded_count,
-                    dbRequired: invoice.files_required_count
+                    filePath: dbFilePath || null,
+                    message: fileExists ? 'File exists' : 'File not found'
                 });
                 
             } catch (error) {
@@ -1669,25 +1602,25 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                 console.log(`[Invoice PDF] Current DB path: ${invoice.invoice_pdf_path || 'NULL'}`);
                 
                 // Check if this is a re-upload of same file (path already matches new structure)
-                const isReuploadWithNewPath = invoice.invoice_pdf_path === expectedNewPath;
+                const isReuploadWithNewPath = invoice.uploaded_file_path === expectedNewPath;
                 if (isReuploadWithNewPath) {
                     console.log(`[Invoice PDF] ℹ️  File already uploaded with new location-based path, allowing re-upload`);
                 } else {
                     // QUICK CHECK: If existing OLD path in DB, verify file truly exists before rejecting
-                    // Only reject if file ACTUALLY exists in GDrive (true duplicate)
+                    // Only reject if file ACTUALLY exists in R2 (true duplicate)
                     // Don't clear path here - let the upload process handle it
-                    if (invoice.invoice_pdf_path) {
-                        console.log(`[Invoice PDF] Checking if existing path still exists in GDrive: ${invoice.invoice_pdf_path}`);
+                    if (invoice.uploaded_file_path) {
+                        console.log(`[Invoice PDF] Checking if existing path still exists in R2: ${invoice.uploaded_file_path}`);
                         try {
-                            const existsInGDrive = await RcloneStorage.checkFileExists(invoice.invoice_pdf_path);
-                            console.log(`[Invoice PDF] Duplicate check result: ${existsInGDrive ? 'EXISTS - REJECT' : 'MISSING - ALLOW'}`);
-                            if (existsInGDrive) {
-                                // File truly exists in Google Drive - this is a real duplicate, reject
-                                console.warn(`[Invoice PDF] File truly exists in Google Drive: ${invoice.invoice_pdf_path}`);
+                            const existsInR2 = await R2Storage.checkFileExists(invoice.uploaded_file_path);
+                            console.log(`[Invoice PDF] Duplicate check result: ${existsInR2 ? 'EXISTS - REJECT' : 'MISSING - ALLOW'}`);
+                            if (existsInR2) {
+                                // File truly exists in R2 - this is a real duplicate, reject
+                                console.warn(`[Invoice PDF] File truly exists in R2: ${invoice.uploaded_file_path}`);
                                 return res.status(409).json({
                                     error: 'File sudah ada (Duplicate)',
-                                    message: `Invoice PDF sudah ada di Google Drive`,
-                                    existing_path: invoice.invoice_pdf_path,
+                                    message: `Invoice PDF sudah ada di R2`,
+                                    existing_path: invoice.uploaded_file_path,
                                     faktur: faktur
                                 });
                             } else {
@@ -1713,14 +1646,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         try {
                             console.log(`[Invoice PDF BG] Uploading file buffer (${fileBuffer.length} bytes)`);
                             
-                            uploadResult = await RcloneStorage.uploadInvoicePDF(fileBuffer, filename, year, monthName, day, category, location);
+                            uploadResult = await R2Storage.uploadInvoicePDF(fileBuffer, filename, year, monthName, day, category, location);
                             
                             if (!uploadResult.success) {
                                 throw new Error(uploadResult.error || 'Upload failed');
                             }
                             
                             remotePath = uploadResult.path;
-                            console.log(`[Invoice PDF BG] ✅ File uploaded to Google Drive: ${remotePath}`);
+                            console.log(`[Invoice PDF BG] ✅ File uploaded to R2: ${remotePath}`);
                         } catch (uploadErr) {
                             console.error(`[Invoice PDF BG] Upload error:`, uploadErr.message);
                             remotePath = null;
@@ -1730,8 +1663,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         const { error: updateError, data: updatedData } = await supabase
                             .from('invoice_file_list')
                             .update({
-                                invoice_pdf_path: remotePath || null,
-                                invoice_uploaded_at: new Date().toISOString(),
                                 uploaded_file_path: remotePath || null,
                                 uploaded_at: new Date().toISOString(),
                                 uploaded_by: req.user.id,
@@ -1872,7 +1803,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
                         if (invoice && invoice.faktur_pajak_path) {
                             try {
-                                const existsInGDrive = await RcloneStorage.checkFileExists(invoice.faktur_pajak_path);
+                                const existsInGDrive = await R2Storage.checkFileExists(invoice.faktur_pajak_path);
                                 if (existsInGDrive) {
                                     // File truly exists in Google Drive - reject as duplicate
                                     console.warn(`[Invoice Document] File already exists in Google Drive: ${invoice.faktur_pajak_path}`);
@@ -1903,7 +1834,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         try {
                             console.log(`[Invoice Document BG] Uploading FAKTUR PAJAK file buffer (${fileBuffer.length} bytes)`);
                             
-                            uploadResult = await RcloneStorage.uploadDocumentFile(
+                            uploadResult = await R2Storage.uploadDocumentFile(
                                 fileBuffer,
                                 finalFilename,
                                 year,
@@ -2007,7 +1938,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
                         if (invoice && invoice.bukti_bayar_path) {
                             try {
-                                const existsInGDrive = await RcloneStorage.checkFileExists(invoice.bukti_bayar_path);
+                                const existsInGDrive = await R2Storage.checkFileExists(invoice.bukti_bayar_path);
                                 if (existsInGDrive) {
                                     // File truly exists in Google Drive - reject as duplicate
                                     console.warn(`[Invoice Document] File already exists in Google Drive: ${invoice.bukti_bayar_path}`);
@@ -2038,7 +1969,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         try {
                             console.log(`[Invoice Document BG] Uploading BUKTI BAYAR file buffer (${fileBuffer.length} bytes)`);
                             
-                            uploadResult = await RcloneStorage.uploadDocumentFile(
+                            uploadResult = await R2Storage.uploadDocumentFile(
                                 fileBuffer,
                                 finalFilename,
                                 year,
@@ -2159,7 +2090,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         // File path exists in database, but verify it still exists on Google Drive
                         try {
                             console.log(`[Invoice Faktur Pajak BG] Verifying if file still exists on Google Drive: ${invoice.faktur_pajak_path}`);
-                            const fileExists = await RcloneStorage.checkFileExists(invoice.faktur_pajak_path);
+                            const fileExists = await R2Storage.checkFileExists(invoice.faktur_pajak_path);
                             
                             if (fileExists) {
                                 console.log(`[Invoice Faktur Pajak BG] ✓ File still exists on Google Drive`);
@@ -2174,7 +2105,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                     // Check if file already exists (duplicate detection)
                     const fakturUploadPath = expectedNewPath;
                     try {
-                        const fileExists = await RcloneStorage.checkFileExists(fakturUploadPath);
+                        const fileExists = await R2Storage.checkFileExists(fakturUploadPath);
                         if (fileExists && !isReuploadWithNewPath) {
                             console.log(`[Invoice Faktur Pajak BG] ✓ Duplicate file detected at: ${fakturUploadPath}`);
                         } else {
@@ -2217,7 +2148,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                     // Only reject if file ACTUALLY exists in GDrive (true duplicate)
                     // Don't clear path here - let the upload process handle it
                     try {
-                        const existsInGDrive = await RcloneStorage.checkFileExists(invoice.faktur_pajak_path);
+                        const existsInGDrive = await R2Storage.checkFileExists(invoice.faktur_pajak_path);
                         if (existsInGDrive) {
                             // File truly exists in Google Drive - this is a real duplicate, reject
                             console.warn(`[Invoice Faktur Pajak] File truly exists in Google Drive: ${invoice.faktur_pajak_path}`);
@@ -2244,7 +2175,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                     try {
                         console.log(`[Invoice Faktur Pajak BG] Uploading file buffer (${fileBuffer.length} bytes)`);
                         
-                        uploadResult = await RcloneStorage.uploadDocumentFile(
+                        uploadResult = await R2Storage.uploadDocumentFile(
                             fileBuffer,
                             finalFilename,
                             year,
@@ -2351,17 +2282,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                 // Get file path based on type
                 let filePath = null;
                 
-                switch (fileType) {
-                    case 'invoice':
-                        filePath = invoice.invoice_pdf_path;
-                        break;
-                    case 'bukti_bayar':
-                        filePath = invoice.bukti_bayar_path;
-                        break;
-                    case 'faktur_pajak':
-                        filePath = invoice.faktur_pajak_path;
-                        break;
-                }
+                // For now, all file types return the same uploaded_file_path since we only have one file per invoice
+                // In the future this can be extended to support multiple files (bukti_bayar, faktur_pajak)
+                filePath = invoice.uploaded_file_path;
                 
                 if (!filePath) {
                     return res.status(404).json({ 
@@ -2410,7 +2333,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                     if (!fileBuffer) {
                         const downloadStartTime = Date.now();
                         
-                        fileBuffer = await RcloneStorage.downloadFile(filePath);
+                        fileBuffer = await R2Storage.downloadFile(filePath);
                         
                         const downloadTime = Date.now() - downloadStartTime;
                         console.log(`[Invoice Download] Rclone download took ${downloadTime}ms (${fileBuffer.length} bytes)`);
@@ -2553,21 +2476,21 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         
                         if (invoice.bukti_bayar_path) {
                             downloadPromises.push(
-                                RcloneStorage.downloadFile(invoice.bukti_bayar_path)
+                                R2Storage.downloadFile(invoice.bukti_bayar_path)
                                     .then(buffer => ({ name: 'bukti_bayar', buffer }))
                             );
                         }
                         
                         if (invoice.invoice_pdf_path) {
                             downloadPromises.push(
-                                RcloneStorage.downloadFile(invoice.invoice_pdf_path)
+                                R2Storage.downloadFile(invoice.invoice_pdf_path)
                                     .then(buffer => ({ name: 'invoice', buffer }))
                             );
                         }
                         
                         if (isPPN && invoice.faktur_pajak_path) {
                             downloadPromises.push(
-                                RcloneStorage.downloadFile(invoice.faktur_pajak_path)
+                                R2Storage.downloadFile(invoice.faktur_pajak_path)
                                     .then(buffer => ({ name: 'faktur_pajak', buffer }))
                             );
                         }
@@ -2704,7 +2627,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                     // Search for invoice PDF
                     const invoiceSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}`;
                     console.log(`[Invoice Search] Searching invoice in: ${invoiceSearchPath}`);
-                    const invoiceFiles = await RcloneStorage.listFiles(invoiceSearchPath);
+                    const invoiceFiles = await R2Storage.listFiles(invoiceSearchPath);
                     const invoiceFile = invoiceFiles.find(f => f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (invoiceFile && !invoiceFile.is_dir) {
                         const invoicePath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}/${invoiceFile.name}`;
@@ -2719,7 +2642,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                     // Search for bukti bayar
                     const buktiSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR`;
                     console.log(`[Invoice Search] Searching bukti bayar in: ${buktiSearchPath}`);
-                    const buktiFiles = await RcloneStorage.listFiles(buktiSearchPath);
+                    const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                     const buktiFile = buktiFiles.find(f => f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (buktiFile && !buktiFile.is_dir) {
                         const buktiPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR/${buktiFile.name}`;
@@ -2734,7 +2657,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                     // Search for faktur pajak
                     const fakturSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK`;
                     console.log(`[Invoice Search] Searching faktur pajak in: ${fakturSearchPath}`);
-                    const fakturFiles = await RcloneStorage.listFiles(fakturSearchPath);
+                    const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                     const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (fakturFile && !fakturFile.is_dir) {
                         const fakturPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK/${fakturFile.name}`;
@@ -2877,7 +2800,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         // Search for files
                         try {
                             const invoiceSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}`;
-                            const invoiceFiles = await RcloneStorage.listFiles(invoiceSearchPath);
+                            const invoiceFiles = await R2Storage.listFiles(invoiceSearchPath);
                             const invoiceFile = invoiceFiles.find(f => f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (invoiceFile && !invoiceFile.is_dir) {
                                 result.found.push('invoice');
@@ -2888,7 +2811,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         
                         try {
                             const buktiSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/BUKTIBAYAR`;
-                            const buktiFiles = await RcloneStorage.listFiles(buktiSearchPath);
+                            const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                             const buktiFile = buktiFiles.find(f => f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (buktiFile && !buktiFile.is_dir) {
                                 result.found.push('bukti_bayar');
@@ -2899,7 +2822,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, RcloneStorage) {
                         
                         try {
                             const fakturSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/FAKTURPAJAK`;
-                            const fakturFiles = await RcloneStorage.listFiles(fakturSearchPath);
+                            const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                             const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (fakturFile && !fakturFile.is_dir) {
                                 result.found.push('faktur_pajak');
@@ -3059,7 +2982,7 @@ function addClearFileEndpoint(app, supabase, createAuth) {
 // Verify files actually exist in Google Drive (not just DB paths)
 // Corrects files_uploaded_count based on actual file existence
 // ============================================
-function addFileExistenceVerificationEndpoint(app, supabase, createAuth, RcloneStorage) {
+function addFileExistenceVerificationEndpoint(app, supabase, createAuth, R2Storage) {
     app.post('/api/invoice/verify-files-in-gdrive/:faktur',
         createAuth(['super_admin', 'moderator']),
         async (req, res) => {
@@ -3090,7 +3013,7 @@ function addFileExistenceVerificationEndpoint(app, supabase, createAuth, RcloneS
                 if (invoice.invoice_pdf_path) {
                     checkPromises.push(
                         Promise.race([
-                            RcloneStorage.checkFileExists(invoice.invoice_pdf_path),
+                            R2Storage.checkFileExists(invoice.invoice_pdf_path),
                             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
                         ]).catch(() => false)
                     );
@@ -3100,7 +3023,7 @@ function addFileExistenceVerificationEndpoint(app, supabase, createAuth, RcloneS
                 if (invoice.bukti_bayar_path) {
                     checkPromises.push(
                         Promise.race([
-                            RcloneStorage.checkFileExists(invoice.bukti_bayar_path),
+                            R2Storage.checkFileExists(invoice.bukti_bayar_path),
                             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
                         ]).catch(() => false)
                     );
@@ -3110,7 +3033,7 @@ function addFileExistenceVerificationEndpoint(app, supabase, createAuth, RcloneS
                 if (invoice.faktur_pajak_path) {
                     checkPromises.push(
                         Promise.race([
-                            RcloneStorage.checkFileExists(invoice.faktur_pajak_path),
+                            R2Storage.checkFileExists(invoice.faktur_pajak_path),
                             new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 10000))
                         ]).catch(() => false)
                     );

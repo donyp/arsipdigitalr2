@@ -70,7 +70,7 @@ function debounce(func, wait) {
 async function loadStats() {
     try {
         const token = localStorage.getItem('jwt_token');
-        const response = await fetch('/api/support/tickets/stats', {
+        const response = await fetch('http://localhost:5000/api/support/tickets/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -211,7 +211,7 @@ async function submitCreateTicket(e) {
         // Get user's zona
         const userZonaId = currentUser.zona_id || 'default';
 
-        const response = await fetch('/api/support/tickets', {
+        const response = await fetch('http://localhost:5000/api/support/tickets', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,

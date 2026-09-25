@@ -56,7 +56,7 @@ class AutoLogoutManager {
      */
     async checkLogoutTime() {
         try {
-            const response = await fetch('/api/auth/check-logout-time', {
+            const response = await fetch('http://localhost:5000/api/auth/check-logout-time', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -143,7 +143,7 @@ class AutoLogoutManager {
     async performLogout(reason = 'Automatic logout') {
         try {
             // Call logout endpoint
-            await fetch('/api/auth/logout', {
+            await fetch('http://localhost:5000/api/auth/logout', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,

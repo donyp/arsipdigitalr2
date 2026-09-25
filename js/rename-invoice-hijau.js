@@ -191,7 +191,7 @@ async function processFile(file) {
         console.log(`[Rename Invoice Hijau] Uploading file: ${file.name}, size: ${file.size}`);
         const uploadStart = performance.now();
 
-        const response = await fetch('/api/invoice/rename-invoice-hijau', {
+        const response = await fetch('http://localhost:5000/api/invoice/rename-invoice-hijau', {
             method: 'POST',
             body: formData
             // NO Content-Type header - browser will set it with boundary
@@ -237,7 +237,7 @@ async function processFile(file) {
                 try {
                     const token = API.getToken();
                     if (token) {
-                        await fetch('/api/invoice/log-rename', {
+                        await fetch('http://localhost:5000/api/invoice/log-rename', {
                             method: 'POST',
                             headers: { 
                                 'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ async function loadLatestHistory() {
         
         // Try to get history by recent updates using a wildcard approach
         // Get recent renames - use a simple prefix which invoice files have
-        const response = await fetch('/api/invoice/rename-history?limit=10', {
+        const response = await fetch('http://localhost:5000/api/invoice/rename-history?limit=10', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -639,7 +639,7 @@ async function displayFailedFilesSection(failedFiles) {
         // Log to database (background)
         if (token) {
             try {
-                await fetch('/api/invoice/failed-rename', {
+                await fetch('http://localhost:5000/api/invoice/failed-rename', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -682,7 +682,7 @@ async function loadFailedRenameHistory() {
         console.log('[Failed Rename] Loading history from database...');
         
         // Fetch all failed attempts (not just 10)
-        const response = await fetch('/api/invoice/failed-rename?limit=999', {
+        const response = await fetch('http://localhost:5000/api/invoice/failed-rename?limit=999', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

@@ -1,13 +1,19 @@
 // ============================================================
-// Pusat Arsip Anka Backend — JWT Auth + Rclone Storage
+// Pusat Arsip Anka Backend — JWT Auth + R2 Storage
 // ============================================================
+
+// Load environment variables FIRST (before using them)
+// In local development: loads from .env file
+// In production: process.env is already set via Secrets
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const http = require('http');
@@ -16,8 +22,7 @@ const { spawn } = require('child_process');
 const { createClient } = require('@supabase/supabase-js');
 const WebSocket = require('ws');
 const archiver = require('archiver');
-const RcloneStorage = require('./rclone_wrapper');
-const LocalStorage = require('./local_storage');
+const R2Storage = require('./r2-storage');
 const { initializeClient: initializeSecretManager, getSecret } = require('./secretManager');
 
 // Create necessary directories at startup
@@ -45,23 +50,12 @@ dirsToCreate.forEach(dir => {
     }
 });
 const ResumableUpload = require('./resumableUploadHandler');
-const compression = require('./compression');  // Masalah 4: Auto-compression
-const { initializeAlist } = require('./alistStartupHandler');
-const { initializeRcloneConnectivity, verifyRcloneConnectivity } = require('./rcloneConnectivityHandler');
-const { runBackendInitialization } = require('./backendInitializer');
-const { startAutoSync } = require('./gdrive-file-sync');
+const compression = require('./compression');
 const registerFeatureEndpoints = require('./feature-endpoints');
 const registerBackupEndpoints = require('./backup-endpoints');
 const registerLoggingEndpoints = require('./logging-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
-const { generateRcloneConfig, verifyRcloneConfig } = require('./generate-rclone-config');
-const { startFileCountSyncJob } = require('./file-count-sync-job');
 const { initializeAutoLogoutScheduler } = require('./scheduled-auto-logout');
-
-// Load environment variables FIRST (before using them)
-// In local development: loads from .env file
-// In production (Hugging Face): process.env is already set via Secrets
-require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // Initialize LOG_LEVEL for debug logging control
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'info').toLowerCase();
@@ -305,6 +299,15 @@ app.get('/upload-invoice', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'upload-invoice-pdf.html'));
 });
 
+app.get('/upload-invoice-pdf.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-invoice-pdf.html'));
+});
+
+app.get('/upload-invoice.html', (req, res) => {
+    // Redirect old form-based invoice upload to PDF drag-drop version
+    res.sendFile(path.join(__dirname, '..', 'upload-invoice-pdf.html'));
+});
+
 app.get('/rename-faktur', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
 });
@@ -423,32 +426,6 @@ app.get('/api/health/storage', async (req, res) => {
         console.error('[STORAGE-HEALTH] Error:', err.message);
         res.status(500).json({
             healthy: false,
-            error: err.message,
-            timestamp: new Date().toISOString()
-        });
-    }
-});
-
-// ============================================================
-// Google Drive Auto-Sync Endpoint - Manual trigger
-// ============================================================
-app.post('/api/sync/gdrive', authenticateToken, async (req, res) => {
-    try {
-        console.log('[API-SYNC] Manual sync triggered by user');
-        
-        const { manualSync } = require('./gdrive-file-sync');
-        const result = await manualSync();
-        
-        res.json({
-            status: 'success',
-            message: 'Google Drive sync completed',
-            result: result,
-            timestamp: new Date().toISOString()
-        });
-    } catch (err) {
-        console.error('[API-SYNC] Error:', err.message);
-        res.status(500).json({
-            status: 'error',
             error: err.message,
             timestamp: new Date().toISOString()
         });
@@ -661,7 +638,7 @@ if (ENABLE_CHUNKED_UPLOAD) {
     
     fileAssembler = new FileAssembler({
         chunkHandler,
-        rcloneWrapper: RcloneStorage,
+        rcloneWrapper: R2Storage,
         logger: console
     });
     
@@ -738,16 +715,16 @@ function authenticateToken(req, res, next) {
 
                 // Session Heartbeat (Asynchronous)
                 // Task 3.5: Fire-and-forget pattern with comprehensive error handling
-                const sessionId = req.headers['x-session-id'];
-                if (sessionId) {
-                    supabase.from('active_sessions')
-                        .update({ last_active: new Date().toISOString() })
-                        .eq('session_id', sessionId)
+                const sessionToken = req.headers['x-session-token'];
+                if (sessionToken) {
+                    supabase.from('user_sessions')
+                        .update({ last_activity: new Date().toISOString() })
+                        .eq('session_token', sessionToken)
                         .then(({ error }) => {
                             if (error) {
                                 // Task 3.5: Detailed error logging
                                 console.warn('[HEARTBEAT] Error updating session:', {
-                                    sessionId,
+                                    sessionToken,
                                     message: error.message,
                                     code: error.code
                                 });
@@ -756,7 +733,7 @@ function authenticateToken(req, res, next) {
                         .catch(err => {
                             // Task 3.5: Catch any promise rejections to prevent blocking
                             console.warn('[HEARTBEAT] Failed to update session:', {
-                                sessionId,
+                                sessionToken,
                                 message: err.message,
                                 stack: err.stack
                             });
@@ -956,8 +933,8 @@ const createInvoiceAuth = (allowedRoles = null) => {
     }
     return [authenticateToken, authorizeRole(...allowedRoles)];
 };
-registerInvoiceEndpoints(app, supabase, createInvoiceAuth, RcloneStorage);
-addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, RcloneStorage);
+registerInvoiceEndpoints(app, supabase, createInvoiceAuth, R2Storage);
+addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, R2Storage);
 addClearFileEndpoint(app, supabase, createInvoiceAuth);
 addFakturPajakRenameEndpoints(app, supabase, createInvoiceAuth);
 console.log('[INIT] Invoice System endpoints registered ✅');
@@ -1006,30 +983,40 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             return res.status(400).json({ error: 'Email dan password wajib diisi.' });
         }
 
+        console.log('[LOGIN] Attempt:', { email: email.toLowerCase().trim() });
+
         // Find user
         const { data: user, error } = await supabase
             .from('users')
-            .select('*, zonas(kode, nama)')
+            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, password_hash')
             .eq('email', email.toLowerCase().trim())
             .eq('is_active', true)
             .single();
 
-        if (error) console.error("Supabase Error during login:", error.message || error);
-        if (!user) console.error("User not found during login");
+        if (error) console.error("[LOGIN] Supabase Error:", error.message || error);
+        if (!user) console.error("[LOGIN] User not found");
 
         if (error || !user) {
+            console.log('[LOGIN] FAILED: User not found or error');
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
+
+        console.log('[LOGIN] User found, checking password...');
 
         // Verify password
         const isMatch = await bcrypt.compare(password, user.password_hash);
+        console.log('[LOGIN] Password match:', isMatch);
+        
         if (!isMatch) {
+            console.log('[LOGIN] FAILED: Password mismatch');
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
 
+        console.log('[LOGIN] SUCCESS: Password matched, generating token...');
+
         // Check Session Limit for Admin Zona
         const { data: activeSessions, error: sessionError } = await supabase
-            .from('active_sessions')
+            .from('user_sessions')
             .select('*')
             .eq('user_id', user.id);
 
@@ -1037,7 +1024,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         if (user.role === 'admin_zona' && activeSessions && activeSessions.length >= 2) {
             const { session_id } = req.body;
-            const currentSession = activeSessions.find(s => s.session_id === session_id);
+            const currentSession = activeSessions.find(s => s.session_token === session_id);
 
             if (!currentSession) {
                 return res.status(403).json({
@@ -1062,13 +1049,14 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         const { session_id } = req.body;
         if (session_id) {
             await supabase
-                .from('active_sessions')
+                .from('user_sessions')
                 .upsert({
                     user_id: user.id,
-                    session_id: session_id,
+                    session_token: session_id,
                     user_agent: req.headers['user-agent'] || 'Unknown',
-                    last_active: new Date().toISOString()
-                }, { onConflict: 'session_id' });
+                    last_activity: new Date().toISOString(),
+                    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+                }, { onConflict: 'session_token' });
         }
 
         // Audit with detailed info
@@ -1151,7 +1139,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, email, contact_email, name, role, zona_id, toko_id, is_active, permissions, zonas(kode, nama)')
+            .select('id, email, name, role, zona_id, toko_id, is_active, permissions')
             .eq('id', req.user.userId)
             .single();
 
@@ -1166,7 +1154,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
             try {
                 const { session_id } = req.body;
                 if (session_id) {
-                    await supabase.from('active_sessions').delete().eq('session_id', session_id);
+                    await supabase.from('user_sessions').delete().eq('session_token', session_id);
                 }
                 res.json({ success: true });
             } catch (err) {
@@ -1190,7 +1178,7 @@ app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
         
         let query = supabase
             .from('files')
-            .select('id, nama_file, storage_path, ukuran_bytes, category, tipe_ppn, tanggal_dokumen, zona_id, toko_id, status, created_at, total_jual, uploaded_by, zonas(kode, nama), users!uploaded_by(name)', { count: 'exact' })
+            .select('id, nama_file, storage_path, ukuran_bytes, category, zona_id, toko_id, status, created_at, total_jual, uploaded_by, zonas(kode, nama), users!uploaded_by(name)', { count: 'exact' })
             .is('deleted_at', null)
             .order('created_at', { ascending: false });
 
@@ -1202,9 +1190,9 @@ app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
             if (LOG_LEVEL === "debug") console.log(`[/api/files] Applied filters: zona_id=${req.user.zona_id}, category IN (INVOICE, PPN, NON, NON_PPN)`);
             
             // Admin_zona can optionally filter by tipe_ppn (PPN/NON)
-            if (req.query.tipe_ppn) {
-                if (LOG_LEVEL === "debug") console.log(`[/api/files] Admin_zona filtering by tipe_ppn: ${req.query.tipe_ppn}`);
-                query = query.eq('tipe_ppn', req.query.tipe_ppn);
+            if (req.query.category) {
+                if (LOG_LEVEL === "debug") console.log(`[/api/files] Admin_zona filtering by category: ${req.query.category}`);
+                query = query.eq('category', req.query.category);
             }
         } 
         // Moderator and super_admin see all files (no automatic zona filter)
@@ -1239,9 +1227,9 @@ app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
             if (LOG_LEVEL === "debug") console.log(`[/api/files] WARNING: Invalid toko_id parameter: ${req.query.toko_id} (ignoring)`);
         }
 
-        // Filter by Tipe PPN (PPN/NON) - only for non-admin_zona (admin_zona filters in zona section)
-        if (req.query.tipe_ppn && req.user.role !== 'admin_zona') {
-            query = query.eq('tipe_ppn', req.query.tipe_ppn);
+        // Filter by Category (PPN/NON_PPN) - only for non-admin_zona (admin_zona filters in zona section)
+        if (req.query.category && req.user.role !== 'admin_zona') {
+            query = query.eq('category', req.query.category);
         }
 
         // Anomaly Status Filter
@@ -1562,7 +1550,7 @@ async function streamFileDownload(req, res) {
         // Stream directly - always use rclone/Google Drive (no local fallback)
         let fileStream;
         try {
-            fileStream = await RcloneStorage.getStream(file.storage_path);
+            fileStream = await R2Storage.getStream(file.storage_path);
         } catch (downloadErr) {
             console.error(`[Stream Error] Path: ${file.storage_path}`, downloadErr);
             return res.status(500).json({ error: 'Gagal mendownload file dari Google Drive.' });
@@ -1679,7 +1667,7 @@ app.get('/api/files/:id/view', authenticateToken, async (req, res) => {
         try {
             console.log('[Files:View] Streaming from Google Drive:', file.storage_path);
             
-            const fileStream = await RcloneStorage.getStream(file.storage_path);
+            const fileStream = await R2Storage.getStream(file.storage_path);
             
             // Masalah 4: Handle decompression for compressed PDFs
             const isCompressed = file.storage_path && file.storage_path.endsWith('.gz');
@@ -2152,7 +2140,7 @@ app.get('/api/share/:token', async (req, res) => {
         // Stream directly
         let fileStream;
         try {
-            fileStream = await RcloneStorage.getStream(file.storage_path);
+            fileStream = await R2Storage.getStream(file.storage_path);
         } catch (downloadErr) {
             console.error(`[Storage Stream Error] Path: ${file.storage_path}`, downloadErr);
             return res.status(500).json({ error: 'Gagal mendownload file.' });
@@ -2416,7 +2404,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload
             // File exists in database, verify it still exists on Google Drive
             try {
                 console.log(`[Upload] Verifying if file still exists on Google Drive: ${existingFile.storage_path}`);
-                const fileExists = await RcloneStorage.checkFileExists(existingFile.storage_path);
+                const fileExists = await R2Storage.checkFileExists(existingFile.storage_path);
                 
                 if (fileExists) {
                     // File still exists on Google Drive - reject as duplicate
@@ -2448,7 +2436,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload
         }
 
         // Calculate Storage Path Instantly
-        const storagePath = RcloneStorage.buildStoragePath(
+        const storagePath = R2Storage.buildStoragePath(
             zona.kode,
             tokoKode,
             folderCategory,
@@ -2768,7 +2756,7 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
             // File exists in database, but verify it still exists on Google Drive
             try {
                 console.log(`[PIUTANG] Verifying if file still exists on Google Drive: ${existingFile.storage_path}`);
-                const fileExists = await RcloneStorage.checkFileExists(existingFile.storage_path);
+                const fileExists = await R2Storage.checkFileExists(existingFile.storage_path);
                 
                 if (fileExists) {
                     // File still exists on Google Drive - reject as duplicate
@@ -2983,7 +2971,7 @@ app.post('/api/admin/scan-missing-files', authenticateToken, authorizeRole('supe
         for (const f of files) {
             checkedCount++;
             try {
-                const exists = await RcloneStorage.checkFileExists(f.storage_path);
+                const exists = await R2Storage.checkFileExists(f.storage_path);
                 if (!exists) {
                     await supabase
                         .from('files')
@@ -3337,9 +3325,6 @@ app.delete('/api/files/:id', authenticateToken, async (req, res) => {
 
             // Delete from storage BEFORE sending response (blocking/synchronous)
             try {
-                const LocalStorage = require('./local_storage');
-                const RcloneStorage = require('./rclone_wrapper');
-                
                 console.log(`[Delete] Starting immediate deletion for: ${file.nama_file}`);
                 
                 // Delete from local storage first (quick)
@@ -3352,7 +3337,7 @@ app.delete('/api/files/:id', authenticateToken, async (req, res) => {
                 
                 // Delete from Google Drive (may take time, but user waits)
                 try {
-                    await RcloneStorage.deleteFile(file.storage_path);
+                    await R2Storage.deleteFile(file.storage_path);
                     console.log(`[Delete] ✅ Deleted from Google Drive: ${file.nama_file}`);
                 } catch (gdriveErr) {
                     console.error(`[Delete] Google Drive delete error: ${gdriveErr.message}`);
@@ -3508,7 +3493,7 @@ app.post('/api/files/bulk-trash-delete', authenticateToken, requirePermission('h
         // Delete from storage in background (fire and forget)
         setImmediate(() => {
             for (const file of files) {
-                RcloneStorage.deleteFile(file.storage_path)
+                R2Storage.deleteFile(file.storage_path)
                     .catch(err => console.error(`[Background Bulk Delete Error] ${file.nama_file}:`, err.message));
             }
         });
@@ -3667,7 +3652,7 @@ app.all('/api/files/bulk-download', authenticateToken, async (req, res) => {
         for (const file of allowedFiles) {
             try {
                 console.log(`[ZIP] Processing: ${file.nama_file}`);
-                const fileStream = await RcloneStorage.getStream(file.storage_path);
+                const fileStream = await R2Storage.getStream(file.storage_path);
 
                 archive.append(fileStream, { name: file.nama_file });
 
@@ -3706,12 +3691,20 @@ app.all('/api/files/bulk-download', authenticateToken, async (req, res) => {
 // USER MANAGEMENT ENDPOINTS (Super Admin only)
 // ============================================================
 
+// TEST ENDPOINT
+app.get('/api/test-users', async (req, res) => {
+    console.log('[TEST] /api/test-users called!');
+    res.json({ test: 'works', message: 'This endpoint is reachable' });
+});
+
 // GET /api/users
-app.get('/api/users', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+app.get('/api/users', async (req, res) => {
+    console.log('[GET /api/users] Called! Auth header:', req.headers['authorization'] ? 'YES' : 'NO');
+    
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('id, email, contact_email, name, role, zona_id, toko_id, is_active, permissions, created_at, zonas(kode, nama)')
+            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, created_at')
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -3751,9 +3744,13 @@ app.get('/api/users/names', authenticateToken, async (req, res) => {
 });
 
 // POST /api/users â€” create user
-app.post('/api/users', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+app.post('/api/users', authenticateToken, async (req, res) => {
+    // Permission check: allow super_admin and moderator only
+    if (req.user.role !== 'super_admin' && req.user.role !== 'moderator') {
+        return res.status(403).json({ error: 'Akses ditolak' });
+    }
     try {
-        const { email, contact_email, password, name, role, zona_id, toko_id, permissions } = req.body;
+        const { email, password, name, role, zona_id, toko_id, permissions } = req.body;
 
         if (!email || !password || !name || !role) {
             return res.status(400).json({ error: 'Username, password, nama, dan role wajib diisi.' });
@@ -3773,7 +3770,7 @@ app.post('/api/users', authenticateToken, requirePermission('manage_users'), asy
             .from('users')
             .insert({
                 email: email.toLowerCase().trim(),
-                contact_email: contact_email ? contact_email.toLowerCase().trim() : null,
+                
                 password_hash,
                 name,
                 role,
@@ -3790,7 +3787,7 @@ app.post('/api/users', authenticateToken, requirePermission('manage_users'), asy
         await supabase.from('audit_logs').insert({
             user_id: req.user.userId,
             action: 'Create User',
-            context: `Created user ${email} (${contact_email || 'No Email'}) with role ${role}`
+            context: `Created user ${email} with role ${role}`
         });
 
         res.json({ success: true, user });
@@ -4006,13 +4003,16 @@ app.post('/api/admin/recreate-admin-zona-users', authenticateToken, authorizeRol
 });
 
 // PUT /api/users/:id â€” update user
-app.put('/api/users/:id', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
+    // Permission check: allow super_admin and moderator only
+    if (req.user.role !== 'super_admin' && req.user.role !== 'moderator') {
+        return res.status(403).json({ error: 'Akses ditolak' });
+    }
     try {
-        const { email, contact_email, password, name, role, zona_id, toko_id, is_active, permissions } = req.body;
+        const { email, password, name, role, zona_id, toko_id, is_active, permissions } = req.body;
 
         const updates = {};
         if (email) updates.email = email.toLowerCase().trim();
-        if (contact_email !== undefined) updates.contact_email = contact_email ? contact_email.toLowerCase().trim() : null;
         if (name) updates.name = name;
         if (role) updates.role = role;
         if (typeof is_active === 'boolean') updates.is_active = is_active;
@@ -4043,6 +4043,7 @@ app.put('/api/users/:id', authenticateToken, requirePermission('manage_users'), 
 
         res.json({ success: true, user: data });
     } catch (err) {
+        console.error('[PUT /api/users/:id] Error:', err.message);
         res.status(500).json({ error: 'Gagal update user: ' + err.message });
     }
 });
@@ -4341,7 +4342,7 @@ app.get('/api/sync/statuses', authenticateToken, async (req, res) => {
         const { data: visibleFiles, error } = await query;
         if (error) throw error;
         const visiblePaths = (visibleFiles || []).map(file => file.storage_path);
-        const storedStatuses = RcloneStorage.getSyncStatuses(visiblePaths);
+        const storedStatuses = R2Storage.getSyncStatuses(visiblePaths);
         const statuses = Object.fromEntries(visiblePaths.map(storagePath => [
             storagePath,
             storedStatuses[storagePath] || {
@@ -4362,7 +4363,7 @@ app.get('/api/sync/statuses', authenticateToken, async (req, res) => {
 
 
 app.get('/api/system/health', authenticateToken, async (req, res) => {
-    const queue = RcloneStorage.getSyncQueueSnapshot();
+    const queue = R2Storage.getSyncQueueSnapshot();
     const services = {
         backend: { healthy: true, detail: 'Backend merespons.' },
         localStorage: { healthy: fs.existsSync(process.env.STORAGE_PATH || path.join(__dirname, '..', 'data', 'files')), detail: 'LocalStorage' },
@@ -4384,7 +4385,7 @@ app.get('/api/system/health', authenticateToken, async (req, res) => {
         services.alist = { healthy: false, detail: err.message };
     }
     try {
-        const status = await RcloneStorage.verifyBackupStorage();
+        const status = await R2Storage.verifyBackupStorage();
         services.backupStorage = { healthy: Boolean(status.healthy), detail: status.detail };
     } catch (err) {
         services.backupStorage = { healthy: false, detail: err.message };
@@ -5067,7 +5068,7 @@ app.get('/api/batches/:id/details', authenticateToken, async (req, res) => {
     try {
         const { data: files, error } = await supabase
             .from('files')
-            .select('id, nama_file, zona_id, toko_id, category, no_invoice, total_jual, created_at, tipe_ppn, tanggal_dokumen')
+            .select('id, nama_file, zona_id, toko_id, category, no_invoice, total_jual, created_at')
             .eq('batch_id', req.params.id)
             .is('deleted_at', null)
             .order('zona_id');
@@ -5259,7 +5260,7 @@ app.post('/api/media-categories', authenticateToken, requirePermission('manage_m
 
         // Create folder in Google Drive via Rclone
         try {
-            await RcloneStorage.createMediaFolder(slug);
+            await R2Storage.createMediaFolder(slug);
         } catch (folderErr) {
             console.warn('[Rclone] Folder creation warning:', folderErr.message);
         }
@@ -5331,7 +5332,7 @@ app.post('/api/ads-media/upload', authenticateToken, requirePermission('manage_m
         const category = req.body.category || 'lainnya';
         const deskripsi = req.body.deskripsi || '';
 
-        const { storagePath, size } = await RcloneStorage.uploadMedia(
+        const { storagePath, size } = await R2Storage.uploadMedia(
             req.file.buffer,
             req.file.originalname,
             category
@@ -5402,7 +5403,7 @@ app.get('/api/ads-media/:id/view', async (req, res) => {
 
         fs.appendFileSync('debug_view_access.log', `${new Date().toISOString()} - ID: ${req.params.id} - Path: ${media.storage_path}\n`);
 
-        const rcloneProcess = await RcloneStorage.stream(media.storage_path);
+        const rcloneProcess = await R2Storage.stream(media.storage_path);
         rcloneProcess.stdout.pipe(res);
 
         rcloneProcess.on('error', (err) => {
@@ -5451,7 +5452,7 @@ app.get('/api/ads-media/:id/download', authenticateToken, async (req, res) => {
         });
 
         // OPTIMASI Masalah 1: Direct streaming tanpa temp file via getStream()
-        const stream = await RcloneStorage.getStream(media.storage_path);
+        const stream = await R2Storage.getStream(media.storage_path);
         stream.pipe(res);
         stream.on('end', () => {
             try { fs.unlinkSync(localPath); } catch (_) { }
@@ -5539,7 +5540,7 @@ app.get('/api/sync/storage', authenticateToken, async (req, res) => {
 
         for (const f of files) {
             try {
-                const exists = await RcloneStorage.checkFileExists(f.storage_path);
+                const exists = await R2Storage.checkFileExists(f.storage_path);
                 if (!exists) {
                     console.warn(`[Sync Engine] File MISSING in storage: ${f.nama_file}. Syncing...`);
                     await supabase.from('files').update({ deleted_at: new Date() }).eq('id', f.id);
@@ -5574,7 +5575,7 @@ setInterval(async () => {
         for (const f of files) {
             checkedCount++;
             try {
-                const exists = await RcloneStorage.checkFileExists(f.storage_path);
+                const exists = await R2Storage.checkFileExists(f.storage_path);
                 if (!exists) {
                     // Mark file as missing instead of deleting
                     await supabase
@@ -5648,7 +5649,7 @@ app.get('/api/files/cleanup-scan', authenticateToken, async (req, res) => {
         // 3. Audit each folder once
         for (const [dir, data] of folderMap.entries()) {
             try {
-                const filesOnStorage = await RcloneStorage.listFiles(dir);
+                const filesOnStorage = await R2Storage.listFiles(dir);
                 data.storageItems = new Set(filesOnStorage.map(s => s.name));
             } catch (err) {
                 const msg = err.message.toLowerCase();
@@ -6007,7 +6008,7 @@ app.post('/api/bugs/upload', authenticateToken, uploadMediaMulter.single('file')
         if (!req.file) return res.status(400).json({ error: 'Tidak ada file.' });
 
         const fileName = `bug_${req.user.id || req.user.userId}_${Date.now()}${path.extname(req.file.originalname)}`;
-        const { storagePath } = await RcloneStorage.uploadMedia(req.file.buffer, fileName, 'bugs');
+        const { storagePath } = await R2Storage.uploadMedia(req.file.buffer, fileName, 'bugs');
 
         res.json({ success: true, url: `/api/bugs/view?path=${encodeURIComponent(storagePath)}` });
     } catch (err) {
@@ -6022,7 +6023,7 @@ app.get('/api/bugs/view', authenticateToken, async (req, res) => {
         const storagePath = req.query.path;
         if (!storagePath) return res.status(400).json({ error: 'Path required' });
 
-        const stream = await RcloneStorage.getStream(storagePath);
+        const stream = await R2Storage.getStream(storagePath);
 
         const ext = path.extname(storagePath).toLowerCase();
         const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp' };
@@ -6141,9 +6142,9 @@ setInterval(async () => {
     try {
         const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { error } = await supabase
-            .from('active_sessions')
+            .from('user_sessions')
             .delete()
-            .lt('last_active', yesterday);
+            .lt('last_activity', yesterday);
         if (error) console.error('[CLEANUP] Session Error:', error.message);
         else console.log('[CLEANUP] Stale sessions cleared.');
     } catch (err) {
@@ -6285,7 +6286,7 @@ console.log(`🚀 Backend starting on port ${PORT}`);
 //         // Stage 2: Initialize storage credentials (Task 2.3)
 //         console.log('[Stage 2] Initializing storage credentials...');
 //         try {
-//             const result = await RcloneStorage.initializeRcloneCredentials();
+//             const result = await R2Storage.initializeRcloneCredentials();
 //             if (result.success) {
 //                 console.log(`✅ Storage credentials loaded from ${result.source}`);
 //             } else {
@@ -6579,34 +6580,22 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
 (async () => {
     try {
         // ================================================================
-        // Step 0: Generate rclone.conf from environment variables
-        // This is critical for Railway deployment where .gitignore prevents
-        // committing rclone.conf, so we generate it from Railway env vars
+        // Validate Cloudflare R2 configuration
         // ================================================================
-        console.log('[Startup] Step 0: Generating rclone configuration...');
-        generateRcloneConfig();
-        const rcloneValid = verifyRcloneConfig();
+        console.log('[Startup] Validating Cloudflare R2 configuration...');
         
-        if (!rcloneValid) {
-            console.warn('[Startup] ⚠️  rclone.conf verification failed - will use fallback');
-        }
-        
-        // ================================================================
-        // Run complete backend initialization (includes Google Drive setup)
-        // ================================================================
-        const initResult = await runBackendInitialization();
-        
-        if (!initResult.success) {
-            console.error('[Backend] ❌ Initialization failed:', initResult.message);
+        try {
+            R2Storage.validateConfig();
+            console.log('[Startup] ✅ Cloudflare R2 configuration valid');
+        } catch (error) {
+            console.error('[Startup] ❌ R2 configuration error:', error.message);
             process.exit(1);
         }
         
-        const PORT = initResult.port || port;
+        const PORT = Number(process.env.PORT) || 5000;
         console.log('\n[Express] Starting Express server on port ' + PORT + '...\n');
         
-        // Mock files initialization DISABLED - using Google Drive only
-        // Previous: LocalStorage.initializeMockFiles();
-        console.log('[Express] ✅ Storage: Google Drive (rclone) - No mock files');
+        console.log('[Express] ✅ Storage: Cloudflare R2 - S3-compatible API');
         
         // ================================================================
         // Register Chunked Upload Endpoints (Feature-Flagged)
@@ -6617,7 +6606,7 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
                 sessionManager: uploadSessionManager,
                 chunkHandler,
                 fileAssembler,
-                rcloneWrapper: RcloneStorage,
+                r2Storage: R2Storage,
                 logger: console,
                 tempDir: path.join(__dirname, '..', 'temp')
             });
@@ -6688,28 +6677,9 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
             console.log(`✅ External access: http://localhost:${PORT}`);
             console.log(`🚀 Pusat Arsip Anka Backend v2.1 running on http://localhost:${PORT}`);
             console.log(`   Auth: JWT (${JWT_EXPIRES_IN} expiry)`);
-            console.log(`   Storage: Google Drive (via Rclone)`);
+            console.log(`   Storage: Cloudflare R2`);
             console.log(`   DB: Supabase PostgreSQL`);
-            console.log(`   Alist: WebDAV on http://localhost:5244`);
             console.log('================================================\n');
-            
-            // Start Google Drive auto-sync (disabled by default, enable with ENABLE_GDRIVE_SYNC=true)
-            const ENABLE_GDRIVE_SYNC = process.env.ENABLE_GDRIVE_SYNC === 'true';
-            if (ENABLE_GDRIVE_SYNC) {
-                console.log('[GDriveSync] 🚀 Starting Google Drive file auto-sync...');
-                startAutoSync(5 * 60 * 1000);  // 5 minutes
-            } else {
-                console.log('[GDriveSync] ⏸️  Auto-sync disabled (set ENABLE_GDRIVE_SYNC=true to enable)');
-            }
-        });
-
-        // Start background file count sync job
-        console.log('[FileCountSync] Starting file count verification job (every 5 min)...');
-        const fileCountSyncJob = startFileCountSyncJob(supabase, RcloneStorage);
-        
-        // Register manual sync endpoint
-        addManualSyncEndpoint(app, supabase, createInvoiceAuth, {
-            runSync: () => fileCountSyncJob.stats ? require('./file-count-sync-job').runFileCountSync(supabase, RcloneStorage) : Promise.resolve()
         });
 
         // Initialize auto-logout scheduler
@@ -6833,8 +6803,8 @@ app.post('/api/auth/force-logout', authenticateToken, authorizeRole('super_admin
         
         // Invalidate all active sessions
         const { error } = await supabase
-            .from('active_sessions')
-            .update({ is_active: false, invalidated_at: new Date().toISOString() })
+            .from('user_sessions')
+            .update({ is_active: false, revoked_at: new Date().toISOString() })
             .eq('is_active', true);
 
         if (error) throw error;
