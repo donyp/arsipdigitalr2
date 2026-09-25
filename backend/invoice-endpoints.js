@@ -1687,7 +1687,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         // Update invoice status in database - Force schema introspection bypass
                         console.log('[Invoice PDF BG] Updating invoice path in database...');
                         try {
-                            // Use existing uploaded_file_path column to bypass new column cache issues
+                            // Update BOTH columns: legacy uploaded_file_path AND new invoice_pdf_path
                             const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
                             const updateResponse = await fetch(updateUrl, {
                                 method: 'PATCH',
@@ -1699,6 +1699,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 },
                                 body: JSON.stringify({
                                     uploaded_file_path: remotePath || null,
+                                    invoice_pdf_path: remotePath || null,
+                                    invoice_uploaded_at: new Date().toISOString(),
                                     uploaded_at: new Date().toISOString(),
                                     uploaded_by: req.user.id,
                                     updated_at: new Date().toISOString()
@@ -1708,8 +1710,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             if (updateResponse.ok) {
                                 const result = await updateResponse.json();
                                 console.log(`[Invoice PDF BG] ✅ Database updated for faktur: ${faktur}`);
-                                console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
-                                console.log(`[Invoice PDF BG] Response:`, result);
+                                console.log(`[Invoice PDF BG] Stored paths - uploaded_file_path: ${remotePath || 'NULL'}, invoice_pdf_path: ${remotePath || 'NULL'}`);
                                 const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
                                 console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
                             } else {
