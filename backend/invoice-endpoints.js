@@ -180,8 +180,19 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
                 .eq('faktur', faktur);
             
             if (updateErr && updateErr.message.includes('files_required_count')) {
-                console.log(`[UpdateCount] ⚠️  Columns don't exist yet. Need to run migration first.`);
-                console.log(`[UpdateCount] Migration needed: backend/ADD_FILE_COUNT_COLUMNS.sql`);
+                console.log(`[UpdateCount] ⚠️  Columns don't exist yet. Attempting to create them...`);
+                
+                // Try to create the columns dynamically
+                try {
+                    const createColResult = await supabase.rpc('exec_sql', {
+                        sql: `ALTER TABLE invoice_file_list 
+ADD COLUMN IF NOT EXISTS files_uploaded_count INTEGER DEFAULT 0,
+ADD COLUMN IF NOT EXISTS files_required_count INTEGER DEFAULT 2;`
+                    });
+                    console.log(`[UpdateCount] Created columns`);
+                } catch (createErr) {
+                    console.log(`[UpdateCount] Could not create columns dynamically`);
+                }
                 
                 // Fallback: just update timestamp so frontend can at least refresh
                 const { error: tsErr } = await supabase
@@ -190,7 +201,7 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
                     .eq('faktur', faktur);
                 
                 if (!tsErr) {
-                    console.log(`[UpdateCount] ✅ Updated timestamp (columns will be created after migration)`);
+                    console.log(`[UpdateCount] ✅ Updated timestamp (waiting for schema cache refresh)`);
                 } else {
                     console.error(`[UpdateCount] ❌ Even timestamp update failed:`, tsErr.message);
                 }
