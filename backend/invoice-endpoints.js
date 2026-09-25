@@ -1552,7 +1552,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // Check if invoice exists
                 const { data: invoice, error: queryError } = await supabase
                     .from('invoice_file_list')
-                    .select('*')
+                    .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path, *')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -1627,31 +1627,31 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Invoice PDF] Current DB path: ${invoice.invoice_pdf_path || 'NULL'}`);
                 
                 // Check if this is a re-upload of same file (path already matches new structure)
-                const isReuploadWithNewPath = invoice.uploaded_file_path === expectedNewPath;
+                const isReuploadWithNewPath = invoice.invoice_pdf_path === expectedNewPath;
                 if (isReuploadWithNewPath) {
                     console.log(`[Invoice PDF] ℹ️  File already uploaded with new location-based path, allowing re-upload`);
                 } else {
-                    // QUICK CHECK: If existing OLD path in DB, verify file truly exists before rejecting
+                    // QUICK CHECK: If existing file in DB, verify file truly exists before rejecting
                     // Only reject if file ACTUALLY exists in R2 (true duplicate)
-                    // Don't clear path here - let the upload process handle it
-                    if (invoice.uploaded_file_path) {
-                        console.log(`[Invoice PDF] Checking if existing path still exists in R2: ${invoice.uploaded_file_path}`);
+                    if (invoice.invoice_pdf_path || invoice.uploaded_file_path) {
+                        const pathToCheck = invoice.invoice_pdf_path || invoice.uploaded_file_path;
+                        console.log(`[Invoice PDF] Checking if existing path still exists in R2: ${pathToCheck}`);
                         try {
-                            const existsInR2 = await R2Storage.checkFileExistsNoCache(invoice.uploaded_file_path);
+                            const existsInR2 = await R2Storage.checkFileExistsNoCache(pathToCheck);
                             console.log(`[Invoice PDF] Duplicate check result: ${existsInR2 ? 'EXISTS - REJECT' : 'MISSING - ALLOW'}`);
                             if (existsInR2) {
                                 // File truly exists in R2 - this is a real duplicate, reject
-                                console.warn(`[Invoice PDF] File truly exists in R2: ${invoice.uploaded_file_path}`);
+                                console.warn(`[Invoice PDF] File truly exists in R2: ${pathToCheck}`);
                                 return res.status(409).json({
                                     error: 'File sudah ada (Duplicate)',
                                     message: `Invoice PDF sudah ada di R2`,
-                                    existing_path: invoice.uploaded_file_path,
+                                    existing_path: pathToCheck,
                                     faktur: faktur
                                 });
                             } else {
-                                // Old path in DB but file doesn't exist in GDrive
+                                // Old path in DB but file doesn't exist in R2
                                 // This is a re-upload scenario - allow it
-                                console.log(`[Invoice PDF] Old path not found in GDrive - allowing re-upload`);
+                                console.log(`[Invoice PDF] Old path not found in R2 - allowing re-upload`);
                             }
                         } catch (checkErr) {
                             // Check failed - be lenient, allow upload to proceed
