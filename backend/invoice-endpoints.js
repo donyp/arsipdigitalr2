@@ -1685,9 +1685,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         // Update invoice status in database - Force schema introspection bypass
-                        console.log('[Invoice PDF BG] Updating invoice_pdf_path in database...');
+                        console.log('[Invoice PDF BG] Updating invoice path in database...');
                         try {
-                            // Direct fetch call to PostgREST bypassing JS SDK cache
+                            // Use existing uploaded_file_path column to bypass new column cache issues
                             const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
                             const updateResponse = await fetch(updateUrl, {
                                 method: 'PATCH',
@@ -1698,7 +1698,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     'Prefer': 'return=representation'
                                 },
                                 body: JSON.stringify({
-                                    invoice_pdf_path: remotePath || null,
                                     uploaded_file_path: remotePath || null,
                                     uploaded_at: new Date().toISOString(),
                                     uploaded_by: req.user.id,
