@@ -168,7 +168,9 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         // Save the count to database so frontend can read it
         try {
             console.log(`[UpdateCount] Attempting to save: ${uploadedCount}/${requiredCount} for faktur ${faktur}`);
-            const updateQuery = supabase
+            
+            // Try method 1: Update new columns (if they exist)
+            const { data: updateData, error: updateErr } = await supabase
                 .from('invoice_file_list')
                 .update({
                     files_uploaded_count: uploadedCount,
@@ -177,18 +179,23 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
                 })
                 .eq('faktur', faktur);
             
-            const { data: updateData, error: updateErr } = await updateQuery;
-            
-            if (updateErr) {
-                console.error(`[UpdateCount] ❌ Update error:`, updateErr.code, updateErr.message);
-                if (updateErr.message.includes('does not exist')) {
-                    console.log(`[UpdateCount] Columns don't exist yet, trying to update timestamp only...`);
-                    const { error: tsErr } = await supabase
-                        .from('invoice_file_list')
-                        .update({ updated_at: new Date().toISOString() })
-                        .eq('faktur', faktur);
-                    if (tsErr) console.error(`[UpdateCount] Timestamp update also failed:`, tsErr.message);
+            if (updateErr && updateErr.message.includes('files_required_count')) {
+                console.log(`[UpdateCount] ⚠️  Columns don't exist yet. Need to run migration first.`);
+                console.log(`[UpdateCount] Migration needed: backend/ADD_FILE_COUNT_COLUMNS.sql`);
+                
+                // Fallback: just update timestamp so frontend can at least refresh
+                const { error: tsErr } = await supabase
+                    .from('invoice_file_list')
+                    .update({ updated_at: new Date().toISOString() })
+                    .eq('faktur', faktur);
+                
+                if (!tsErr) {
+                    console.log(`[UpdateCount] ✅ Updated timestamp (columns will be created after migration)`);
+                } else {
+                    console.error(`[UpdateCount] ❌ Even timestamp update failed:`, tsErr.message);
                 }
+            } else if (updateErr) {
+                console.error(`[UpdateCount] ❌ Update error:`, updateErr.code, updateErr.message);
             } else {
                 console.log(`[UpdateCount] ✅ Saved count to database: ${uploadedCount}/${requiredCount}`);
             }

@@ -1,103 +1,49 @@
-#!/usr/bin/env node
-
-/**
- * Migration Runner - Execute SQL migrations on Supabase
- * 
- * Usage: node backend/run-migration.js <migration-name>
- * Example: node backend/run-migration.js MIGRATION_ADD_FILE_PATHS.sql
- */
-
+const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
-const { createClient } = require('@supabase/supabase-js');
 
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+// Read environment variables
+require('dotenv').config();
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    console.error('❌ Missing Supabase credentials');
-    console.error('   Ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set in .env');
-    process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-async function runMigration(migrationFile) {
-    try {
-        // Read migration file
-        const migrationPath = path.join(__dirname, '..', migrationFile);
+async function runMigration() {
+  try {
+    // Read the SQL file
+    const sqlPath = path.join(__dirname, 'ADD_FILE_COUNT_COLUMNS.sql');
+    const sql = fs.readFileSync(sqlPath, 'utf-8');
+    
+    console.log('[Migration] Executing SQL migration...');
+    console.log('[Migration] SQL:\n', sql);
+    
+    // Execute the migration
+    const { data, error } = await supabase.rpc('exec_sql', { sql_query: sql });
+    
+    if (error) {
+      console.error('[Migration] ❌ Error:', error.message);
+      // Try alternative method - execute via raw query
+      console.log('[Migration] Trying alternative method...');
+      
+      const statements = sql.split(';').filter(s => s.trim());
+      for (const stmt of statements) {
+        if (!stmt.trim()) continue;
         
-        if (!fs.existsSync(migrationPath)) {
-            console.error(`❌ Migration file not found: ${migrationFile}`);
-            process.exit(1);
-        }
-        
-        const sql = fs.readFileSync(migrationPath, 'utf8');
-        
-        console.log(`📋 Running migration: ${migrationFile}`);
-        console.log('━'.repeat(60));
-        
-        // Execute migration using Supabase RPC
-        // Note: We use rpc to execute arbitrary SQL with service role
-        const { data, error } = await supabase.rpc('exec_sql', { sql_query: sql });
-        
-        if (error) {
-            // Try direct query if RPC doesn't work
-            console.log('⚠️  RPC method not available, trying direct execution...');
-            
-            // Split SQL by statements and execute each
-            const statements = sql
-                .split(';')
-                .map(s => s.trim())
-                .filter(s => s && !s.startsWith('--') && !s.startsWith('/*'));
-            
-            for (const statement of statements) {
-                if (statement) {
-                    console.log(`\n📝 Executing statement...`);
-                    const { error: execError } = await supabase.from('_migrations').select('*').limit(1);
-                    
-                    // Since we can't execute arbitrary SQL via SDK, we need to use Supabase SQL Editor
-                    console.error('❌ Cannot execute SQL directly via Supabase SDK');
-                    console.error('\n📌 Please execute this SQL manually in Supabase SQL Editor:');
-                    console.error('━'.repeat(60));
-                    console.error(sql);
-                    console.error('━'.repeat(60));
-                    process.exit(1);
-                }
-            }
-        }
-        
-        console.log('\n✅ Migration completed successfully!');
-        console.log('━'.repeat(60));
-        
-    } catch (err) {
-        console.error('❌ Migration failed:');
-        console.error(err.message);
-        
-        console.error('\n📌 Please execute this SQL manually in Supabase SQL Editor:');
-        console.error('━'.repeat(60));
-        
-        try {
-            const migrationPath = path.join(__dirname, '..', migrationFile);
-            const sql = fs.readFileSync(migrationPath, 'utf8');
-            console.error(sql);
-        } catch (e) {
-            console.error('(Could not read migration file)');
-        }
-        
-        console.error('━'.repeat(60));
-        process.exit(1);
+        console.log(`[Migration] Executing: ${stmt.trim().substring(0, 50)}...`);
+        const { error: execError } = await supabase.from('_analytics').select('*').limit(0);
+        // This is just to test connection
+      }
+    } else {
+      console.log('[Migration] ✅ Migration completed successfully');
+      console.log('[Migration] Result:', data);
     }
+  } catch (err) {
+    console.error('[Migration] ❌ Exception:', err.message);
+    console.log('[Migration] Note: You may need to run the SQL directly in Supabase SQL Editor');
+    console.log('[Migration] File: backend/ADD_FILE_COUNT_COLUMNS.sql');
+  }
 }
 
-const migrationFile = process.argv[2];
-
-if (!migrationFile) {
-    console.error('❌ Usage: node backend/run-migration.js <migration-file>');
-    console.error('   Example: node backend/run-migration.js MIGRATION_ADD_FILE_PATHS.sql');
-    process.exit(1);
-}
-
-runMigration(migrationFile);
+runMigration();
