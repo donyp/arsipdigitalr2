@@ -67,10 +67,10 @@ try {
  */
 async function updateFilesUploadedCount(supabase, faktur) {
     try {
-        // Get current invoice data
+        // Get current invoice data - check ALL file path columns
         const { data: invoice, error: queryErr } = await supabase
             .from('invoice_file_list')
-            .select('uploaded_file_path, keterangan')
+            .select('uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
             .eq('faktur', faktur)
             .single();
         
@@ -79,11 +79,18 @@ async function updateFilesUploadedCount(supabase, faktur) {
             return null;
         }
         
-        // For now, just track if uploaded_file_path is set
-        let uploadedCount = invoice.uploaded_file_path ? 1 : 0;
-        console.log(`[UpdateCount] Files for ${faktur}: ${uploadedCount} uploaded`);
+        // Count actual files - check all path columns
+        let uploadedCount = 0;
+        if (invoice.invoice_pdf_path || invoice.uploaded_file_path) uploadedCount++;
+        if (invoice.bukti_bayar_path) uploadedCount++;
         
-        // Just return the count - simplified version
+        // Faktur pajak hanya untuk PPN
+        const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
+        if (isPPN && invoice.faktur_pajak_path) uploadedCount++;
+        
+        console.log(`[UpdateCount] Files for ${faktur}: ${uploadedCount} uploaded (invoice: ${invoice.invoice_pdf_path ? 'YES' : 'NO'}, bukti: ${invoice.bukti_bayar_path ? 'YES' : 'NO'}, faktur: ${invoice.faktur_pajak_path ? 'YES' : 'NO'})`);
+        
+        // Return the count
         return uploadedCount;
     } catch (err) {
         console.error(`[UpdateCount] Error:`, err.message);
