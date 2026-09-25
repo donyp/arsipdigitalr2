@@ -2269,15 +2269,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     updateSuccess = true;
                                 } else {
                                     const errText = await insertResponse.text();
-                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 100));
+                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 200));
                                 }
                             } catch (restErr) {
-                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message?.substring(0, 50));
+                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message);
                             }
                             
                             // Fallback: Try standard upsert
                             if (!updateSuccess) {
                                 try {
+                                    console.log(`[Invoice Document BG] Trying standard upsert...`);
                                     const { error: upsertErr } = await supabase
                                         .from('invoice_files')
                                         .upsert({
@@ -2292,16 +2293,17 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         console.log(`[Invoice Document BG] ✅ Upserted into invoice_files table`);
                                         updateSuccess = true;
                                     } else {
-                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message?.substring(0, 50));
+                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message);
                                     }
                                 } catch (upsertCatchErr) {
-                                    console.log(`[Invoice Document BG] Upsert catch error`);
+                                    console.log(`[Invoice Document BG] Upsert catch error:`, upsertCatchErr.message);
                                 }
                             }
                             
                             // Final fallback: OLD method - update uploaded_file_path
                             if (!updateSuccess) {
                                 try {
+                                    console.log(`[Invoice Document BG] Trying OLD method (uploaded_file_path)...`);
                                     const { error: updateError } = await supabase
                                         .from('invoice_file_list')
                                         .update({
@@ -2315,9 +2317,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     if (!updateError) {
                                         console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path (OLD method)`);
                                         updateSuccess = true;
+                                    } else {
+                                        console.log(`[Invoice Document BG] OLD method failed:`, updateError.message);
                                     }
                                 } catch (oldErr) {
-                                    console.log(`[Invoice Document BG] OLD method also failed`);
+                                    console.log(`[Invoice Document BG] OLD method error:`, oldErr.message);
                                 }
                             }
                             
@@ -2472,15 +2476,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     updateSuccess = true;
                                 } else {
                                     const errText = await insertResponse.text();
-                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 100));
+                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 200));
                                 }
                             } catch (restErr) {
-                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message?.substring(0, 50));
+                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message);
                             }
                             
                             // Fallback: Try standard upsert
                             if (!updateSuccess) {
                                 try {
+                                    console.log(`[Invoice Document BG] Trying standard upsert...`);
                                     const { error: upsertErr } = await supabase
                                         .from('invoice_files')
                                         .upsert({
@@ -2495,16 +2500,17 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         console.log(`[Invoice Document BG] ✅ Upserted into invoice_files table`);
                                         updateSuccess = true;
                                     } else {
-                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message?.substring(0, 50));
+                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message);
                                     }
                                 } catch (upsertCatchErr) {
-                                    console.log(`[Invoice Document BG] Upsert catch error`);
+                                    console.log(`[Invoice Document BG] Upsert catch error:`, upsertCatchErr.message);
                                 }
                             }
                             
                             // Final fallback: OLD method - update uploaded_file_path
                             if (!updateSuccess) {
                                 try {
+                                    console.log(`[Invoice Document BG] Trying OLD method (uploaded_file_path)...`);
                                     const { error: updateError } = await supabase
                                         .from('invoice_file_list')
                                         .update({
@@ -2517,9 +2523,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     if (!updateError) {
                                         console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path (OLD method)`);
                                         updateSuccess = true;
+                                    } else {
+                                        console.log(`[Invoice Document BG] OLD method failed:`, updateError.message);
                                     }
                                 } catch (oldErr) {
-                                    console.log(`[Invoice Document BG] OLD method also failed`);
+                                    console.log(`[Invoice Document BG] OLD method error:`, oldErr.message);
                                 }
                             }
                             
