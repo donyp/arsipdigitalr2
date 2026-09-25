@@ -190,29 +190,38 @@ async function updateFilesUploadedCount(supabase, faktur) {
             console.log(`[UpdateCount] Table query also failed, using OLD method...`);
         }
         
-        // Fallback: OLD method - use uploaded_file_path column
-        console.log(`[UpdateCount] Falling back to OLD schema (uploaded_file_path only)`);
+        // Fallback: OLD method - use individual file path columns
+        console.log(`[UpdateCount] Falling back to OLD schema (using individual file columns)`);
         
         const { data: newData, error: newError } = await supabase
             .from('invoice_file_list')
-            .select('uploaded_file_path, keterangan')
+            .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path, keterangan')
             .eq('faktur', faktur)
             .single();
         
         if (!newError && newData) {
-            console.log(`[UpdateCount] Using OLD schema: uploaded_file_path found`);
+            console.log(`[UpdateCount] Using individual file columns`);
             
-            let uploadedCount = newData.uploaded_file_path ? 1 : 0;
+            // Count non-null file paths
+            let uploadedCount = 0;
+            if (newData.invoice_pdf_path) uploadedCount++;
+            if (newData.bukti_bayar_path) uploadedCount++;
+            if (newData.faktur_pajak_path) uploadedCount++;
+            
+            // Fallback: count uploaded_file_path if new columns are empty
+            if (uploadedCount === 0 && newData.uploaded_file_path) {
+                uploadedCount = 1;
+            }
             
             const isPPN = newData.keterangan && newData.keterangan.toUpperCase() === 'PPN';
             const requiredCount = isPPN ? 3 : 2;
             
             console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
-            console.log(`[UpdateCount] ✅ Count calculated from uploaded_file_path`);
+            console.log(`[UpdateCount] ✅ Count calculated from individual file columns`);
             
             return uploadedCount;
         } else if (newError && newError.message.includes('does not exist')) {
-            console.log(`[UpdateCount] Column doesn't exist, trying minimal query`);
+            console.log(`[UpdateCount] Columns don't exist, trying minimal query`);
             const { data: oldData, error: oldError } = await supabase
                 .from('invoice_file_list')
                 .select('id')
@@ -946,6 +955,29 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             console.log(`[Invoice List] Returned ${data?.length || 0} invoices (total: ${count})`);
             
+            // Enrich data with files_uploaded_count (calculated from individual file path columns)
+            const enrichedData = data.map(inv => {
+                const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
+                const filesRequired = isPPN ? 3 : 2;
+                
+                // Count non-null individual file paths
+                let filesUploaded = 0;
+                if (inv.invoice_pdf_path) filesUploaded++;
+                if (inv.bukti_bayar_path) filesUploaded++;
+                if (inv.faktur_pajak_path) filesUploaded++;
+                
+                // Fallback: if new columns are empty, count uploaded_file_path
+                if (filesUploaded === 0 && inv.uploaded_file_path) {
+                    filesUploaded = 1;
+                }
+                
+                return {
+                    ...inv,
+                    files_uploaded_count: filesUploaded,
+                    files_required_count: filesRequired
+                };
+            });
+            
             // Debug: Show sample data if admin_zona returns 0 results
             if (req.user && req.user.role === 'admin_zona' && count === 0) {
                 console.warn(`[Invoice List] ⚠️ Admin_zona ${req.user.userId} (zona_id: ${req.user.zona_id}) returned 0 invoices!`);
@@ -959,7 +991,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             res.json({
                 success: true,
-                data,
+                data: enrichedData,
                 count,
                 limit: parseInt(limit),
                 offset: parseInt(offset)
@@ -2044,7 +2076,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         'Prefer': 'return=representation'
                                     },
                                     body: JSON.stringify({
-                                        uploaded_file_path: remotePath || null,
+                                        invoice_pdf_path: remotePath || null,
+                                        uploaded_file_path: remotePath || null,  // Keep for backward compat
                                         uploaded_at: new Date().toISOString(),
                                         uploaded_by: req.user.id,
                                         updated_at: new Date().toISOString()
@@ -2305,14 +2338,15 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 }
                             }
                             
-                            // Final fallback: OLD method - update uploaded_file_path
+                            // Final fallback: OLD method - update uploaded_file_path AND faktur_pajak_path
                             if (!updateSuccess) {
                                 try {
-                                    console.log(`[Invoice Document BG] Trying OLD method (uploaded_file_path)...`);
+                                    console.log(`[Invoice Document BG] Trying OLD method (faktur_pajak_path & uploaded_file_path)...`);
                                     const { error: updateError } = await supabase
                                         .from('invoice_file_list')
                                         .update({
-                                            uploaded_file_path: uploadResult.storagePath,
+                                            faktur_pajak_path: uploadResult.storagePath,
+                                            uploaded_file_path: uploadResult.storagePath,  // Keep for backward compatibility
                                             uploaded_at: new Date().toISOString(),
                                             updated_at: new Date().toISOString(),
                                             uploaded_by: req.user.id
@@ -2516,14 +2550,15 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 }
                             }
                             
-                            // Final fallback: OLD method - update uploaded_file_path
+                            // Final fallback: OLD method - update uploaded_file_path AND bukti_bayar_path
                             if (!updateSuccess) {
                                 try {
-                                    console.log(`[Invoice Document BG] Trying OLD method (uploaded_file_path)...`);
+                                    console.log(`[Invoice Document BG] Trying OLD method (bukti_bayar_path & uploaded_file_path)...`);
                                     const { error: updateError } = await supabase
                                         .from('invoice_file_list')
                                         .update({
-                                            uploaded_file_path: uploadResult.storagePath,
+                                            bukti_bayar_path: uploadResult.storagePath,
+                                            uploaded_file_path: uploadResult.storagePath,  // Keep for backward compatibility
                                             uploaded_at: new Date().toISOString(),
                                             uploaded_by: req.user.id
                                         })
