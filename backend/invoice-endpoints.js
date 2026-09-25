@@ -140,30 +140,57 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
             }
         }
         
-        // Check faktur pajak - try MULTIPLE date paths
-        // Faktur pajak might be uploaded on a different date than the invoice
-        const fakturPaths = [
-            // Try invoice date first
-            `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
-            `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`,
-            // Try today's date (current implementation bug uploads here)
-            `ARSIP/${location}/faktur-pajak/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/${location}/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`,
-            // Try other date variations
-            `ARSIP/${location}/faktur-pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`,
-            `ARSIP/${location}/Faktur-Pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`
-        ];
-        
-        for (const path of fakturPaths) {
+        // Check faktur pajak - use path from database if available
+        // Otherwise scan multiple folders
+        if (invoice && invoice.faktur_pajak_path) {
             try {
-                const exists = await R2Storage.checkFileExistsNoCache(path);
+                const exists = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
                 if (exists) {
                     fakturCount = 1;
-                    console.log(`[UpdateCount] ✓ Found faktur pajak: ${path}`);
-                    break;
+                    console.log(`[UpdateCount] ✓ Found faktur pajak (from DB path): ${invoice.faktur_pajak_path}`);
                 }
             } catch (err) {
-                // Continue checking
+                console.log(`[UpdateCount] Faktur pajak path check failed, trying folder scan...`);
+            }
+        }
+        
+        // If not found in DB path, try scanning folders with just faktur number
+        if (fakturCount === 0) {
+            const fakturFolders = [
+                // Try invoice date first
+                `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/`,
+                `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/`,
+                // Try today's date
+                `ARSIP/${location}/faktur-pajak/2026/SEPTEMBER/25/`,
+                `ARSIP/${location}/Faktur-Pajak/2026/SEPTEMBER/25/`
+            ];
+            
+            for (const folderPath of fakturFolders) {
+                try {
+                    // Try to find ANY file with "tax-" prefix and faktur number
+                    const possiblePaths = [
+                        `${folderPath}tax-${faktur}.pdf`,
+                        `${folderPath}tax-${faktur} `,  // prefix to search
+                        `${folderPath}${faktur}.pdf`
+                    ];
+                    
+                    for (const testPath of possiblePaths) {
+                        try {
+                            const exists = await R2Storage.checkFileExistsNoCache(testPath);
+                            if (exists) {
+                                fakturCount = 1;
+                                console.log(`[UpdateCount] ✓ Found faktur pajak: ${testPath}`);
+                                break;
+                            }
+                        } catch (e) {
+                            // Continue
+                        }
+                    }
+                    
+                    if (fakturCount === 1) break;
+                } catch (err) {
+                    // Continue checking next folder
+                }
             }
         }
         
