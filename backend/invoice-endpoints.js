@@ -1973,33 +1973,63 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         let updateSuccess = false;
                         
                         try {
-                            // Try NEW invoice_files table
-                            const { error: insertError } = await supabase
-                                .from('invoice_files')
-                                .upsert({
+                            console.log(`[Invoice PDF BG] Attempting REST API INSERT into invoice_files...`);
+                            
+                            // Try NEW invoice_files table via REST API
+                            const insertUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files`;
+                            const insertResponse = await fetch(insertUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'resolution=merge-duplicates'
+                                },
+                                body: JSON.stringify({
                                     faktur: faktur,
                                     file_type: 'invoice',
                                     file_path: remotePath,
                                     uploaded_at: new Date().toISOString(),
                                     uploaded_by: req.user.id
-                                });
+                                })
+                            });
                             
-                            if (!insertError) {
-                                console.log(`[Invoice PDF BG] ✅ Inserted into invoice_files table`);
+                            if (insertResponse.ok) {
+                                console.log(`[Invoice PDF BG] ✅ Inserted into invoice_files table (REST API)`);
                                 updateSuccess = true;
-                            } else if (insertError.message.includes('does not exist')) {
-                                console.log(`[Invoice PDF BG] invoice_files table not available, trying OLD method`);
-                                updateSuccess = false;
                             } else {
-                                console.error(`[Invoice PDF BG] Insert error:`, insertError.message);
-                                updateSuccess = false;
+                                const errText = await insertResponse.text();
+                                console.log(`[Invoice PDF BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 100));
                             }
-                        } catch (tableErr) {
-                            console.log(`[Invoice PDF BG] Fallback to OLD method`);
-                            updateSuccess = false;
+                        } catch (restErr) {
+                            console.log(`[Invoice PDF BG] REST API INSERT error:`, restErr.message?.substring(0, 50));
                         }
                         
-                        // Fallback: OLD method - update uploaded_file_path via REST API
+                        // Fallback: Try standard upsert
+                        if (!updateSuccess) {
+                            try {
+                                const { error: upsertErr } = await supabase
+                                    .from('invoice_files')
+                                    .upsert({
+                                        faktur: faktur,
+                                        file_type: 'invoice',
+                                        file_path: remotePath,
+                                        uploaded_at: new Date().toISOString(),
+                                        uploaded_by: req.user.id
+                                    });
+                                
+                                if (!upsertErr) {
+                                    console.log(`[Invoice PDF BG] ✅ Upserted into invoice_files table`);
+                                    updateSuccess = true;
+                                } else {
+                                    console.log(`[Invoice PDF BG] Upsert failed:`, upsertErr.message?.substring(0, 50));
+                                }
+                            } catch (upsertCatchErr) {
+                                console.log(`[Invoice PDF BG] Upsert catch error`);
+                            }
+                        }
+                        
+                        // Final fallback: OLD method - update uploaded_file_path via REST API
                         if (!updateSuccess) {
                             try {
                                 const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
@@ -2020,11 +2050,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 });
 
                                 if (updateResponse.ok) {
-                                    console.log(`[Invoice PDF BG] ✅ Updated uploaded_file_path in database`);
+                                    console.log(`[Invoice PDF BG] ✅ Updated uploaded_file_path (OLD method)`);
                                     updateSuccess = true;
                                 } else {
                                     const errorText = await updateResponse.text();
-                                    console.error(`[Invoice PDF BG] Update failed (${updateResponse.status}):`, errorText);
+                                    console.error(`[Invoice PDF BG] Update failed (${updateResponse.status}):`, errorText.substring(0, 100));
                                 }
                             } catch (updateErr) {
                                 console.error('[Invoice PDF BG] Update error:', updateErr.message);
@@ -2038,6 +2068,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             // Update files_uploaded_count (includes internal delay for consistency)
                             const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
                             console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
+                        } else {
+                            console.error(`[Invoice PDF BG] ✗ All database update methods failed!`);
                         }
                     } catch (bgErr) {
                         console.error(`[Invoice PDF BG] Background upload error (non-blocking):`, bgErr.message);
@@ -2209,54 +2241,91 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             console.log(`[Invoice Document BG] ✅ Faktur Pajak uploaded: ${uploadResult.path}`);
                             
-                            // Update database - try NEW invoice_files table first
+                            // Update database - try NEW invoice_files table first using REST API
                             let updateSuccess = false;
                             try {
-                                const { error: insertError } = await supabase
-                                    .from('invoice_files')
-                                    .upsert({
+                                console.log(`[Invoice Document BG] Attempting REST API INSERT into invoice_files...`);
+                                
+                                const insertUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files`;
+                                const insertResponse = await fetch(insertUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                                        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'resolution=merge-duplicates'
+                                    },
+                                    body: JSON.stringify({
                                         faktur: fakturNumber,
                                         file_type: 'faktur_pajak',
                                         file_path: uploadResult.path,
                                         uploaded_at: new Date().toISOString(),
                                         uploaded_by: req.user.id
-                                    });
-                                
-                                if (!insertError) {
-                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table`);
-                                    updateSuccess = true;
-                                } else if (insertError.message.includes('does not exist')) {
-                                    console.log(`[Invoice Document BG] invoice_files table not available, trying OLD method`);
-                                    updateSuccess = false;
-                                } else {
-                                    console.error(`[Invoice Document BG] Insert error:`, insertError.message);
-                                    updateSuccess = false;
-                                }
-                            } catch (tableErr) {
-                                console.log(`[Invoice Document BG] Fallback to OLD method`);
-                                updateSuccess = false;
-                            }
-                            
-                            // Fallback: OLD method - update uploaded_file_path
-                            if (!updateSuccess) {
-                                const { error: updateError } = await supabase
-                                    .from('invoice_file_list')
-                                    .update({
-                                        uploaded_file_path: uploadResult.path,
-                                        uploaded_at: new Date().toISOString(),
-                                        updated_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
                                     })
-                                    .eq('faktur', fakturNumber);
+                                });
                                 
-                                if (updateError) {
-                                    console.error('[Invoice Document BG] Update error:', updateError.message);
+                                if (insertResponse.ok) {
+                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table (REST API)`);
+                                    updateSuccess = true;
                                 } else {
-                                    console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path in database`);
+                                    const errText = await insertResponse.text();
+                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 100));
+                                }
+                            } catch (restErr) {
+                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message?.substring(0, 50));
+                            }
+                            
+                            // Fallback: Try standard upsert
+                            if (!updateSuccess) {
+                                try {
+                                    const { error: upsertErr } = await supabase
+                                        .from('invoice_files')
+                                        .upsert({
+                                            faktur: fakturNumber,
+                                            file_type: 'faktur_pajak',
+                                            file_path: uploadResult.path,
+                                            uploaded_at: new Date().toISOString(),
+                                            uploaded_by: req.user.id
+                                        });
+                                    
+                                    if (!upsertErr) {
+                                        console.log(`[Invoice Document BG] ✅ Upserted into invoice_files table`);
+                                        updateSuccess = true;
+                                    } else {
+                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message?.substring(0, 50));
+                                    }
+                                } catch (upsertCatchErr) {
+                                    console.log(`[Invoice Document BG] Upsert catch error`);
                                 }
                             }
                             
-                            await updateFilesUploadedCount(supabase, fakturNumber);
+                            // Final fallback: OLD method - update uploaded_file_path
+                            if (!updateSuccess) {
+                                try {
+                                    const { error: updateError } = await supabase
+                                        .from('invoice_file_list')
+                                        .update({
+                                            uploaded_file_path: uploadResult.path,
+                                            uploaded_at: new Date().toISOString(),
+                                            updated_at: new Date().toISOString(),
+                                            uploaded_by: req.user.id
+                                        })
+                                        .eq('faktur', fakturNumber);
+                                    
+                                    if (!updateError) {
+                                        console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path (OLD method)`);
+                                        updateSuccess = true;
+                                    }
+                                } catch (oldErr) {
+                                    console.log(`[Invoice Document BG] OLD method also failed`);
+                                }
+                            }
+                            
+                            if (updateSuccess) {
+                                await updateFilesUploadedCount(supabase, fakturNumber);
+                            } else {
+                                console.error(`[Invoice Document BG] ✗ All database update methods failed!`);
+                            }
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
                         }
@@ -2375,53 +2444,90 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             console.log(`[Invoice Document BG] ✅ Bukti Bayar uploaded: ${uploadResult.path}`);
                             
-                            // Update database - try NEW invoice_files table first
+                            // Update database - try NEW invoice_files table first using REST API
                             let updateSuccess = false;
                             try {
-                                const { error: insertError } = await supabase
-                                    .from('invoice_files')
-                                    .upsert({
+                                console.log(`[Invoice Document BG] Attempting REST API INSERT into invoice_files...`);
+                                
+                                const insertUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files`;
+                                const insertResponse = await fetch(insertUrl, {
+                                    method: 'POST',
+                                    headers: {
+                                        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                                        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                                        'Content-Type': 'application/json',
+                                        'Prefer': 'resolution=merge-duplicates'
+                                    },
+                                    body: JSON.stringify({
                                         faktur: nomorFaktur,
                                         file_type: 'bukti_bayar',
                                         file_path: uploadResult.path,
                                         uploaded_at: new Date().toISOString(),
                                         uploaded_by: req.user.id
-                                    });
-                                
-                                if (!insertError) {
-                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table`);
-                                    updateSuccess = true;
-                                } else if (insertError.message.includes('does not exist')) {
-                                    console.log(`[Invoice Document BG] invoice_files table not available, trying OLD method`);
-                                    updateSuccess = false;
-                                } else {
-                                    console.error(`[Invoice Document BG] Insert error:`, insertError.message);
-                                    updateSuccess = false;
-                                }
-                            } catch (tableErr) {
-                                console.log(`[Invoice Document BG] Fallback to OLD method`);
-                                updateSuccess = false;
-                            }
-                            
-                            // Fallback: OLD method - update uploaded_file_path
-                            if (!updateSuccess) {
-                                const { error: updateError } = await supabase
-                                    .from('invoice_file_list')
-                                    .update({
-                                        uploaded_file_path: uploadResult.path,
-                                        uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
                                     })
-                                    .eq('faktur', nomorFaktur);
-
-                                if (updateError) {
-                                    console.error('[Invoice Document BG] Update error:', updateError.message);
+                                });
+                                
+                                if (insertResponse.ok) {
+                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table (REST API)`);
+                                    updateSuccess = true;
                                 } else {
-                                    console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path in database`);
+                                    const errText = await insertResponse.text();
+                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 100));
+                                }
+                            } catch (restErr) {
+                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message?.substring(0, 50));
+                            }
+                            
+                            // Fallback: Try standard upsert
+                            if (!updateSuccess) {
+                                try {
+                                    const { error: upsertErr } = await supabase
+                                        .from('invoice_files')
+                                        .upsert({
+                                            faktur: nomorFaktur,
+                                            file_type: 'bukti_bayar',
+                                            file_path: uploadResult.path,
+                                            uploaded_at: new Date().toISOString(),
+                                            uploaded_by: req.user.id
+                                        });
+                                    
+                                    if (!upsertErr) {
+                                        console.log(`[Invoice Document BG] ✅ Upserted into invoice_files table`);
+                                        updateSuccess = true;
+                                    } else {
+                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message?.substring(0, 50));
+                                    }
+                                } catch (upsertCatchErr) {
+                                    console.log(`[Invoice Document BG] Upsert catch error`);
                                 }
                             }
                             
-                            await updateFilesUploadedCount(supabase, nomorFaktur);
+                            // Final fallback: OLD method - update uploaded_file_path
+                            if (!updateSuccess) {
+                                try {
+                                    const { error: updateError } = await supabase
+                                        .from('invoice_file_list')
+                                        .update({
+                                            uploaded_file_path: uploadResult.path,
+                                            uploaded_at: new Date().toISOString(),
+                                            uploaded_by: req.user.id
+                                        })
+                                        .eq('faktur', nomorFaktur);
+
+                                    if (!updateError) {
+                                        console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path (OLD method)`);
+                                        updateSuccess = true;
+                                    }
+                                } catch (oldErr) {
+                                    console.log(`[Invoice Document BG] OLD method also failed`);
+                                }
+                            }
+                            
+                            if (updateSuccess) {
+                                await updateFilesUploadedCount(supabase, nomorFaktur);
+                            } else {
+                                console.error(`[Invoice Document BG] ✗ All database update methods failed!`);
+                            }
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
                         }
