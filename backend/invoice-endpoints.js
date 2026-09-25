@@ -67,7 +67,7 @@ try {
  */
 async function updateFilesUploadedCount(supabase, faktur) {
     try {
-        // Get current invoice data - check ALL file path columns
+        // Get current invoice data - check BOTH old and new file path columns
         const { data: invoice, error: queryErr } = await supabase
             .from('invoice_file_list')
             .select('uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
@@ -79,16 +79,16 @@ async function updateFilesUploadedCount(supabase, faktur) {
             return null;
         }
         
-        // Count actual files - check all path columns
+        // Count actual files - use uploaded_file_path as primary (since invoice_pdf_path has cache issues)
         let uploadedCount = 0;
-        if (invoice.invoice_pdf_path || invoice.uploaded_file_path) uploadedCount++;
+        if (invoice.uploaded_file_path) uploadedCount++;
         if (invoice.bukti_bayar_path) uploadedCount++;
         
         // Faktur pajak hanya untuk PPN
         const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
         if (isPPN && invoice.faktur_pajak_path) uploadedCount++;
         
-        console.log(`[UpdateCount] Files for ${faktur}: ${uploadedCount} uploaded (invoice: ${invoice.invoice_pdf_path ? 'YES' : 'NO'}, bukti: ${invoice.bukti_bayar_path ? 'YES' : 'NO'}, faktur: ${invoice.faktur_pajak_path ? 'YES' : 'NO'})`);
+        console.log(`[UpdateCount] Files for ${faktur}: ${uploadedCount} uploaded (invoice: ${invoice.uploaded_file_path ? 'YES' : 'NO'}, bukti: ${invoice.bukti_bayar_path ? 'YES' : 'NO'}, faktur: ${invoice.faktur_pajak_path ? 'YES' : 'NO'})`);
         
         // Return the count
         return uploadedCount;
@@ -1691,10 +1691,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             remotePath = null;
                         }
                         
-                        // Update invoice status in database - Force schema introspection bypass
+                        // Update invoice status in database - ONLY use uploaded_file_path (avoid new column schema cache issue)
                         console.log('[Invoice PDF BG] Updating invoice path in database...');
                         try {
-                            // Update BOTH columns: legacy uploaded_file_path AND new invoice_pdf_path
+                            // Update ONLY uploaded_file_path column which is already in schema cache
                             const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
                             const updateResponse = await fetch(updateUrl, {
                                 method: 'PATCH',
@@ -1706,8 +1706,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 },
                                 body: JSON.stringify({
                                     uploaded_file_path: remotePath || null,
-                                    invoice_pdf_path: remotePath || null,
-                                    invoice_uploaded_at: new Date().toISOString(),
                                     uploaded_at: new Date().toISOString(),
                                     uploaded_by: req.user.id,
                                     updated_at: new Date().toISOString()
@@ -1717,7 +1715,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             if (updateResponse.ok) {
                                 const result = await updateResponse.json();
                                 console.log(`[Invoice PDF BG] ✅ Database updated for faktur: ${faktur}`);
-                                console.log(`[Invoice PDF BG] Stored paths - uploaded_file_path: ${remotePath || 'NULL'}, invoice_pdf_path: ${remotePath || 'NULL'}`);
+                                console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
                                 const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
                                 console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
                             } else {
