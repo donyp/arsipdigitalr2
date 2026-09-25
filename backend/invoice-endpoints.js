@@ -140,10 +140,18 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
             }
         }
         
-        // Check faktur pajak
+        // Check faktur pajak - try MULTIPLE date paths
+        // Faktur pajak might be uploaded on a different date than the invoice
         const fakturPaths = [
+            // Try invoice date first
             `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
-            `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`
+            `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`,
+            // Try today's date as fallback
+            `ARSIP/${location}/faktur-pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`,
+            `ARSIP/${location}/Faktur-Pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`,
+            // Try SEPTEMBER 25 specifically (last seen date)
+            `ARSIP/${location}/faktur-pajak/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/${location}/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`
         ];
         
         for (const path of fakturPaths) {
