@@ -3505,7 +3505,7 @@ async function loadFilterOptions() {
         
         // Get all invoices with high limit to count everything
         // Note: API automatically filters by zona_id for admin_zona users
-        const url = '${CONFIG.API_URL}/api/invoice/list?limit=10000&offset=0';
+        const url = `${CONFIG.API_URL}/api/invoice/list?limit=10000&offset=0`;
         console.log('[Filter] Fetching from:', url);
         
         const response = await fetch(url, {
