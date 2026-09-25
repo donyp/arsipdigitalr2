@@ -211,12 +211,13 @@
         }
 
         .dropdown-option:hover {
-            background: #f8f9fa;
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
         }
 
         .dropdown-option.selected {
-            background: #eff6ff;
-            color: #1e40af;
+            background: var(--color-bg-tertiary);
+            color: var(--color-accent);
             font-weight: 500;
         }
 
@@ -1925,8 +1926,11 @@
                 // Get username (fallback to name or full_name)
                 const username = currentUser.name || currentUser.full_name || 'User';
                 
-                // Get zona_id
-                const zonaId = currentUser.zona_id || 'N/A';
+                // Get zona_id - remove leading zeros (e.g., "01" -> "1")
+                let zonaId = currentUser.zona_id || 'N/A';
+                if (zonaId !== 'N/A') {
+                    zonaId = String(zonaId).replace(/^0+/, '') || '0';
+                }
                 
                 const welcomeNameEl = document.getElementById('welcome-name');
                 if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
