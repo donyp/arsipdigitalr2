@@ -59,105 +59,99 @@ try {
  * Register all invoice endpoints
  */
 /**
- * Recalculate and update files_uploaded_count based on actual file paths
- * IMPORTANT: Just counts non-null paths (does NOT verify file existence)
- * File existence verification is done by the sync job separately
- * 
- * This is called immediately after upload succeeds, so paths should be accurate
+ * Scan R2 storage to count uploaded files for an invoice
+ * Checks for invoice PDF, bukti bayar, and faktur pajak files
  */
-async function updateFilesUploadedCount(supabase, faktur) {
+async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
     try {
-        // Wait for write to be visible
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        console.log(`[UpdateCount] Scanning R2 for files for faktur: ${faktur}...`);
         
-        console.log(`[UpdateCount] Calculating count for ${faktur}...`);
+        const filename = `${faktur}.pdf`;
+        let invoiceCount = 0, buktiCount = 0, fakturCount = 0;
         
-        // Try NEW method: use invoice_files table if it exists
-        // Use direct REST API to bypass Supabase schema cache issues
-        try {
-            console.log(`[UpdateCount] Attempting to query invoice_files table via REST API...`);
-            
-            const restUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files?faktur=eq.${encodeURIComponent(faktur)}&select=faktur`;
-            
-            const response = await fetch(restUrl, {
-                headers: {
-                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                    'Content-Type': 'application/json'
+        // Check invoice PDF - try all possible locations
+        const invoicePaths = [
+            `ARSIP/BEKASI/PPN/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/BEKASI/NON/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/PEMALANG/PPN/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/PEMALANG/NON/2026/SEPTEMBER/25/${filename}`
+        ];
+        
+        for (const path of invoicePaths) {
+            try {
+                const exists = await R2Storage.checkFileExistsNoCache(path);
+                if (exists) {
+                    invoiceCount = 1;
+                    console.log(`[UpdateCount] ✓ Found invoice: ${path}`);
+                    break;
                 }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`[UpdateCount] ✓ Using invoice_files table (REST API) - ${data.length} files found`);
-                
-                let uploadedCount = data.length;
-                
-                const { data: invoice, error: invError } = await supabase
-                    .from('invoice_file_list')
-                    .select('keterangan')
-                    .eq('faktur', faktur)
-                    .single();
-                
-                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-                const requiredCount = isPPN ? 3 : 2;
-                
-                console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
-                console.log(`[UpdateCount] ✅ Count from invoice_files table (REST API)`);
-                
-                return uploadedCount;
-            } else {
-                console.log(`[UpdateCount] REST API returned ${response.status}, trying other methods...`);
+            } catch (err) {
+                // Continue checking
             }
-        } catch (restErr) {
-            console.log(`[UpdateCount] REST API approach failed:`, restErr.message?.substring(0, 50));
         }
         
-        // Fallback: Try SQL query approach
-        try {
-            const sqlQuery = `SELECT COUNT(*) as count FROM invoice_files WHERE faktur='${faktur.replace(/'/g, "''")}'`;
-            const { data: countData, error: countError } = await supabase
-                .rpc('exec', { sql: sqlQuery })
-                .catch(() => {
-                    // If RPC doesn't work, try direct REST call
-                    return fetch(
-                        `${process.env.SUPABASE_URL}/rest/v1/rpc/exec`,
-                        {
-                            method: 'POST',
-                            headers: {
-                                'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ sql: sqlQuery })
-                        }
-                    ).then(r => r.json());
-                });
-            
-            if (countError || !countData) {
-                console.log(`[UpdateCount] Direct SQL approach failed`);
-                throw new Error('SQL query failed');
+        // Check bukti bayar
+        const buktiPaths = [
+            `ARSIP/BEKASI/bukti-bayar/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/PEMALANG/bukti-bayar/2026/SEPTEMBER/25/${filename}`
+        ];
+        
+        for (const path of buktiPaths) {
+            try {
+                const exists = await R2Storage.checkFileExistsNoCache(path);
+                if (exists) {
+                    buktiCount = 1;
+                    console.log(`[UpdateCount] ✓ Found bukti bayar: ${path}`);
+                    break;
+                }
+            } catch (err) {
+                // Continue checking
             }
-            
-            // If we got here, use the count
-            const uploadedCount = countData[0]?.count || 0;
-            console.log(`[UpdateCount] ✓ Using invoice_files table (SQL query)`);
-            
-            const { data: invoice, error: invError } = await supabase
-                .from('invoice_file_list')
-                .select('keterangan')
-                .eq('faktur', faktur)
-                .single();
-            
-            const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-            const requiredCount = isPPN ? 3 : 2;
-            
-            console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
-            console.log(`[UpdateCount] ✅ Count from invoice_files table (SQL)`);
-            
-            return uploadedCount;
-        } catch (directErr) {
-            console.log(`[UpdateCount] SQL method failed`);
+        }
+        
+        // Check faktur pajak
+        const fakturPaths = [
+            `ARSIP/BEKASI/faktur-pajak/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/PEMALANG/faktur-pajak/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/BEKASI/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`,
+            `ARSIP/PEMALANG/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`
+        ];
+        
+        for (const path of fakturPaths) {
+            try {
+                const exists = await R2Storage.checkFileExistsNoCache(path);
+                if (exists) {
+                    fakturCount = 1;
+                    console.log(`[UpdateCount] ✓ Found faktur pajak: ${path}`);
+                    break;
+                }
+            } catch (err) {
+                // Continue checking
+            }
+        }
+        
+        const uploadedCount = invoiceCount + buktiCount + fakturCount;
+        
+        // Get invoice type to determine required count
+        const { data: invoice, error: invError } = await supabase
+            .from('invoice_file_list')
+            .select('keterangan')
+            .eq('faktur', faktur)
+            .single();
+        
+        const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+        const requiredCount = isPPN ? 3 : 2;
+        
+        console.log(`[UpdateCount] ✅ R2 scan complete: ${uploadedCount}/${requiredCount}`);
+        console.log(`[UpdateCount] Files - Invoice: ${invoiceCount}, Bukti: ${buktiCount}, Faktur Pajak: ${fakturCount}`);
+        
+        return uploadedCount;
+        
+    } catch (err) {
+        console.error(`[UpdateCount] Error:`, err.message);
+        return 0;
+    }
+}
         }
         
         // Fallback: Try standard table query (may fail due to schema cache)
@@ -1638,7 +1632,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 let correctedCount = actualCount;
                 if (isMismatch) {
                     console.log(`[Verify Count] Correcting ${faktur}: ${dbCount} → ${actualCount}`);
-                    const corrected = await updateFilesUploadedCount(supabase, faktur);
+                    const corrected = await updateFilesUploadedCount(supabase, faktur, R2Storage);
                     correctedCount = corrected || actualCount;
                 }
                 
@@ -2101,7 +2095,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
                             
                             // Update files_uploaded_count (includes internal delay for consistency)
-                            const uploadedCount = await updateFilesUploadedCount(supabase, faktur);
+                            const uploadedCount = await updateFilesUploadedCount(supabase, faktur, R2Storage);
                             console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
                         } else {
                             console.error(`[Invoice PDF BG] ✗ All database update methods failed!`);
