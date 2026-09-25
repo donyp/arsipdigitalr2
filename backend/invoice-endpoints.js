@@ -167,7 +167,8 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         
         // Save the count to database so frontend can read it
         try {
-            const { error: updateErr } = await supabase
+            console.log(`[UpdateCount] Attempting to save: ${uploadedCount}/${requiredCount} for faktur ${faktur}`);
+            const updateQuery = supabase
                 .from('invoice_file_list')
                 .update({
                     files_uploaded_count: uploadedCount,
@@ -176,18 +177,23 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
                 })
                 .eq('faktur', faktur);
             
-            if (!updateErr) {
+            const { data: updateData, error: updateErr } = await updateQuery;
+            
+            if (updateErr) {
+                console.error(`[UpdateCount] ❌ Update error:`, updateErr.code, updateErr.message);
+                if (updateErr.message.includes('does not exist')) {
+                    console.log(`[UpdateCount] Columns don't exist yet, trying to update timestamp only...`);
+                    const { error: tsErr } = await supabase
+                        .from('invoice_file_list')
+                        .update({ updated_at: new Date().toISOString() })
+                        .eq('faktur', faktur);
+                    if (tsErr) console.error(`[UpdateCount] Timestamp update also failed:`, tsErr.message);
+                }
+            } else {
                 console.log(`[UpdateCount] ✅ Saved count to database: ${uploadedCount}/${requiredCount}`);
-            } else if (updateErr.message.includes('does not exist')) {
-                // Columns don't exist, just update timestamp
-                console.log(`[UpdateCount] Columns don't exist yet, just updating timestamp`);
-                await supabase
-                    .from('invoice_file_list')
-                    .update({ updated_at: new Date().toISOString() })
-                    .eq('faktur', faktur);
             }
         } catch (saveErr) {
-            console.warn(`[UpdateCount] Note: Could not save count:`, saveErr.message);
+            console.error(`[UpdateCount] ❌ Exception while saving:`, saveErr.message);
         }
         
         return uploadedCount;
