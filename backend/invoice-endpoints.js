@@ -146,12 +146,12 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
             // Try invoice date first
             `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
             `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`,
-            // Try today's date as fallback
-            `ARSIP/${location}/faktur-pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`,
-            `ARSIP/${location}/Faktur-Pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`,
-            // Try SEPTEMBER 25 specifically (last seen date)
+            // Try today's date (current implementation bug uploads here)
             `ARSIP/${location}/faktur-pajak/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/${location}/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`
+            `ARSIP/${location}/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`,
+            // Try other date variations
+            `ARSIP/${location}/faktur-pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`,
+            `ARSIP/${location}/Faktur-Pajak/${new Date().getFullYear()}/${String(new Date().getMonth() + 1).padStart(2, '0')}/${String(new Date().getDate()).padStart(2, '0')}/${filename}`
         ];
         
         for (const path of fakturPaths) {
