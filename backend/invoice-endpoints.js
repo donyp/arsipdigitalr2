@@ -152,91 +152,6 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         return 0;
     }
 }
-        }
-        
-        // Fallback: Try standard table query (may fail due to schema cache)
-        try {
-            const { data: fileRecords, error: filesError } = await supabase
-                .from('invoice_files')
-                .select('file_type')
-                .eq('faktur', faktur);
-                
-            if (!filesError && Array.isArray(fileRecords)) {
-                console.log(`[UpdateCount] ✓ Using invoice_files table (${fileRecords.length} files found)`);
-                
-                let uploadedCount = fileRecords.length;
-                
-                const { data: invoice, error: invError } = await supabase
-                    .from('invoice_file_list')
-                    .select('keterangan')
-                    .eq('faktur', faktur)
-                    .single();
-                
-                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-                const requiredCount = isPPN ? 3 : 2;
-                
-                console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
-                console.log(`[UpdateCount] ✅ Count from invoice_files table`);
-                
-                return uploadedCount;
-            }
-        } catch (tableErr) {
-            console.log(`[UpdateCount] Table query also failed, using OLD method...`);
-        }
-        
-        // Fallback: OLD method - use individual file path columns
-        console.log(`[UpdateCount] Falling back to OLD schema (using individual file columns)`);
-        
-        const { data: newData, error: newError } = await supabase
-            .from('invoice_file_list')
-            .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path, keterangan')
-            .eq('faktur', faktur)
-            .single();
-        
-        if (!newError && newData) {
-            console.log(`[UpdateCount] Using individual file columns`);
-            
-            // Count non-null file paths
-            let uploadedCount = 0;
-            if (newData.invoice_pdf_path) uploadedCount++;
-            if (newData.bukti_bayar_path) uploadedCount++;
-            if (newData.faktur_pajak_path) uploadedCount++;
-            
-            // Fallback: count uploaded_file_path if new columns are empty
-            if (uploadedCount === 0 && newData.uploaded_file_path) {
-                uploadedCount = 1;
-            }
-            
-            const isPPN = newData.keterangan && newData.keterangan.toUpperCase() === 'PPN';
-            const requiredCount = isPPN ? 3 : 2;
-            
-            console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
-            console.log(`[UpdateCount] ✅ Count calculated from individual file columns`);
-            
-            return uploadedCount;
-        } else if (newError && newError.message.includes('does not exist')) {
-            console.log(`[UpdateCount] Columns don't exist, trying minimal query`);
-            const { data: oldData, error: oldError } = await supabase
-                .from('invoice_file_list')
-                .select('id')
-                .eq('faktur', faktur)
-                .single();
-            
-            if (oldError) {
-                console.error(`[UpdateCount] ✗ Failed to fetch invoice:`, oldError.message);
-                return 0;
-            }
-            
-            return 1;
-        }
-        
-        return 0;
-        
-    } catch (err) {
-        console.error(`[UpdateCount] Unexpected error:`, err.message);
-        return 0;
-    }
-}
 
 function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     
@@ -2359,7 +2274,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             }
                             
                             if (updateSuccess) {
-                                await updateFilesUploadedCount(supabase, fakturNumber);
+                                await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
                             } else {
                                 console.error(`[Invoice Document BG] ✗ All database update methods failed!`);
                             }
@@ -2570,7 +2485,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             }
                             
                             if (updateSuccess) {
-                                await updateFilesUploadedCount(supabase, nomorFaktur);
+                                await updateFilesUploadedCount(supabase, nomorFaktur, R2Storage);
                             } else {
                                 console.error(`[Invoice Document BG] ✗ All database update methods failed!`);
                             }
@@ -2782,7 +2697,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     console.error('[Invoice Faktur Pajak BG] Update error:', updateError);
                                 } else {
                                     console.log(`[Invoice Faktur Pajak BG] ✅ Database updated for faktur: ${fakturNumber}`);
-                                    await updateFilesUploadedCount(supabase, fakturNumber);
+                                    await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
                                 }
                             } catch (dbErr) {
                                 console.error('[Invoice Faktur Pajak BG] DB error:', dbErr.message);
