@@ -2332,6 +2332,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             }
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
+                            console.error(`[Invoice Document BG] Error stack:`, uploadErr.stack);
                         }
                     };
                     
@@ -2538,6 +2539,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             }
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
+                            console.error(`[Invoice Document BG] Error stack:`, uploadErr.stack);
                         }
                     };
                     
