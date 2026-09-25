@@ -1,10 +1,14 @@
 -- Create invoice_files table to track individual file uploads
 -- This allows us to store multiple files per invoice (PDF, bukti bayar, faktur pajak)
 -- without modifying the existing invoice_file_list schema
+--
+-- NOTE: No foreign key constraint because invoice_file_list.faktur doesn't have
+-- an explicit UNIQUE constraint (even though values are unique). PostgreSQL requires
+-- explicit UNIQUE or PRIMARY KEY to create a foreign key reference.
 
 CREATE TABLE IF NOT EXISTS invoice_files (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    faktur VARCHAR(50) NOT NULL REFERENCES invoice_file_list(faktur) ON DELETE CASCADE,
+    faktur VARCHAR(50) NOT NULL,
     file_type VARCHAR(50) NOT NULL CHECK (file_type IN ('invoice', 'bukti_bayar', 'faktur_pajak')),
     file_path TEXT NOT NULL,
     file_size BIGINT,
