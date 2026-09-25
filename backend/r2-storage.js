@@ -285,8 +285,8 @@ async function uploadInvoicePDF(buffer, filename, year, month, day, category, lo
         
         console.log(`[R2] Uploading invoice PDF: ${storagePath}`);
         
-        // Check for duplicates (lenient - if check fails, allow upload)
-        const exists = await checkFileExists(storagePath);
+        // Check for duplicates (use fresh check for uploads - no cache)
+        const exists = await checkFileExistsNoCache(storagePath);
         if (exists) {
             const error = new Error(`File already exists: ${storagePath}`);
             error.code = 'DUPLICATE_FILE';
@@ -356,7 +356,7 @@ async function uploadDocumentFile(buffer, filename, year, month, day, folderType
         console.log(`[R2] Uploading document file: ${storagePath}`);
         
         // Check for duplicates
-        const exists = await checkFileExists(storagePath);
+        const exists = await checkFileExistsNoCache(storagePath);
         if (exists) {
             const error = new Error(`File already exists: ${storagePath}`);
             error.code = 'DUPLICATE_FILE';

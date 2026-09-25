@@ -1235,10 +1235,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     });
                 }
                 
-                // Get invoice data from database
+                // Get invoice data from database - select all file path columns
                 const { data: invoice, error: queryError } = await supabase
                     .from('invoice_file_list')
-                    .select('uploaded_file_path, status, keterangan')
+                    .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path, status, keterangan, files_uploaded_count, files_required_count')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -1249,29 +1249,48 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Check File] Request: faktur=${faktur}, fileType=${fileType}`);
                 console.log(`[Check File] Invoice keterangan: ${invoice.keterangan}`);
                 
-                // Get file path from database
-                let dbFilePath = invoice.uploaded_file_path;
+                // Map fileType to database column
+                let dbFilePath = null;
+                if (fileType === 'invoice') {
+                    dbFilePath = invoice.invoice_pdf_path || invoice.uploaded_file_path; // fallback for backward compat
+                } else if (fileType === 'bukti_bayar') {
+                    dbFilePath = invoice.bukti_bayar_path;
+                } else if (fileType === 'faktur_pajak') {
+                    dbFilePath = invoice.faktur_pajak_path;
+                }
+                
                 let fileExists = false;
                 
                 // If DB has the path, the file was uploaded
                 if (dbFilePath) {
                     try {
-                        // Verify file actually exists in R2
+                        // Verify file actually exists in R2 (no cache for realtime check)
                         fileExists = await R2Storage.checkFileExistsNoCache(dbFilePath);
-                        console.log(`[Check File] R2 check via DB path: ${fileExists ? 'EXISTS' : 'MISSING'}`);
+                        console.log(`[Check File] R2 check (${fileType}): ${fileExists ? 'EXISTS' : 'MISSING'}`);
                     } catch (err) {
-                        console.warn(`[Check File] Error checking DB path: ${err.message}`);
+                        console.warn(`[Check File] Error checking file (${fileType}): ${err.message}`);
                         fileExists = false;
                     }
                 } else {
-                    console.log(`[Check File] Database path is NULL - file not uploaded`);
+                    console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
                 }
+
+                // Calculate file count
+                let filesUploaded = 0;
+                if (invoice.invoice_pdf_path || invoice.uploaded_file_path) filesUploaded++;
+                if (invoice.bukti_bayar_path) filesUploaded++;
+                if (invoice.faktur_pajak_path) filesUploaded++;
 
                 res.json({
                     exists: fileExists,
                     faktur: faktur,
                     fileType: fileType,
                     filePath: dbFilePath || null,
+                    fileCount: {
+                        uploaded: filesUploaded,
+                        required: invoice.files_required_count || 3,
+                        status: `${filesUploaded}/${invoice.files_required_count || 3}`
+                    },
                     message: fileExists ? 'File exists' : 'File not found'
                 });
                 
@@ -1663,6 +1682,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         const { error: updateError, data: updatedData } = await supabase
                             .from('invoice_file_list')
                             .update({
+                                invoice_pdf_path: remotePath || null,
                                 uploaded_file_path: remotePath || null,
                                 uploaded_at: new Date().toISOString(),
                                 uploaded_by: req.user.id,
@@ -1840,7 +1860,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 year,
                                 monthName,
                                 day,
-                                'FAKTURPAJAK',
+                                'Faktur-Pajak',
                                 location
                             );
 
@@ -1975,7 +1995,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 year,
                                 monthName,
                                 day,
-                                'BUKTIBAYAR',
+                                'bukti-bayar',
                                 location
                             );
 
@@ -2640,7 +2660,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 try {
                     // Search for bukti bayar
-                    const buktiSearchPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}`;
+                    const buktiSearchPath = `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}`;
                     console.log(`[Invoice Search] Searching bukti bayar in: ${buktiSearchPath}`);
                     const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                     const buktiFile = buktiFiles.find(f => f.name.includes(faktur) && f.name.endsWith('.pdf'));
@@ -2655,7 +2675,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 try {
                     // Search for faktur pajak
-                    const fakturSearchPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}`;
+                    const fakturSearchPath = `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}`;
                     console.log(`[Invoice Search] Searching faktur pajak in: ${fakturSearchPath}`);
                     const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                     const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(faktur) && f.name.endsWith('.pdf'));
@@ -2810,7 +2830,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         try {
-                            const buktiSearchPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}`;
+                            const buktiSearchPath = `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}`;
                             const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                             const buktiFile = buktiFiles.find(f => f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (buktiFile && !buktiFile.is_dir) {
@@ -2821,7 +2841,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         try {
-                            const fakturSearchPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}`;
+                            const fakturSearchPath = `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}`;
                             const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                             const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (fakturFile && !fakturFile.is_dir) {
