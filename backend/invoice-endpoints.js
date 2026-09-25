@@ -1552,7 +1552,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // Check if invoice exists
                 const { data: invoice, error: queryError } = await supabase
                     .from('invoice_file_list')
-                    .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path, *')
+                    .select('*')
                     .eq('faktur', faktur)
                     .single();
                 
