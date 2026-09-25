@@ -7,7 +7,7 @@
 let multer, uuid, parseExcel, validateData, upload;
 const path = require('path');
 const fs = require('fs');
-const { updateFileCountDirectly } = require('./direct-postgres-update');
+const { updateFileCountDirectly, updateFilePath } = require('./direct-postgres-update');
 
 try {
     multer = require('multer');
@@ -2318,6 +2318,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 }
                             }
                             
+                            // Always update file path via REST API (bypasses schema cache)
+                            try {
+                                await updateFilePath(fakturNumber, 'faktur_pajak_path', uploadResult.storagePath);
+                            } catch (pathErr) {
+                                console.error(`[Invoice Document BG] Error updating faktur_pajak_path:`, pathErr.message);
+                            }
+                            
                             // Always try to update count, even if database update failed
                             // The function scans R2 directly, which is the source of truth
                             try {
@@ -2534,6 +2541,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 } catch (oldErr) {
                                     console.log(`[Invoice Document BG] OLD method error:`, oldErr.message);
                                 }
+                            }
+                            
+                            // Always update file path via REST API (bypasses schema cache)
+                            try {
+                                await updateFilePath(nomorFaktur, 'bukti_bayar_path', uploadResult.storagePath);
+                            } catch (pathErr) {
+                                console.error(`[Invoice Document BG] Error updating bukti_bayar_path:`, pathErr.message);
                             }
                             
                             // Always try to update count, even if database update failed
