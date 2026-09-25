@@ -931,31 +931,21 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             console.log(`[Invoice List] Returned ${data?.length || 0} invoices (total: ${count})`);
             
-            // Enrich data with accurate files_uploaded_count by scanning R2 directly  
-            // This avoids relying on database columns that might not exist or be stale
-            const enrichedData = await Promise.all(data.map(async (inv) => {
+            // Return database values as-is for the list
+            // R2 scanning only happens when user clicks "check-file" endpoint
+            const enrichedData = data.map(inv => {
                 const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
                 const filesRequired = isPPN ? 3 : 2;
                 
-                // Scan R2 directly to get accurate count (same logic as updateFilesUploadedCount)
-                try {
-                    const filesUploaded = await updateFilesUploadedCount(supabase, inv.faktur, R2Storage);
-                    
-                    return {
-                        ...inv,
-                        files_uploaded_count: filesUploaded,
-                        files_required_count: filesRequired
-                    };
-                } catch (err) {
-                    console.warn(`[Invoice List] Could not get count for ${inv.faktur}:`, err.message);
-                    // Fallback to database value
-                    return {
-                        ...inv,
-                        files_uploaded_count: inv.files_uploaded_count || 0,
-                        files_required_count: filesRequired
-                    };
-                }
-            }));
+                // Use database values if available, otherwise default to 0
+                const filesUploaded = inv.files_uploaded_count || 0;
+                
+                return {
+                    ...inv,
+                    files_uploaded_count: filesUploaded,
+                    files_required_count: filesRequired
+                };
+            });
             
             // Debug: Show sample data if admin_zona returns 0 results
             if (req.user && req.user.role === 'admin_zona' && count === 0) {
