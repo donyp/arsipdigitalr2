@@ -1450,46 +1450,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
                 }
 
-                // Count files - try NEW table first using REST API
-                let filesUploaded = 0;
-                try {
-                    const restUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files?faktur=eq.${encodeURIComponent(faktur)}&select=faktur`;
-                    
-                    const response = await fetch(restUrl, {
-                        headers: {
-                            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        filesUploaded = data.length;
-                        console.log(`[Check File] ✓ File count from invoice_files (REST API): ${filesUploaded}`);
-                    } else {
-                        throw new Error(`REST API returned ${response.status}`);
-                    }
-                } catch (tableErr) {
-                    console.log(`[Check File] REST API failed, trying standard query...`);
-                    try {
-                        const { data: allFiles, error: countError } = await supabase
-                            .from('invoice_files')
-                            .select('file_type', { count: 'exact' })
-                            .eq('faktur', faktur);
-                        
-                        if (!countError && allFiles) {
-                            filesUploaded = allFiles.length;
-                            console.log(`[Check File] ✓ File count from invoice_files: ${filesUploaded}`);
-                        } else {
-                            throw new Error('Standard query failed');
-                        }
-                    } catch (standardErr) {
-                        // Fallback to OLD method
-                        filesUploaded = invoice.uploaded_file_path ? 1 : 0;
-                        console.log(`[Check File] File count from uploaded_file_path: ${filesUploaded}`);
-                    }
-                }
+                // Count files by scanning R2 directly (source of truth)
+                const filesUploaded = await updateFilesUploadedCount(supabase, faktur, R2Storage);
                 
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
                 const requiredCount = isPPN ? 3 : 2;
