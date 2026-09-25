@@ -973,7 +973,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 data: enrichedData,
                 count,
                 limit: parseInt(limit),
-                offset: parseInt(offset)
+                offset: parseInt(offset),
+                _refreshedAt: new Date().toISOString()  // Cache busting
             });
             
         } catch (error) {
@@ -2835,11 +2836,18 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 setImmediate(() => performUpload());
                 
                 // Return response immediately to client
+                // Include current file count so frontend can update display
+                const currentCount = await updateFilesUploadedCount(supabase, fakturNumber, R2Storage).catch(() => 0);
+                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                const filesRequired = isPPN ? 3 : 2;
+                
                 res.json({
                     success: true,
                     message: 'Faktur pajak upload started (processing in background)',
                     faktur: fakturNumber,
-                    status: 'processing'
+                    status: 'processing',
+                    files_uploaded_count: currentCount,
+                    files_required_count: filesRequired
                 });
 
             } catch (error) {
