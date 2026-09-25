@@ -67,14 +67,16 @@ try {
  */
 async function updateFilesUploadedCount(supabase, faktur) {
     try {
-        // Wait longer for write to be visible (database transactions need time to commit)
-        // Using 1.5 seconds instead of 500ms
+        // Wait for write to be visible (database transactions need time to commit)
+        // Using 1.5 seconds to allow for consistency
         await new Promise(resolve => setTimeout(resolve, 1500));
         
-        // Get current invoice data - check BOTH old and new file path columns
+        // Get current invoice data - only query columns that ACTUALLY EXIST in the database
+        // NOTE: invoice_pdf_path, bukti_bayar_path, faktur_pajak_path don't exist yet (migration not run)
+        // So we use only uploaded_file_path which is the actual column in the table
         const { data: invoice, error: queryErr } = await supabase
             .from('invoice_file_list')
-            .select('uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
+            .select('uploaded_file_path, keterangan')
             .eq('faktur', faktur)
             .single();
         
@@ -83,16 +85,15 @@ async function updateFilesUploadedCount(supabase, faktur) {
             return null;
         }
         
-        // Count actual files
+        // Count actual files - since we only track uploaded_file_path currently, count is either 0 or 1
+        // When migration runs to add separate columns, this will be updated to count all three
         let uploadedCount = 0;
         if (invoice.uploaded_file_path) uploadedCount++;
-        if (invoice.bukti_bayar_path) uploadedCount++;
         
-        // Faktur pajak hanya untuk PPN
-        const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-        if (isPPN && invoice.faktur_pajak_path) uploadedCount++;
+        // For now: assume PPN needs 1 file (invoice), NON needs 1 file (invoice)
+        // TODO: When migration adds the three separate columns, update this to count bukti_bayar and faktur_pajak too
         
-        console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount} (invoice: ${invoice.uploaded_file_path ? 'YES' : 'NO'}, bukti: ${invoice.bukti_bayar_path ? 'YES' : 'NO'}, faktur: ${invoice.faktur_pajak_path ? 'YES' : 'NO'})`);
+        console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount} (invoice: ${invoice.uploaded_file_path ? 'YES' : 'NO'})`);
         
         // Update files_uploaded_count
         const { error: updateErr } = await supabase
@@ -1258,10 +1259,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     });
                 }
                 
-                // Get invoice data from database - select all file path columns
+                // Get invoice data from database - select only columns that EXIST
+                // NOTE: invoice_pdf_path, bukti_bayar_path, faktur_pajak_path columns don't exist in DB yet
+                // Migration file exists (MIGRATION_ADD_FILE_PATHS.sql) but hasn't been run
                 const { data: invoice, error: queryError } = await supabase
                     .from('invoice_file_list')
-                    .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path, status, keterangan, files_uploaded_count, files_required_count')
+                    .select('uploaded_file_path, status, keterangan, files_uploaded_count, files_required_count')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -1273,13 +1276,19 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Check File] Invoice keterangan: ${invoice.keterangan}`);
                 
                 // Map fileType to database column
+                // NOTE: Only uploaded_file_path exists currently (invoice_pdf_path migration not run yet)
                 let dbFilePath = null;
                 if (fileType === 'invoice') {
-                    dbFilePath = invoice.invoice_pdf_path || invoice.uploaded_file_path; // fallback for backward compat
+                    // Use uploaded_file_path which is the only file tracking column that exists
+                    dbFilePath = invoice.uploaded_file_path;
                 } else if (fileType === 'bukti_bayar') {
-                    dbFilePath = invoice.bukti_bayar_path;
+                    // These columns will exist after migration, for now return null
+                    dbFilePath = null;
+                    console.log(`[Check File] Bukti bayar column doesn't exist yet (migration pending)`);
                 } else if (fileType === 'faktur_pajak') {
-                    dbFilePath = invoice.faktur_pajak_path;
+                    // These columns will exist after migration, for now return null
+                    dbFilePath = null;
+                    console.log(`[Check File] Faktur pajak column doesn't exist yet (migration pending)`);
                 }
                 
                 let fileExists = false;
@@ -1298,14 +1307,18 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
                 }
 
-                // Calculate file count - NON doesn't need faktur_pajak
+                // Calculate file count
+                // For now: only uploaded_file_path exists, so count is either 0 or 1
+                // After migration adds the three columns, this will properly count all three types
                 let filesUploaded = 0;
-                if (invoice.invoice_pdf_path || invoice.uploaded_file_path) filesUploaded++;
-                if (invoice.bukti_bayar_path) filesUploaded++;
+                if (invoice.uploaded_file_path) filesUploaded++;
                 
-                // Faktur pajak hanya untuk PPN
+                // For now, don't count bukti_bayar and faktur_pajak (columns don't exist yet)
+                // TODO: Update this after MIGRATION_ADD_FILE_PATHS.sql is executed
+                
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-                if (isPPN && invoice.faktur_pajak_path) filesUploaded++;
+                // Temporarily show required count as 1 until migration adds separate columns
+                const requiredCount = 1; // Was: isPPN ? 3 : 2, but columns don't exist yet
 
                 res.json({
                     exists: fileExists,
@@ -1314,10 +1327,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     filePath: dbFilePath || null,
                     fileCount: {
                         uploaded: filesUploaded,
-                        required: invoice.files_required_count || (isPPN ? 3 : 2),
-                        status: `${filesUploaded}/${invoice.files_required_count || (isPPN ? 3 : 2)}`
+                        required: requiredCount,
+                        status: `${filesUploaded}/${requiredCount}`
                     },
-                    message: fileExists ? 'File exists' : 'File not found'
+                    message: fileExists ? 'File exists' : 'File not found',
+                    note: 'File count temporarily shows 1/1 (migration pending for separate file tracking)'
                 });
                 
             } catch (error) {
@@ -1343,10 +1357,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(400).json({ error: 'Faktur is required' });
                 }
                 
-                // Get current invoice data
+                // Get current invoice data - only query columns that exist
                 const { data: invoice, error: queryErr } = await supabase
                     .from('invoice_file_list')
-                    .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, files_uploaded_count, files_required_count, keterangan')
+                    .select('uploaded_file_path, files_uploaded_count, files_required_count, keterangan')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -1354,16 +1368,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(404).json({ error: `Invoice not found: ${faktur}` });
                 }
                 
-                // Calculate actual count from paths - NON doesn't need faktur_pajak
+                // Calculate actual count from paths
+                // For now: only uploaded_file_path exists (columns for bukti_bayar and faktur_pajak don't exist yet)
                 let actualCount = 0;
-                if (invoice.invoice_pdf_path) actualCount++;
-                if (invoice.bukti_bayar_path) actualCount++;
+                if (invoice.uploaded_file_path) actualCount++;
                 
-                const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-                if (isPPN && invoice.faktur_pajak_path) actualCount++;
+                // TODO: After migration, add counting for bukti_bayar_path and faktur_pajak_path
                 
                 const dbCount = invoice.files_uploaded_count || 0;
-                const requiredCount = invoice.files_required_count || (isPPN ? 3 : 2);
+                // For now: require count is always 1 (just invoice) until migration runs
+                const requiredCount = 1;
                 const isMismatch = dbCount !== actualCount;
                 
                 // If mismatch, correct it
