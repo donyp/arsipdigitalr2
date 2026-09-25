@@ -1288,7 +1288,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 let invoice = null;
                 let queryError = null;
                 
-                // Try NEW columns first
+                // Try NEW columns first (with all the new columns that were supposed to be added)
                 const { data: newData, error: newError } = await supabase
                     .from('invoice_file_list')
                     .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path, status, keterangan, files_uploaded_count, files_required_count')
@@ -1299,17 +1299,19 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     invoice = newData;
                     console.log(`[Check File] Using NEW schema with separate file columns`);
                 } else if (newError && newError.message.includes('does not exist')) {
-                    // Fallback: use old schema
+                    // Fallback: use OLD schema (which ONLY has uploaded_file_path, no other file columns)
                     console.log(`[Check File] Schema mismatch detected, falling back to OLD schema`);
                     const { data: oldData, error: oldError } = await supabase
                         .from('invoice_file_list')
-                        .select('uploaded_file_path, status, keterangan, files_uploaded_count, files_required_count')
+                        .select('uploaded_file_path, status, keterangan')
                         .eq('faktur', faktur)
                         .single();
                     
                     if (!oldError && oldData) {
                         invoice = oldData;
+                        console.log(`[Check File] ✓ OLD schema query succeeded`);
                     } else {
+                        console.log(`[Check File] ✗ OLD schema query failed:`, oldError?.message);
                         queryError = oldError;
                     }
                 } else {
@@ -1408,10 +1410,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 if (!newError && newData) {
                     invoice = newData;
                 } else if (newError && newError.message.includes('does not exist')) {
-                    // Fallback: use old schema
+                    // Fallback: use OLD schema (which ONLY has uploaded_file_path, status, keterangan)
                     const { data: oldData, error: oldError } = await supabase
                         .from('invoice_file_list')
-                        .select('uploaded_file_path, files_uploaded_count, files_required_count, keterangan')
+                        .select('uploaded_file_path, keterangan')
                         .eq('faktur', faktur)
                         .single();
                     
@@ -1517,11 +1519,31 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const limit = Math.min(parseInt(req.query.limit) || 50, 100);
 
                 // Get invoices with potential mismatches
-                const { data: invoices, error: queryErr } = await supabase
+                // Try NEW schema first with separate file columns
+                let invoices;
+                let queryErr;
+                
+                const { data: newData, error: newError } = await supabase
                     .from('invoice_file_list')
                     .select('faktur, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, files_uploaded_count, files_required_count, keterangan, updated_at')
                     .order('updated_at', { ascending: false })
                     .limit(limit);
+
+                if (!newError && newData) {
+                    invoices = newData;
+                } else if (newError && newError.message.includes('does not exist')) {
+                    // Fallback: OLD schema only has uploaded_file_path (not the separate columns)
+                    const { data: oldData, error: oldError } = await supabase
+                        .from('invoice_file_list')
+                        .select('faktur, uploaded_file_path, keterangan, updated_at')
+                        .order('updated_at', { ascending: false })
+                        .limit(limit);
+                    
+                    invoices = oldData;
+                    queryErr = oldError;
+                } else {
+                    queryErr = newError;
+                }
 
                 if (queryErr) {
                     console.error('[Invoice API] Query error:', queryErr);
@@ -1537,6 +1559,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     if (inv.invoice_pdf_path) actualCount++;
                     if (inv.bukti_bayar_path) actualCount++;
                     if (inv.faktur_pajak_path) actualCount++;
+                    
+                    // OLD schema fallback: if no new columns, check uploaded_file_path
+                    if (actualCount === 0 && inv.uploaded_file_path) {
+                        actualCount = 1;
+                    }
 
                     const dbCount = inv.files_uploaded_count || 0;
                     const requiredCount = inv.files_required_count || (inv.keterangan === 'PPN' ? 3 : 2);
@@ -1552,7 +1579,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             mismatch: true,
                             lastUpdated: inv.updated_at,
                             missingFiles: []
-                                .concat(!inv.invoice_pdf_path ? ['invoice'] : [])
+                                .concat(!inv.invoice_pdf_path && !inv.uploaded_file_path ? ['invoice'] : [])
                                 .concat(!inv.bukti_bayar_path ? ['bukti_bayar'] : [])
                                 .concat(inv.keterangan === 'PPN' && !inv.faktur_pajak_path ? ['faktur_pajak'] : [])
                         });
@@ -3137,14 +3164,33 @@ function addFileExistenceVerificationEndpoint(app, supabase, createAuth, R2Stora
                     return res.status(400).json({ error: 'Faktur is required' });
                 }
                 
-                // Get current invoice data
-                const { data: invoice, error: queryErr } = await supabase
+                // Get current invoice data - try NEW schema first
+                const { data: newData, error: newError } = await supabase
                     .from('invoice_file_list')
                     .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, files_uploaded_count, keterangan')
                     .eq('faktur', faktur)
                     .single();
                 
-                if (queryErr || !invoice) {
+                let invoice = null;
+                if (!newError && newData) {
+                    invoice = newData;
+                } else if (newError && newError.message.includes('does not exist')) {
+                    // Fallback: OLD schema
+                    const { data: oldData, error: oldError } = await supabase
+                        .from('invoice_file_list')
+                        .select('uploaded_file_path, keterangan')
+                        .eq('faktur', faktur)
+                        .single();
+                    
+                    invoice = oldData;
+                    if (oldError || !oldData) {
+                        return res.status(404).json({ error: `Invoice not found: ${faktur}` });
+                    }
+                } else {
+                    return res.status(404).json({ error: `Invoice not found: ${faktur}` });
+                }
+                
+                if (!invoice) {
                     return res.status(404).json({ error: `Invoice not found: ${faktur}` });
                 }
                 
