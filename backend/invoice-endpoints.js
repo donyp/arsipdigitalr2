@@ -931,6 +931,17 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 if (inv.bukti_bayar_path) filesUploaded++;
                 if (inv.faktur_pajak_path) filesUploaded++;
                 
+                // Debug logging for invoice 835100311020926004
+                if (inv.faktur === '835100311020926004') {
+                    console.log(`[Invoice List] Invoice 835100311020926004 file paths:`, {
+                        invoice_pdf_path: inv.invoice_pdf_path,
+                        bukti_bayar_path: inv.bukti_bayar_path,
+                        faktur_pajak_path: inv.faktur_pajak_path,
+                        filesUploaded,
+                        db_files_uploaded_count: inv.files_uploaded_count
+                    });
+                }
+                
                 // If no file paths but database has a count, use that
                 if (filesUploaded === 0 && inv.files_uploaded_count) {
                     filesUploaded = inv.files_uploaded_count;
