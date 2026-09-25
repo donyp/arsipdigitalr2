@@ -1631,7 +1631,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     if (invoice.uploaded_file_path) {
                         console.log(`[Invoice PDF] Checking if existing path still exists in R2: ${invoice.uploaded_file_path}`);
                         try {
-                            const existsInR2 = await R2Storage.checkFileExists(invoice.uploaded_file_path);
+                            const existsInR2 = await R2Storage.checkFileExistsNoCache(invoice.uploaded_file_path);
                             console.log(`[Invoice PDF] Duplicate check result: ${existsInR2 ? 'EXISTS - REJECT' : 'MISSING - ALLOW'}`);
                             if (existsInR2) {
                                 // File truly exists in R2 - this is a real duplicate, reject
@@ -1823,7 +1823,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
                         if (invoice && invoice.faktur_pajak_path) {
                             try {
-                                const existsInGDrive = await R2Storage.checkFileExists(invoice.faktur_pajak_path);
+                                const existsInGDrive = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
                                 if (existsInGDrive) {
                                     // File truly exists in Google Drive - reject as duplicate
                                     console.warn(`[Invoice Document] File already exists in Google Drive: ${invoice.faktur_pajak_path}`);
@@ -1958,7 +1958,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
                         if (invoice && invoice.bukti_bayar_path) {
                             try {
-                                const existsInGDrive = await R2Storage.checkFileExists(invoice.bukti_bayar_path);
+                                const existsInGDrive = await R2Storage.checkFileExistsNoCache(invoice.bukti_bayar_path);
                                 if (existsInGDrive) {
                                     // File truly exists in Google Drive - reject as duplicate
                                     console.warn(`[Invoice Document] File already exists in Google Drive: ${invoice.bukti_bayar_path}`);
@@ -2110,7 +2110,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         // File path exists in database, but verify it still exists on Google Drive
                         try {
                             console.log(`[Invoice Faktur Pajak BG] Verifying if file still exists on Google Drive: ${invoice.faktur_pajak_path}`);
-                            const fileExists = await R2Storage.checkFileExists(invoice.faktur_pajak_path);
+                            const fileExists = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
                             
                             if (fileExists) {
                                 console.log(`[Invoice Faktur Pajak BG] ✓ File still exists on Google Drive`);
@@ -2125,7 +2125,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Check if file already exists (duplicate detection)
                     const fakturUploadPath = expectedNewPath;
                     try {
-                        const fileExists = await R2Storage.checkFileExists(fakturUploadPath);
+                        const fileExists = await R2Storage.checkFileExistsNoCache(fakturUploadPath);
                         if (fileExists && !isReuploadWithNewPath) {
                             console.log(`[Invoice Faktur Pajak BG] ✓ Duplicate file detected at: ${fakturUploadPath}`);
                         } else {
@@ -2168,7 +2168,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Only reject if file ACTUALLY exists in GDrive (true duplicate)
                     // Don't clear path here - let the upload process handle it
                     try {
-                        const existsInGDrive = await R2Storage.checkFileExists(invoice.faktur_pajak_path);
+                        const existsInGDrive = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
                         if (existsInGDrive) {
                             // File truly exists in Google Drive - this is a real duplicate, reject
                             console.warn(`[Invoice Faktur Pajak] File truly exists in Google Drive: ${invoice.faktur_pajak_path}`);
