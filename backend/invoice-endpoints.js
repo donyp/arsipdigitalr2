@@ -1467,56 +1467,73 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 let fileExists = false;
                 
-                // Don't rely on database paths - scan R2 directly for the file
-                // Get invoice date to build correct R2 paths
-                const { data: invoiceForDate, error: dateErr } = await supabase
-                    .from('invoice_file_list')
-                    .select('tanggal, toko')
-                    .eq('faktur', faktur)
-                    .single();
-                
-                if (!dateErr && invoiceForDate && invoiceForDate.tanggal) {
-                    const year = invoiceForDate.tanggal.split('-')[0];
-                    const monthNum = String(invoiceForDate.tanggal.split('-')[1]).padStart(2, '0');
-                    const day = String(invoiceForDate.tanggal.split('-')[2]).padStart(2, '0');
-                    
-                    const monthNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-                                       'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
-                    const monthName = monthNames[parseInt(monthNum) - 1];
-                    const location = invoiceForDate.toko ? (invoiceForDate.toko.includes('PEMALANG') ? 'PEMALANG' : 'BEKASI') : 'BEKASI';
-                    
-                    const filename = `${faktur}.pdf`;
-                    
-                    // Build paths for the requested file type
-                    let pathsToCheck = [];
-                    if (fileType === 'invoice') {
-                        pathsToCheck = [
-                            `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
-                            `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
-                        ];
-                    } else if (fileType === 'bukti_bayar') {
-                        pathsToCheck = [
-                            `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`
-                        ];
-                    } else if (fileType === 'faktur_pajak') {
-                        pathsToCheck = [
-                            `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
-                            `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`
-                        ];
+                // FIRST: Try to use database path directly (most reliable, includes full filename)
+                if (dbFilePath) {
+                    try {
+                        const exists = await R2Storage.checkFileExistsNoCache(dbFilePath);
+                        if (exists) {
+                            fileExists = true;
+                            console.log(`[Check File] ✓ Found ${fileType} via DB path: ${dbFilePath}`);
+                        }
+                    } catch (err) {
+                        console.log(`[Check File] DB path check failed, will try folder scan`);
                     }
+                }
+                
+                // FALLBACK: Scan R2 directly for file if not found via DB path
+                if (!fileExists) {
+                    const { data: invoiceForDate, error: dateErr } = await supabase
+                        .from('invoice_file_list')
+                        .select('tanggal, toko')
+                        .eq('faktur', faktur)
+                        .single();
                     
-                    // Check each possible path
-                    for (const path of pathsToCheck) {
-                        try {
-                            const exists = await R2Storage.checkFileExistsNoCache(path);
-                            if (exists) {
-                                fileExists = true;
-                                dbFilePath = path;
-                                console.log(`[Check File] ✓ Found ${fileType}: ${path}`);
-                                break;
+                    if (!dateErr && invoiceForDate && invoiceForDate.tanggal) {
+                        const year = invoiceForDate.tanggal.split('-')[0];
+                        const monthNum = String(invoiceForDate.tanggal.split('-')[1]).padStart(2, '0');
+                        const day = String(invoiceForDate.tanggal.split('-')[2]).padStart(2, '0');
+                        
+                        const monthNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                                           'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+                        const monthName = monthNames[parseInt(monthNum) - 1];
+                        const location = invoiceForDate.toko ? (invoiceForDate.toko.includes('PEMALANG') ? 'PEMALANG' : 'BEKASI') : 'BEKASI';
+                        
+                        const filename = `${faktur}.pdf`;
+                        
+                        // Build paths for the requested file type
+                        let pathsToCheck = [];
+                        if (fileType === 'invoice') {
+                            pathsToCheck = [
+                                `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
+                                `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
+                            ];
+                        } else if (fileType === 'bukti_bayar') {
+                            pathsToCheck = [
+                                `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`
+                            ];
+                        } else if (fileType === 'faktur_pajak') {
+                            // For faktur pajak, also try with "tax-" prefix and different case variations
+                            pathsToCheck = [
+                                `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
+                                `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`,
+                                `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/tax-${faktur}`,  // partial match for files with extra text
+                                `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/tax-${faktur}`
+                            ];
+                        }
+                        
+                        // Check each possible path
+                        for (const path of pathsToCheck) {
+                            try {
+                                const exists = await R2Storage.checkFileExistsNoCache(path);
+                                if (exists) {
+                                    fileExists = true;
+                                    dbFilePath = path;
+                                    console.log(`[Check File] ✓ Found ${fileType}: ${path}`);
+                                    break;
+                                }
+                            } catch (err) {
+                                // Continue checking
                             }
-                        } catch (err) {
-                            // Continue checking
                         }
                     }
                 }
