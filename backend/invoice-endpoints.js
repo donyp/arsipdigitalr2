@@ -895,14 +895,22 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             console.log(`[Invoice List] Returned ${data?.length || 0} invoices (total: ${count})`);
             
-            // Return database values as-is for the list
-            // R2 scanning only happens when user clicks "check-file" endpoint
+            // Map data to include file count based on actual file paths (source of truth)
             const enrichedData = data.map(inv => {
+                let filesUploaded = 0;
+                
+                // Count based on file PATH columns (these are updated when files are uploaded)
+                if (inv.invoice_pdf_path) filesUploaded++;
+                if (inv.bukti_bayar_path) filesUploaded++;
+                if (inv.faktur_pajak_path) filesUploaded++;
+                
+                // If no file paths but database has a count, use that
+                if (filesUploaded === 0 && inv.files_uploaded_count) {
+                    filesUploaded = inv.files_uploaded_count;
+                }
+                
                 const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
                 const filesRequired = isPPN ? 3 : 2;
-                
-                // Use database values if available, otherwise default to 0
-                const filesUploaded = inv.files_uploaded_count || 0;
                 
                 return {
                     ...inv,
