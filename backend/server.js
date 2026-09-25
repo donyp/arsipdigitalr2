@@ -1014,11 +1014,13 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         console.log('[LOGIN] SUCCESS: Password matched, generating token...');
 
-        // Check Session Limit for Admin Zona
+        // Check Session Limit for Admin Zona - only count VALID active sessions
         const { data: activeSessions, error: sessionError } = await supabase
             .from('user_sessions')
             .select('*')
-            .eq('user_id', user.id);
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .gt('expires_at', new Date().toISOString());
 
         if (sessionError) console.error("[SESSION] Check Error:", sessionError);
 
