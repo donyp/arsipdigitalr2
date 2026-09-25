@@ -1935,13 +1935,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const category = invoice.keterangan === 'PPN' ? 'PPN' : 'NON';
                 const location = extractLocationFromToko(invoice.toko);
                 
-                // Path structure: /ARSIPINVOICE/LOCATION/TAHUN/BULAN/TANGGAL/CATEGORY/
+                // Path structure: ARSIP/LOCATION/CATEGORY/TAHUN/BULAN/TANGGAL/FILENAME
                 // LOCATION: BEKASI or PEMALANG (extracted from TOKO column)
+                // CATEGORY: PPN or NON (based on keterangan)
                 console.log(`[Invoice PDF] Path components - Location: ${location}, Year: ${year}, Month: ${monthName}, Day: ${day}, Category: ${category}`);
                 console.log(`[Invoice PDF] Invoice keterangan: "${invoice.keterangan}" → Category: "${category}"`);
                 
                 // Build expected new path with location
-                const expectedNewPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}/${filename}`;
+                const expectedNewPath = `ARSIP/${location}/${category}/${year}/${monthName}/${day}/${filename}`;
                 console.log(`[Invoice PDF] Expected new path: ${expectedNewPath}`);
                 console.log(`[Invoice PDF] Current DB path: ${invoice.invoice_pdf_path || 'NULL'}`);
                 
@@ -2099,6 +2100,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             } catch (updateErr) {
                                 console.error('[Invoice PDF BG] Update error:', updateErr.message);
                             }
+                        }
+                        
+                        // Always update file path via REST API (bypasses schema cache)
+                        // This ensures invoice_pdf_path is set even if previous methods failed
+                        try {
+                            await updateFilePath(faktur, 'invoice_pdf_path', remotePath);
+                        } catch (pathErr) {
+                            console.error(`[Invoice PDF BG] Error updating invoice_pdf_path:`, pathErr.message);
                         }
                         
                         if (updateSuccess) {
