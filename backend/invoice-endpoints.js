@@ -166,20 +166,28 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         console.log(`[UpdateCount] Files - Invoice: ${invoiceCount}, Bukti: ${buktiCount}, Faktur Pajak: ${fakturCount}`);
         
         // Save the count to database so frontend can read it
-        // Note: Only save if columns exist, otherwise skip silently
         try {
             const { error: updateErr } = await supabase
                 .from('invoice_file_list')
                 .update({
+                    files_uploaded_count: uploadedCount,
+                    files_required_count: requiredCount,
                     updated_at: new Date().toISOString()
                 })
                 .eq('faktur', faktur);
             
             if (!updateErr) {
-                console.log(`[UpdateCount] ✅ Updated timestamp in database`);
+                console.log(`[UpdateCount] ✅ Saved count to database: ${uploadedCount}/${requiredCount}`);
+            } else if (updateErr.message.includes('does not exist')) {
+                // Columns don't exist, just update timestamp
+                console.log(`[UpdateCount] Columns don't exist yet, just updating timestamp`);
+                await supabase
+                    .from('invoice_file_list')
+                    .update({ updated_at: new Date().toISOString() })
+                    .eq('faktur', faktur);
             }
         } catch (saveErr) {
-            console.warn(`[UpdateCount] Note: Could not update timestamp:`, saveErr.message);
+            console.warn(`[UpdateCount] Note: Could not save count:`, saveErr.message);
         }
         
         return uploadedCount;
