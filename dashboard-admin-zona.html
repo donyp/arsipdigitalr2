@@ -1912,7 +1912,11 @@
                 // Get time-based greeting
                 const hour = new Date().getHours();
                 let greeting = 'siang';
-                if (hour >= 15 && hour < 18) {
+                if (hour >= 5 && hour < 12) {
+                    greeting = 'pagi';
+                } else if (hour >= 12 && hour < 15) {
+                    greeting = 'siang';
+                } else if (hour >= 15 && hour < 18) {
                     greeting = 'sore';
                 } else if (hour >= 18 || hour < 5) {
                     greeting = 'malam';
@@ -1939,7 +1943,11 @@
                 if (welcomeNameEl) {
                     const hour = new Date().getHours();
                     let greeting = 'siang';
-                    if (hour >= 15 && hour < 18) {
+                    if (hour >= 5 && hour < 12) {
+                        greeting = 'pagi';
+                    } else if (hour >= 12 && hour < 15) {
+                        greeting = 'siang';
+                    } else if (hour >= 15 && hour < 18) {
                         greeting = 'sore';
                     } else if (hour >= 18 || hour < 5) {
                         greeting = 'malam';
