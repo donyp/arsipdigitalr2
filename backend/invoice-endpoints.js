@@ -73,6 +73,94 @@ async function updateFilesUploadedCount(supabase, faktur) {
         console.log(`[UpdateCount] Calculating count for ${faktur}...`);
         
         // Try NEW method: use invoice_files table if it exists
+        // Use direct REST API to bypass Supabase schema cache issues
+        try {
+            console.log(`[UpdateCount] Attempting to query invoice_files table via REST API...`);
+            
+            const restUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files?faktur=eq.${encodeURIComponent(faktur)}&select=faktur`;
+            
+            const response = await fetch(restUrl, {
+                headers: {
+                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`[UpdateCount] ✓ Using invoice_files table (REST API) - ${data.length} files found`);
+                
+                let uploadedCount = data.length;
+                
+                const { data: invoice, error: invError } = await supabase
+                    .from('invoice_file_list')
+                    .select('keterangan')
+                    .eq('faktur', faktur)
+                    .single();
+                
+                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                const requiredCount = isPPN ? 3 : 2;
+                
+                console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
+                console.log(`[UpdateCount] ✅ Count from invoice_files table (REST API)`);
+                
+                return uploadedCount;
+            } else {
+                console.log(`[UpdateCount] REST API returned ${response.status}, trying other methods...`);
+            }
+        } catch (restErr) {
+            console.log(`[UpdateCount] REST API approach failed:`, restErr.message?.substring(0, 50));
+        }
+        
+        // Fallback: Try SQL query approach
+        try {
+            const sqlQuery = `SELECT COUNT(*) as count FROM invoice_files WHERE faktur='${faktur.replace(/'/g, "''")}'`;
+            const { data: countData, error: countError } = await supabase
+                .rpc('exec', { sql: sqlQuery })
+                .catch(() => {
+                    // If RPC doesn't work, try direct REST call
+                    return fetch(
+                        `${process.env.SUPABASE_URL}/rest/v1/rpc/exec`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ sql: sqlQuery })
+                        }
+                    ).then(r => r.json());
+                });
+            
+            if (countError || !countData) {
+                console.log(`[UpdateCount] Direct SQL approach failed`);
+                throw new Error('SQL query failed');
+            }
+            
+            // If we got here, use the count
+            const uploadedCount = countData[0]?.count || 0;
+            console.log(`[UpdateCount] ✓ Using invoice_files table (SQL query)`);
+            
+            const { data: invoice, error: invError } = await supabase
+                .from('invoice_file_list')
+                .select('keterangan')
+                .eq('faktur', faktur)
+                .single();
+            
+            const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+            const requiredCount = isPPN ? 3 : 2;
+            
+            console.log(`[UpdateCount] Calculated count for ${faktur}: ${uploadedCount}/${requiredCount}`);
+            console.log(`[UpdateCount] ✅ Count from invoice_files table (SQL)`);
+            
+            return uploadedCount;
+        } catch (directErr) {
+            console.log(`[UpdateCount] SQL method failed`);
+        }
+        
+        // Fallback: Try standard table query (may fail due to schema cache)
         try {
             const { data: fileRecords, error: filesError } = await supabase
                 .from('invoice_files')
@@ -80,11 +168,10 @@ async function updateFilesUploadedCount(supabase, faktur) {
                 .eq('faktur', faktur);
                 
             if (!filesError && Array.isArray(fileRecords)) {
-                console.log(`[UpdateCount] ✓ Using NEW invoice_files table (${fileRecords.length} files found)`);
+                console.log(`[UpdateCount] ✓ Using invoice_files table (${fileRecords.length} files found)`);
                 
                 let uploadedCount = fileRecords.length;
                 
-                // Get invoice to determine required count
                 const { data: invoice, error: invError } = await supabase
                     .from('invoice_file_list')
                     .select('keterangan')
@@ -99,8 +186,8 @@ async function updateFilesUploadedCount(supabase, faktur) {
                 
                 return uploadedCount;
             }
-        } catch (newErr) {
-            console.log(`[UpdateCount] invoice_files table not available:`, newErr.message?.substring(0, 50));
+        } catch (tableErr) {
+            console.log(`[UpdateCount] Table query also failed, using OLD method...`);
         }
         
         // Fallback: OLD method - use uploaded_file_path column
@@ -1382,22 +1469,45 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     console.log(`[Check File] Database path is NULL for ${fileType} - file not uploaded`);
                 }
 
-                // Count files - try NEW table first
+                // Count files - try NEW table first using REST API
                 let filesUploaded = 0;
                 try {
-                    const { data: allFiles, error: countError } = await supabase
-                        .from('invoice_files')
-                        .select('file_type', { count: 'exact' })
-                        .eq('faktur', faktur);
+                    const restUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files?faktur=eq.${encodeURIComponent(faktur)}&select=faktur`;
                     
-                    if (!countError && allFiles) {
-                        filesUploaded = allFiles.length;
-                        console.log(`[Check File] ✓ File count from invoice_files: ${filesUploaded}`);
+                    const response = await fetch(restUrl, {
+                        headers: {
+                            'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        filesUploaded = data.length;
+                        console.log(`[Check File] ✓ File count from invoice_files (REST API): ${filesUploaded}`);
+                    } else {
+                        throw new Error(`REST API returned ${response.status}`);
                     }
                 } catch (tableErr) {
-                    // Fallback to OLD method
-                    filesUploaded = invoice.uploaded_file_path ? 1 : 0;
-                    console.log(`[Check File] File count from uploaded_file_path: ${filesUploaded}`);
+                    console.log(`[Check File] REST API failed, trying standard query...`);
+                    try {
+                        const { data: allFiles, error: countError } = await supabase
+                            .from('invoice_files')
+                            .select('file_type', { count: 'exact' })
+                            .eq('faktur', faktur);
+                        
+                        if (!countError && allFiles) {
+                            filesUploaded = allFiles.length;
+                            console.log(`[Check File] ✓ File count from invoice_files: ${filesUploaded}`);
+                        } else {
+                            throw new Error('Standard query failed');
+                        }
+                    } catch (standardErr) {
+                        // Fallback to OLD method
+                        filesUploaded = invoice.uploaded_file_path ? 1 : 0;
+                        console.log(`[Check File] File count from uploaded_file_path: ${filesUploaded}`);
+                    }
                 }
                 
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
