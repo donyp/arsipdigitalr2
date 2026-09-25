@@ -66,15 +66,45 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
     try {
         console.log(`[UpdateCount] Scanning R2 for files for faktur: ${faktur}...`);
         
+        // First get the invoice to fetch date and toko info
+        const { data: invoice, error: invError } = await supabase
+            .from('invoice_file_list')
+            .select('keterangan, tanggal, toko')
+            .eq('faktur', faktur)
+            .single();
+        
+        if (invError) {
+            console.error(`[UpdateCount] Error fetching invoice:`, invError.message);
+            return 0;
+        }
+        
+        if (!invoice || !invoice.tanggal) {
+            console.warn(`[UpdateCount] No invoice date found for faktur: ${faktur}`);
+            return 0;
+        }
+        
+        // Parse date from invoice (YYYY-MM-DD format)
+        const year = invoice.tanggal.split('-')[0];
+        const monthNum = String(invoice.tanggal.split('-')[1]).padStart(2, '0');
+        const day = String(invoice.tanggal.split('-')[2]).padStart(2, '0');
+        
+        // Convert month number to Indonesian month name
+        const monthNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                           'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+        const monthName = monthNames[parseInt(monthNum) - 1];
+        
+        // Extract location from toko name
+        const location = invoice.toko ? (invoice.toko.includes('PEMALANG') ? 'PEMALANG' : 'BEKASI') : 'BEKASI';
+        
         const filename = `${faktur}.pdf`;
         let invoiceCount = 0, buktiCount = 0, fakturCount = 0;
         
-        // Check invoice PDF - try all possible locations
+        console.log(`[UpdateCount] Using date: ${year}/${monthName}/${day}, location: ${location}`);
+        
+        // Check invoice PDF - try PPN and NON paths for this date
         const invoicePaths = [
-            `ARSIP/BEKASI/PPN/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/BEKASI/NON/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/PEMALANG/PPN/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/PEMALANG/NON/2026/SEPTEMBER/25/${filename}`
+            `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
+            `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
         ];
         
         for (const path of invoicePaths) {
@@ -92,8 +122,7 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         
         // Check bukti bayar
         const buktiPaths = [
-            `ARSIP/BEKASI/bukti-bayar/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/PEMALANG/bukti-bayar/2026/SEPTEMBER/25/${filename}`
+            `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`
         ];
         
         for (const path of buktiPaths) {
@@ -111,10 +140,8 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         
         // Check faktur pajak
         const fakturPaths = [
-            `ARSIP/BEKASI/faktur-pajak/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/PEMALANG/faktur-pajak/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/BEKASI/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`,
-            `ARSIP/PEMALANG/Faktur-Pajak/2026/SEPTEMBER/25/${filename}`
+            `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
+            `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`
         ];
         
         for (const path of fakturPaths) {
@@ -131,13 +158,6 @@ async function updateFilesUploadedCount(supabase, faktur, R2Storage) {
         }
         
         const uploadedCount = invoiceCount + buktiCount + fakturCount;
-        
-        // Get invoice type to determine required count
-        const { data: invoice, error: invError } = await supabase
-            .from('invoice_file_list')
-            .select('keterangan')
-            .eq('faktur', faktur)
-            .single();
         
         const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
         const requiredCount = isPPN ? 3 : 2;
