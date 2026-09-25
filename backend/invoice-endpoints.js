@@ -3093,13 +3093,15 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 }
                 
                 // Create cache key from faktur + file list (handles updates)
+                // Use SHA256 hash instead of full path to avoid ENAMETOOLONG errors
+                const crypto = require('crypto');
                 const fileListSignature = [
                     invoice.bukti_bayar_path,
                     invoice.invoice_pdf_path,
                     invoice.faktur_pajak_path
                 ].filter(Boolean).join('|');
                 
-                const cacheKey = Buffer.from(fileListSignature).toString('hex');
+                const cacheKey = crypto.createHash('sha256').update(fileListSignature).digest('hex');
                 const cachedFilePath = path.join(cacheDir, cacheKey + '.pdf');
                 
                 let mergedBuffer = null;
