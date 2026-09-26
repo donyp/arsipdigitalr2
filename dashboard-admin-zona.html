@@ -1990,6 +1990,9 @@
          */
         async function showAdminZonaDownloadMenu(faktur, invoiceId) {
             try {
+                // Detect dark mode early
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                
                 // Find invoice in invoices data
                 const invoices = window.allAdminZonaInvoices || [];
                 const invoice = invoices.find(inv => inv.faktur === faktur);
@@ -2059,7 +2062,6 @@
                 menuHTML += `</div>`;
                 
                 // Show popup with dark mode support
-                const isDarkMode = document.body.classList.contains('dark-mode');
                 Swal.fire({
                     title: '📥 Download Files',
                     html: menuHTML,
