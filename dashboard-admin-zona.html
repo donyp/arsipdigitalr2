@@ -1963,12 +1963,23 @@
                 }
                 
                 // Get username (fallback to name or 'User')
-                const username = currentUser.name || 'User';
+                let username = currentUser.name || 'User';
                 
-                // Get zona_id - remove leading zeros (e.g., "01" -> "1")
-                let zonaId = currentUser.zona_id || 'N/A';
+                // Extract zona number from username if it contains "Zona" pattern
+                // e.g., "Admin Zona 01" -> extract "01" and format as "1"
+                let zonaFromUsername = null;
+                const zonaMatch = username.match(/Zona\s+0*(\d+)/i);
+                if (zonaMatch) {
+                    zonaFromUsername = zonaMatch[1]; // Gets just the number without leading zeros
+                    // Clean username to just "Admin" if it was "Admin Zona XX"
+                    username = username.replace(/\s*Zona\s+0*\d+/i, '').trim();
+                }
+                
+                // Get zona_id - remove leading zeros (e.g., "01" -> "1", or use extracted number)
+                let zonaId = zonaFromUsername || currentUser.zona_id || 'N/A';
+                console.log('[Dashboard] Username:', currentUser.name, '-> Cleaned:', username);
                 console.log('[Dashboard] Current user zona_id from API:', currentUser.zona_id, 'Type:', typeof currentUser.zona_id);
-                if (zonaId !== 'N/A') {
+                if (zonaId !== 'N/A' && typeof zonaId !== 'string') {
                     zonaId = String(zonaId).replace(/^0+/, '') || '0';
                 }
                 console.log('[Dashboard] Processed zonaId for display:', zonaId);
@@ -2206,7 +2217,8 @@
                 // Get auth token
                 const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
                 
-                // Download file
+                // Start download
+                const startTime = Date.now();
                 const response = await fetch(`/api/invoice/download-file/${faktur}/${fileType}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -2217,6 +2229,12 @@
                     throw new Error(error.error || 'Download failed');
                 }
                 
+                // Ensure loading shows for at least 500ms
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsedTime));
+                }
+                
                 // Get filename from Content-Disposition header
                 const blob = await response.blob();
                 const contentDisposition = response.headers.get('Content-Disposition');
@@ -2225,6 +2243,9 @@
                     const matches = /filename="([^"]*)"/.exec(contentDisposition);
                     if (matches) filename = matches[1];
                 }
+                
+                // Close loading popup before showing success
+                Swal.close();
                 
                 // Trigger download
                 const url = window.URL.createObjectURL(blob);
@@ -2238,13 +2259,31 @@
                 
                 // Show success
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: `${colorConfig.text} berhasil diunduh`,
+                    title: '✅ Berhasil!',
+                    html: `
+                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
+                                ✅
+                            </div>
+                            <p style="margin: 0; font-size: 15px; color: #27ae60; font-weight: 600;">
+                                ${colorConfig.text} berhasil diunduh
+                            </p>
+                        </div>
+                        <style>
+                            @keyframes popIn {
+                                0% { transform: scale(0.5); opacity: 0; }
+                                50% { transform: scale(1.1); }
+                                100% { transform: scale(1); opacity: 1; }
+                            }
+                        </style>
+                    `,
                     background: isDarkMode ? '#1e293b' : '#f8f9fa',
                     color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    timer: 1500,
-                    showConfirmButton: false
+                    timer: 2000,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'download-success-popup'
+                    }
                 });
                 
             } catch (error) {
@@ -2318,6 +2357,7 @@
                 
                 const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
                 
+                const startTime = Date.now();
                 const response = await fetch(`/api/invoice/combine-pdf/${faktur}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -2328,8 +2368,17 @@
                     throw new Error(error.error || 'Combine failed');
                 }
                 
+                // Ensure loading shows for at least 500ms
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < 500) {
+                    await new Promise(resolve => setTimeout(resolve, 500 - elapsedTime));
+                }
+                
                 const blob = await response.blob();
                 const filename = `${faktur}.pdf`;
+                
+                // Close loading popup before showing success
+                Swal.close();
                 
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -2341,13 +2390,31 @@
                 window.URL.revokeObjectURL(url);
                 
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: `Combined PDF ${filename} berhasil diunduh`,
+                    title: '✅ Berhasil!',
+                    html: `
+                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
+                                ✅
+                            </div>
+                            <p style="margin: 0; font-size: 15px; color: #27ae60; font-weight: 600;">
+                                PDF berhasil diunduh
+                            </p>
+                        </div>
+                        <style>
+                            @keyframes popIn {
+                                0% { transform: scale(0.5); opacity: 0; }
+                                50% { transform: scale(1.1); }
+                                100% { transform: scale(1); opacity: 1; }
+                            }
+                        </style>
+                    `,
                     background: isDarkMode ? '#1e293b' : '#f8f9fa',
                     color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    timer: 1500,
-                    showConfirmButton: false
+                    timer: 2000,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'download-success-popup'
+                    }
                 });
                 
             } catch (error) {
