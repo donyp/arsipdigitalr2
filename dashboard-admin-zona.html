@@ -784,6 +784,11 @@
             color: #60a5fa !important;
         }
 
+        /* Logout warning icon styling */
+        .swal-icon-logout.swal2-icon.swal2-warning {
+            font-size: 18px !important;
+        }
+
         .swal2-actions {
             gap: 8px !important;
             padding: 12px 0 0 0 !important;
@@ -1826,8 +1831,8 @@
             const isDarkMode = document.body.classList.contains('dark-mode');
             
             Swal.fire({
-                title: 'Logout Akun?',
-                html: '<p style="margin: 0; font-size: 14px;">Apakah Anda yakin ingin keluar dari sistem?</p>',
+                title: 'Keluar Aplikasi?',
+                html: '<p style="margin: 0; font-size: 14px;">Apakah anda yakin ingin keluar?</p>',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#ef4444',
@@ -1840,7 +1845,17 @@
                 customClass: {
                     popup: 'logout-popup-small',
                     title: 'logout-title-small',
-                    htmlContainer: 'logout-html-small'
+                    htmlContainer: 'logout-html-small',
+                    icon: 'swal-icon-logout'
+                },
+                willOpen: () => {
+                    const popup = Swal.getPopup();
+                    if (popup) {
+                        const icon = popup.querySelector('.swal2-icon');
+                        if (icon) {
+                            icon.style.fontSize = '18px';
+                        }
+                    }
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
