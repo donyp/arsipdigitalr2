@@ -19,6 +19,44 @@
                 document.documentElement.setAttribute('data-dark-mode', 'true');
             }
         })();
+        
+        // Load SVG logos and convert to data URI base64
+        async function loadLogos() {
+            try {
+                // Load ANKABIRU (light mode)
+                const blueSvgRes = await fetch('./logo/ANKABIRU.svg');
+                const blueSvg = await blueSvgRes.text();
+                const blueBase64 = btoa(unescape(encodeURIComponent(blueSvg)));
+                const blueDataUri = `data:image/svg+xml;base64,${blueBase64}`;
+                
+                // Load ANKAPUTIH (dark mode)
+                const whiteSvgRes = await fetch('./logo/ANKAPUTIH.svg');
+                const whiteSvg = await whiteSvgRes.text();
+                const whiteBase64 = btoa(unescape(encodeURIComponent(whiteSvg)));
+                const whiteDataUri = `data:image/svg+xml;base64,${whiteBase64}`;
+                
+                // Inject into CSS
+                const style = document.createElement('style');
+                style.textContent = `
+                    .logo-anka-light {
+                        background-image: url('${blueDataUri}');
+                    }
+                    .logo-anka-dark {
+                        background-image: url('${whiteDataUri}');
+                    }
+                `;
+                document.head.appendChild(style);
+            } catch (error) {
+                console.error('Error loading logos:', error);
+            }
+        }
+        
+        // Load logos after DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadLogos);
+        } else {
+            loadLogos();
+        }
     </script>
     <style>
         .font-inter {
@@ -143,12 +181,10 @@
         
         .logo-anka-light {
             display: block;
-            background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><text x="100" y="130" font-size="90" font-weight="bold" fill="%233D3C6B" text-anchor="middle" font-family="Arial, sans-serif">ANKA</text></svg>');
         }
         
         .logo-anka-dark {
             display: none;
-            background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><text x="100" y="130" font-size="90" font-weight="bold" fill="%23ffffff" text-anchor="middle" font-family="Arial, sans-serif">ANKA</text></svg>');
         }
         
         html[data-dark-mode="true"] .logo-anka-light {
