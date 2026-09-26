@@ -2182,38 +2182,10 @@
                 
                 console.log('[Download] Starting download for:', faktur, fileType);
                 
-                // Show loading modal with longer minimum display time
+                // Show loading modal using Swal.showLoading()
                 Swal.fire({
                     title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
-                    html: `
-                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px;">
-                            <div style="position: relative; width: 60px; height: 60px;">
-                                <i class="fas fa-spinner fa-spin" style="
-                                    font-size: 3rem;
-                                    color: rgba(255,255,255,0.8);
-                                    animation: spin 2s linear infinite;
-                                "></i>
-                            </div>
-                            <div style="
-                                width: 200px;
-                                height: 8px;
-                                background: rgba(255,255,255,0.3);
-                                border-radius: 4px;
-                                overflow: hidden;
-                            ">
-                                <div style="
-                                    width: 50%;
-                                    height: 100%;
-                                    background: linear-gradient(90deg, rgba(255,255,255,0.8), rgba(255,255,255,1), rgba(255,255,255,0.8));
-                                    border-radius: 4px;
-                                    animation: slide 1.5s infinite;
-                                "></div>
-                            </div>
-                            <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">
-                                Mengunduh file...
-                            </p>
-                        </div>
-                    `,
+                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang mengunduh file...</p>',
                     showConfirmButton: false,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
@@ -2222,8 +2194,9 @@
                     customClass: {
                         popup: 'colored-download-popup'
                     },
-                    didOpen: (modal) => {
-                        console.log('[Download] Loading popup opened and visible');
+                    didOpen: async (modal) => {
+                        console.log('[Download] Loading popup opened');
+                        Swal.showLoading();
                     }
                 });
                 
@@ -2326,42 +2299,15 @@
                 
                 Swal.fire({
                     title: '📦 Menggabungkan PDF',
-                    html: `
-                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px;">
-                            <div style="position: relative; width: 60px; height: 60px;">
-                                <i class="fas fa-spinner fa-spin" style="
-                                    font-size: 3rem;
-                                    color: rgba(255,255,255,0.8);
-                                    animation: spin 2s linear infinite;
-                                "></i>
-                            </div>
-                            <div style="
-                                width: 200px;
-                                height: 8px;
-                                background: rgba(255,255,255,0.3);
-                                border-radius: 4px;
-                                overflow: hidden;
-                            ">
-                                <div style="
-                                    width: 50%;
-                                    height: 100%;
-                                    background: linear-gradient(90deg, rgba(255,255,255,0.8), rgba(255,255,255,1), rgba(255,255,255,0.8));
-                                    border-radius: 4px;
-                                    animation: slide 1.5s infinite;
-                                "></div>
-                            </div>
-                            <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">
-                                Menggabungkan semua file PDF...
-                            </p>
-                        </div>
-                    `,
+                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang menggabungkan file...</p>',
                     showConfirmButton: false,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     background: '#e67e22',
                     color: '#ffffff',
-                    didOpen: (modal) => {
-                        console.log('[CombinePDF] Loading popup opened and visible');
+                    didOpen: async (modal) => {
+                        console.log('[CombinePDF] Loading popup opened');
+                        Swal.showLoading();
                     }
                 });
                 
