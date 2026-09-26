@@ -2205,7 +2205,7 @@
                 
                 console.log('[Download] Fetching from API...');
                 
-                // Ensure minimum loading time of 1500ms for visibility
+                // Start timing from now
                 const startTime = Date.now();
                 const response = await fetch(`/api/invoice/download-file/${faktur}/${fileType}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -2217,18 +2217,23 @@
                     throw new Error(error.error || 'Download failed');
                 }
                 
-                console.log('[Download] File received, enforcing minimum display...');
+                console.log('[Download] Response received after:', Date.now() - startTime, 'ms');
                 
-                // Ensure loading shows for at least 1500ms
-                const elapsedTime = Date.now() - startTime;
-                if (elapsedTime < 1500) {
-                    await new Promise(resolve => setTimeout(resolve, 1500 - elapsedTime));
+                // Get blob immediately
+                const blob = await response.blob();
+                
+                // Ensure minimum TOTAL loading time of 2500ms from when popup opened
+                const totalElapsedTime = Date.now() - startTime;
+                const remainingWaitTime = 2500 - totalElapsedTime;
+                
+                if (remainingWaitTime > 0) {
+                    console.log('[Download] Showing loading for additional:', remainingWaitTime, 'ms');
+                    await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
                 }
                 
-                console.log('[Download] Minimum time reached, closing loading popup...');
+                console.log('[Download] Total elapsed time:', Date.now() - startTime, 'ms');
                 
                 // Get filename from Content-Disposition header
-                const blob = await response.blob();
                 const contentDisposition = response.headers.get('Content-Disposition');
                 let filename = `${faktur}_${fileType}.pdf`;
                 if (contentDisposition) {
@@ -2236,7 +2241,8 @@
                     if (matches) filename = matches[1];
                 }
                 
-                // Close loading popup before showing success
+                // Hide loading and close popup
+                Swal.hideLoading();
                 Swal.close();
                 
                 // Trigger download
@@ -2326,20 +2332,26 @@
                     throw new Error(error.error || 'Combine failed');
                 }
                 
-                console.log('[CombinePDF] PDF received, enforcing minimum display...');
+                console.log('[CombinePDF] PDF received after:', Date.now() - startTime, 'ms');
                 
-                // Ensure loading shows for at least 1500ms
-                const elapsedTime = Date.now() - startTime;
-                if (elapsedTime < 1500) {
-                    await new Promise(resolve => setTimeout(resolve, 1500 - elapsedTime));
+                // Get blob immediately
+                const blob = await response.blob();
+                
+                // Ensure minimum TOTAL loading time of 2500ms
+                const totalElapsedTime = Date.now() - startTime;
+                const remainingWaitTime = 2500 - totalElapsedTime;
+                
+                if (remainingWaitTime > 0) {
+                    console.log('[CombinePDF] Showing loading for additional:', remainingWaitTime, 'ms');
+                    await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
                 }
                 
-                console.log('[CombinePDF] Minimum time reached, closing loading popup...');
+                console.log('[CombinePDF] Total elapsed time:', Date.now() - startTime, 'ms');
                 
-                const blob = await response.blob();
                 const filename = `${faktur}.pdf`;
                 
-                // Close loading popup before showing success
+                // Hide loading and close popup
+                Swal.hideLoading();
                 Swal.close();
                 
                 const url = window.URL.createObjectURL(blob);
