@@ -765,6 +765,24 @@
             height: 40px !important;
         }
 
+        /* Clean icon styling for info popups */
+        .swal-icon-clean.swal2-icon {
+            width: 50px !important;
+            height: 50px !important;
+            margin: 0 auto 16px !important;
+            border-width: 2px !important;
+        }
+
+        .swal-icon-clean.swal2-icon.swal2-info {
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+        }
+
+        body.dark-mode .swal-icon-clean.swal2-icon.swal2-info {
+            border-color: #60a5fa !important;
+            color: #60a5fa !important;
+        }
+
         .swal2-actions {
             gap: 8px !important;
             padding: 12px 0 0 0 !important;
@@ -2029,12 +2047,12 @@
                 
                 // If no files uploaded
                 if (!hasFiles) {
-                    menuHTML += `<div style="padding: 15px; background: #f0f0f0; border-radius: 4px; text-align: center;">
-                        <p style="color: #7f8c8d; font-size: 13px; margin: 0; line-height: 1.4;">
-                            <i class="fas fa-info-circle" style="color: #3498db; margin-right: 6px;"></i>
-                            File belum diupload
+                    const infoBg = isDarkMode ? '#334155' : '#f0f0f0';
+                    const infoTextColor = isDarkMode ? '#cbd5e1' : '#7f8c8d';
+                    menuHTML += `<div style="padding: 16px; background: ${infoBg}; border-radius: 6px; text-align: center;">
+                        <p style="color: ${infoTextColor}; font-size: 13px; margin: 0; line-height: 1.5; font-weight: 500;">
+                            📁 File belum diupload oleh admin anka
                         </p>
-                        <p style="color: #95a5a6; font-size: 12px; margin: 8px 0 0 0;">Silahkan upload file terlebih dahulu</p>
                     </div>`;
                 }
                 
@@ -2051,7 +2069,8 @@
                     color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                     customClass: {
                         popup: 'download-menu-popup-admin-zona',
-                        title: 'download-menu-title'
+                        title: 'download-menu-title',
+                        icon: 'swal-icon-clean'
                     },
                     allowOutsideClick: true,
                     allowEscapeKey: true,
@@ -2064,6 +2083,15 @@
                             popup.style.boxShadow = isDarkMode 
                                 ? '0 10px 40px rgba(0,0,0,0.5)' 
                                 : '0 10px 40px rgba(0,0,0,0.15)';
+                            
+                            // Clean up icon styling
+                            const icon = popup.querySelector('.swal2-icon');
+                            if (icon) {
+                                icon.style.width = '50px';
+                                icon.style.height = '50px';
+                                icon.style.borderColor = isDarkMode ? '#60a5fa' : '#3b82f6';
+                                icon.style.marginBottom = '16px';
+                            }
                         }
                     }
                 });
