@@ -1253,6 +1253,9 @@
                 // Single API call to get all invoice data
                 const res = await API.get('/api/invoice/list?limit=10000&offset=0');
                 const invoices = res.data || [];
+                
+                // Store invoices globally for use in download functions
+                window.allAdminZonaInvoices = invoices;
 
                 // === UPDATE WELCOME STATS ===
                 const totalInvoice = invoices.length;
@@ -1609,9 +1612,7 @@
                         <td>${total}</td>
                         <td>${inv.keterangan || '-'}</td>
                         <td style="text-align: center;">
-                            <button class="btn-action" onclick="showDownloadMenu('${inv.faktur}')">
-                                <i class="fas fa-download"></i> Download
-                            </button>
+                            <button onclick="showAdminZonaDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⋮</button>
                         </td>
                     </tr>
                 `;
@@ -1960,6 +1961,307 @@
                 }
             }
         });
+
+        // ============================================
+        // ADMIN ZONA DOWNLOAD FUNCTIONS
+        // ============================================
+
+        /**
+         * Show download menu with file options
+         * Files shown depend on what's been uploaded
+         */
+        async function showAdminZonaDownloadMenu(faktur, invoiceId) {
+            try {
+                // Find invoice in invoices data
+                const invoices = window.allAdminZonaInvoices || [];
+                const invoice = invoices.find(inv => inv.faktur === faktur);
+                
+                if (!invoice) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Data invoice tidak ditemukan',
+                        confirmButtonColor: '#e74c3c'
+                    });
+                    return;
+                }
+                
+                // Build menu HTML based on available files
+                let menuHTML = `<div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">`;
+                
+                // Download invoice button if exists
+                if (invoice.invoice_pdf_path) {
+                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'invoice'); Swal.close();" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#2980b9'" onmouseout="this.style.background='#3498db'">
+                        📄 Download Invoice
+                    </button>`;
+                }
+                
+                // Download bukti bayar button if exists
+                if (invoice.bukti_bayar_path) {
+                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'bukti_bayar'); Swal.close();" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
+                        💰 Download Bukti Bayar
+                    </button>`;
+                }
+                
+                // Download faktur pajak button if exists (PPN only)
+                if (invoice.faktur_pajak_path) {
+                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'faktur_pajak'); Swal.close();" style="width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
+                        📋 Download Faktur Pajak
+                    </button>`;
+                }
+                
+                // Combine PDF button if all required files exist
+                const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
+                const filesRequired = isPPN ? 3 : 2;
+                const filesUploaded = (invoice.invoice_pdf_path ? 1 : 0) + (invoice.bukti_bayar_path ? 1 : 0) + (invoice.faktur_pajak_path ? 1 : 0);
+                
+                if (filesUploaded >= filesRequired) {
+                    menuHTML += `<button onclick="combinePDFAdminZona('${faktur}'); Swal.close();" style="width: 100%; padding: 12px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#d35400'" onmouseout="this.style.background='#e67e22'">
+                        📦 Combine PDF (${filesUploaded}/${filesRequired})
+                    </button>`;
+                }
+                
+                menuHTML += `</div>`;
+                
+                // Show popup
+                Swal.fire({
+                    title: '📥 Download Files',
+                    html: menuHTML,
+                    icon: 'info',
+                    showConfirmButton: false,
+                    background: '#f8f9fa',
+                    customClass: {
+                        popup: 'download-menu-popup'
+                    },
+                    allowOutsideClick: true,
+                    allowEscapeKey: true
+                });
+                
+            } catch (error) {
+                console.error('[AdminZonaMenu] Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Gagal memuat menu download',
+                    confirmButtonColor: '#e74c3c'
+                });
+            }
+        }
+
+        /**
+         * Download individual file with progress UI
+         */
+        async function downloadAdminZonaFile(faktur, fileType) {
+            try {
+                // Define file type styling
+                const fileTypeColors = {
+                    'invoice': { bg: '#3498db', icon: '📄', text: 'Invoice' },
+                    'bukti_bayar': { bg: '#27ae60', icon: '💰', text: 'Bukti Bayar' },
+                    'faktur_pajak': { bg: '#9b59b6', icon: '📋', text: 'Faktur Pajak' }
+                };
+                
+                const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📁', text: 'File' };
+                
+                // Show loading modal
+                Swal.fire({
+                    title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
+                    html: `
+                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                            <div style="position: relative; width: 60px; height: 60px;">
+                                <i class="fas fa-spinner fa-spin" style="
+                                    font-size: 3rem;
+                                    color: rgba(255,255,255,0.8);
+                                    animation: spin 2s linear infinite;
+                                "></i>
+                            </div>
+                            <div style="
+                                width: 200px;
+                                height: 8px;
+                                background: rgba(255,255,255,0.3);
+                                border-radius: 4px;
+                                overflow: hidden;
+                            ">
+                                <div style="
+                                    width: 50%;
+                                    height: 100%;
+                                    background: linear-gradient(90deg, rgba(255,255,255,0.8), rgba(255,255,255,1), rgba(255,255,255,0.8));
+                                    border-radius: 4px;
+                                    animation: slide 1.5s infinite;
+                                "></div>
+                            </div>
+                            <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">
+                                Mengunduh file...
+                            </p>
+                        </div>
+                        <style>
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                            @keyframes slide {
+                                0% { transform: translateX(-100%); }
+                                50% { transform: translateX(100%); }
+                                100% { transform: translateX(100%); }
+                            }
+                        </style>
+                    `,
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    background: colorConfig.bg,
+                    color: '#ffffff',
+                    customClass: {
+                        popup: 'colored-download-popup'
+                    }
+                });
+                
+                // Get auth token
+                const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
+                
+                // Download file
+                const response = await fetch(`/api/invoice/download-file/${faktur}/${fileType}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    Swal.close();
+                    const error = await response.json();
+                    throw new Error(error.error || 'Download failed');
+                }
+                
+                // Get filename from Content-Disposition header
+                const blob = await response.blob();
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = `${faktur}_${fileType}.pdf`;
+                if (contentDisposition) {
+                    const matches = /filename="([^"]*)"/.exec(contentDisposition);
+                    if (matches) filename = matches[1];
+                }
+                
+                // Trigger download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                // Show success
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: `${colorConfig.text} berhasil diunduh`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                
+            } catch (error) {
+                console.error('[AdminZonaDownload] Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Download Gagal',
+                    text: error.message,
+                    confirmButtonColor: '#e74c3c'
+                });
+            }
+        }
+
+        /**
+         * Combine all PDFs and download
+         */
+        async function combinePDFAdminZona(faktur) {
+            try {
+                Swal.fire({
+                    title: '📦 Menggabungkan PDF',
+                    html: `
+                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                            <div style="position: relative; width: 60px; height: 60px;">
+                                <i class="fas fa-spinner fa-spin" style="
+                                    font-size: 3rem;
+                                    color: rgba(255,255,255,0.8);
+                                    animation: spin 2s linear infinite;
+                                "></i>
+                            </div>
+                            <div style="
+                                width: 200px;
+                                height: 8px;
+                                background: rgba(255,255,255,0.3);
+                                border-radius: 4px;
+                                overflow: hidden;
+                            ">
+                                <div style="
+                                    width: 50%;
+                                    height: 100%;
+                                    background: linear-gradient(90deg, rgba(255,255,255,0.8), rgba(255,255,255,1), rgba(255,255,255,0.8));
+                                    border-radius: 4px;
+                                    animation: slide 1.5s infinite;
+                                "></div>
+                            </div>
+                            <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 14px;">
+                                Menggabungkan semua file PDF...
+                            </p>
+                        </div>
+                        <style>
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                            @keyframes slide {
+                                0% { transform: translateX(-100%); }
+                                50% { transform: translateX(100%); }
+                                100% { transform: translateX(100%); }
+                            }
+                        </style>
+                    `,
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    background: '#e67e22',
+                    color: '#ffffff'
+                });
+                
+                const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
+                
+                const response = await fetch(`/api/invoice/combine-pdf/${faktur}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    Swal.close();
+                    const error = await response.json();
+                    throw new Error(error.error || 'Combine failed');
+                }
+                
+                const blob = await response.blob();
+                const filename = `${faktur}.pdf`;
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: `Combined PDF ${filename} berhasil diunduh`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                
+            } catch (error) {
+                console.error('[CombinePDF] Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Combine Gagal',
+                    text: error.message,
+                    confirmButtonColor: '#e74c3c'
+                });
+            }
+        }
     </script>
 </body>
 </html>
