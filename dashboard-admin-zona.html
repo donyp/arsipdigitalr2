@@ -2180,7 +2180,9 @@
                 const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📁', text: 'File' };
                 const isDarkMode = document.body.classList.contains('dark-mode');
                 
-                // Show loading modal
+                console.log('[Download] Starting download for:', faktur, fileType);
+                
+                // Show loading modal with longer minimum display time
                 Swal.fire({
                     title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
                     html: `
@@ -2214,17 +2216,23 @@
                     `,
                     showConfirmButton: false,
                     allowOutsideClick: false,
+                    allowEscapeKey: false,
                     background: colorConfig.bg,
                     color: '#ffffff',
                     customClass: {
                         popup: 'colored-download-popup'
+                    },
+                    didOpen: (modal) => {
+                        console.log('[Download] Loading popup opened and visible');
                     }
                 });
                 
                 // Get auth token
                 const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
                 
-                // Start download
+                console.log('[Download] Fetching from API...');
+                
+                // Ensure minimum loading time of 1500ms for visibility
                 const startTime = Date.now();
                 const response = await fetch(`/api/invoice/download-file/${faktur}/${fileType}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -2236,11 +2244,15 @@
                     throw new Error(error.error || 'Download failed');
                 }
                 
-                // Ensure loading shows for at least 500ms
+                console.log('[Download] File received, enforcing minimum display...');
+                
+                // Ensure loading shows for at least 1500ms
                 const elapsedTime = Date.now() - startTime;
-                if (elapsedTime < 500) {
-                    await new Promise(resolve => setTimeout(resolve, 500 - elapsedTime));
+                if (elapsedTime < 1500) {
+                    await new Promise(resolve => setTimeout(resolve, 1500 - elapsedTime));
                 }
+                
+                console.log('[Download] Minimum time reached, closing loading popup...');
                 
                 // Get filename from Content-Disposition header
                 const blob = await response.blob();
@@ -2310,6 +2322,8 @@
             try {
                 const isDarkMode = document.body.classList.contains('dark-mode');
                 
+                console.log('[CombinePDF] Starting combine for:', faktur);
+                
                 Swal.fire({
                     title: '📦 Menggabungkan PDF',
                     html: `
@@ -2343,11 +2357,17 @@
                     `,
                     showConfirmButton: false,
                     allowOutsideClick: false,
+                    allowEscapeKey: false,
                     background: '#e67e22',
-                    color: '#ffffff'
+                    color: '#ffffff',
+                    didOpen: (modal) => {
+                        console.log('[CombinePDF] Loading popup opened and visible');
+                    }
                 });
                 
                 const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
+                
+                console.log('[CombinePDF] Fetching combined PDF from API...');
                 
                 const startTime = Date.now();
                 const response = await fetch(`/api/invoice/combine-pdf/${faktur}`, {
@@ -2356,6 +2376,19 @@
                 
                 if (!response.ok) {
                     Swal.close();
+                    const error = await response.json();
+                    throw new Error(error.error || 'Combine failed');
+                }
+                
+                console.log('[CombinePDF] PDF received, enforcing minimum display...');
+                
+                // Ensure loading shows for at least 1500ms
+                const elapsedTime = Date.now() - startTime;
+                if (elapsedTime < 1500) {
+                    await new Promise(resolve => setTimeout(resolve, 1500 - elapsedTime));
+                }
+                
+                console.log('[CombinePDF] Minimum time reached, closing loading popup...');
                     const error = await response.json();
                     throw new Error(error.error || 'Combine failed');
                 }
