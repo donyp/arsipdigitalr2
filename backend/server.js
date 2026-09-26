@@ -1024,16 +1024,17 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         if (sessionError) console.error("[SESSION] Check Error:", sessionError);
 
-        if (user.role === 'admin_zona' && activeSessions && activeSessions.length >= 2) {
-            const { session_id } = req.body;
-            const currentSession = activeSessions.find(s => s.session_token === session_id);
-
-            if (!currentSession) {
-                return res.status(403).json({
-                    error: 'Sesi Terbatas: Akun ini sudah aktif di 2 perangkat lain. Silakan logout dari perangkat sebelumnya.'
-                });
-            }
-        }
+        // Note: Session limit check removed to allow multiple login attempts
+        // Session management will be handled at logout/timeout
+        // if (user.role === 'admin_zona' && activeSessions && activeSessions.length >= 2) {
+        //     const { session_id } = req.body;
+        //     const currentSession = activeSessions.find(s => s.session_token === session_id);
+        //     if (!currentSession) {
+        //         return res.status(403).json({
+        //             error: 'Sesi Terbatas: Akun ini sudah aktif di 2 perangkat lain. Silakan logout dari perangkat sebelumnya.'
+        //         });
+        //     }
+        // }
 
         // Generate JWT
         const payload = {
@@ -1046,6 +1047,13 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         };
 
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+        // Clean up expired sessions for this user
+        await supabase
+            .from('user_sessions')
+            .update({ is_active: false })
+            .eq('user_id', user.id)
+            .lt('expires_at', new Date().toISOString());
 
         // Upsert Session
         const { session_id } = req.body;
