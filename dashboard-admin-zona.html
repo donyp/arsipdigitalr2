@@ -846,6 +846,48 @@
             50% { transform: scale(1.1); }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        /* Page Loader */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .page-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-content {
+            text-align: center;
+            color: white;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 20px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loader-text {
+            font-size: 16px;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
@@ -856,6 +898,14 @@
         }
     </script>
     
+    <!-- Page Loader -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <div class="loader-text">Loading...</div>
+        </div>
+    </div>
+
     <!-- Sidebar (hidden for admin zona) -->
     <aside id="sidebar"></aside>
 
@@ -939,9 +989,9 @@
                         <input type="text" id="filterSearch" placeholder="Cari faktur atau konsumen..." onkeydown="if(event.key==='Enter') { event.preventDefault(); applyFilters(); }">
                     </div>
 
-                    <!-- Toko (Konsumen) Dropdown -->
+                    <!-- Toko Dropdown -->
                     <div class="filter-group">
-                        <label>Toko (Konsumen)</label>
+                        <label>Toko</label>
                         <div class="custom-dropdown" id="tokoDropdown">
                             <button class="dropdown-trigger" onclick="toggleCustomDropdown(event, 'tokoDropdown')">
                                 <span class="dropdown-label">Semua Toko</span>
@@ -1094,7 +1144,7 @@
                         <tr>
                             <td colspan="8" class="empty-state">
                                 <div class="empty-state-icon">📅</div>
-                                <div class="empty-state-title">Silahkan pilih tahun dan bulan terlebih dahulu</div>
+                                <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
                         </tr>
@@ -1279,7 +1329,7 @@
                 <tr>
                     <td colspan="8" class="empty-state">
                         <div class="empty-state-icon">📅</div>
-                        <div class="empty-state-title">Silahkan pilih tahun dan bulan terlebih dahulu</div>
+                        <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                         <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                     </td>
                 </tr>
@@ -1393,8 +1443,19 @@
                 supplierOptions.innerHTML = supplierHTML;
 
                 console.log('Loaded', invoices.length, 'invoices - updated stats and filters');
+                
+                // Hide page loader after data is loaded
+                const pageLoader = document.getElementById('pageLoader');
+                if (pageLoader) {
+                    pageLoader.classList.add('hidden');
+                }
             } catch (err) {
                 console.error('Error loading invoices and stats:', err);
+                // Hide loader even on error
+                const pageLoader = document.getElementById('pageLoader');
+                if (pageLoader) {
+                    pageLoader.classList.add('hidden');
+                }
             }
         }
 
