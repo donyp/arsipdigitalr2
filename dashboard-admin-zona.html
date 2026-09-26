@@ -767,8 +767,8 @@
 
         /* Clean icon styling for info popups */
         .swal-icon-clean.swal2-icon {
-            width: 40px !important;
-            height: 40px !important;
+            width: 50px !important;
+            height: 50px !important;
             margin: 8px auto 24px !important;
             border-width: 2px !important;
         }
@@ -776,10 +776,7 @@
         .swal-icon-clean.swal2-icon.swal2-info {
             border-color: #3b82f6 !important;
             color: #3b82f6 !important;
-        }
-
-        .swal-icon-clean.swal2-icon.swal2-info::before {
-            font-size: 22px !important;
+            font-size: 24px !important;
         }
 
         body.dark-mode .swal-icon-clean.swal2-icon.swal2-info {
@@ -2090,14 +2087,15 @@
                                 ? '0 10px 40px rgba(0,0,0,0.5)' 
                                 : '0 10px 40px rgba(0,0,0,0.15)';
                             
-                            // Clean up icon styling - smaller and lower
+                            // Clean up icon styling - keep circle at 50px but make ! smaller
                             const icon = popup.querySelector('.swal2-icon');
                             if (icon) {
-                                icon.style.width = '40px';
-                                icon.style.height = '40px';
+                                icon.style.width = '50px';
+                                icon.style.height = '50px';
                                 icon.style.borderWidth = '2px';
                                 icon.style.marginTop = '8px';
                                 icon.style.marginBottom = '24px';
+                                icon.style.fontSize = '24px';
                             }
                         }
                     }
