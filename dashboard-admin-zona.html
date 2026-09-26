@@ -2389,15 +2389,6 @@
                 }
                 
                 console.log('[CombinePDF] Minimum time reached, closing loading popup...');
-                    const error = await response.json();
-                    throw new Error(error.error || 'Combine failed');
-                }
-                
-                // Ensure loading shows for at least 500ms
-                const elapsedTime = Date.now() - startTime;
-                if (elapsedTime < 500) {
-                    await new Promise(resolve => setTimeout(resolve, 500 - elapsedTime));
-                }
                 
                 const blob = await response.blob();
                 const filename = `${faktur}.pdf`;
