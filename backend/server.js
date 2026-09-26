@@ -1149,11 +1149,12 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, email, name, full_name, role, zona_id, toko_id, is_active, permissions, zonas(id, nama, kode)')
+            .select('id, email, name, full_name, role, zona_id, toko_id, is_active, permissions')
             .eq('id', req.user.userId)
             .single();
 
         if (error || !user) {
+            console.error('[Auth /me] Error fetching user:', error);
             return res.status(404).json({ error: 'User tidak ditemukan.' });
         }
 
