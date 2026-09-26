@@ -776,7 +776,7 @@
         .swal-icon-clean.swal2-icon.swal2-info {
             border-color: #3b82f6 !important;
             color: #3b82f6 !important;
-            font-size: 24px !important;
+            font-size: 32px !important;
         }
 
         body.dark-mode .swal-icon-clean.swal2-icon.swal2-info {
@@ -2087,7 +2087,7 @@
                                 ? '0 10px 40px rgba(0,0,0,0.5)' 
                                 : '0 10px 40px rgba(0,0,0,0.15)';
                             
-                            // Clean up icon styling - keep circle at 50px but make ! smaller
+                            // Clean up icon styling - keep circle at 50px with larger ! inside
                             const icon = popup.querySelector('.swal2-icon');
                             if (icon) {
                                 icon.style.width = '50px';
@@ -2095,7 +2095,7 @@
                                 icon.style.borderWidth = '2px';
                                 icon.style.marginTop = '8px';
                                 icon.style.marginBottom = '24px';
-                                icon.style.fontSize = '24px';
+                                icon.style.fontSize = '32px';
                             }
                         }
                     }
