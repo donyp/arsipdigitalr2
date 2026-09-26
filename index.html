@@ -131,13 +131,16 @@
                 opacity: 1;
             }
         }
-        .asterisk {
-            font-size: 60px;
-            font-weight: 900;
-            line-height: 1;
-            margin-bottom: 40px;
-            opacity: 0;
-            display: none;
+        .logo-anka {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 30px;
+            display: block;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+        }
+        
+        html[data-dark-mode="true"] .logo-anka {
+            filter: brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
         }
         .left-heading {
             font-size: 48px;
@@ -378,6 +381,7 @@
         <!-- Left Side -->
         <div class="left-section">
             <div class="left-content">
+                <img src="img/logo-anka.svg" alt="ANKA Logo" class="logo-anka">
                 <h1 class="left-heading">Sistem Arsip<br>Digital ANKA</h1>
                 <p class="left-description">Kelola Arsip Digital ANKA Dengan mudah, dan Efisien</p>
             </div>
