@@ -132,15 +132,27 @@
             }
         }
         .logo-anka {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: auto;
             margin-bottom: 30px;
             display: block;
             filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
         }
         
-        html[data-dark-mode="true"] .logo-anka {
-            filter: brightness(0) invert(1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+        .logo-anka-light {
+            display: block;
+        }
+        
+        .logo-anka-dark {
+            display: none;
+        }
+        
+        html[data-dark-mode="true"] .logo-anka-light {
+            display: none;
+        }
+        
+        html[data-dark-mode="true"] .logo-anka-dark {
+            display: block;
         }
         .left-heading {
             font-size: 48px;
@@ -381,7 +393,8 @@
         <!-- Left Side -->
         <div class="left-section">
             <div class="left-content">
-                <img src="img/logo-anka.svg" alt="ANKA Logo" class="logo-anka">
+                <img src="logo/ANKABIRU.svg" alt="ANKA Logo Blue" class="logo-anka logo-anka-light">
+                <img src="logo/ANKAPUTIH.svg" alt="ANKA Logo White" class="logo-anka logo-anka-dark">
                 <h1 class="left-heading">Sistem Arsip<br>Digital ANKA</h1>
                 <p class="left-description">Kelola Arsip Digital ANKA Dengan mudah, dan Efisien</p>
             </div>
