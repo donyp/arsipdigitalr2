@@ -828,6 +828,24 @@
                 font-size: 11px;
             }
         }
+
+        /* Download Animation Keyframes */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slide {
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -2193,17 +2211,6 @@
                                 Mengunduh file...
                             </p>
                         </div>
-                        <style>
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                            @keyframes slide {
-                                0% { transform: translateX(-100%); }
-                                50% { transform: translateX(100%); }
-                                100% { transform: translateX(100%); }
-                            }
-                        </style>
                     `,
                     showConfirmButton: false,
                     allowOutsideClick: false,
@@ -2265,21 +2272,17 @@
                             <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
                                 ✅
                             </div>
-                            <p style="margin: 0; font-size: 15px; color: #27ae60; font-weight: 600;">
-                                ${colorConfig.text} berhasil diunduh
+                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
+                                ${colorConfig.text} berhasil diunduh!
+                            </p>
+                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
+                                File tersimpan di folder download Anda
                             </p>
                         </div>
-                        <style>
-                            @keyframes popIn {
-                                0% { transform: scale(0.5); opacity: 0; }
-                                50% { transform: scale(1.1); }
-                                100% { transform: scale(1); opacity: 1; }
-                            }
-                        </style>
                     `,
                     background: isDarkMode ? '#1e293b' : '#f8f9fa',
                     color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    timer: 2000,
+                    timer: 2500,
                     showConfirmButton: false,
                     customClass: {
                         popup: 'download-success-popup'
@@ -2337,17 +2340,6 @@
                                 Menggabungkan semua file PDF...
                             </p>
                         </div>
-                        <style>
-                            @keyframes spin {
-                                0% { transform: rotate(0deg); }
-                                100% { transform: rotate(360deg); }
-                            }
-                            @keyframes slide {
-                                0% { transform: translateX(-100%); }
-                                50% { transform: translateX(100%); }
-                                100% { transform: translateX(100%); }
-                            }
-                        </style>
                     `,
                     showConfirmButton: false,
                     allowOutsideClick: false,
@@ -2396,21 +2388,17 @@
                             <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
                                 ✅
                             </div>
-                            <p style="margin: 0; font-size: 15px; color: #27ae60; font-weight: 600;">
-                                PDF berhasil diunduh
+                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
+                                PDF berhasil digabungkan!
+                            </p>
+                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
+                                File tersimpan di folder download Anda
                             </p>
                         </div>
-                        <style>
-                            @keyframes popIn {
-                                0% { transform: scale(0.5); opacity: 0; }
-                                50% { transform: scale(1.1); }
-                                100% { transform: scale(1); opacity: 1; }
-                            }
-                        </style>
                     `,
                     background: isDarkMode ? '#1e293b' : '#f8f9fa',
                     color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    timer: 2000,
+                    timer: 2500,
                     showConfirmButton: false,
                     customClass: {
                         popup: 'download-success-popup'
