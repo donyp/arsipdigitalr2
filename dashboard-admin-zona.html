@@ -2169,36 +2169,35 @@
          * Download individual file with progress UI
          */
         async function downloadAdminZonaFile(faktur, fileType) {
-            try {
-                // Define file type styling
-                const fileTypeColors = {
-                    'invoice': { bg: '#3498db', icon: '📄', text: 'Invoice' },
-                    'bukti_bayar': { bg: '#27ae60', icon: '💰', text: 'Bukti Bayar' },
-                    'faktur_pajak': { bg: '#9b59b6', icon: '📋', text: 'Faktur Pajak' }
-                };
-                
-                const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📁', text: 'File' };
-                const isDarkMode = document.body.classList.contains('dark-mode');
-                
-                console.log('[Download] Function called for:', faktur, fileType);
-                
-                // Show loading modal and execute download inside didOpen
-                return new Promise((resolve) => {
-                    Swal.fire({
-                        title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
-                        html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang mengunduh file...</p>',
-                        showConfirmButton: false,
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        background: colorConfig.bg,
-                        color: '#ffffff',
-                        customClass: {
-                            popup: 'colored-download-popup'
-                        },
-                        didOpen: async () => {
-                            try {
-                                console.log('[Download] Popup opened, showing loading spinner...');
-                                Swal.showLoading();
+            // Define file type styling
+            const fileTypeColors = {
+                'invoice': { bg: '#3498db', icon: '📄', text: 'Invoice' },
+                'bukti_bayar': { bg: '#27ae60', icon: '💰', text: 'Bukti Bayar' },
+                'faktur_pajak': { bg: '#9b59b6', icon: '📋', text: 'Faktur Pajak' }
+            };
+            
+            const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📁', text: 'File' };
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            
+            console.log('[Download] Function called for:', faktur, fileType);
+            
+            // Show loading modal and execute download inside didOpen
+            return new Promise((resolve) => {
+                Swal.fire({
+                    title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
+                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang mengunduh file...</p>',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    background: colorConfig.bg,
+                    color: '#ffffff',
+                    customClass: {
+                        popup: 'colored-download-popup'
+                    },
+                    didOpen: async () => {
+                        try {
+                            console.log('[Download] Popup opened, showing loading spinner...');
+                            Swal.showLoading();
                                 
                                 // Get auth token
                                 const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
