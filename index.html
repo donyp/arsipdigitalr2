@@ -589,7 +589,7 @@
                 // Route to appropriate dashboard based on role
                 let dashboardPage;
                 if (result.user?.role === 'admin_zona') {
-                    dashboardPage = '/dashboard-admin-zona.html';
+                    dashboardPage = '/zona/dashboard';
                 } else if (result.user?.role === 'super_admin' || result.user?.role === 'moderator') {
                     dashboardPage = '/dashboard.html';
                 } else {

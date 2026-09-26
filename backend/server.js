@@ -324,6 +324,10 @@ app.get('/dashboard-zona', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
 });
 
+app.get('/zona/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
+});
+
 app.get('/support-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));
 });
