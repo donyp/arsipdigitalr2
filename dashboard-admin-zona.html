@@ -2180,118 +2180,122 @@
                 const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📁', text: 'File' };
                 const isDarkMode = document.body.classList.contains('dark-mode');
                 
-                console.log('[Download] Starting download for:', faktur, fileType);
+                console.log('[Download] Function called for:', faktur, fileType);
                 
-                // Show loading modal using Swal.showLoading()
-                Swal.fire({
-                    title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
-                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang mengunduh file...</p>',
-                    showConfirmButton: false,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    background: colorConfig.bg,
-                    color: '#ffffff',
-                    customClass: {
-                        popup: 'colored-download-popup'
-                    },
-                    didOpen: async (modal) => {
-                        console.log('[Download] Loading popup opened');
-                        Swal.showLoading();
-                    }
+                // Show loading modal and execute download inside didOpen
+                return new Promise((resolve) => {
+                    Swal.fire({
+                        title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
+                        html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang mengunduh file...</p>',
+                        showConfirmButton: false,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        background: colorConfig.bg,
+                        color: '#ffffff',
+                        customClass: {
+                            popup: 'colored-download-popup'
+                        },
+                        didOpen: async () => {
+                            try {
+                                console.log('[Download] Popup opened, showing loading spinner...');
+                                Swal.showLoading();
+                                
+                                // Get auth token
+                                const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
+                                
+                                console.log('[Download] Fetching from API...');
+                                
+                                // Start timing from now
+                                const startTime = Date.now();
+                                const response = await fetch(`/api/invoice/download-file/${faktur}/${fileType}`, {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                
+                                if (!response.ok) {
+                                    Swal.close();
+                                    const error = await response.json();
+                                    throw new Error(error.error || 'Download failed');
+                                }
+                                
+                                console.log('[Download] Response received after:', Date.now() - startTime, 'ms');
+                                
+                                // Get blob immediately
+                                const blob = await response.blob();
+                                
+                                // Ensure minimum TOTAL loading time of 2500ms from when popup opened
+                                const totalElapsedTime = Date.now() - startTime;
+                                const remainingWaitTime = 2500 - totalElapsedTime;
+                                
+                                if (remainingWaitTime > 0) {
+                                    console.log('[Download] Loading will display for additional:', remainingWaitTime, 'ms');
+                                    await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
+                                }
+                                
+                                console.log('[Download] Total loading time:', Date.now() - startTime, 'ms. Closing loading popup...');
+                                
+                                // Get filename from Content-Disposition header
+                                const contentDisposition = response.headers.get('Content-Disposition');
+                                let filename = `${faktur}_${fileType}.pdf`;
+                                if (contentDisposition) {
+                                    const matches = /filename="([^"]*)"/.exec(contentDisposition);
+                                    if (matches) filename = matches[1];
+                                }
+                                
+                                // Close popup
+                                Swal.close();
+                                
+                                // Trigger download
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = filename;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                window.URL.revokeObjectURL(url);
+                                
+                                // Show success
+                                Swal.fire({
+                                    title: '✅ Berhasil!',
+                                    html: `
+                                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
+                                                ✅
+                                            </div>
+                                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
+                                                ${colorConfig.text} berhasil diunduh!
+                                            </p>
+                                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
+                                                File tersimpan di folder download Anda
+                                            </p>
+                                        </div>
+                                    `,
+                                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
+                                    timer: 2500,
+                                    showConfirmButton: false,
+                                    customClass: {
+                                        popup: 'download-success-popup'
+                                    }
+                                });
+                                
+                                resolve();
+                            } catch (error) {
+                                console.error('[Download Error]:', error);
+                                Swal.close();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Download Gagal',
+                                    text: error.message,
+                                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
+                                    confirmButtonColor: '#e74c3c'
+                                });
+                                resolve();
+                            }
+                        }
+                    });
                 });
-                
-                // Get auth token
-                const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
-                
-                console.log('[Download] Fetching from API...');
-                
-                // Start timing from now
-                const startTime = Date.now();
-                const response = await fetch(`/api/invoice/download-file/${faktur}/${fileType}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (!response.ok) {
-                    Swal.close();
-                    const error = await response.json();
-                    throw new Error(error.error || 'Download failed');
-                }
-                
-                console.log('[Download] Response received after:', Date.now() - startTime, 'ms');
-                
-                // Get blob immediately
-                const blob = await response.blob();
-                
-                // Ensure minimum TOTAL loading time of 2500ms from when popup opened
-                const totalElapsedTime = Date.now() - startTime;
-                const remainingWaitTime = 2500 - totalElapsedTime;
-                
-                if (remainingWaitTime > 0) {
-                    console.log('[Download] Showing loading for additional:', remainingWaitTime, 'ms');
-                    await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
-                }
-                
-                console.log('[Download] Total elapsed time:', Date.now() - startTime, 'ms');
-                
-                // Get filename from Content-Disposition header
-                const contentDisposition = response.headers.get('Content-Disposition');
-                let filename = `${faktur}_${fileType}.pdf`;
-                if (contentDisposition) {
-                    const matches = /filename="([^"]*)"/.exec(contentDisposition);
-                    if (matches) filename = matches[1];
-                }
-                
-                // Hide loading and close popup
-                Swal.hideLoading();
-                Swal.close();
-                
-                // Trigger download
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                // Show success
-                Swal.fire({
-                    title: '✅ Berhasil!',
-                    html: `
-                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
-                                ✅
-                            </div>
-                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
-                                ${colorConfig.text} berhasil diunduh!
-                            </p>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
-                                File tersimpan di folder download Anda
-                            </p>
-                        </div>
-                    `,
-                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
-                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    timer: 2500,
-                    showConfirmButton: false,
-                    customClass: {
-                        popup: 'download-success-popup'
-                    }
-                });
-                
-            } catch (error) {
-                console.error('[AdminZonaDownload] Error:', error);
-                const isDarkMode = document.body.classList.contains('dark-mode');
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Download Gagal',
-                    text: error.message,
-                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
-                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    confirmButtonColor: '#e74c3c'
-                });
-            }
         }
 
         /**
@@ -2303,90 +2307,107 @@
                 
                 console.log('[CombinePDF] Starting combine for:', faktur);
                 
-                Swal.fire({
-                    title: '📦 Menggabungkan PDF',
-                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang menggabungkan file...</p>',
-                    showConfirmButton: false,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    background: '#e67e22',
-                    color: '#ffffff',
-                    didOpen: async (modal) => {
-                        console.log('[CombinePDF] Loading popup opened');
-                        Swal.showLoading();
-                    }
+                // Show loading modal and execute combine inside didOpen
+                return new Promise((resolve) => {
+                    Swal.fire({
+                        title: '📦 Menggabungkan PDF',
+                        html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang menggabungkan file...</p>',
+                        showConfirmButton: false,
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        background: '#e67e22',
+                        color: '#ffffff',
+                        didOpen: async () => {
+                            try {
+                                console.log('[CombinePDF] Popup opened, showing loading spinner...');
+                                Swal.showLoading();
+                                
+                                const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
+                                
+                                console.log('[CombinePDF] Fetching combined PDF from API...');
+                                
+                                const startTime = Date.now();
+                                const response = await fetch(`/api/invoice/combine-pdf/${faktur}`, {
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                
+                                if (!response.ok) {
+                                    Swal.close();
+                                    const error = await response.json();
+                                    throw new Error(error.error || 'Combine failed');
+                                }
+                                
+                                console.log('[CombinePDF] PDF received after:', Date.now() - startTime, 'ms');
+                                
+                                // Get blob immediately
+                                const blob = await response.blob();
+                                
+                                // Ensure minimum TOTAL loading time of 2500ms
+                                const totalElapsedTime = Date.now() - startTime;
+                                const remainingWaitTime = 2500 - totalElapsedTime;
+                                
+                                if (remainingWaitTime > 0) {
+                                    console.log('[CombinePDF] Loading will display for additional:', remainingWaitTime, 'ms');
+                                    await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
+                                }
+                                
+                                console.log('[CombinePDF] Total loading time:', Date.now() - startTime, 'ms. Closing loading popup...');
+                                
+                                const filename = `${faktur}.pdf`;
+                                
+                                // Close popup
+                                Swal.close();
+                                
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = filename;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                window.URL.revokeObjectURL(url);
+                                
+                                Swal.fire({
+                                    title: '✅ Berhasil!',
+                                    html: `
+                                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
+                                                ✅
+                                            </div>
+                                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
+                                                PDF berhasil digabungkan!
+                                            </p>
+                                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
+                                                File tersimpan di folder download Anda
+                                            </p>
+                                        </div>
+                                    `,
+                                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
+                                    timer: 2500,
+                                    showConfirmButton: false,
+                                    customClass: {
+                                        popup: 'download-success-popup'
+                                    }
+                                });
+                                
+                                resolve();
+                            } catch (error) {
+                                console.error('[CombinePDF Error]:', error);
+                                Swal.close();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gabung PDF Gagal',
+                                    text: error.message,
+                                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
+                                    confirmButtonColor: '#e74c3c'
+                                });
+                                resolve();
+                            }
+                        }
+                    });
                 });
-                
-                const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
-                
-                console.log('[CombinePDF] Fetching combined PDF from API...');
-                
-                const startTime = Date.now();
-                const response = await fetch(`/api/invoice/combine-pdf/${faktur}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (!response.ok) {
-                    Swal.close();
-                    const error = await response.json();
-                    throw new Error(error.error || 'Combine failed');
-                }
-                
-                console.log('[CombinePDF] PDF received after:', Date.now() - startTime, 'ms');
-                
-                // Get blob immediately
-                const blob = await response.blob();
-                
-                // Ensure minimum TOTAL loading time of 2500ms
-                const totalElapsedTime = Date.now() - startTime;
-                const remainingWaitTime = 2500 - totalElapsedTime;
-                
-                if (remainingWaitTime > 0) {
-                    console.log('[CombinePDF] Showing loading for additional:', remainingWaitTime, 'ms');
-                    await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
-                }
-                
-                console.log('[CombinePDF] Total elapsed time:', Date.now() - startTime, 'ms');
-                
-                const filename = `${faktur}.pdf`;
-                
-                // Hide loading and close popup
-                Swal.hideLoading();
-                Swal.close();
-                
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                Swal.fire({
-                    title: '✅ Berhasil!',
-                    html: `
-                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
-                                ✅
-                            </div>
-                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
-                                PDF berhasil digabungkan!
-                            </p>
-                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
-                                File tersimpan di folder download Anda
-                            </p>
-                        </div>
-                    `,
-                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
-                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    timer: 2500,
-                    showConfirmButton: false,
-                    customClass: {
-                        popup: 'download-success-popup'
-                    }
-                });
-                
             } catch (error) {
                 console.error('[CombinePDF] Error:', error);
                 const isDarkMode = document.body.classList.contains('dark-mode');
