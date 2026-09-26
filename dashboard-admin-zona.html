@@ -1971,13 +1971,13 @@
                 const zonaMatch = username.match(/Zona\s+0*(\d+)/i);
                 if (zonaMatch) {
                     zonaFromUsername = zonaMatch[1]; // Gets just the number without leading zeros
-                    // Clean username to just "Admin" if it was "Admin Zona XX"
-                    username = username.replace(/\s*Zona\s+0*\d+/i, '').trim();
+                    // Format zona name: "Admin Zona 01" -> "Admin Zona 1"
+                    username = username.replace(/Zona\s+0+(\d+)/i, `Zona ${zonaFromUsername}`);
                 }
                 
                 // Get zona_id - remove leading zeros (e.g., "01" -> "1", or use extracted number)
                 let zonaId = zonaFromUsername || currentUser.zona_id || 'N/A';
-                console.log('[Dashboard] Username:', currentUser.name, '-> Cleaned:', username);
+                console.log('[Dashboard] Username:', currentUser.name, '-> Formatted:', username);
                 console.log('[Dashboard] Current user zona_id from API:', currentUser.zona_id, 'Type:', typeof currentUser.zona_id);
                 if (zonaId !== 'N/A' && typeof zonaId !== 'string') {
                     zonaId = String(zonaId).replace(/^0+/, '') || '0';
