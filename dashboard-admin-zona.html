@@ -1962,8 +1962,8 @@
                     greeting = 'malam';
                 }
                 
-                // Get username (fallback to name or full_name)
-                const username = currentUser.name || currentUser.full_name || 'User';
+                // Get username (fallback to name or 'User')
+                const username = currentUser.name || 'User';
                 
                 // Get zona_id - remove leading zeros (e.g., "01" -> "1")
                 let zonaId = currentUser.zona_id || 'N/A';
