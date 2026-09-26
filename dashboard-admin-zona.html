@@ -1283,8 +1283,8 @@
 
                 // === UPDATE WELCOME STATS ===
                 const totalInvoice = invoices.length;
-                const lunas = invoices.filter(inv => inv.status === 'Lunas').length;
-                const belumLunas = invoices.filter(inv => inv.status === 'Belum Lunas').length;
+                const lunas = invoices.filter(inv => inv.status === 'UPLOADED').length;
+                const belumLunas = invoices.filter(inv => inv.status === 'PENDING').length;
 
                 // Calculate total amount
                 const totalAmount = invoices.reduce((sum, inv) => {
@@ -1389,8 +1389,8 @@
 
                 // Calculate stats
                 const totalInvoice = invoices.length;
-                const lunas = invoices.filter(inv => inv.status === 'Lunas').length;
-                const belumLunas = invoices.filter(inv => inv.status === 'Belum Lunas').length;
+                const lunas = invoices.filter(inv => inv.status === 'UPLOADED').length;
+                const belumLunas = invoices.filter(inv => inv.status === 'PENDING').length;
 
                 // Calculate total amount
                 const totalAmount = invoices.reduce((sum, inv) => {
@@ -1560,8 +1560,8 @@
                 }
                 
                 const totalInvoice = allFilteredInvoices.length;  // Total dari SEMUA yang match filter
-                const lunas = allFilteredInvoices.filter(inv => inv.status === 'Lunas').length;
-                const belumLunas = allFilteredInvoices.filter(inv => inv.status === 'Belum Lunas').length;
+                const lunas = allFilteredInvoices.filter(inv => inv.status === 'UPLOADED').length;
+                const belumLunas = allFilteredInvoices.filter(inv => inv.status === 'PENDING').length;
 
                 // Calculate total amount dari SEMUA filtered invoices
                 const totalAmount = allFilteredInvoices.reduce((sum, inv) => {
