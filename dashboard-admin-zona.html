@@ -1929,6 +1929,10 @@
                 }
 
                 const currentUser = window.currentUser;
+                
+                console.log('[Dashboard-AdminZona] currentUser object:', currentUser);
+                console.log('[Dashboard-AdminZona] currentUser.zona_id:', currentUser?.zona_id);
+                console.log('[Dashboard-AdminZona] currentUser.zonas:', currentUser?.zonas);
 
                 if (!currentUser) {
                     console.error('currentUser not available');
@@ -1963,9 +1967,11 @@
                 
                 // Get zona_id - remove leading zeros (e.g., "01" -> "1")
                 let zonaId = currentUser.zona_id || 'N/A';
+                console.log('[Dashboard] Current user zona_id from API:', currentUser.zona_id, 'Type:', typeof currentUser.zona_id);
                 if (zonaId !== 'N/A') {
                     zonaId = String(zonaId).replace(/^0+/, '') || '0';
                 }
+                console.log('[Dashboard] Processed zonaId for display:', zonaId);
                 
                 const welcomeNameEl = document.getElementById('welcome-name');
                 if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
