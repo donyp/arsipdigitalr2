@@ -1612,7 +1612,7 @@
                         <td>${total}</td>
                         <td>${inv.keterangan || '-'}</td>
                         <td style="text-align: center;">
-                            <button onclick="showAdminZonaDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⋮</button>
+                            <button onclick="showAdminZonaDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor=document.body.classList.contains('dark-mode') ? '#334155' : '#f3f4f6'; this.style.color=document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⋮</button>
                         </td>
                     </tr>
                 `;
@@ -1987,26 +1987,31 @@
                 }
                 
                 // Build menu HTML based on available files
-                let menuHTML = `<div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">`;
+                let menuHTML = `<div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">`;
+                
+                let hasFiles = false;
                 
                 // Download invoice button if exists
                 if (invoice.invoice_pdf_path) {
-                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'invoice'); Swal.close();" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#2980b9'" onmouseout="this.style.background='#3498db'">
-                        📄 Download Invoice
+                    hasFiles = true;
+                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'invoice'); Swal.close();" style="width: 100%; padding: 10px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#2980b9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#3498db'; this.style.transform='translateY(0)';">
+                        📄 Invoice
                     </button>`;
                 }
                 
                 // Download bukti bayar button if exists
                 if (invoice.bukti_bayar_path) {
-                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'bukti_bayar'); Swal.close();" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
-                        💰 Download Bukti Bayar
+                    hasFiles = true;
+                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'bukti_bayar'); Swal.close();" style="width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#229954'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#27ae60'; this.style.transform='translateY(0)';">
+                        💰 Bukti Bayar
                     </button>`;
                 }
                 
                 // Download faktur pajak button if exists (PPN only)
                 if (invoice.faktur_pajak_path) {
-                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'faktur_pajak'); Swal.close();" style="width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
-                        📋 Download Faktur Pajak
+                    hasFiles = true;
+                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'faktur_pajak'); Swal.close();" style="width: 100%; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#8e44ad'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#9b59b6'; this.style.transform='translateY(0)';">
+                        📋 Faktur Pajak
                     </button>`;
                 }
                 
@@ -2016,33 +2021,62 @@
                 const filesUploaded = (invoice.invoice_pdf_path ? 1 : 0) + (invoice.bukti_bayar_path ? 1 : 0) + (invoice.faktur_pajak_path ? 1 : 0);
                 
                 if (filesUploaded >= filesRequired) {
-                    menuHTML += `<button onclick="combinePDFAdminZona('${faktur}'); Swal.close();" style="width: 100%; padding: 12px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#d35400'" onmouseout="this.style.background='#e67e22'">
-                        📦 Combine PDF (${filesUploaded}/${filesRequired})
+                    hasFiles = true;
+                    menuHTML += `<button onclick="combinePDFAdminZona('${faktur}'); Swal.close();" style="width: 100%; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#d35400'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#e67e22'; this.style.transform='translateY(0)';">
+                        📦 Combine (${filesUploaded}/${filesRequired})
                     </button>`;
+                }
+                
+                // If no files uploaded
+                if (!hasFiles) {
+                    menuHTML += `<div style="padding: 15px; background: #f0f0f0; border-radius: 4px; text-align: center;">
+                        <p style="color: #7f8c8d; font-size: 13px; margin: 0; line-height: 1.4;">
+                            <i class="fas fa-info-circle" style="color: #3498db; margin-right: 6px;"></i>
+                            File belum diupload
+                        </p>
+                        <p style="color: #95a5a6; font-size: 12px; margin: 8px 0 0 0;">Silahkan upload file terlebih dahulu</p>
+                    </div>`;
                 }
                 
                 menuHTML += `</div>`;
                 
-                // Show popup
+                // Show popup with dark mode support
+                const isDarkMode = document.body.classList.contains('dark-mode');
                 Swal.fire({
                     title: '📥 Download Files',
                     html: menuHTML,
                     icon: 'info',
                     showConfirmButton: false,
-                    background: '#f8f9fa',
+                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                     customClass: {
-                        popup: 'download-menu-popup'
+                        popup: 'download-menu-popup-admin-zona',
+                        title: 'download-menu-title'
                     },
                     allowOutsideClick: true,
-                    allowEscapeKey: true
+                    allowEscapeKey: true,
+                    willOpen: () => {
+                        const popup = Swal.getPopup();
+                        if (popup) {
+                            popup.style.width = '360px';
+                            popup.style.maxWidth = '90vw';
+                            popup.style.borderRadius = '8px';
+                            popup.style.boxShadow = isDarkMode 
+                                ? '0 10px 40px rgba(0,0,0,0.5)' 
+                                : '0 10px 40px rgba(0,0,0,0.15)';
+                        }
+                    }
                 });
                 
             } catch (error) {
                 console.error('[AdminZonaMenu] Error:', error);
+                const isDarkMode = document.body.classList.contains('dark-mode');
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
                     text: 'Gagal memuat menu download',
+                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                     confirmButtonColor: '#e74c3c'
                 });
             }
@@ -2061,6 +2095,7 @@
                 };
                 
                 const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📁', text: 'File' };
+                const isDarkMode = document.body.classList.contains('dark-mode');
                 
                 // Show loading modal
                 Swal.fire({
@@ -2152,16 +2187,21 @@
                     icon: 'success',
                     title: 'Berhasil!',
                     text: `${colorConfig.text} berhasil diunduh`,
+                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                     timer: 1500,
                     showConfirmButton: false
                 });
                 
             } catch (error) {
                 console.error('[AdminZonaDownload] Error:', error);
+                const isDarkMode = document.body.classList.contains('dark-mode');
                 Swal.fire({
                     icon: 'error',
                     title: 'Download Gagal',
                     text: error.message,
+                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                     confirmButtonColor: '#e74c3c'
                 });
             }
@@ -2172,6 +2212,8 @@
          */
         async function combinePDFAdminZona(faktur) {
             try {
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                
                 Swal.fire({
                     title: '📦 Menggabungkan PDF',
                     html: `
@@ -2248,16 +2290,21 @@
                     icon: 'success',
                     title: 'Berhasil!',
                     text: `Combined PDF ${filename} berhasil diunduh`,
+                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                     timer: 1500,
                     showConfirmButton: false
                 });
                 
             } catch (error) {
                 console.error('[CombinePDF] Error:', error);
+                const isDarkMode = document.body.classList.contains('dark-mode');
                 Swal.fire({
                     icon: 'error',
                     title: 'Combine Gagal',
                     text: error.message,
+                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                     confirmButtonColor: '#e74c3c'
                 });
             }
