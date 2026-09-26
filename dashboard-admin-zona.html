@@ -2302,124 +2302,111 @@
          * Combine all PDFs and download
          */
         async function combinePDFAdminZona(faktur) {
-            try {
-                const isDarkMode = document.body.classList.contains('dark-mode');
-                
-                console.log('[CombinePDF] Starting combine for:', faktur);
-                
-                // Show loading modal and execute combine inside didOpen
-                return new Promise((resolve) => {
-                    Swal.fire({
-                        title: '📦 Menggabungkan PDF',
-                        html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang menggabungkan file...</p>',
-                        showConfirmButton: false,
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        background: '#e67e22',
-                        color: '#ffffff',
-                        didOpen: async () => {
-                            try {
-                                console.log('[CombinePDF] Popup opened, showing loading spinner...');
-                                Swal.showLoading();
-                                
-                                const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
-                                
-                                console.log('[CombinePDF] Fetching combined PDF from API...');
-                                
-                                const startTime = Date.now();
-                                const response = await fetch(`/api/invoice/combine-pdf/${faktur}`, {
-                                    headers: { 'Authorization': `Bearer ${token}` }
-                                });
-                                
-                                if (!response.ok) {
-                                    Swal.close();
-                                    const error = await response.json();
-                                    throw new Error(error.error || 'Combine failed');
-                                }
-                                
-                                console.log('[CombinePDF] PDF received after:', Date.now() - startTime, 'ms');
-                                
-                                // Get blob immediately
-                                const blob = await response.blob();
-                                
-                                // Ensure minimum TOTAL loading time of 2500ms
-                                const totalElapsedTime = Date.now() - startTime;
-                                const remainingWaitTime = 2500 - totalElapsedTime;
-                                
-                                if (remainingWaitTime > 0) {
-                                    console.log('[CombinePDF] Loading will display for additional:', remainingWaitTime, 'ms');
-                                    await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
-                                }
-                                
-                                console.log('[CombinePDF] Total loading time:', Date.now() - startTime, 'ms. Closing loading popup...');
-                                
-                                const filename = `${faktur}.pdf`;
-                                
-                                // Close popup
-                                Swal.close();
-                                
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = filename;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                window.URL.revokeObjectURL(url);
-                                
-                                Swal.fire({
-                                    title: '✅ Berhasil!',
-                                    html: `
-                                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
-                                                ✅
-                                            </div>
-                                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
-                                                PDF berhasil digabungkan!
-                                            </p>
-                                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
-                                                File tersimpan di folder download Anda
-                                            </p>
-                                        </div>
-                                    `,
-                                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
-                                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                                    timer: 2500,
-                                    showConfirmButton: false,
-                                    customClass: {
-                                        popup: 'download-success-popup'
-                                    }
-                                });
-                                
-                                resolve();
-                            } catch (error) {
-                                console.error('[CombinePDF Error]:', error);
-                                Swal.close();
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Gabung PDF Gagal',
-                                    text: error.message,
-                                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
-                                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                                    confirmButtonColor: '#e74c3c'
-                                });
-                                resolve();
-                            }
-                        }
-                    });
-                });
-            } catch (error) {
-                console.error('[CombinePDF] Error:', error);
-                const isDarkMode = document.body.classList.contains('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            
+            console.log('[CombinePDF] Starting combine for:', faktur);
+            
+            // Show loading modal and execute combine inside didOpen
+            return new Promise((resolve) => {
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Combine Gagal',
-                    text: error.message,
-                    background: isDarkMode ? '#1e293b' : '#f8f9fa',
-                    color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                    confirmButtonColor: '#e74c3c'
+                    title: '📦 Menggabungkan PDF',
+                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang menggabungkan file...</p>',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    background: '#e67e22',
+                    color: '#ffffff',
+                    didOpen: async () => {
+                        try {
+                            console.log('[CombinePDF] Popup opened, showing loading spinner...');
+                            Swal.showLoading();
+                            
+                            const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
+                            
+                            console.log('[CombinePDF] Fetching combined PDF from API...');
+                            
+                            const startTime = Date.now();
+                            const response = await fetch(`/api/invoice/combine-pdf/${faktur}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            
+                            if (!response.ok) {
+                                Swal.close();
+                                const error = await response.json();
+                                throw new Error(error.error || 'Combine failed');
+                            }
+                            
+                            console.log('[CombinePDF] PDF received after:', Date.now() - startTime, 'ms');
+                            
+                            // Get blob immediately
+                            const blob = await response.blob();
+                            
+                            // Ensure minimum TOTAL loading time of 2500ms
+                            const totalElapsedTime = Date.now() - startTime;
+                            const remainingWaitTime = 2500 - totalElapsedTime;
+                            
+                            if (remainingWaitTime > 0) {
+                                console.log('[CombinePDF] Loading will display for additional:', remainingWaitTime, 'ms');
+                                await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
+                            }
+                            
+                            console.log('[CombinePDF] Total loading time:', Date.now() - startTime, 'ms. Closing loading popup...');
+                            
+                            const filename = `${faktur}.pdf`;
+                            
+                            // Close popup
+                            Swal.close();
+                            
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = filename;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                            
+                            Swal.fire({
+                                title: '✅ Berhasil!',
+                                html: `
+                                    <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+                                        <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
+                                            ✅
+                                        </div>
+                                        <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
+                                            PDF berhasil digabungkan!
+                                        </p>
+                                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
+                                            File tersimpan di folder download Anda
+                                        </p>
+                                    </div>
+                                `,
+                                background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                                color: isDarkMode ? '#f1f5f9' : '#2c3e50',
+                                timer: 2500,
+                                showConfirmButton: false,
+                                customClass: {
+                                    popup: 'download-success-popup'
+                                }
+                            });
+                            
+                            resolve();
+                        } catch (error) {
+                            console.error('[CombinePDF Error]:', error);
+                            Swal.close();
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gabung PDF Gagal',
+                                text: error.message,
+                                background: isDarkMode ? '#1e293b' : '#f8f9fa',
+                                color: isDarkMode ? '#f1f5f9' : '#2c3e50',
+                                confirmButtonColor: '#e74c3c'
+                            });
+                            resolve();
+                        }
+                    }
                 });
-            }
+            });
         }
     </script>
 </body>
