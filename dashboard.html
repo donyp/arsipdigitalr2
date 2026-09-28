@@ -847,6 +847,15 @@
         /* Set default zoom to 80% for better fit */
         html, body {
             zoom: 0.8;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Prevent layout shift from the start */
+        html {
+            overflow-y: scroll;
         }
 
         /* Loading Page */
@@ -878,8 +887,14 @@
 
         /* Prevent scroll and layout shift during loading */
         body:has(.page-loader:not(.hidden)) {
-            overflow: hidden;
-            height: 100vh;
+            overflow: hidden !important;
+            height: 100vh !important;
+            position: fixed !important;
+            width: 100% !important;
+        }
+
+        html:has(.page-loader:not(.hidden)) {
+            overflow: hidden !important;
         }
 
         /* Blur everything behind the loader */
