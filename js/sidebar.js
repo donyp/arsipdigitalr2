@@ -86,7 +86,7 @@
 
     for (const item of menuItems) {
         if (item.section) {
-            navHTML += `<p style="font-size: 0.65rem; color: ${secondaryTextColor}; text-transform: uppercase; letter-spacing: 0.1em; margin: 0; padding: 1rem 1rem 0.5rem 1rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0;">${item.section}</p>`;
+            navHTML += `<p style="font-size: 0.6rem; color: ${secondaryTextColor}; text-transform: uppercase; letter-spacing: 0.1em; margin: 0; padding: 0.75rem 1rem 0.35rem 1rem; font-weight: 700; margin-top: 0.5rem; margin-bottom: 0;">${item.section}</p>`;
             continue;
         }
 
@@ -99,23 +99,23 @@
             for (const child of visibleChildren) {
                 const isActive = activePage === child.href;
                 childrenHTML += `
-                    <a href="${child.href}" style="display: flex; align-items: center; padding: 0.5rem 1rem 0.5rem 3rem; margin: 0.05rem 0; border-radius: 0; font-size: 0.8rem; ${isActive ? `color: ${activeTextColor}; background: ${activeBgColor}; border-left: 3px solid ${activeTextColor}; padding-left: 2.75rem; font-weight: 600;` : `color: ${secondaryTextColor};`} text-decoration: none; width: 100%; box-sizing: border-box; display: flex; align-items: center; min-height: 2rem; transition: all 0.2s;">
-                        <svg style="width: 0.85rem; height: 0.85rem; flex-shrink: 0; margin-right: 0.6rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="${child.href}" style="display: flex; align-items: center; padding: 0.45rem 1rem 0.45rem 3rem; margin: 0.025rem 0; border-radius: 0; font-size: 0.75rem; ${isActive ? `color: ${activeTextColor}; background: ${activeBgColor}; border-left: 3px solid ${activeTextColor}; padding-left: 2.75rem; font-weight: 600;` : `color: ${secondaryTextColor};`} text-decoration: none; width: 100%; box-sizing: border-box; display: flex; align-items: center; min-height: 1.75rem; transition: all 0.2s;">
+                        <svg style="width: 0.75rem; height: 0.75rem; flex-shrink: 0; margin-right: 0.5rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${renderIcon(child.icon)}
                         </svg>
-                        <span style="flex: 1; overflow: visible; line-height: 1.3;">${child.label}</span>
+                        <span style="flex: 1; overflow: visible; line-height: 1.2;">${child.label}</span>
                     </a>
                 `;
             }
 
             navHTML += `
                 <div id="${item.id}-parent" style="padding: 0; margin: 0;">
-                    <button onclick="toggleSidebarDropdown('${item.id}')" style="width: 100%; display: flex; align-items: center; padding: 0.6rem 1rem; border-radius: 0; font-size: 0.85rem; color: ${textColor}; border: none; background: transparent; cursor: pointer; font-weight: 500; min-height: 2.5rem; line-height: 1.3; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${hoverBgColor}'" onmouseout="this.style.backgroundColor='transparent'">
-                        <svg style="width: 1.1rem; height: 1.1rem; flex-shrink: 0; margin-right: 0.75rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onclick="toggleSidebarDropdown('${item.id}')" style="width: 100%; display: flex; align-items: center; padding: 0.5rem 1rem; border-radius: 0; font-size: 0.8rem; color: ${textColor}; border: none; background: transparent; cursor: pointer; font-weight: 500; min-height: 2.25rem; line-height: 1.2; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${hoverBgColor}'" onmouseout="this.style.backgroundColor='transparent'">
+                        <svg style="width: 1rem; height: 1rem; flex-shrink: 0; margin-right: 0.75rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${renderIcon(item.icon)}
                         </svg>
                         <span style="flex: 1; overflow: visible; text-align: left; font-weight: 500;">${item.label}</span>
-                        <svg class="sidebar-dropdown-icon" style="width: 0.8rem; height: 0.8rem; opacity: 0.4; transition: transform 300ms; flex-shrink: 0; margin-left: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="sidebar-dropdown-icon" style="width: 0.75rem; height: 0.75rem; opacity: 0.4; transition: transform 300ms; flex-shrink: 0; margin-left: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
@@ -130,8 +130,8 @@
             const isActive = activePage === item.href;
             navHTML += `
                 <div style="padding: 0; margin: 0;">
-                    <a href="${item.href}" style="display: flex; align-items: center; padding: 0.6rem 1rem; border-radius: 0; font-size: 0.85rem; color: ${isActive ? activeTextColor : textColor}; background: ${isActive ? activeBgColor : 'transparent'}; border-left: ${isActive ? `3px solid ${activeTextColor}` : '3px solid transparent'}; text-decoration: none; font-weight: ${isActive ? '600' : '500'}; width: 100%; box-sizing: border-box; min-height: 2.5rem; display: flex; align-items: center; line-height: 1.3; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${isActive ? activeBgColor : hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">
-                        <svg style="width: 1.1rem; height: 1.1rem; flex-shrink: 0; margin-right: 0.75rem; opacity: ${isActive ? '1' : '0.7'};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="${item.href}" style="display: flex; align-items: center; padding: 0.5rem 1rem; border-radius: 0; font-size: 0.8rem; color: ${isActive ? activeTextColor : textColor}; background: ${isActive ? activeBgColor : 'transparent'}; border-left: ${isActive ? `3px solid ${activeTextColor}` : '3px solid transparent'}; text-decoration: none; font-weight: ${isActive ? '600' : '500'}; width: 100%; box-sizing: border-box; min-height: 2.25rem; display: flex; align-items: center; line-height: 1.2; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${isActive ? activeBgColor : hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">
+                        <svg style="width: 1rem; height: 1rem; flex-shrink: 0; margin-right: 0.75rem; opacity: ${isActive ? '1' : '0.7'};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${renderIcon(item.icon)}
                         </svg>
                         <span style="flex: 1; overflow: visible; text-align: left; font-weight: ${isActive ? '600' : '500'};">${item.label}</span>
@@ -178,29 +178,29 @@
 
         sidebar.innerHTML = `
             <!-- Header Logo Section -->
-            <div style="padding: 1.25rem 1rem; border-bottom: 1px solid ${borderColor}; flex-shrink: 0;">
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="padding: 1rem 1rem; border-bottom: 1px solid ${borderColor}; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <!-- Logo -->
-                    <div style="width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                        <svg style="width: 1.25rem; height: 1.25rem; color: white;" fill="currentColor" viewBox="0 0 24 24">
+                    <div style="width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                        <svg style="width: 1.1rem; height: 1.1rem; color: white;" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
                         </svg>
                     </div>
                     <!-- Company Name -->
                     <div style="flex: 1;">
-                        <h1 style="font-size: 0.85rem; font-weight: 900; color: ${textColor}; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; line-height: 1.2;">Arsip Anka</h1>
-                        <span style="font-size: 0.65rem; color: ${secondaryTextColor}; font-weight: 600; text-transform: capitalize; letter-spacing: 0.03em; display: block; line-height: 1.2;">Member Area</span>
+                        <h1 style="font-size: 0.75rem; font-weight: 900; color: ${textColor}; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; line-height: 1.1;">Arsip Anka</h1>
+                        <span style="font-size: 0.6rem; color: ${secondaryTextColor}; font-weight: 600; text-transform: capitalize; letter-spacing: 0.03em; display: block; line-height: 1;">Member Area</span>
                     </div>
                 </div>
             </div>
 
             <!-- Navigation Menu -->
-            <nav style="padding: 0.25rem 0; overflow-y: auto; overflow-x: hidden; flex: 1; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; min-height: 0;">
+            <nav style="padding: 0.25rem 0; overflow-y: auto; overflow-x: hidden; flex: 1; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; min-height: 0; max-height: 100%;">
                 ${navHTML}
             </nav>
 
             <!-- Footer Area -->
-            <div style="padding: 0.75rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.65rem; color: ${secondaryTextColor}; text-align: center; display: flex; flex-direction: column; gap: 0.5rem;">
+            <div style="padding: 0.5rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.6rem; color: ${secondaryTextColor}; text-align: center; display: flex; flex-direction: column; gap: 0.25rem;">
                 <p style="margin: 0; font-weight: 500; color: ${secondaryTextColor};">v3.1</p>
             </div>
         `;
