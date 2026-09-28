@@ -195,6 +195,7 @@
 
         async function loadMessages() {
             try {
+                console.log('[Notify WA] loadMessages starting');
                 const invoiceMsgs = await API.get('/api/whatsapp/pending-invoice-messages').catch(() => ({}));
                 
                 console.log('[Notify WA] Response from API:', invoiceMsgs);
@@ -232,9 +233,19 @@
 
         function renderMessages() {
             // Invoice messages ONLY
+            console.log('[Notify WA] renderMessages called');
             const invMsgBody = document.getElementById('invoice-messages-body');
+            
+            if (!invMsgBody) {
+                console.warn('[Notify WA] invoice-messages-body element not found, retrying...');
+                // Retry after delay - element might not be in DOM yet
+                setTimeout(() => renderMessages(), 200);
+                return;
+            }
+            
             if (!currentInvoiceMessages || currentInvoiceMessages.length === 0) {
                 invMsgBody.innerHTML = '<div class="text-center text-gray-500 py-8">Belum ada pesan</div>';
+                console.log('[Notify WA] No messages to display');
                 return;
             }
 

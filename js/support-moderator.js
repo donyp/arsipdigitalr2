@@ -22,6 +22,13 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 async function initSupportPage() {
     console.log('[Support-Moderator] Page initialization starting');
     
+    // Check if DOM is ready - wait for key elements
+    const ticketsContainer = document.getElementById('ticketsContainer');
+    if (!ticketsContainer) {
+        console.warn('[Support-Moderator] ticketsContainer not found yet, waiting...');
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
     // Initialize auth
     console.log('[Support-Moderator] Initializing auth...');
     await initAuth();
