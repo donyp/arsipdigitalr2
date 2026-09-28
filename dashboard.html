@@ -881,6 +881,13 @@
         body:has(.page-loader:not(.hidden)) #main-content,
         body:has(.page-loader:not(.hidden)) #app {
             filter: blur(2px);
+            transition: filter 0.5s ease-out;
+        }
+
+        #sidebar,
+        #main-content,
+        #app {
+            transition: filter 0.5s ease-out;
         }
 
         .loader-content {
