@@ -20,6 +20,7 @@ class SPARouter {
             '/rename-faktur.html': { url: 'rename-faktur.html', title: 'Rename Faktur Pajak' },
             '/upload-excel': { url: 'upload-excel.html', title: 'Upload Excel' },
             '/upload-excel.html': { url: 'upload-excel.html', title: 'Upload Excel' },
+            '/upload-invoice-pdf': { url: 'upload-invoice-pdf.html', title: 'Upload Invoice PDF' },
             '/upload-invoice-pdf.html': { url: 'upload-invoice-pdf.html', title: 'Upload Invoice PDF' },
             '/upload-bukti-bayar': { url: 'upload-bukti-bayar.html', title: 'Upload Bukti Bayar' },
             '/upload-bukti-bayar.html': { url: 'upload-bukti-bayar.html', title: 'Upload Bukti Bayar' },

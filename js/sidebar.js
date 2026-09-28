@@ -29,7 +29,7 @@
             icon: '📁',
             children: [
                 { href: '/upload-excel', label: 'Upload Excel', icon: '📊' },
-                { href: '/upload-invoice-pdf.html', label: 'Upload Invoice', icon: '📄' },
+                { href: '/upload-invoice-pdf', label: 'Upload Invoice', icon: '📄' },
                 { href: '/upload-bukti-bayar', label: 'Upload Bukti Bayar', icon: '💳' },
                 { href: '/upload-faktur', label: 'Upload Faktur Pajak', icon: '📋' },
             ]
