@@ -149,7 +149,7 @@
                 const childWeight = isActive ? '600' : '500';
                 
                 childrenHTML += `
-                    <a href="${child.href}" style="
+                    <a href="${child.href}" onclick="event.stopPropagation();" style="
                         display: flex;
                         align-items: center;
                         padding: 0.6rem 1rem 0.6rem 2.5rem;
