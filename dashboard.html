@@ -524,15 +524,12 @@
             color: var(--color-text-primary) !important;
         }
 
-        html[data-dark-mode="true"] #sidebar button {
+        /* Only style dark-mode-toggle, not dropdown buttons */
+        html[data-dark-mode="true"] #dark-mode-toggle {
             background-color: var(--color-bg-secondary) !important;
             color: var(--color-text-secondary) !important;
             border-color: var(--color-border) !important;
         }
-
-        html[data-dark-mode="true"] #dark-mode-toggle {
-            background-color: var(--color-bg-secondary) !important;
-            color: var(--color-text-secondary) !important;
             border-color: var(--color-border) !important;
         }
 
