@@ -179,25 +179,19 @@
     <script>
         let currentMessages = [], currentInvoiceMessages = [];
         
-        // SPA-aware initialization: run on both DOMContentLoaded and when page loaded via SPA
         async function initNotifyZonaPage() {
+            console.log('[NotifyZona] Page initializing');
             await initAuth(); 
             await loadSidebar('whatsapp-messages.html'); 
             await loadMessages();
         }
         
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[NotifyZona] DOMContentLoaded fired');
-            await initNotifyZonaPage();
-        });
-
-        // Also run when loaded via SPA (spa-page-handler.js will trigger this)
-        window.addEventListener('spa-page-loaded', async (event) => {
-            if (event.detail && event.detail.page && event.detail.page.includes('whatsapp-messages')) {
-                console.log('[NotifyZona] Loaded via SPA, initializing page');
-                await initNotifyZonaPage();
-            }
-        });
+        // Run on direct page load
+        document.addEventListener('DOMContentLoaded', initNotifyZonaPage);
+        
+        // For SPA: call directly after page loads (spa-page-handler will trigger this via custom script)
+        // This will be called by the inline script at bottom of page
+        window.initNotifyZona = initNotifyZonaPage;
 
         async function loadMessages() {
             try {
@@ -398,6 +392,23 @@ ${msg.message || 'N/A'}
                 } else {
                     alert('Error: ' + err.message);
                 }
+            }
+        }
+        
+        // SPA Initialization: If this page was loaded via SPA, initNotifyZona will be defined
+        // Call it immediately after page is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('[NotifyZona] Page ready, initializing...');
+                if (typeof initNotifyZona === 'function') {
+                    initNotifyZona();
+                }
+            });
+        } else {
+            // Page already loaded (shouldn't happen in normal flow, but just in case)
+            console.log('[NotifyZona] Page already ready, initializing...');
+            if (typeof initNotifyZona === 'function') {
+                initNotifyZona();
             }
         }
     </script>
