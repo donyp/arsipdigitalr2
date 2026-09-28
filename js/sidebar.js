@@ -173,13 +173,10 @@
                 </div>
             </div>
 
-            <!-- Content Wrapper (grows to fill space) -->
-            <div style="flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
-                <!-- Navigation Menu - Scrollable -->
-                <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.1rem; min-height: 0; width: 100%; box-sizing: border-box;">
-                    ${navHTML}
-                </nav>
-            </div>
+            <!-- Navigation Menu - Scrollable (calc height to fill space) -->
+            <nav style="height: calc(100% - 6.5rem); overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.1rem; width: 100%; box-sizing: border-box;">
+                ${navHTML}
+            </nav>
 
             <!-- Footer Area -->
             <div style="padding: 0.5rem 0.75rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.55rem; color: ${secondaryTextColor}; text-align: center; font-weight: 600; letter-spacing: 0.05em;">v3.1</div>
