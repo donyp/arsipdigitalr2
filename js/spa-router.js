@@ -232,6 +232,16 @@ class SPARouter {
             // Wait for page to stabilize after scripts
             await new Promise(resolve => setTimeout(resolve, 300));
 
+            // Dispatch spa-page-loaded event to notify page-specific scripts
+            // This triggers initialization in pages that listen for this event
+            console.log('[SPA] Dispatching spa-page-loaded event');
+            window.dispatchEvent(new CustomEvent('spa-page-loaded', {
+                detail: { page: path }
+            }));
+            
+            // Wait for page-specific initialization to complete
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             // Update active sidebar state
             if (window.updateSidebarActiveState) {
                 window.updateSidebarActiveState(path);
