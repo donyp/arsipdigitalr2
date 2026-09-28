@@ -151,6 +151,8 @@
                 `;
             }
 
+            const dropdownBg = isDarkMode ? '#1a2a42' : '#f0f6ff';
+            
             navHTML += `
                 <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${hasActiveChild}" style="
                     display: flex;
@@ -160,7 +162,7 @@
                     padding: 0.75rem 0.85rem;
                     margin: 0.2rem 0.6rem;
                     border: none;
-                    background: transparent;
+                    background: ${dropdownBg};
                     color: ${textColor};
                     text-decoration: none;
                     font-size: 0.9rem;
@@ -171,7 +173,7 @@
                     border-radius: 0.4rem;
                     letter-spacing: 0.01em;
                     will-change: background-color, color;
-                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='${textColor}'">
+                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${dropdownBg}'; this.style.color='${textColor}'">
                     <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
                     <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${hasActiveChild ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                 </button>
