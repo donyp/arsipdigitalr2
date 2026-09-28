@@ -233,13 +233,18 @@
 
         function renderMessages() {
             // Invoice messages ONLY
-            console.log('[Notify WA] renderMessages called');
+            console.log('[Notify WA] renderMessages called, checking for element');
             const invMsgBody = document.getElementById('invoice-messages-body');
             
+            console.log('[Notify WA] invoice-messages-body element:', invMsgBody ? 'FOUND' : 'NOT FOUND');
+            
             if (!invMsgBody) {
-                console.warn('[Notify WA] invoice-messages-body element not found, retrying...');
+                console.warn('[Notify WA] invoice-messages-body element not found, retrying in 300ms...');
                 // Retry after delay - element might not be in DOM yet
-                setTimeout(() => renderMessages(), 200);
+                setTimeout(() => {
+                    console.log('[Notify WA] Retry: checking element again');
+                    renderMessages();
+                }, 300);
                 return;
             }
             
@@ -248,6 +253,8 @@
                 console.log('[Notify WA] No messages to display');
                 return;
             }
+            
+            console.log('[Notify WA] Rendering ' + currentInvoiceMessages.length + ' messages');
 
             // Separate into active (pending) and sent
             const activeMessages = currentInvoiceMessages.filter(msg => !msg.sent_at);
