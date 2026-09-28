@@ -4145,6 +4145,22 @@ function setupRegularFilters() {
         }
     }
     
+    // Attach change event listeners to all filter inputs
+    // This allows filters to work when custom dropdowns change values
+    const filterInputIds = ['filterStatus', 'filterKeterangan', 'filterYear', 'filterMonth', 'filterSearch', 'filterToko'];
+    filterInputIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            // Remove any existing listeners first to avoid duplicates
+            const newElement = element.cloneNode(true);
+            element.parentNode.replaceChild(newElement, element);
+            
+            // Attach change event listener
+            document.getElementById(id).addEventListener('change', applyInvoiceFilters);
+            console.log('[RegularFilters] ✅ Event listener attached to:', id);
+        }
+    });
+    
     console.log('[RegularFilters] ✅ Regular user filters active (with restored state)');
 }
 
