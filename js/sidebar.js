@@ -431,6 +431,11 @@ function toggleDarkMode() {
         html.removeAttribute('data-dark-mode');
     }
     
+    // Reload sidebar with new colors
+    if (window.loadSidebar) {
+        window.loadSidebar();
+    }
+    
     updateDarkModeUI();
     
     if (window.applyDarkModeInlineStyles) {
