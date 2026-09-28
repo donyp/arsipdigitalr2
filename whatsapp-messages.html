@@ -396,21 +396,23 @@ ${msg.message || 'N/A'}
         }
         
         // SPA Initialization: If this page was loaded via SPA, initNotifyZona will be defined
-        // Call it immediately after page is ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                console.log('[NotifyZona] Page ready, initializing...');
-                if (typeof initNotifyZona === 'function') {
-                    initNotifyZona();
-                }
-            });
-        } else {
-            // Page already loaded (shouldn't happen in normal flow, but just in case)
-            console.log('[NotifyZona] Page already ready, initializing...');
+        // Call it after a small delay to ensure function is defined
+        setTimeout(() => {
+            console.log('[NotifyZona] Checking if initialization needed...');
             if (typeof initNotifyZona === 'function') {
-                initNotifyZona();
+                console.log('[NotifyZona] initNotifyZona found, calling...');
+                initNotifyZona().catch(err => console.error('[NotifyZona] Init error:', err));
+            } else {
+                console.log('[NotifyZona] initNotifyZona not found, waiting...');
+                // If not found, wait a bit more
+                setTimeout(() => {
+                    if (typeof initNotifyZona === 'function') {
+                        console.log('[NotifyZona] Found on second check, calling...');
+                        initNotifyZona().catch(err => console.error('[NotifyZona] Init error:', err));
+                    }
+                }, 200);
             }
-        }
+        }, 50);
     </script>
 </body>
 </html>

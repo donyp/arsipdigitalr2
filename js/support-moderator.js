@@ -104,13 +104,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     await initSupportPage();
 });
 
-// Also listen for SPA page load event
-window.addEventListener('spa-page-loaded', async (event) => {
-    if (event.detail && event.detail.page && event.detail.page.includes('support')) {
-        console.log('[Support-Moderator] Loaded via SPA, initializing support page');
-        await initSupportPage();
+// Also listen for SPA page load event - with timeout to ensure function exists
+setTimeout(() => {
+    console.log('[Support-Moderator] Checking for SPA initialization...');
+    if (typeof initSupportPage === 'function' && document.readyState === 'complete') {
+        console.log('[Support-Moderator] SPA page loaded, initializing support page');
+        initSupportPage().catch(err => console.error('[Support-Moderator] Init error:', err));
     }
-});
+}, 100);
 
 // Cache management functions
 function setCache(key, value, duration = CACHE_DURATION) {
