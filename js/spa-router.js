@@ -215,19 +215,36 @@ class SPARouter {
             }
 
             // Execute inline scripts after content and external scripts
+            // These scripts define functions and set up event listeners
             for (const scriptContent of inlineScriptContents) {
                 try {
                     const newScript = document.createElement('script');
                     newScript.textContent = scriptContent;
                     document.body.appendChild(newScript);
                     console.log('[SPA] Executed inline script');
-                    // Wait a bit for script to execute
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    document.body.removeChild(newScript);
+                    // Don't remove script immediately - keep it in DOM for reference
+                    // document.body.removeChild(newScript);
+                    // Wait for script to fully execute
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 } catch (e) {
                     console.warn('[SPA] Error executing inline script:', e);
                 }
             }
+
+            // Wait a bit for all scripts to be defined
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Manually trigger DOMContentLoaded event for pages that rely on it
+            // This is important for SPA because DOMContentLoaded only fires once on page load
+            console.log('[SPA] Dispatching DOMContentLoaded event to trigger page initialization');
+            const domevent = new Event('DOMContentLoaded');
+            document.dispatchEvent(domevent);
+            
+            // Also trigger on window for pages that listen there
+            window.dispatchEvent(domevent);
+            
+            // Wait for async initialization to complete
+            await new Promise(resolve => setTimeout(resolve, 800));
 
             // Update active sidebar state
             if (window.updateSidebarActiveState) {
