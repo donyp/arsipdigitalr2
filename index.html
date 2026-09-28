@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -403,14 +403,14 @@
                 <h1 class="left-heading">Sistem Arsip Digital</h1>
 
             </div>
-            <div class="left-footer">© 2026 Anka Aksesoris. All rights reserved.</div>
+            <div class="left-footer">� 2026 Anka Aksesoris. All rights reserved.</div>
         </div>
 
         <!-- Right Side -->
         <div class="right-section">
             <!-- Dark Mode Toggle -->
             <button id="dark-mode-btn" class="dark-mode-toggle" title="Toggle dark mode" onclick="toggleDarkMode()">
-                <span id="theme-icon">🌙</span>
+                <span id="theme-icon">??</span>
             </button>
             
             <div class="form-container">
@@ -546,7 +546,7 @@
                 btn.style.background = '#d1d5db';
                 btn.style.color = '#9ca3af';
                 btn.disabled = true;
-                btn.textContent = '⚠️ Tidak Bisa Login';
+                btn.textContent = '?? Tidak Bisa Login';
             } else {
                 btn.style.background = '#1a1a1a';
                 btn.style.color = 'white';
@@ -596,7 +596,7 @@
                     dashboardPage = '/dashboard.html';
                 }
                 
-                console.log('[Login] User role:', result.user?.role, '→ Redirecting to:', dashboardPage);
+                console.log('[Login] User role:', result.user?.role, '? Redirecting to:', dashboardPage);
                 
                 // Show success notification - auto redirect after 2.5 seconds
                 await Swal.fire({
@@ -671,7 +671,7 @@
             const isDark = localStorage.getItem('dark_mode_enabled') === 'true';
             const icon = document.getElementById('theme-icon');
             if (icon) {
-                icon.textContent = isDark ? '☀️' : '🌙';
+                icon.textContent = isDark ? '??' : '??';
             }
         }
         
