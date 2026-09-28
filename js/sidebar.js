@@ -155,7 +155,6 @@
             z-index: 9999;
             box-sizing: border-box;
             transition: background 0.3s, border-color 0.3s;
-            overflow: hidden;
         `;
 
         sidebar.innerHTML = `
@@ -175,7 +174,7 @@
             </div>
 
             <!-- Navigation Menu - Scrollable -->
-            <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
+            <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.1rem; min-height: 0;">
                 ${navHTML}
             </nav>
 
