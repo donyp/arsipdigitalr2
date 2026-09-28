@@ -165,7 +165,7 @@
             background: ${bgColor};
             border-right: 1px solid ${borderColor};
             z-index: 9999;
-            overflow: hidden;
+            overflow: visible;
             box-sizing: border-box;
             min-height: ${hasAnnouncement ? 'calc(100vh - 60px)' : '100vh'};
             transition: background 0.3s, border-color 0.3s;
@@ -195,12 +195,12 @@
             </div>
 
             <!-- Navigation Menu -->
-            <nav style="padding: 0.5rem 0; overflow-y: auto; overflow-x: hidden; flex: 1; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column;">
+            <nav style="padding: 0.25rem 0; overflow-y: auto; overflow-x: hidden; flex: 1; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; min-height: 0;">
                 ${navHTML}
             </nav>
 
             <!-- Footer Area -->
-            <div style="padding: 1rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.7rem; color: ${secondaryTextColor}; text-align: center; display: flex; flex-direction: column; gap: 1rem;">
+            <div style="padding: 0.75rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.65rem; color: ${secondaryTextColor}; text-align: center; display: flex; flex-direction: column; gap: 0.5rem;">
                 <p style="margin: 0; font-weight: 500; color: ${secondaryTextColor};">v3.1</p>
             </div>
         `;
