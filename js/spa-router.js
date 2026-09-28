@@ -102,15 +102,15 @@ class SPARouter {
             let loader = null;
             
             if (animate && isFirstLoadOfSession) {
-                // Show loader only on first page load
+                // Show loader only on first page load (refresh/login)
                 loader = document.querySelector('.page-loader');
                 if (loader) {
                     loader.classList.remove('hidden');
-                    console.log('[SPA] Loader shown');
+                    console.log('[SPA] Loader shown on first load');
                 }
             }
 
-            // Fade out content on subsequent navigations
+            // Fade out content on subsequent navigations (WITHOUT loader)
             if (animate && !isFirstLoadOfSession) {
                 mainContent.style.opacity = '0.5';
                 mainContent.style.pointerEvents = 'none';
@@ -170,7 +170,7 @@ class SPARouter {
                 });
                 
                 loader.classList.add('hidden');
-                console.log('[SPA] Loader hidden');
+                console.log('[SPA] Loader hidden after data loaded');
                 this.isFirstLoad = false;
             }
 
