@@ -558,7 +558,9 @@
         });
     </script>
     <script>
-        if (document.readyState !== 'loading') {
+        // Initialize once when page loads (for SPA support)
+        if (!window.__uploadBuktiBayarInit && document.readyState !== 'loading') {
+            window.__uploadBuktiBayarInit = true;
             document.dispatchEvent(new Event('DOMContentLoaded'));
         }
     </script>

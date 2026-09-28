@@ -427,7 +427,8 @@
     <script src="js/spa-page-handler.js"></script>
     <script src="js/upload-invoice-pdf.js"></script>
     <script>
-        if (document.readyState !== 'loading') {
+        if (!window.__uploadInvoicePdfInit && document.readyState !== 'loading') {
+            window.__uploadInvoicePdfInit = true;
             document.dispatchEvent(new Event('DOMContentLoaded'));
         }
     </script>
