@@ -151,7 +151,7 @@
                 `;
             }
 
-            const dropdownBg = isDarkMode ? '#1a2a42' : '#f0f6ff';
+            const dropdownBg = isDarkMode ? '#1a2740' : '#f0f4f9';
             
             navHTML += `
                 <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${hasActiveChild}" style="
