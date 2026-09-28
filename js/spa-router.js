@@ -185,7 +185,7 @@ class SPARouter {
                 
                 // For app scripts (config, api, auth, utils, etc), DON'T reload them
                 // They should only load on first page load
-                const appScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js'];
+                const appScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js', 'sidebar.js', 'spa-page-handler.js', 'support-moderator.js', 'dashboard.js', 'global-announcement.js'];
                 if (appScripts.some(name => scriptPath.includes(name))) {
                     console.log('[SPA] Skipping app script (already loaded globally):', scriptName);
                     continue;
