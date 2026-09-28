@@ -205,9 +205,12 @@
     <script src="js/sidebar.js"></script>
     <script src="js/spa-page-handler.js"></script>
     <script>
-        let currentTokos = [];
-        let currentZonas = [];
-        let filteredTokos = [];
+        // Prevent redeclaration when page reloads via SPA
+        if (typeof currentTokos === 'undefined') {
+            var currentTokos = [];
+            var currentZonas = [];
+            var filteredTokos = [];
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {

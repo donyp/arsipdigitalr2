@@ -229,7 +229,10 @@
     <script src="js/sidebar.js"></script>
     <script src="js/spa-page-handler.js"></script>
     <script>
-        let currentUsers = [];
+        // Prevent redeclaration when page reloads via SPA
+        if (typeof currentUsers === 'undefined') {
+            var currentUsers = [];
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {

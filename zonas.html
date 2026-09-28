@@ -174,7 +174,10 @@
     <script src="js/sidebar.js"></script>
     <script src="js/spa-page-handler.js"></script>
     <script>
-        let currentZonas = [], currentTokos = [];
+        // Prevent redeclaration when page reloads via SPA
+        if (typeof currentZonas === 'undefined') {
+            var currentZonas = [], currentTokos = [];
+        }
         document.addEventListener('DOMContentLoaded', async () => {
             await initAuth(); await loadSidebar('zonas.html'); await loadData();
         });

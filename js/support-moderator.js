@@ -2,12 +2,15 @@
 // Support Ticketing - Moderator Dashboard
 // ============================================
 
-let currentTab = 'active';
-let currentPage = 1;
-let currentLimit = 20;
-let currentStatus = 'all';
-let currentZona = '';
-let currentSearch = '';
+// Prevent redeclaration when script reloads via SPA
+if (typeof currentTab === 'undefined') {
+    var currentTab = 'active';
+    var currentPage = 1;
+    var currentLimit = 20;
+    var currentStatus = 'all';
+    var currentZona = '';
+    var currentSearch = '';
+}
 let totalPages = 1;
 let zonasMap = {}; // Cache for zona lookup
 
