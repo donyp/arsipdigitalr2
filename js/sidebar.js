@@ -1,6 +1,6 @@
 // ============================================================
-// Shared Sidebar Component - Perfect Left Alignment
-// Version 3.4.0 - All items aligned left
+// Shared Sidebar Component - Modern & Compact Design
+// Version 4.0.0 - Clean, compact, no cutoff
 // ============================================================
 
 (function() {
@@ -9,7 +9,6 @@
     const activePage = window.location.pathname.split('/').pop() || 'dashboard';
     
     const menuItems = [
-        { section: 'Menu Utama' },
         { href: '/dashboard', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
         { href: '/whatsapp-messages', label: 'Notify Zona', icon: 'M12 8c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm0 2c-1.657 0-3 1.343-3 3v2h6v-2c0-1.657-1.343-3-3-3zm6 5.5c.829 0 1.5.671 1.5 1.5s-.671 1.5-1.5 1.5-1.5-.671-1.5-1.5.671-1.5 1.5-1.5z' },
         { href: '/support-dashboard', label: 'Support', icon: 'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z' },
@@ -70,73 +69,63 @@
         }
     };
 
-    // Check if dark mode is enabled (do this first, before navHTML generation)
+    // Check if dark mode is enabled
     const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
-    const bgColor = isDarkMode ? '#1e293b' : '#ffffff';
-    const borderColor = isDarkMode ? '#475569' : '#e5e7eb';
-    const textColor = isDarkMode ? '#f1f5f9' : '#374151';
-    const secondaryTextColor = isDarkMode ? '#cbd5e1' : '#9ca3af';
-    const hoverBgColor = isDarkMode ? '#334155' : '#f9fafb';
-    const activeBgColor = isDarkMode ? '#1e40af' : '#eff6ff';
-    const activeTextColor = isDarkMode ? '#60a5fa' : '#2563eb';
-    const buttonBgColor = isDarkMode ? '#334155' : '#f3f4f6';
-    const dropdownBgColor = isDarkMode ? '#0f172a' : '#fafbfc';
+    const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
+    const borderColor = isDarkMode ? '#334155' : '#e5e7eb';
+    const textColor = isDarkMode ? '#e2e8f0' : '#334155';
+    const secondaryTextColor = isDarkMode ? '#94a3b8' : '#7c8597';
+    const hoverBgColor = isDarkMode ? '#1e293b' : '#f8fafc';
+    const activeBgColor = isDarkMode ? '#1e40af' : '#e0e7ff';
+    const activeTextColor = isDarkMode ? '#60a5fa' : '#4f46e5';
+    const dropdownBgColor = isDarkMode ? '#020617' : '#f9fafb';
 
     let navHTML = '';
 
     for (const item of menuItems) {
-        if (item.section) {
-            navHTML += `<p style="font-size: 0.6rem; color: ${secondaryTextColor}; text-transform: uppercase; letter-spacing: 0.1em; margin: 0; padding: 0.75rem 1rem 0.35rem 1rem; font-weight: 700; margin-top: 0.5rem; margin-bottom: 0;">${item.section}</p>`;
-            continue;
-        }
-
         if (item.isDropdown) {
             const visibleChildren = item.children || [];
             const hasActiveChild = visibleChildren.some(child => activePage === child.href);
-            const maxH = hasActiveChild ? '1000px' : '0px';
+            const maxH = hasActiveChild ? '500px' : '0px';
 
             let childrenHTML = '';
             for (const child of visibleChildren) {
                 const isActive = activePage === child.href;
                 childrenHTML += `
-                    <a href="${child.href}" style="display: flex; align-items: center; padding: 0.45rem 1rem 0.45rem 3rem; margin: 0.025rem 0; border-radius: 0; font-size: 0.75rem; ${isActive ? `color: ${activeTextColor}; background: ${activeBgColor}; border-left: 3px solid ${activeTextColor}; padding-left: 2.75rem; font-weight: 600;` : `color: ${secondaryTextColor};`} text-decoration: none; width: 100%; box-sizing: border-box; display: flex; align-items: center; min-height: 1.75rem; transition: all 0.2s;">
-                        <svg style="width: 0.75rem; height: 0.75rem; flex-shrink: 0; margin-right: 0.5rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <a href="${child.href}" style="display: flex; align-items: center; padding: 0.4rem 0.75rem 0.4rem 2.5rem; margin: 0; border-radius: 0.375rem; font-size: 0.75rem; ${isActive ? `color: ${activeTextColor}; background: ${activeBgColor}; font-weight: 600;` : `color: ${secondaryTextColor}; hover:background: ${hoverBgColor};`} text-decoration: none; width: calc(100% - 0.5rem); margin-left: 0.25rem; box-sizing: border-box; display: flex; align-items: center; height: 1.75rem; transition: all 0.2s;">
+                        <svg style="width: 0.7rem; height: 0.7rem; flex-shrink: 0; margin-right: 0.4rem; opacity: 0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${renderIcon(child.icon)}
                         </svg>
-                        <span style="flex: 1; overflow: visible; line-height: 1.2;">${child.label}</span>
+                        <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${child.label}</span>
                     </a>
                 `;
             }
 
             navHTML += `
                 <div id="${item.id}-parent" style="padding: 0; margin: 0;">
-                    <button onclick="toggleSidebarDropdown('${item.id}')" style="width: 100%; display: flex; align-items: center; padding: 0.5rem 1rem; border-radius: 0; font-size: 0.8rem; color: ${textColor}; border: none; background: transparent; cursor: pointer; font-weight: 500; min-height: 2.25rem; line-height: 1.2; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${hoverBgColor}'" onmouseout="this.style.backgroundColor='transparent'">
-                        <svg style="width: 1rem; height: 1rem; flex-shrink: 0; margin-right: 0.75rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onclick="toggleSidebarDropdown('${item.id}')" style="width: 100%; display: flex; align-items: center; padding: 0.45rem 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; color: ${textColor}; border: none; background: transparent; cursor: pointer; font-weight: 500; height: 2rem; line-height: 1; transition: all 0.2s; margin: 0.15rem 0;" onmouseover="this.style.backgroundColor='${hoverBgColor}'" onmouseout="this.style.backgroundColor='transparent'">
+                        <svg style="width: 0.9rem; height: 0.9rem; flex-shrink: 0; margin-right: 0.6rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${renderIcon(item.icon)}
                         </svg>
-                        <span style="flex: 1; overflow: visible; text-align: left; font-weight: 500;">${item.label}</span>
-                        <svg class="sidebar-dropdown-icon" style="width: 0.75rem; height: 0.75rem; opacity: 0.4; transition: transform 300ms; flex-shrink: 0; margin-left: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;">${item.label}</span>
+                        <svg class="sidebar-dropdown-icon" style="width: 0.7rem; height: 0.7rem; opacity: 0.4; transition: transform 300ms; flex-shrink: 0; margin-left: 0.2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-                    <div id="${item.id}" class="sidebar-dropdown-content" style="max-height: ${maxH}; overflow: hidden; transition: max-height 300ms;">
-                        <div style="padding: 0; background: ${dropdownBgColor};">
-                            ${childrenHTML}
-                        </div>
+                    <div id="${item.id}" class="sidebar-dropdown-content" style="max-height: ${maxH}; overflow: hidden; transition: max-height 250ms ease-out; padding: 0.2rem 0;">
+                        ${childrenHTML}
                     </div>
                 </div>
             `;
         } else {
             const isActive = activePage === item.href;
             navHTML += `
-                <div style="padding: 0; margin: 0;">
-                    <a href="${item.href}" style="display: flex; align-items: center; padding: 0.5rem 1rem; border-radius: 0; font-size: 0.8rem; color: ${isActive ? activeTextColor : textColor}; background: ${isActive ? activeBgColor : 'transparent'}; border-left: ${isActive ? `3px solid ${activeTextColor}` : '3px solid transparent'}; text-decoration: none; font-weight: ${isActive ? '600' : '500'}; width: 100%; box-sizing: border-box; min-height: 2.25rem; display: flex; align-items: center; line-height: 1.2; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${isActive ? activeBgColor : hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">
-                        <svg style="width: 1rem; height: 1rem; flex-shrink: 0; margin-right: 0.75rem; opacity: ${isActive ? '1' : '0.7'};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            ${renderIcon(item.icon)}
-                        </svg>
-                        <span style="flex: 1; overflow: visible; text-align: left; font-weight: ${isActive ? '600' : '500'};">${item.label}</span>
-                    </a>
-                </div>
+                <a href="${item.href}" style="display: flex; align-items: center; padding: 0.45rem 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; color: ${isActive ? activeTextColor : textColor}; background: ${isActive ? activeBgColor : 'transparent'}; text-decoration: none; font-weight: ${isActive ? '600' : '500'}; width: calc(100% - 0.5rem); margin: 0.15rem 0.25rem; box-sizing: border-box; height: 2rem; display: flex; align-items: center; line-height: 1; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${isActive ? activeBgColor : hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">
+                    <svg style="width: 0.9rem; height: 0.9rem; flex-shrink: 0; margin-right: 0.6rem; opacity: ${isActive ? '1' : '0.7'};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        ${renderIcon(item.icon)}
+                    </svg>
+                    <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;">${item.label}</span>
+                </a>
             `;
         }
     }
@@ -150,7 +139,6 @@
 
         console.log('[Sidebar] Injecting...');
 
-        // Check if global announcement banner exists
         const hasAnnouncement = !!document.getElementById('global-announcement-banner');
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
@@ -158,57 +146,47 @@
             position: fixed;
             top: ${topOffset};
             left: 0;
-            width: 16rem;
+            width: 15rem;
             height: ${hasAnnouncement ? 'calc(100vh - 60px)' : '100vh'};
             display: flex;
             flex-direction: column;
             background: ${bgColor};
             border-right: 1px solid ${borderColor};
             z-index: 9999;
-            overflow: visible;
             box-sizing: border-box;
-            min-height: ${hasAnnouncement ? 'calc(100vh - 60px)' : '100vh'};
             transition: background 0.3s, border-color 0.3s;
+            overflow: hidden;
         `;
-
-        const textColor = isDarkMode ? '#f1f5f9' : '#1f2937';
-        const secondaryTextColor = isDarkMode ? '#cbd5e1' : '#9ca3af';
-        const hoverBgColor = isDarkMode ? '#334155' : '#f9fafb';
-        const buttonBgColor = isDarkMode ? '#334155' : '#f3f4f6';
 
         sidebar.innerHTML = `
             <!-- Header Logo Section -->
-            <div style="padding: 1rem 1rem; border-bottom: 1px solid ${borderColor}; flex-shrink: 0;">
+            <div style="padding: 1rem 0.75rem; border-bottom: 1px solid ${borderColor}; flex-shrink: 0;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <!-- Logo -->
-                    <div style="width: 2.25rem; height: 2.25rem; border-radius: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
-                        <svg style="width: 1.1rem; height: 1.1rem; color: white;" fill="currentColor" viewBox="0 0 24 24">
+                    <div style="width: 2rem; height: 2rem; border-radius: 0.5rem; background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                        <svg style="width: 1rem; height: 1rem; color: white;" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9h10v2H7z"/>
                         </svg>
                     </div>
-                    <!-- Company Name -->
-                    <div style="flex: 1;">
-                        <h1 style="font-size: 0.75rem; font-weight: 900; color: ${textColor}; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; line-height: 1.1;">Arsip Anka</h1>
-                        <span style="font-size: 0.6rem; color: ${secondaryTextColor}; font-weight: 600; text-transform: capitalize; letter-spacing: 0.03em; display: block; line-height: 1;">Member Area</span>
+                    <div style="flex: 1; min-width: 0;">
+                        <h1 style="font-size: 0.75rem; font-weight: 800; color: ${textColor}; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; line-height: 1;">ARSIP</h1>
+                        <span style="font-size: 0.6rem; color: ${secondaryTextColor}; font-weight: 600; letter-spacing: 0.02em; display: block;">ANKA</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Navigation Menu -->
-            <nav style="padding: 0.25rem 0; overflow-y: auto; overflow-x: hidden; flex: 1; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; min-height: 0; max-height: 100%;">
+            <!-- Navigation Menu - Scrollable -->
+            <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
                 ${navHTML}
             </nav>
 
             <!-- Footer Area -->
-            <div style="padding: 0.5rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.6rem; color: ${secondaryTextColor}; text-align: center; display: flex; flex-direction: column; gap: 0.25rem;">
-                <p style="margin: 0; font-weight: 500; color: ${secondaryTextColor};">v3.1</p>
-            </div>
+            <div style="padding: 0.5rem 0.75rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.55rem; color: ${secondaryTextColor}; text-align: center; font-weight: 600; letter-spacing: 0.05em;">v3.1</div>
         `;
 
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-            mainContent.style.marginLeft = '16rem';
-            mainContent.style.width = 'calc(100% - 16rem)';
+            mainContent.style.marginLeft = '15rem';
+            mainContent.style.width = 'calc(100% - 15rem)';
         }
 
         console.log('[Sidebar] Injection complete');
@@ -224,7 +202,6 @@
         inject();
     }
 
-    // Export loadSidebar function for manual sidebar loading
     window.loadSidebar = async function(currentPage) {
         console.log(`[Sidebar] loadSidebar called for page: ${currentPage}`);
         inject();
