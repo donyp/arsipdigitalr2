@@ -56,24 +56,52 @@
 
         const isExpanded = btn.getAttribute('data-expanded') === 'true';
         
-        // Smooth collapse/expand animation
         if (isExpanded) {
+            // Collapse animation
+            container.style.maxHeight = container.scrollHeight + 'px';
+            // Force reflow
+            void container.offsetHeight;
+            // Animate to closed
             container.style.maxHeight = '0px';
             container.style.opacity = '0';
-            container.style.overflow = 'hidden';
-            setTimeout(() => {
-                container.style.display = 'none';
-            }, 300);
             btn.setAttribute('data-expanded', 'false');
             if (icon) icon.style.transform = 'rotate(0deg)';
+            
+            // Hide after animation completes
+            setTimeout(() => {
+                if (btn.getAttribute('data-expanded') === 'false') {
+                    container.style.display = 'none';
+                }
+            }, 350);
         } else {
+            // Expand animation
             container.style.display = 'block';
-            // Trigger reflow to start animation
-            const scrollHeight = container.scrollHeight;
-            container.style.maxHeight = scrollHeight + 'px';
+            container.style.overflow = 'hidden';
+            
+            // Get the full height of content
+            const fullHeight = container.scrollHeight;
+            
+            // Start from 0
+            container.style.maxHeight = '0px';
+            container.style.opacity = '0';
+            
+            // Force reflow to apply initial state
+            void container.offsetHeight;
+            
+            // Animate to full height
+            container.style.maxHeight = fullHeight + 'px';
             container.style.opacity = '1';
+            
             btn.setAttribute('data-expanded', 'true');
             if (icon) icon.style.transform = 'rotate(180deg)';
+            
+            // Set to auto after animation for responsive content
+            setTimeout(() => {
+                if (btn.getAttribute('data-expanded') === 'true') {
+                    container.style.maxHeight = 'none';
+                    container.style.overflow = 'visible';
+                }
+            }, 350);
         }
     };
 
@@ -94,9 +122,6 @@
         if (item.isDropdown) {
             const visibleChildren = item.children || [];
             const hasActiveChild = visibleChildren.some(child => activePage === child.href);
-            const maxHeightStyle = hasActiveChild ? 'auto' : '0px';
-            const opacityStyle = hasActiveChild ? '1' : '0';
-            const displayStyle = hasActiveChild ? 'block' : 'block';
 
             let childrenHTML = '';
             for (const child of visibleChildren) {
@@ -151,12 +176,12 @@
                     <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${hasActiveChild ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                 </button>
                 <div id="${item.id}" style="
-                    display: ${displayStyle};
+                    display: ${hasActiveChild ? 'block' : 'none'};
                     background: transparent;
-                    max-height: ${maxHeightStyle};
-                    opacity: ${opacityStyle};
-                    overflow: hidden;
-                    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    max-height: ${hasActiveChild ? 'none' : '0px'};
+                    opacity: ${hasActiveChild ? '1' : '0'};
+                    overflow: ${hasActiveChild ? 'visible' : 'hidden'};
+                    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
                     will-change: max-height, opacity;
                 ">
                     ${childrenHTML}

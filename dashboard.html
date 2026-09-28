@@ -77,6 +77,14 @@
             will-change: auto;
         }
 
+        /* Optimize dropdown transitions - NO transition on display property */
+        #sidebar div[id^="dd-"] {
+            transition: max-height 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+                        opacity 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+            overflow: hidden !important;
+            will-change: max-height, opacity;
+        }
+
         /* Smooth scroll for nav items */
         #sidebar nav {
             scroll-behavior: smooth;
