@@ -8,6 +8,7 @@ class SPARouter {
         this.isLoading = false;
         this.pageCache = {};
         this.isFirstLoad = true; // Track if it's the first page load
+        this.pageLoadStart = Date.now(); // Track page load start time
         this.menuMapping = {
             '/dashboard': { url: 'dashboard.html', title: 'Dashboard' },
             '/whatsapp-messages': { url: 'whatsapp-messages.html', title: 'Notify Zona' },
@@ -87,12 +88,14 @@ class SPARouter {
         try {
             // Show loading state only on first load (refresh/login)
             const isFirstLoadOfSession = this.isFirstLoad;
+            let loader = null;
             
             if (animate && isFirstLoadOfSession) {
                 // Show loader only on first page load
-                const loader = document.querySelector('.page-loader');
+                loader = document.querySelector('.page-loader');
                 if (loader) {
                     loader.classList.remove('hidden');
+                    console.log('[SPA] Loader shown');
                 }
             }
 
@@ -101,9 +104,6 @@ class SPARouter {
                 mainContent.style.opacity = '0.5';
                 mainContent.style.pointerEvents = 'none';
             }
-
-            // Mark first load as complete after first page loads
-            this.isFirstLoad = false;
 
             // Fetch content
             let content;
@@ -126,14 +126,6 @@ class SPARouter {
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
 
-            // Hide loader after content loads (if it was shown)
-            if (isFirstLoadOfSession) {
-                const loader = document.querySelector('.page-loader');
-                if (loader) {
-                    loader.classList.add('hidden');
-                }
-            }
-
             // Update active sidebar state
             if (window.updateSidebarActiveState) {
                 window.updateSidebarActiveState(path);
@@ -146,7 +138,30 @@ class SPARouter {
             window.scrollTo(0, 0);
 
             // Re-initialize any scripts that need to run
-            this.reinitializePageScripts();
+            await this.reinitializePageScripts();
+
+            // Hide loader only AFTER page scripts are initialized (data loaded)
+            if (isFirstLoadOfSession && loader) {
+                // Wait for page to fully initialize before hiding loader
+                await new Promise(resolve => {
+                    // Wait for any data loading to complete
+                    const checkDataLoaded = setInterval(() => {
+                        // Check if main content has actual data (not just skeleton)
+                        const hasContent = mainContent.querySelector('[data-loaded="true"]') || 
+                                         mainContent.innerText.length > 100 ||
+                                         mainContent.querySelectorAll('table, .card, [role="main"]').length > 0;
+                        
+                        if (hasContent || Date.now() - this.pageLoadStart > 5000) {
+                            clearInterval(checkDataLoaded);
+                            resolve();
+                        }
+                    }, 100);
+                });
+                
+                loader.classList.add('hidden');
+                console.log('[SPA] Loader hidden');
+                this.isFirstLoad = false;
+            }
 
             console.log('[SPA] Page loaded:', path);
         } catch (error) {
@@ -160,6 +175,7 @@ class SPARouter {
             if (loader) {
                 loader.classList.add('hidden');
             }
+            this.isFirstLoad = false;
         } finally {
             this.isLoading = false;
         }
@@ -211,7 +227,7 @@ class SPARouter {
         }
     }
 
-    reinitializePageScripts() {
+    async reinitializePageScripts() {
         // Re-run any initialization scripts that need to happen on new page content
         
         // Example: If page has data-init attribute scripts
@@ -226,6 +242,9 @@ class SPARouter {
 
         // Trigger custom event that pages can listen for
         window.dispatchEvent(new CustomEvent('spa-page-loaded', { detail: { page: this.currentPage } }));
+        
+        // Wait a bit for page to fully render
+        return new Promise(resolve => setTimeout(resolve, 300));
     }
 
     // Preload a page in background
