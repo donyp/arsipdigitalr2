@@ -102,7 +102,7 @@
             }
 
             navHTML += `
-                <div id="${item.id}-parent" style="padding: 0; margin: 0;">
+                <div id="${item.id}-parent" style="padding: 0; margin: 0; flex-shrink: 0;">
                     <button onclick="toggleSidebarDropdown('${item.id}')" style="width: 100%; display: flex; align-items: center; padding: 0.4rem 0.7rem; border-radius: 0.35rem; font-size: 0.78rem; color: ${textColor}; border: none; background: transparent; cursor: pointer; font-weight: 500; height: 1.95rem; line-height: 1; transition: all 0.2s; margin: 0.1rem 0;" onmouseover="this.style.backgroundColor='${hoverBgColor}'" onmouseout="this.style.backgroundColor='transparent'">
                         <svg style="width: 0.85rem; height: 0.85rem; flex-shrink: 0; margin-right: 0.55rem; opacity: 0.7;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             ${renderIcon(item.icon)}
@@ -112,7 +112,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
-                    <div id="${item.id}" class="sidebar-dropdown-content" style="max-height: ${maxH}; overflow: hidden; transition: max-height 250ms ease-out; padding: 0.2rem 0;">
+                    <div id="${item.id}" class="sidebar-dropdown-content" style="max-height: ${maxH}; overflow: hidden; transition: max-height 250ms ease-out; padding: 0.2rem 0; flex-shrink: 0;">
                         ${childrenHTML}
                     </div>
                 </div>
@@ -120,7 +120,7 @@
         } else {
             const isActive = activePage === item.href;
             navHTML += `
-                <a href="${item.href}" style="display: flex; align-items: center; padding: 0.4rem 0.7rem; border-radius: 0.35rem; font-size: 0.78rem; color: ${isActive ? activeTextColor : textColor}; background: ${isActive ? activeBgColor : 'transparent'}; text-decoration: none; font-weight: ${isActive ? '600' : '500'}; width: calc(100% - 0.3rem); margin: 0.1rem 0.15rem; box-sizing: border-box; height: 1.95rem; display: flex; align-items: center; line-height: 1; transition: all 0.2s;" onmouseover="this.style.backgroundColor='${isActive ? activeBgColor : hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">
+                <a href="${item.href}" style="display: flex; align-items: center; padding: 0.4rem 0.7rem; border-radius: 0.35rem; font-size: 0.78rem; color: ${isActive ? activeTextColor : textColor}; background: ${isActive ? activeBgColor : 'transparent'}; text-decoration: none; font-weight: ${isActive ? '600' : '500'}; width: calc(100% - 0.3rem); margin: 0.1rem 0.15rem; box-sizing: border-box; height: 1.95rem; display: flex; align-items: center; line-height: 1; transition: all 0.2s; flex-shrink: 0;" onmouseover="this.style.backgroundColor='${isActive ? activeBgColor : hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">
                     <svg style="width: 0.85rem; height: 0.85rem; flex-shrink: 0; margin-right: 0.55rem; opacity: ${isActive ? '1' : '0.7'};" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         ${renderIcon(item.icon)}
                     </svg>
