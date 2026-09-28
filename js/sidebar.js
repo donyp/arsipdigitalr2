@@ -173,8 +173,8 @@
                 </div>
             </div>
 
-            <!-- Navigation Menu - Scrollable (calc height to fill space) -->
-            <nav style="height: calc(100% - 6.5rem); overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.1rem; width: 100%; box-sizing: border-box;">
+            <!-- Navigation Menu - Scrollable (flex to fill) -->
+            <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0.5rem; display: flex; flex-direction: column; gap: 0.1rem; width: 100%; box-sizing: border-box;">
                 ${navHTML}
             </nav>
 
