@@ -133,9 +133,35 @@ class SPARouter {
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
 
-            mainContent.innerHTML = content;
+            // Parse content to extract and handle scripts separately
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            
+            // Extract script tags before inserting content
+            const scripts = tempDiv.querySelectorAll('script');
+            const scriptContents = [];
+            scripts.forEach(script => {
+                scriptContents.push(script.textContent || script.innerHTML);
+                script.remove(); // Remove from content to avoid double execution
+            });
+            
+            // Insert HTML content without scripts
+            mainContent.innerHTML = tempDiv.innerHTML;
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
+
+            // Execute scripts after content is inserted
+            for (const scriptContent of scriptContents) {
+                try {
+                    const newScript = document.createElement('script');
+                    newScript.textContent = scriptContent;
+                    document.body.appendChild(newScript);
+                    console.log('[SPA] Executed page script');
+                    document.body.removeChild(newScript);
+                } catch (e) {
+                    console.warn('[SPA] Error executing script:', e);
+                }
+            }
 
             // Update active sidebar state
             if (window.updateSidebarActiveState) {
@@ -241,7 +267,7 @@ class SPARouter {
     async reinitializePageScripts() {
         // Re-run any initialization scripts that need to happen on new page content
         
-        // Example: If page has data-init attribute scripts
+        // First, handle data-init scripts
         const scripts = document.querySelectorAll('[data-init]');
         scripts.forEach(script => {
             try {
@@ -251,11 +277,29 @@ class SPARouter {
             }
         });
 
+        // Also look for and run inline scripts in the main content
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            const inlineScripts = mainContent.querySelectorAll('script:not([src])');
+            inlineScripts.forEach(script => {
+                try {
+                    // Create and execute a new script to ensure proper scope
+                    const newScript = document.createElement('script');
+                    newScript.textContent = script.textContent;
+                    document.body.appendChild(newScript);
+                    console.log('[SPA] Executed inline script from page');
+                    document.body.removeChild(newScript);
+                } catch (e) {
+                    console.warn('[SPA] Error running inline script:', e);
+                }
+            });
+        }
+
         // Trigger custom event that pages can listen for
         window.dispatchEvent(new CustomEvent('spa-page-loaded', { detail: { page: this.currentPage } }));
         
-        // Wait a bit for page to fully render
-        return new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for page initialization to complete
+        return new Promise(resolve => setTimeout(resolve, 500));
     }
 
     // Preload a page in background
