@@ -2973,6 +2973,45 @@
             });
         }
     </script>
+    <script>
+        // Initialize dashboard for SPA support
+        async function initDashboard() {
+            console.log('[Dashboard Init] Page initializing for SPA...');
+            try {
+                // Auth
+                await initAuth();
+                
+                // Trigger file count sync (non-blocking)
+                console.log('[Dashboard Init] Triggering file count sync...');
+                API.post('/api/invoice/sync-all-file-counts', {}).catch(e => {
+                    console.log('[Dashboard Init] Sync trigger failed (non-blocking):', e.message);
+                });
+                
+                // Load sidebar
+                await loadSidebar('dashboard.html');
+                
+                // Set current date/time greeting
+                setCurrentDate();
+                
+                console.log('[Dashboard Init] ✅ Dashboard initialized successfully');
+            } catch (err) {
+                console.error('[Dashboard Init] Initialization failed:', err);
+            }
+        }
+
+        // Call on DOMContentLoaded for initial page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDashboard);
+        } else {
+            // Already loaded, call directly
+            initDashboard();
+        }
+    </script>
+    <script>
+        if (typeof initDashboard === 'function') {
+            initDashboard();
+        }
+    </script>
 </body>
 </html>
 
