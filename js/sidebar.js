@@ -1,9 +1,9 @@
 // ============================================================
-// Shared Sidebar Component - v5.3 - Smooth UX Experience
+// Shared Sidebar Component - v5.4 - Smart Active State
 // ============================================================
 
 (function() {
-    console.log('[Sidebar] Initializing v5.3 - Smooth UX...');
+    console.log('[Sidebar] Initializing v5.4 - Smart Active State...');
     
     const activePage = window.location.pathname.split('/').pop() || 'dashboard';
     
@@ -47,6 +47,23 @@
             ]
         },
     ];
+
+    // Helper function to check if current page is active or child of an item
+    function isItemActive(item) {
+        if (item.isDropdown) {
+            // Check if any child matches current page
+            return item.children.some(child => {
+                const childPath = child.href.replace('.html', '');
+                const currentPath = activePage.replace('.html', '');
+                return currentPath === childPath || activePage === child.href;
+            });
+        } else {
+            // For regular items, check if it matches
+            const itemPath = item.href.replace('.html', '');
+            const currentPath = activePage.replace('.html', '');
+            return currentPath === itemPath || activePage === item.href;
+        }
+    }
 
     window.toggleSidebarDropdown = function(id) {
         const btn = document.getElementById(id + '-btn');
@@ -114,18 +131,19 @@
     const hoverBgColor = isDarkMode ? '#1e293b' : '#f7fafc';
     const activeBgColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
     const activeTextColor = isDarkMode ? '#60a5fa' : '#1e40af';
-    const activeBorder = isDarkMode ? '#3b82f6' : '#3b82f6';
 
     let navHTML = '';
 
     for (const item of menuItems) {
         if (item.isDropdown) {
             const visibleChildren = item.children || [];
-            const hasActiveChild = visibleChildren.some(child => activePage === child.href);
+            const itemIsActive = isItemActive(item);
 
             let childrenHTML = '';
             for (const child of visibleChildren) {
-                const isActive = activePage === child.href;
+                const childPath = child.href.replace('.html', '');
+                const currentPath = activePage.replace('.html', '');
+                const isActive = currentPath === childPath || activePage === child.href;
                 const childBg = isActive ? activeBgColor : 'transparent';
                 const childText = isActive ? activeTextColor : secondaryText;
                 const childWeight = isActive ? '600' : '500';
@@ -152,9 +170,10 @@
             }
 
             const dropdownBg = activeBgColor;
+            const dropdownText = itemIsActive ? activeTextColor : textColor;
             
             navHTML += `
-                <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${hasActiveChild}" style="
+                <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${itemIsActive}" style="
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
@@ -163,7 +182,7 @@
                     margin: 0.2rem 0.6rem;
                     border: none;
                     background: ${dropdownBg};
-                    color: ${textColor};
+                    color: ${dropdownText};
                     text-decoration: none;
                     font-size: 0.9rem;
                     cursor: pointer;
@@ -173,16 +192,16 @@
                     border-radius: 0.4rem;
                     letter-spacing: 0.01em;
                     will-change: background-color, color;
-                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${dropdownBg}'; this.style.color='${textColor}'">
+                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${dropdownBg}'; this.style.color='${dropdownText}'">
                     <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
-                    <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${hasActiveChild ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
+                    <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                 </button>
                 <div id="${item.id}" style="
-                    display: ${hasActiveChild ? 'block' : 'none'};
+                    display: ${itemIsActive ? 'block' : 'none'};
                     background: transparent;
-                    max-height: ${hasActiveChild ? 'none' : '0px'};
-                    opacity: ${hasActiveChild ? '1' : '0'};
-                    overflow: ${hasActiveChild ? 'visible' : 'hidden'};
+                    max-height: ${itemIsActive ? 'none' : '0px'};
+                    opacity: ${itemIsActive ? '1' : '0'};
+                    overflow: ${itemIsActive ? 'visible' : 'hidden'};
                     transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
                     will-change: max-height, opacity;
                 ">
@@ -190,7 +209,7 @@
                 </div>
             `;
         } else {
-            const isActive = activePage === item.href;
+            const isActive = isItemActive(item);
             const itemBg = isActive ? activeBgColor : 'transparent';
             const itemText = isActive ? activeTextColor : textColor;
             const itemWeight = isActive ? '600' : '500';
