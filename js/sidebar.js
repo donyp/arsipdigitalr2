@@ -112,7 +112,7 @@
             top: ${topOffset};
             left: 0;
             width: 20rem;
-            height: ${hasAnnouncement ? 'calc(100vh - 60px)' : '100vh'};
+            height: 125vh;
             display: flex;
             flex-direction: column;
             background: ${bgColor};
