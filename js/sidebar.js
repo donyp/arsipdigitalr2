@@ -244,6 +244,13 @@
             return;
         }
 
+        // Check if sidebar already injected to prevent re-rendering
+        const isAlreadyInjected = sidebar.getAttribute('data-injected') === 'true';
+        if (isAlreadyInjected) {
+            console.log('[Sidebar] Already injected, skipping re-render');
+            return;
+        }
+
         const hasAnnouncement = !!document.getElementById('global-announcement-banner');
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
@@ -310,8 +317,11 @@
                 letter-spacing: 0.05em;
                 text-transform: uppercase;
                 transition: border-color 0.4s ease, color 0.4s ease;
-            ">v5.3</div>
+            ">v5.4</div>
         `;
+
+        // Mark as injected to prevent re-rendering
+        sidebar.setAttribute('data-injected', 'true');
 
         // Add smooth scroll styling for nav
         const nav = sidebar.querySelector('nav');
@@ -326,7 +336,7 @@
             mainContent.style.transition = 'all 0.4s ease';
         }
 
-        console.log('[Sidebar] v5.3 Smooth UX complete');
+        console.log('[Sidebar] v5.4 Smooth UX complete');
     }
 
     if (document.readyState === 'loading') {
@@ -337,8 +347,51 @@
 
     window.loadSidebar = async function() {
         inject();
+        
+        // Update active states for current page without full re-render
+        const currentPath = window.location.pathname;
+        updateActiveStates(currentPath);
+        
         return Promise.resolve();
     };
+
+    // Function to update active states without full re-render
+    function updateActiveStates(pathname) {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+
+        for (const item of menuItems) {
+            if (item.isDropdown) {
+                const btn = document.getElementById(item.id + '-btn');
+                const container = document.getElementById(item.id);
+                if (!btn || !container) continue;
+
+                const itemIsActive = item.children.some(child => {
+                    const childPath = child.href.replace('.html', '');
+                    const currentPath = pathname.replace('.html', '').split('/').pop();
+                    return currentPath === childPath.split('/').pop() || pathname === child.href;
+                });
+
+                // Update button color and state
+                if (itemIsActive) {
+                    btn.style.color = activeTextColor;
+                    const arrow = btn.querySelector('.dropdown-arrow');
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+                    container.style.display = 'block';
+                    container.style.opacity = '1';
+                    container.style.maxHeight = 'none';
+                } else {
+                    btn.style.color = textColor;
+                    const arrow = btn.querySelector('.dropdown-arrow');
+                    if (arrow) arrow.style.transform = 'rotate(0deg)';
+                    container.style.display = 'none';
+                    container.style.opacity = '0';
+                    container.style.maxHeight = '0px';
+                }
+                btn.setAttribute('data-expanded', itemIsActive ? 'true' : 'false');
+            }
+        }
+    }
 
 })();
 
