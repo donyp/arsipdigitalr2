@@ -111,7 +111,7 @@
             position: fixed;
             top: ${topOffset};
             left: 0;
-            width: 16rem;
+            width: 20rem;
             bottom: 0;
             display: flex;
             flex-direction: column;
@@ -134,8 +134,8 @@
 
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-            mainContent.style.marginLeft = '16rem';
-            mainContent.style.width = 'calc(100% - 16rem)';
+            mainContent.style.marginLeft = '20rem';
+            mainContent.style.width = 'calc(100% - 20rem)';
         }
 
         console.log('[Sidebar] v5.0 Injection complete');
