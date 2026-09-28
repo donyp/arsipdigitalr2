@@ -158,9 +158,21 @@ class SPARouter {
             for (const scriptData of pageScripts) {
                 if (scriptData.src) {
                     // Skip external scripts that are already loaded (avoid redeclaration)
-                    const scriptName = scriptData.src.split('/').pop().split('?')[0]; // e.g., "config.js"
-                    const alreadyLoaded = document.head.querySelector(`script[src*="${scriptName}"]`) ||
-                                         document.body.querySelector(`script[src*="${scriptName}"]`);
+                    // Extract just the filename without query params for comparison
+                    const scriptPath = scriptData.src.split('?')[0]; // Remove query string
+                    const scriptName = scriptPath.split('/').pop(); // Get filename
+                    
+                    // Check if any loaded script has this name (ignore query params)
+                    const allScripts = document.querySelectorAll('script[src]');
+                    let alreadyLoaded = false;
+                    for (const existingScript of allScripts) {
+                        const existingPath = existingScript.src.split('?')[0];
+                        const existingName = existingPath.split('/').pop();
+                        if (existingName === scriptName && existingPath === scriptPath) {
+                            alreadyLoaded = true;
+                            break;
+                        }
+                    }
                     
                     if (alreadyLoaded) {
                         console.log('[SPA] Skipping already-loaded script:', scriptName);
@@ -171,8 +183,18 @@ class SPARouter {
                     if (scriptData.src.includes('jquery') || 
                         scriptData.src.includes('bootstrap') ||
                         scriptData.src.includes('cdn.tailwindcss') ||
-                        scriptData.src.includes('xlsx')) {
-                        console.log('[SPA] Skipping third-party library script:', scriptData.src);
+                        scriptData.src.includes('xlsx') ||
+                        scriptData.src.includes('chart') ||
+                        scriptData.src.includes('sweetalert')) {
+                        console.log('[SPA] Skipping third-party library script:', scriptName);
+                        continue;
+                    }
+                    
+                    // For app scripts (config, api, auth, utils, etc), DON'T reload them
+                    // They should only load on first page load
+                    const appScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js'];
+                    if (appScripts.some(name => scriptPath.includes(name))) {
+                        console.log('[SPA] Skipping app script (already loaded globally):', scriptName);
                         continue;
                     }
                     
