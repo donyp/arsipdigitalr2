@@ -12,7 +12,6 @@ if (typeof selectedFiles === 'undefined') {
 function initRenameFakturPage() {
     const dropzone = document.getElementById('dropzone');
     if (!dropzone) {
-        console.warn('[Rename Faktur] Dropzone element not found, retrying...');
         setTimeout(initRenameFakturPage, 100);
         return;
     }
@@ -41,8 +40,6 @@ function initRenameFakturPage() {
     document.getElementById('fileInput').addEventListener('change', (e) => {
         handleFiles(e.target.files);
     });
-    
-    console.log('[Rename Faktur] Page initialized');
 }
 
 // Initialize on page load or SPA navigation

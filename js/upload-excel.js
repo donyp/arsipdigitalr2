@@ -9,7 +9,6 @@ let parsedData = null;
 function initUploadExcelPage() {
     const dropZone = document.getElementById('dropZone');
     if (!dropZone) {
-        console.warn('[Upload Excel] Elements not found, retrying...');
         setTimeout(initUploadExcelPage, 100);
         return;
     }
@@ -44,7 +43,6 @@ function initUploadExcelPage() {
         fileInput.click();
     });
 
-    console.log('[Upload Excel] Page initialized');
 }
 
 document.addEventListener('DOMContentLoaded', initUploadExcelPage);
