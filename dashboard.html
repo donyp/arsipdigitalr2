@@ -876,6 +876,13 @@
             pointer-events: none;
         }
 
+        /* Blur everything behind the loader */
+        body:has(.page-loader:not(.hidden)) #sidebar,
+        body:has(.page-loader:not(.hidden)) #main-content,
+        body:has(.page-loader:not(.hidden)) #app {
+            filter: blur(2px);
+        }
+
         .loader-content {
             text-align: center;
             color: white;
