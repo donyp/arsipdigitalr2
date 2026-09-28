@@ -1740,39 +1740,8 @@
     <script>
         // Store original opacity state but don't hide yet
         document.documentElement.style.opacity = '0';
-        document.documentElement.classList.add('auth-loading');
     </script>
 </head>
-
-<body class="bg-gray-50">
-    <!-- Page Loader -->
-    <div id="pageLoader" class="page-loader">
-        <div class="loader-content">
-            <div class="spinner"></div>
-            <div class="loader-text">Loading...</div>
-        </div>
-    </div>
-
-    <!-- Apply dark mode if enabled -->
-    <script>
-        if (localStorage.getItem('dark_mode_enabled') === 'true') {
-            document.documentElement.setAttribute('data-dark-mode', 'true');
-        }
-        // Apply inline style dark mode changes after page loads
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', function() {
-                applyDarkModeInlineStyles(localStorage.getItem('dark_mode_enabled') === 'true');
-                // Show page after dark mode is applied
-                document.documentElement.style.opacity = '1';
-                document.documentElement.classList.remove('auth-loading');
-            });
-        } else {
-            applyDarkModeInlineStyles(localStorage.getItem('dark_mode_enabled') === 'true');
-            // Show page after dark mode is applied
-            document.documentElement.style.opacity = '1';
-            document.documentElement.classList.remove('auth-loading');
-        }
-    </script>
     <style>
         body {
             zoom: 0.8;
@@ -1784,22 +1753,9 @@
         }
 
         /* Ensure visibility on page load */
-        html.auth-loading {
-            opacity: 0 !important;
-        }
-
-        html:not(.auth-loading) {
-            opacity: 1 !important;
-        }
     </style>
     <script>
         // Safety timeout to show page after 2 seconds
-        setTimeout(() => {
-            if (document.documentElement.classList.contains('auth-loading')) {
-                document.documentElement.style.opacity = '1';
-                document.documentElement.classList.remove('auth-loading');
-            }
-        }, 2000);
     </script>
     <div id="app">
         <!-- Sidebar -->
