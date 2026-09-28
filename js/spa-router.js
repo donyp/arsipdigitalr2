@@ -137,89 +137,81 @@ class SPARouter {
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
 
-            // Parse content to extract and handle scripts separately
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = htmlContent;
-            
-            // Extract inline script tags from HTML content
-            const inlineScripts = tempDiv.querySelectorAll('script:not([src])');
-            const inlineScriptContents = [];
-            inlineScripts.forEach(script => {
-                inlineScriptContents.push(script.textContent || script.innerHTML);
-                script.remove();
-            });
-            
-            // Insert HTML content without inline scripts
-            mainContent.innerHTML = tempDiv.innerHTML;
+            // Insert HTML content (scripts are in separate pageScripts array)
+            mainContent.innerHTML = htmlContent;
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
 
+            // Separate inline scripts from external scripts in pageScripts array
+            const inlineScripts = pageScripts.filter(s => !s.src);
+            const externalScripts = pageScripts.filter(s => s.src);
+            
+            console.log('[SPA] Processing ' + inlineScripts.length + ' inline scripts and ' + externalScripts.length + ' external scripts');
+
             // Execute external scripts first (if needed)
-            for (const scriptData of pageScripts) {
-                if (scriptData.src) {
-                    // Skip external scripts that are already loaded (avoid redeclaration)
-                    // Extract just the filename without query params for comparison
-                    const scriptPath = scriptData.src.split('?')[0]; // Remove query string
-                    const scriptName = scriptPath.split('/').pop(); // Get filename
-                    
-                    // Check if any loaded script has this name (ignore query params)
-                    const allScripts = document.querySelectorAll('script[src]');
-                    let alreadyLoaded = false;
-                    for (const existingScript of allScripts) {
-                        const existingPath = existingScript.src.split('?')[0];
-                        const existingName = existingPath.split('/').pop();
-                        if (existingName === scriptName && existingPath === scriptPath) {
-                            alreadyLoaded = true;
-                            break;
-                        }
+            for (const scriptData of externalScripts) {
+                // Skip external scripts that are already loaded (avoid redeclaration)
+                // Extract just the filename without query params for comparison
+                const scriptPath = scriptData.src.split('?')[0]; // Remove query string
+                const scriptName = scriptPath.split('/').pop(); // Get filename
+                
+                // Check if any loaded script has this name (ignore query params)
+                const allScripts = document.querySelectorAll('script[src]');
+                let alreadyLoaded = false;
+                for (const existingScript of allScripts) {
+                    const existingPath = existingScript.src.split('?')[0];
+                    const existingName = existingPath.split('/').pop();
+                    if (existingName === scriptName && existingPath === scriptPath) {
+                        alreadyLoaded = true;
+                        break;
                     }
-                    
-                    if (alreadyLoaded) {
-                        console.log('[SPA] Skipping already-loaded script:', scriptName);
-                        continue;
-                    }
-                    
-                    // Skip common third-party libraries
-                    if (scriptData.src.includes('jquery') || 
-                        scriptData.src.includes('bootstrap') ||
-                        scriptData.src.includes('cdn.tailwindcss') ||
-                        scriptData.src.includes('xlsx') ||
-                        scriptData.src.includes('chart') ||
-                        scriptData.src.includes('sweetalert')) {
-                        console.log('[SPA] Skipping third-party library script:', scriptName);
-                        continue;
-                    }
-                    
-                    // For app scripts (config, api, auth, utils, etc), DON'T reload them
-                    // They should only load on first page load
-                    const appScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js'];
-                    if (appScripts.some(name => scriptPath.includes(name))) {
-                        console.log('[SPA] Skipping app script (already loaded globally):', scriptName);
-                        continue;
-                    }
-                    
-                    try {
-                        const script = document.createElement('script');
-                        script.src = scriptData.src;
-                        script.async = false;
-                        await new Promise((resolve, reject) => {
-                            script.onload = resolve;
-                            script.onerror = reject;
-                            document.body.appendChild(script);
-                        });
-                        console.log('[SPA] Loaded external script:', scriptData.src);
-                    } catch (e) {
-                        console.warn('[SPA] Error loading external script:', scriptData.src, e);
-                    }
+                }
+                
+                if (alreadyLoaded) {
+                    console.log('[SPA] Skipping already-loaded script:', scriptName);
+                    continue;
+                }
+                
+                // Skip common third-party libraries
+                if (scriptData.src.includes('jquery') || 
+                    scriptData.src.includes('bootstrap') ||
+                    scriptData.src.includes('cdn.tailwindcss') ||
+                    scriptData.src.includes('xlsx') ||
+                    scriptData.src.includes('chart') ||
+                    scriptData.src.includes('sweetalert')) {
+                    console.log('[SPA] Skipping third-party library script:', scriptName);
+                    continue;
+                }
+                
+                // For app scripts (config, api, auth, utils, etc), DON'T reload them
+                // They should only load on first page load
+                const appScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js'];
+                if (appScripts.some(name => scriptPath.includes(name))) {
+                    console.log('[SPA] Skipping app script (already loaded globally):', scriptName);
+                    continue;
+                }
+                
+                try {
+                    const script = document.createElement('script');
+                    script.src = scriptData.src;
+                    script.async = false;
+                    await new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.body.appendChild(script);
+                    });
+                    console.log('[SPA] Loaded external script:', scriptData.src);
+                } catch (e) {
+                    console.warn('[SPA] Error loading external script:', scriptData.src, e);
                 }
             }
 
             // Execute inline scripts after content and external scripts
             // These scripts define functions and set up event listeners
-            for (const scriptContent of inlineScriptContents) {
+            for (const scriptData of inlineScripts) {
                 try {
                     const newScript = document.createElement('script');
-                    newScript.textContent = scriptContent;
+                    newScript.textContent = scriptData.textContent;
                     document.body.appendChild(newScript);
                     console.log('[SPA] Executed inline script');
                     // Wait for script to fully execute before next one
