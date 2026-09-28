@@ -112,13 +112,14 @@
             top: ${topOffset};
             left: 0;
             width: 20rem;
-            bottom: 0;
+            height: ${hasAnnouncement ? 'calc(100vh - 60px)' : '100vh'};
             display: flex;
             flex-direction: column;
             background: ${bgColor};
             border-right: 1px solid ${borderColor};
             z-index: 9999;
             box-sizing: border-box;
+            zoom: 1;
         `;
 
         sidebar.innerHTML = `
