@@ -7,6 +7,7 @@ class SPARouter {
         this.currentPage = null;
         this.isLoading = false;
         this.pageCache = {};
+        this.isFirstLoad = true; // Track if it's the first page load
         this.menuMapping = {
             '/dashboard': { url: 'dashboard.html', title: 'Dashboard' },
             '/whatsapp-messages': { url: 'whatsapp-messages.html', title: 'Notify Zona' },
@@ -84,11 +85,25 @@ class SPARouter {
         }
 
         try {
-            // Show loading state
-            if (animate) {
+            // Show loading state only on first load (refresh/login)
+            const isFirstLoadOfSession = this.isFirstLoad;
+            
+            if (animate && isFirstLoadOfSession) {
+                // Show loader only on first page load
+                const loader = document.querySelector('.page-loader');
+                if (loader) {
+                    loader.classList.remove('hidden');
+                }
+            }
+
+            // Fade out content on subsequent navigations
+            if (animate && !isFirstLoadOfSession) {
                 mainContent.style.opacity = '0.5';
                 mainContent.style.pointerEvents = 'none';
             }
+
+            // Mark first load as complete after first page loads
+            this.isFirstLoad = false;
 
             // Fetch content
             let content;
@@ -102,7 +117,7 @@ class SPARouter {
             }
 
             // Update content with smooth transition
-            if (animate) {
+            if (animate && !isFirstLoadOfSession) {
                 mainContent.style.transition = 'opacity 0.3s ease';
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
@@ -110,6 +125,14 @@ class SPARouter {
             mainContent.innerHTML = content;
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
+
+            // Hide loader after content loads (if it was shown)
+            if (isFirstLoadOfSession) {
+                const loader = document.querySelector('.page-loader');
+                if (loader) {
+                    loader.classList.add('hidden');
+                }
+            }
 
             // Update active sidebar state
             if (window.updateSidebarActiveState) {
@@ -131,6 +154,12 @@ class SPARouter {
             mainContent.innerHTML = '<div style="padding: 2rem; color: red;">Error loading page. Please try again.</div>';
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
+            
+            // Hide loader on error
+            const loader = document.querySelector('.page-loader');
+            if (loader) {
+                loader.classList.add('hidden');
+            }
         } finally {
             this.isLoading = false;
         }
