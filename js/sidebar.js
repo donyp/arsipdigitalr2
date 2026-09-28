@@ -261,6 +261,7 @@
             box-sizing: border-box;
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
+            height: auto;
         `;
 
         sidebar.innerHTML = `
