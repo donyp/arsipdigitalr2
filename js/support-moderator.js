@@ -2,20 +2,20 @@
 // Support Ticketing - Moderator Dashboard
 // ============================================
 
-// Prevent redeclaration when script reloads via SPA
-if (typeof currentTab === 'undefined') {
-    var currentTab = 'active';
-    var currentPage = 1;
-    var currentLimit = 20;
-    var currentStatus = 'all';
-    var currentZona = '';
-    var currentSearch = '';
-}
-// Prevent redeclaration when script reloads via SPA
-if (typeof totalPages === 'undefined') {
-    var totalPages = 1;
-    var zonasMap = {}; // Cache for zona lookup
-}
+// Prevent re-execution on SPA reload
+if (window.__supportModeratorActive) {
+    // Script already loaded, don't execute
+} else {
+    window.__supportModeratorActive = true;
+
+let currentTab = 'active';
+let currentPage = 1;
+let currentLimit = 20;
+let currentStatus = 'all';
+let currentZona = '';
+let currentSearch = '';
+let totalPages = 1;
+let zonasMap = {}; // Cache for zona lookup
 
 // Cache keys
 const CACHE_TICKETS = 'support_moderator_tickets';
@@ -664,4 +664,7 @@ function getRelativeTime(dateString) {
         return '-';
     }
 }
+
+} // Close the if (!window.__supportModeratorActive) block
+
 
