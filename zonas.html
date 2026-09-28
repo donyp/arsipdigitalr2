@@ -178,21 +178,39 @@
         if (typeof currentZonas === 'undefined') {
             var currentZonas = [], currentTokos = [];
         }
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initAuth(); await loadSidebar('zonas.html'); await loadData();
-        });
+
+        // Initialize zonas page
+        async function initZonasPage() {
+            console.log('[Zonas Init] Starting page initialization...');
+            try {
+                await initAuth();
+                await loadSidebar('zonas.html');
+                await loadData();
+                console.log('[Zonas Init] ✅ Page initialized successfully');
+            } catch (err) {
+                console.error('[Zonas Init] Initialization failed:', err);
+            }
+        }
+
         async function loadData() {
             try {
                 const [z, t] = await Promise.all([API.get('/api/zonas'), API.get('/api/toko')]);
-                currentZonas = z.zonas || []; currentTokos = t.tokos || t || [];
+                currentZonas = z.zonas || [];
+                currentTokos = t.tokos || t || [];
                 document.getElementById('stat-total-zonas').textContent = currentZonas.length;
                 document.getElementById('stat-total-tokos').textContent = currentTokos.length;
                 renderZonasTable();
-            } catch (err) { alert('Error: ' + err.message); }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
+
         function renderZonasTable() {
             const tbody = document.getElementById('zonas-body');
-            if (currentZonas.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">Tidak ada data zona</td></tr>'; return; }
+            if (currentZonas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">Tidak ada data zona</td></tr>';
+                return;
+            }
             tbody.innerHTML = currentZonas.map(zona => {
                 const tokoCount = currentTokos.filter(t => t.zona_id === zona.id).length;
                 return `<tr class="border-b border-gray-200 hover:bg-gray-50">
@@ -205,6 +223,7 @@
                     </td></tr>`;
             }).join('');
         }
+
         function openZonaModal() {
             document.getElementById('editZonaId').value = '';
             document.getElementById('zonaNama').value = '';
@@ -213,6 +232,7 @@
             document.getElementById('zonaModalTitle').textContent = 'Tambah Zona';
             document.getElementById('zonaModal').classList.remove('hidden');
         }
+
         function editZona(zonaId) {
             const zona = currentZonas.find(z => z.id == zonaId);
             if (!zona) return;
@@ -223,27 +243,51 @@
             document.getElementById('zonaModalTitle').textContent = 'Edit Zona';
             document.getElementById('zonaModal').classList.remove('hidden');
         }
+
         async function saveZona() {
             const id = document.getElementById('editZonaId').value;
             const nama = document.getElementById('zonaNama').value;
             const deskripsi = document.getElementById('zonaDeskripsi').value;
             const wa_recipient = document.getElementById('zonaWA').value;
-            if (!nama) { alert('Nama zona wajib diisi'); return; }
+            if (!nama) {
+                alert('Nama zona wajib diisi');
+                return;
+            }
             try {
                 const data = { nama, deskripsi, wa_recipient };
-                if (id) await API.put(`/api/zonas/${id}`, data);
-                else await API.post('/api/zonas', data);
-                closeZonaModal(); await loadData();
-            } catch (err) { alert('Error: ' + err.message); }
+                if (id) {
+                    await API.put(`/api/zonas/${id}`, data);
+                } else {
+                    await API.post('/api/zonas', data);
+                }
+                closeZonaModal();
+                await loadData();
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
+
         async function deleteZona(zonaId) {
             if (!confirm('Hapus zona ini?')) return;
             try {
                 await API.post(`/api/zonas/${zonaId}`, null, { method: 'DELETE' });
                 await loadData();
-            } catch (err) { alert('Error: ' + err.message); }
+            } catch (err) {
+                alert('Error: ' + err.message);
+            }
         }
-        function closeZonaModal() { document.getElementById('zonaModal').classList.add('hidden'); }
+
+        function closeZonaModal() {
+            document.getElementById('zonaModal').classList.add('hidden');
+        }
+
+        // Also support DOMContentLoaded for direct page load
+        document.addEventListener('DOMContentLoaded', initZonasPage);
+    </script>
+    <script>
+        if (typeof initZonasPage === 'function') {
+            initZonasPage();
+        }
     </script>
 </body>
 </html>

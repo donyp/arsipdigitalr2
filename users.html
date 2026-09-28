@@ -234,12 +234,18 @@
             var currentUsers = [];
         }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initAuth();
-            await loadSidebar('users.html');
-            await loadUsers();
-        });
+        // Initialize users page
+        async function initUsersPage() {
+            console.log('[Users Init] Starting page initialization...');
+            try {
+                await initAuth();
+                await loadSidebar('users.html');
+                await loadUsers();
+                console.log('[Users Init] ✅ Page initialized successfully');
+            } catch (err) {
+                console.error('[Users Init] Initialization failed:', err);
+            }
+        }
 
         // Load users
         async function loadUsers() {
@@ -370,6 +376,14 @@
         // Close modal
         function closeUserModal() {
             document.getElementById('userModal').classList.add('hidden');
+        }
+
+        // Also support DOMContentLoaded for direct page load
+        document.addEventListener('DOMContentLoaded', initUsersPage);
+    </script>
+    <script>
+        if (typeof initUsersPage === 'function') {
+            initUsersPage();
         }
     </script>
 </body>
