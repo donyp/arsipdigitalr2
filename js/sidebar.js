@@ -130,121 +130,6 @@
         }
     };
 
-    const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
-    const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
-    const borderColor = isDarkMode ? '#1e293b' : '#e5e7eb';
-    const textColor = isDarkMode ? '#f0f4f8' : '#2d3748';
-    const secondaryText = isDarkMode ? '#cbd5e1' : '#718096';
-    const tertiaryText = isDarkMode ? '#94a3b8' : '#a0aec0';
-    const hoverBgColor = isDarkMode ? '#1e293b' : '#f7fafc';
-    const activeBgColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
-    const activeTextColor = isDarkMode ? '#60a5fa' : '#1e40af';
-
-    let navHTML = '';
-
-    for (const item of menuItems) {
-        if (item.isDropdown) {
-            const visibleChildren = item.children || [];
-            const itemIsActive = isItemActive(item);
-
-            let childrenHTML = '';
-            for (const child of visibleChildren) {
-                const childPath = child.href.replace('.html', '');
-                const currentPath = activePage.replace('.html', '');
-                const isActive = currentPath === childPath || activePage === child.href;
-                const childBg = isActive ? activeBgColor : 'transparent';
-                const childText = isActive ? activeTextColor : secondaryText;
-                const childWeight = isActive ? '600' : '500';
-                
-                childrenHTML += `
-                    <a href="${child.href}" onclick="event.stopPropagation();" style="
-                        display: flex;
-                        align-items: center;
-                        padding: 0.4rem 0.8rem 0.4rem 2.2rem;
-                        margin: 0.15rem 0.4rem;
-                        border-radius: 0.3rem;
-                        font-size: 0.7rem;
-                        background: ${childBg};
-                        color: ${childText};
-                        font-weight: ${childWeight};
-                        text-decoration: none;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        letter-spacing: 0.01em;
-                        will-change: background-color, color;
-                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${childBg}'; this.style.color='${childText}'; this.style.transform='translateX(0)'">
-                        <span style="margin-right: 0.4rem; font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
-                    </a>
-                `;
-            }
-
-            const dropdownBg = activeBgColor;
-            const dropdownText = itemIsActive ? activeTextColor : textColor;
-            
-            navHTML += `
-                <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${itemIsActive}" style="
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    width: calc(100% - 1.2rem);
-                    padding: 0.75rem 0.85rem;
-                    margin: 0.2rem 0.6rem;
-                    border: none;
-                    background: ${dropdownBg};
-                    color: ${dropdownText};
-                    text-decoration: none;
-                    font-size: 0.9rem;
-                    cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    text-align: left;
-                    font-weight: 600;
-                    border-radius: 0.4rem;
-                    letter-spacing: 0.01em;
-                    will-change: background-color, color;
-                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${dropdownBg}'; this.style.color='${dropdownText}'">
-                    <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
-                    <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
-                </button>
-                <div id="${item.id}" style="
-                    display: ${itemIsActive ? 'block' : 'none'};
-                    background: transparent;
-                    max-height: ${itemIsActive ? 'none' : '0px'};
-                    opacity: ${itemIsActive ? '1' : '0'};
-                    overflow: ${itemIsActive ? 'visible' : 'hidden'};
-                    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-                    will-change: max-height, opacity;
-                ">
-                    ${childrenHTML}
-                </div>
-            `;
-        } else {
-            const isActive = isItemActive(item);
-            const itemBg = isActive ? activeBgColor : 'transparent';
-            const itemText = isActive ? activeTextColor : textColor;
-            const itemWeight = isActive ? '600' : '500';
-            
-            navHTML += `
-                <a href="${item.href}" style="
-                    display: flex;
-                    align-items: center;
-                    padding: 0.75rem 0.85rem;
-                    margin: 0.2rem 0.6rem;
-                    border-radius: 0.4rem;
-                    background: ${itemBg};
-                    color: ${itemText};
-                    font-weight: ${itemWeight};
-                    text-decoration: none;
-                    font-size: 0.9rem;
-                    cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    letter-spacing: 0.01em;
-                    will-change: background-color, color, transform;
-                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${itemBg}'; this.style.color='${itemText}'; this.style.transform='translateX(0)'">
-                    <span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
-                </a>
-            `;
-        }
-    }
-
     function inject() {
         let sidebar = document.getElementById('sidebar');
         if (!sidebar) {
@@ -252,12 +137,121 @@
             return;
         }
 
-        // Check if sidebar already injected in this page load to prevent re-rendering
-        if (sidebar.children.length > 0 && sidebar.getAttribute('data-injected') === 'true') {
-            console.log('[Sidebar] Already injected on this page, updating active states only');
-            const currentPath = window.location.pathname;
-            updateActiveStates(currentPath);
-            return;
+        // Recalculate colors based on current dark mode
+        const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+        const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
+        const borderColor = isDarkMode ? '#1e293b' : '#e5e7eb';
+        const textColor = isDarkMode ? '#f0f4f8' : '#2d3748';
+        const secondaryText = isDarkMode ? '#cbd5e1' : '#718096';
+        const tertiaryText = isDarkMode ? '#94a3b8' : '#a0aec0';
+        const hoverBgColor = isDarkMode ? '#1e293b' : '#f7fafc';
+        const activeBgColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
+        const activeTextColor = isDarkMode ? '#60a5fa' : '#1e40af';
+
+        // Generate navigation HTML with current colors
+        let navHTML = '';
+
+        for (const item of menuItems) {
+            if (item.isDropdown) {
+                const visibleChildren = item.children || [];
+                const itemIsActive = isItemActive(item);
+
+                let childrenHTML = '';
+                for (const child of visibleChildren) {
+                    const childPath = child.href.replace('.html', '');
+                    const currentPath = activePage.replace('.html', '');
+                    const isActive = currentPath === childPath || activePage === child.href;
+                    const childBg = isActive ? activeBgColor : 'transparent';
+                    const childText = isActive ? activeTextColor : secondaryText;
+                    const childWeight = isActive ? '600' : '500';
+                    
+                    childrenHTML += `
+                        <a href="${child.href}" onclick="event.stopPropagation();" style="
+                            display: flex;
+                            align-items: center;
+                            padding: 0.4rem 0.8rem 0.4rem 2.2rem;
+                            margin: 0.15rem 0.4rem;
+                            border-radius: 0.3rem;
+                            font-size: 0.7rem;
+                            background: ${childBg};
+                            color: ${childText};
+                            font-weight: ${childWeight};
+                            text-decoration: none;
+                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                            letter-spacing: 0.01em;
+                            will-change: background-color, color;
+                        " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${childBg}'; this.style.color='${childText}'; this.style.transform='translateX(0)'">
+                            <span style="margin-right: 0.4rem; font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
+                        </a>
+                    `;
+                }
+
+                const dropdownBg = activeBgColor;
+                const dropdownText = itemIsActive ? activeTextColor : textColor;
+                
+                navHTML += `
+                    <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${itemIsActive}" style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        width: calc(100% - 1.2rem);
+                        padding: 0.75rem 0.85rem;
+                        margin: 0.2rem 0.6rem;
+                        border: none;
+                        background: ${dropdownBg};
+                        color: ${dropdownText};
+                        text-decoration: none;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        text-align: left;
+                        font-weight: 600;
+                        border-radius: 0.4rem;
+                        letter-spacing: 0.01em;
+                        will-change: background-color, color;
+                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${dropdownBg}'; this.style.color='${dropdownText}'">
+                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
+                        <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
+                    </button>
+                    <div id="${item.id}" style="
+                        display: ${itemIsActive ? 'block' : 'none'};
+                        background: transparent;
+                        max-height: ${itemIsActive ? 'none' : '0px'};
+                        opacity: ${itemIsActive ? '1' : '0'};
+                        overflow: ${itemIsActive ? 'visible' : 'hidden'};
+                        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+                        will-change: max-height, opacity;
+                    ">
+                        ${childrenHTML}
+                    </div>
+                `;
+            } else {
+                const isActive = isItemActive(item);
+                const itemBg = isActive ? activeBgColor : 'transparent';
+                const itemText = isActive ? activeTextColor : textColor;
+                const itemWeight = isActive ? '600' : '500';
+                
+                navHTML += `
+                    <a href="${item.href}" style="
+                        display: flex;
+                        align-items: center;
+                        padding: 0.75rem 0.85rem;
+                        margin: 0.2rem 0.6rem;
+                        border-radius: 0.4rem;
+                        background: ${itemBg};
+                        color: ${itemText};
+                        font-weight: ${itemWeight};
+                        text-decoration: none;
+                        font-size: 0.9rem;
+                        cursor: pointer;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        letter-spacing: 0.01em;
+                        will-change: background-color, color, transform;
+                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${itemBg}'; this.style.color='${itemText}'; this.style.transform='translateX(0)'">
+                        <span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
+                    </a>
+                `;
+            }
         }
 
         const hasAnnouncement = !!document.getElementById('global-announcement-banner');
@@ -328,15 +322,6 @@
                 transition: border-color 0.4s ease, color 0.4s ease;
             ">v5.4</div>
         `;
-
-        // Mark as injected to prevent re-rendering
-        sidebar.setAttribute('data-injected', 'true');
-
-        // Add smooth scroll styling for nav
-        const nav = sidebar.querySelector('nav');
-        if (nav) {
-            nav.style.scrollBehavior = 'smooth';
-        }
 
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
