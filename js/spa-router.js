@@ -117,15 +117,19 @@ class SPARouter {
             }
 
             // Fetch content
-            let content;
+            let pageData;
             if (this.pageCache[path]) {
-                content = this.pageCache[path];
+                pageData = this.pageCache[path];
                 console.log('[SPA] Loaded from cache:', path);
             } else {
-                content = await this.fetchPageContent(pageConfig.url);
-                this.pageCache[path] = content;
+                pageData = await this.fetchPageContent(pageConfig.url);
+                this.pageCache[path] = pageData;
                 console.log('[SPA] Fetched from server:', path);
             }
+
+            // Handle both old format (string) and new format (object with html and scripts)
+            let htmlContent = typeof pageData === 'string' ? pageData : pageData.html;
+            let pageScripts = typeof pageData === 'object' && pageData.scripts ? pageData.scripts : [];
 
             // Update content with smooth transition
             if (animate && !isFirstLoadOfSession) {
@@ -135,31 +139,53 @@ class SPARouter {
 
             // Parse content to extract and handle scripts separately
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
+            tempDiv.innerHTML = htmlContent;
             
-            // Extract script tags before inserting content
-            const scripts = tempDiv.querySelectorAll('script');
-            const scriptContents = [];
-            scripts.forEach(script => {
-                scriptContents.push(script.textContent || script.innerHTML);
-                script.remove(); // Remove from content to avoid double execution
+            // Extract inline script tags from HTML content
+            const inlineScripts = tempDiv.querySelectorAll('script:not([src])');
+            const inlineScriptContents = [];
+            inlineScripts.forEach(script => {
+                inlineScriptContents.push(script.textContent || script.innerHTML);
+                script.remove();
             });
             
-            // Insert HTML content without scripts
+            // Insert HTML content without inline scripts
             mainContent.innerHTML = tempDiv.innerHTML;
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
 
-            // Execute scripts after content is inserted
-            for (const scriptContent of scriptContents) {
+            // Execute external scripts first (if needed)
+            for (const scriptData of pageScripts) {
+                if (scriptData.src && !scriptData.src.includes('jquery') && !scriptData.src.includes('bootstrap')) {
+                    // Load external scripts (skip common libraries already loaded)
+                    try {
+                        const script = document.createElement('script');
+                        script.src = scriptData.src;
+                        script.async = false;
+                        await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = reject;
+                            document.body.appendChild(script);
+                        });
+                        console.log('[SPA] Loaded external script:', scriptData.src);
+                    } catch (e) {
+                        console.warn('[SPA] Error loading external script:', scriptData.src, e);
+                    }
+                }
+            }
+
+            // Execute inline scripts after content and external scripts
+            for (const scriptContent of inlineScriptContents) {
                 try {
                     const newScript = document.createElement('script');
                     newScript.textContent = scriptContent;
                     document.body.appendChild(newScript);
-                    console.log('[SPA] Executed page script');
+                    console.log('[SPA] Executed inline script');
+                    // Wait a bit for script to execute
+                    await new Promise(resolve => setTimeout(resolve, 50));
                     document.body.removeChild(newScript);
                 } catch (e) {
-                    console.warn('[SPA] Error executing script:', e);
+                    console.warn('[SPA] Error executing inline script:', e);
                 }
             }
 
@@ -238,18 +264,22 @@ class SPARouter {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
-            // Try to find main content container
-            let mainContent = doc.getElementById('main-content') || 
-                             doc.querySelector('[role="main"]') ||
-                             doc.querySelector('main') ||
-                             doc.querySelector('.main-content');
-
+            // Strategy 1: Look for main-content div (if page uses spa-page-handler)
+            let mainContent = doc.getElementById('main-content');
+            
+            // Strategy 2: Look for app div and get content (skipping sidebar)
             if (!mainContent) {
-                // If no main container found, extract from app div
                 const appDiv = doc.getElementById('app');
                 if (appDiv) {
-                    // Get all children except sidebar
-                    mainContent = appDiv.querySelector('div:not(#sidebar)');
+                    // Clone the app div to preserve its structure
+                    const appClone = appDiv.cloneNode(true);
+                    // Remove sidebar from clone
+                    const sidebar = appClone.querySelector('#sidebar');
+                    if (sidebar) sidebar.remove();
+                    mainContent = appClone;
+                } else {
+                    // Strategy 3: Get body content
+                    mainContent = doc.body;
                 }
             }
 
@@ -257,7 +287,21 @@ class SPARouter {
                 throw new Error('Could not find main content in page');
             }
 
-            return mainContent.innerHTML;
+            // Also extract all scripts from the page (both inline and external)
+            const allScripts = Array.from(doc.querySelectorAll('script'));
+            const scriptData = allScripts.map(script => ({
+                src: script.src,
+                textContent: script.textContent,
+                type: script.type
+            }));
+
+            console.log('[SPA] Found ' + scriptData.length + ' scripts in page:', url);
+
+            // Return both HTML and script data
+            return {
+                html: mainContent.innerHTML,
+                scripts: scriptData
+            };
         } catch (error) {
             console.error('[SPA] Fetch error:', error);
             throw error;
