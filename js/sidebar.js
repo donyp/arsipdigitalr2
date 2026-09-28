@@ -1,24 +1,24 @@
 // ============================================================
-// Shared Sidebar Component - Complete Rebuild v5.0
-// Simplified approach: No flex complexity, just scrollable list
+// Shared Sidebar Component - v5.2 - Clean, Modern, Polished
 // ============================================================
 
 (function() {
-    console.log('[Sidebar] Initializing v5.0...');
+    console.log('[Sidebar] Initializing v5.2 - Modern Polish...');
     
     const activePage = window.location.pathname.split('/').pop() || 'dashboard';
     
     const menuItems = [
-        { href: '/dashboard', label: 'Dashboard' },
-        { href: '/whatsapp-messages', label: 'Notify Zona' },
-        { href: '/support-dashboard', label: 'Support' },
+        { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+        { href: '/whatsapp-messages', label: 'Notify Zona', icon: '💬' },
+        { href: '/support-dashboard', label: 'Support', icon: '🆘' },
         
         {
             isDropdown: true,
             id: 'dd-rename-tools',
             label: 'Rename Tools',
+            icon: '🔧',
             children: [
-                { href: '/rename-faktur', label: 'Faktur Pajak' },
+                { href: '/rename-faktur', label: 'Faktur Pajak', icon: '📋' },
             ]
         },
 
@@ -26,11 +26,12 @@
             isDropdown: true,
             id: 'dd-invoice',
             label: 'Upload File',
+            icon: '📁',
             children: [
-                { href: '/upload-excel', label: 'Upload Excel' },
-                { href: '/upload-invoice-pdf.html', label: 'Upload Invoice' },
-                { href: '/upload-bukti-bayar', label: 'Upload Bukti Bayar' },
-                { href: '/upload-faktur', label: 'Upload Faktur Pajak' },
+                { href: '/upload-excel', label: 'Upload Excel', icon: '📊' },
+                { href: '/upload-invoice-pdf.html', label: 'Upload Invoice', icon: '📄' },
+                { href: '/upload-bukti-bayar', label: 'Upload Bukti Bayar', icon: '💳' },
+                { href: '/upload-faktur', label: 'Upload Faktur Pajak', icon: '📋' },
             ]
         },
         
@@ -38,10 +39,11 @@
             isDropdown: true,
             id: 'dd-manajemen',
             label: 'Manajemen',
+            icon: '⚙️',
             children: [
-                { href: '/users', label: 'Manajemen Pengguna' },
-                { href: '/tokos', label: 'Daftar Toko' },
-                { href: '/zonas', label: 'Zona Operasional' },
+                { href: '/users', label: 'Manajemen Pengguna', icon: '👥' },
+                { href: '/tokos', label: 'Daftar Toko', icon: '🏪' },
+                { href: '/zonas', label: 'Zona Operasional', icon: '📍' },
             ]
         },
     ];
@@ -49,25 +51,31 @@
     window.toggleSidebarDropdown = function(id) {
         const btn = document.getElementById(id + '-btn');
         const container = document.getElementById(id);
+        const icon = btn?.querySelector('.dropdown-arrow');
         if (!btn || !container) return;
 
         const isExpanded = btn.getAttribute('data-expanded') === 'true';
         if (isExpanded) {
             container.style.display = 'none';
             btn.setAttribute('data-expanded', 'false');
+            if (icon) icon.style.transform = 'rotate(0deg)';
         } else {
             container.style.display = 'block';
             btn.setAttribute('data-expanded', 'true');
+            if (icon) icon.style.transform = 'rotate(180deg)';
         }
     };
 
     const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
     const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
-    const borderColor = isDarkMode ? '#334155' : '#e5e7eb';
-    const textColor = isDarkMode ? '#e2e8f0' : '#334155';
-    const hoverBgColor = isDarkMode ? '#1e293b' : '#f8fafc';
-    const activeBgColor = isDarkMode ? '#1e40af' : '#e0e7ff';
-    const activeTextColor = isDarkMode ? '#60a5fa' : '#4f46e5';
+    const borderColor = isDarkMode ? '#1e293b' : '#e5e7eb';
+    const textColor = isDarkMode ? '#f0f4f8' : '#2d3748';
+    const secondaryText = isDarkMode ? '#cbd5e1' : '#718096';
+    const tertiaryText = isDarkMode ? '#94a3b8' : '#a0aec0';
+    const hoverBgColor = isDarkMode ? '#1e293b' : '#f7fafc';
+    const activeBgColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
+    const activeTextColor = isDarkMode ? '#60a5fa' : '#1e40af';
+    const activeBorder = isDarkMode ? '#3b82f6' : '#3b82f6';
 
     let navHTML = '';
 
@@ -80,12 +88,52 @@
             let childrenHTML = '';
             for (const child of visibleChildren) {
                 const isActive = activePage === child.href;
-                childrenHTML += `<a href="${child.href}" style="display: block; padding: 0.5rem 1rem 0.5rem 2.5rem; margin: 0; border: none; background: ${isActive ? activeBgColor : 'transparent'}; color: ${isActive ? activeTextColor : textColor}; text-decoration: none; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; font-weight: ${isActive ? '600' : '500'};" onmouseover="this.style.backgroundColor='${hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">${child.label}</a>`;
+                const childBg = isActive ? activeBgColor : 'transparent';
+                const childText = isActive ? activeTextColor : secondaryText;
+                const childWeight = isActive ? '600' : '500';
+                
+                childrenHTML += `
+                    <a href="${child.href}" style="
+                        display: flex;
+                        align-items: center;
+                        padding: 0.6rem 1rem 0.6rem 2.5rem;
+                        margin: 0.2rem 0.6rem;
+                        border-radius: 0.4rem;
+                        font-size: 0.8rem;
+                        background: ${childBg};
+                        color: ${childText};
+                        font-weight: ${childWeight};
+                        text-decoration: none;
+                        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                        letter-spacing: 0.01em;
+                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${childBg}'; this.style.color='${childText}'">
+                        <span style="margin-right: 0.5rem; font-size: 0.85rem;">${child.icon}</span><span>${child.label}</span>
+                    </a>
+                `;
             }
 
             navHTML += `
-                <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${hasActiveChild}" style="display: block; width: 100%; padding: 0.6rem 1rem; margin: 0; border: none; background: transparent; color: ${textColor}; text-decoration: none; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; text-align: left; font-weight: 500;">
-                    ${item.label}
+                <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${hasActiveChild}" style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: calc(100% - 1.2rem);
+                    padding: 0.75rem 0.85rem;
+                    margin: 0.2rem 0.6rem;
+                    border: none;
+                    background: transparent;
+                    color: ${textColor};
+                    text-decoration: none;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    text-align: left;
+                    font-weight: 600;
+                    border-radius: 0.4rem;
+                    letter-spacing: 0.01em;
+                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='${textColor}'">
+                    <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem;">${item.icon}</span>${item.label}</span>
+                    <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); ${hasActiveChild ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                 </button>
                 <div id="${item.id}" style="display: ${displayStyle}; background: transparent;">
                     ${childrenHTML}
@@ -93,7 +141,29 @@
             `;
         } else {
             const isActive = activePage === item.href;
-            navHTML += `<a href="${item.href}" style="display: block; padding: 0.6rem 1rem; margin: 0; border: none; background: ${isActive ? activeBgColor : 'transparent'}; color: ${isActive ? activeTextColor : textColor}; text-decoration: none; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; font-weight: ${isActive ? '600' : '500'};" onmouseover="this.style.backgroundColor='${isActive ? activeBgColor : hoverBgColor}'" onmouseout="this.style.backgroundColor='${isActive ? activeBgColor : 'transparent'}'">${item.label}</a>`;
+            const itemBg = isActive ? activeBgColor : 'transparent';
+            const itemText = isActive ? activeTextColor : textColor;
+            const itemWeight = isActive ? '600' : '500';
+            
+            navHTML += `
+                <a href="${item.href}" style="
+                    display: flex;
+                    align-items: center;
+                    padding: 0.75rem 0.85rem;
+                    margin: 0.2rem 0.6rem;
+                    border-radius: 0.4rem;
+                    background: ${itemBg};
+                    color: ${itemText};
+                    font-weight: ${itemWeight};
+                    text-decoration: none;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    letter-spacing: 0.01em;
+                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${itemBg}'; this.style.color='${itemText}'">
+                    <span style="margin-right: 0.65rem; font-size: 0.95rem;">${item.icon}</span>${item.label}
+                </a>
+            `;
         }
     }
 
@@ -122,14 +192,14 @@
         `;
 
         sidebar.innerHTML = `
-            <div style="padding: 1rem; border-bottom: 1px solid ${borderColor}; flex-shrink: 0;">
-                <div style="font-weight: 900; font-size: 0.9rem; color: ${textColor};">ARSIP ANKA</div>
-                <div style="font-size: 0.7rem; color: ${textColor}; opacity: 0.7;">Member Area</div>
+            <div style="padding: 1.5rem 1.2rem; border-bottom: 1px solid ${borderColor}; flex-shrink: 0;">
+                <div style="font-weight: 900; font-size: 0.95rem; color: ${textColor}; letter-spacing: 0.15em; text-transform: uppercase;">Arsip Anka</div>
+                <div style="font-size: 0.65rem; color: ${tertiaryText}; margin-top: 0.35rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Admin Panel</div>
             </div>
-            <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0;">
+            <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1rem 0;">
                 ${navHTML}
             </nav>
-            <div style="padding: 0.75rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.65rem; color: ${textColor}; opacity: 0.7; text-align: center;">v3.1</div>
+            <div style="padding: 1rem 1.2rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.6rem; color: ${tertiaryText}; text-align: center; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">v5.2</div>
         `;
 
         const mainContent = document.getElementById('main-content');
@@ -138,7 +208,7 @@
             mainContent.style.width = 'calc(100% - 20rem)';
         }
 
-        console.log('[Sidebar] v5.0 Injection complete');
+        console.log('[Sidebar] v5.2 Modern polish complete');
     }
 
     if (document.readyState === 'loading') {
