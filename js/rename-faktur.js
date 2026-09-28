@@ -7,32 +7,50 @@ if (typeof selectedFiles === 'undefined') {
 }
 
 // ============================================
-// Setup Drag & Drop
+// Setup Drag & Drop (wrapped in init function)
 // ============================================
-const dropzone = document.getElementById('dropzone');
+function initRenameFakturPage() {
+    const dropzone = document.getElementById('dropzone');
+    if (!dropzone) {
+        console.warn('[Rename Faktur] Dropzone element not found, retrying...');
+        setTimeout(initRenameFakturPage, 100);
+        return;
+    }
 
-dropzone.addEventListener('click', () => {
-    document.getElementById('fileInput').click();
+    dropzone.addEventListener('click', () => {
+        document.getElementById('fileInput').click();
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-blue-500', 'bg-blue-50');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('border-blue-500', 'bg-blue-50');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-blue-500', 'bg-blue-50');
+        handleFiles(e.dataTransfer.files);
+
 });
 
-dropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropzone.classList.add('border-blue-500', 'bg-blue-50');
-});
+    // File input change event
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+    
+    console.log('[Rename Faktur] Page initialized');
+}
 
-dropzone.addEventListener('dragleave', () => {
-    dropzone.classList.remove('border-blue-500', 'bg-blue-50');
-});
-
-dropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropzone.classList.remove('border-blue-500', 'bg-blue-50');
-    handleFiles(e.dataTransfer.files);
-});
-
-// ============================================
-// Handle Files
-// ============================================
+// Initialize on page load or SPA navigation
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRenameFakturPage);
+} else {
+    initRenameFakturPage();
+}
 function handleFiles(files) {
     let fileArray = Array.from(files).filter(f => f.type === 'application/pdf');
     

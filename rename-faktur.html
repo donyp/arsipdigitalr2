@@ -573,7 +573,14 @@
     <script src="js/sidebar.js"></script>
     <script src="js/spa-page-handler.js"></script>
     <script src="js/rename-faktur.js"></script>
+    <script>
+        console.log('[Rename Faktur HTML] Checking for init...');
+        if (typeof initRenameFakturPage === 'function') {
+            console.log('[Rename Faktur HTML] Calling init');
+            initRenameFakturPage();
+        }
+    </script>
 </body>
-</html>
+</html>>
 
 

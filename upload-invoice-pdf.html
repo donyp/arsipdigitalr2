@@ -426,7 +426,12 @@
     <script src="js/sidebar.js"></script>
     <script src="js/spa-page-handler.js"></script>
     <script src="js/upload-invoice-pdf.js"></script>
+    <script>
+        if (document.readyState !== 'loading') {
+            document.dispatchEvent(new Event('DOMContentLoaded'));
+        }
+    </script>
 </body>
-</html>
+</html>>
 
 

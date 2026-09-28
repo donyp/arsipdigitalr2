@@ -6,8 +6,14 @@ let currentFile = null;
 let parsedData = null;
 
 // Step 1: File Selection
-document.addEventListener('DOMContentLoaded', () => {
+function initUploadExcelPage() {
     const dropZone = document.getElementById('dropZone');
+    if (!dropZone) {
+        console.warn('[Upload Excel] Elements not found, retrying...');
+        setTimeout(initUploadExcelPage, 100);
+        return;
+    }
+
     const fileInput = document.getElementById('fileInput');
     const btnCheck = document.getElementById('btnCheck');
     const btnBack1 = document.getElementById('btnBack1');
@@ -38,6 +44,12 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.click();
     });
 
+    console.log('[Upload Excel] Page initialized');
+}
+
+document.addEventListener('DOMContentLoaded', initUploadExcelPage);
+if (document.readyState === 'complete') initUploadExcelPage();
+
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             handleFileSelected(e.target.files[0]);
@@ -50,7 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
     btnPreview.addEventListener('click', () => showPreview());
     btnBack2.addEventListener('click', () => goToValidation());
     btnUpload.addEventListener('click', () => uploadData());
-});
+    
+    console.log('[Upload Excel] All event listeners attached');
+}
 
 function handleFileSelected(file) {
     console.log('[Upload] File selected:', file.name);
