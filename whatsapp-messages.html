@@ -311,6 +311,12 @@
                     renderMessages();
                 });
             });
+            
+            // Debug: verify content was actually rendered
+            console.log('[Notify WA] ✅ Rendered HTML length:', invMsgBody.innerHTML.length);
+            console.log('[Notify WA] ✅ Element visible:', invMsgBody.offsetHeight > 0);
+            console.log('[Notify WA] ✅ Element display:', window.getComputedStyle(invMsgBody).display);
+            console.log('[Notify WA] ✅ Parent container visible:', invMsgBody.parentElement?.offsetHeight > 0);
         }
 
         function renderMessageCard(msg) {

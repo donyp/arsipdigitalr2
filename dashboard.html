@@ -32,21 +32,23 @@
         }
 
         // Watch for dynamically created elements
-        const observer = new MutationObserver(mutations => {
-            applyDarkModeToPopups();
-        });
+        if (typeof window.dashboardObserver === 'undefined') {
+            window.dashboardObserver = new MutationObserver(mutations => {
+                applyDarkModeToPopups();
+            });
+        }
 
         // Start observing when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
-                observer.observe(document.body, {
+                window.dashboardObserver.observe(document.body, {
                     childList: true,
                     subtree: true,
                     attributes: true
                 });
             });
         } else {
-            observer.observe(document.body, {
+            window.dashboardObserver.observe(document.body, {
                 childList: true,
                 subtree: true,
                 attributes: true
