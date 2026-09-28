@@ -18,8 +18,9 @@ const CACHE_ZONAS = 'support_zonas';
 const CACHE_TIMESTAMP = 'support_cache_timestamp';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Support-Moderator] Page loaded');
+// SPA-aware initialization
+async function initSupportPage() {
+    console.log('[Support-Moderator] Page initialization starting');
     
     // Initialize auth
     console.log('[Support-Moderator] Initializing auth...');
@@ -95,6 +96,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     console.log('[Support-Moderator] Dashboard initialized - showing cached data if available');
+}
+
+// Listen for both direct page load and SPA navigation
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('[Support-Moderator] DOMContentLoaded event fired');
+    await initSupportPage();
+});
+
+// Also listen for SPA page load event
+window.addEventListener('spa-page-loaded', async (event) => {
+    if (event.detail && event.detail.page && event.detail.page.includes('support')) {
+        console.log('[Support-Moderator] Loaded via SPA, initializing support page');
+        await initSupportPage();
+    }
 });
 
 // Cache management functions

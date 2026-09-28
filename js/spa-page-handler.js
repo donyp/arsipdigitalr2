@@ -63,4 +63,11 @@
         console.log('[SPA] Page loaded via SPA, initializing...');
         window.initializeSPAPage();
     });
+
+    // Also provide a way for page scripts to detect SPA load
+    // Dispatch spa-page-initialized event when this handler is loaded
+    // This tells page-specific scripts (like support-moderator.js) that we're in SPA mode
+    window.dispatchEvent(new CustomEvent('spa-page-initialized', {
+        detail: { isSPA: true }
+    }));
 })();

@@ -179,8 +179,24 @@
     <script>
         let currentMessages = [], currentInvoiceMessages = [];
         
+        // SPA-aware initialization: run on both DOMContentLoaded and when page loaded via SPA
+        async function initNotifyZonaPage() {
+            await initAuth(); 
+            await loadSidebar('whatsapp-messages.html'); 
+            await loadMessages();
+        }
+        
         document.addEventListener('DOMContentLoaded', async () => {
-            await initAuth(); await loadSidebar('whatsapp-messages.html'); await loadMessages();
+            console.log('[NotifyZona] DOMContentLoaded fired');
+            await initNotifyZonaPage();
+        });
+
+        // Also run when loaded via SPA (spa-page-handler.js will trigger this)
+        window.addEventListener('spa-page-loaded', async (event) => {
+            if (event.detail && event.detail.page && event.detail.page.includes('whatsapp-messages')) {
+                console.log('[NotifyZona] Loaded via SPA, initializing page');
+                await initNotifyZonaPage();
+            }
         });
 
         async function loadMessages() {
