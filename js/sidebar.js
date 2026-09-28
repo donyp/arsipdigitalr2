@@ -8,17 +8,17 @@
     const activePage = window.location.pathname.split('/').pop() || 'dashboard';
     
     const menuItems = [
-        { href: '/dashboard', label: 'Dashboard', icon: '📊' },
-        { href: '/whatsapp-messages', label: 'Notify Zona', icon: '💬' },
-        { href: '/support-dashboard', label: 'Support', icon: '🆘' },
+        { href: '/dashboard', label: 'Dashboard', icon: '<i class="fas fa-chart-line"></i>' },
+        { href: '/whatsapp-messages', label: 'Notify Zona', icon: '<i class="fas fa-bell"></i>' },
+        { href: '/support-dashboard', label: 'Support', icon: '<i class="fas fa-headset"></i>' },
         
         {
             isDropdown: true,
             id: 'dd-rename-tools',
             label: 'Rename Tools',
-            icon: '🔧',
+            icon: '<i class="fas fa-tools"></i>',
             children: [
-                { href: '/rename-faktur', label: 'Faktur Pajak', icon: '📋' },
+                { href: '/rename-faktur', label: 'Faktur Pajak', icon: '<i class="fas fa-file-invoice"></i>' },
             ]
         },
 
@@ -26,12 +26,12 @@
             isDropdown: true,
             id: 'dd-invoice',
             label: 'Upload File',
-            icon: '📁',
+            icon: '<i class="fas fa-cloud-upload-alt"></i>',
             children: [
-                { href: '/upload-excel', label: 'Upload Excel', icon: '📊' },
-                { href: '/upload-invoice-pdf', label: 'Upload Invoice', icon: '📄' },
-                { href: '/upload-bukti-bayar', label: 'Upload Bukti Bayar', icon: '💳' },
-                { href: '/upload-faktur', label: 'Upload Faktur Pajak', icon: '📋' },
+                { href: '/upload-excel', label: 'Upload Excel', icon: '<i class="fas fa-file-excel"></i>' },
+                { href: '/upload-invoice-pdf', label: 'Upload Invoice', icon: '<i class="fas fa-file-pdf"></i>' },
+                { href: '/upload-bukti-bayar', label: 'Upload Bukti Bayar', icon: '<i class="fas fa-receipt"></i>' },
+                { href: '/upload-faktur', label: 'Upload Faktur Pajak', icon: '<i class="fas fa-file-invoice-dollar"></i>' },
             ]
         },
         
@@ -39,16 +39,24 @@
             isDropdown: true,
             id: 'dd-manajemen',
             label: 'Manajemen',
-            icon: '⚙️',
+            icon: '<i class="fas fa-cog"></i>',
             children: [
-                { href: '/users', label: 'Manajemen Pengguna', icon: '👥' },
-                { href: '/tokos', label: 'Daftar Toko', icon: '🏪' },
-                { href: '/zonas', label: 'Zona Operasional', icon: '📍' },
+                { href: '/users', label: 'Manajemen Pengguna', icon: '<i class="fas fa-users"></i>' },
+                { href: '/tokos', label: 'Daftar Toko', icon: '<i class="fas fa-store"></i>' },
+                { href: '/zonas', label: 'Zona Operasional', icon: '<i class="fas fa-map-marked-alt"></i>' },
             ]
         },
     ];
 
-    // Helper function to check if current page is active or child of an item
+    // Helper to safely inject HTML icons
+    function safeIcon(iconHTML) {
+        // For Font Awesome icons stored as HTML strings
+        if (typeof iconHTML === 'string' && iconHTML.includes('<i class="fas')) {
+            return iconHTML;
+        }
+        // Fallback
+        return '<i class="fas fa-question-circle"></i>';
+    }
     function isItemActive(item) {
         if (item.isDropdown) {
             // Check if any child matches current page
