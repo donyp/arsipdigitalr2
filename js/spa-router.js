@@ -156,8 +156,26 @@ class SPARouter {
 
             // Execute external scripts first (if needed)
             for (const scriptData of pageScripts) {
-                if (scriptData.src && !scriptData.src.includes('jquery') && !scriptData.src.includes('bootstrap')) {
-                    // Load external scripts (skip common libraries already loaded)
+                if (scriptData.src) {
+                    // Skip external scripts that are already loaded (avoid redeclaration)
+                    const scriptName = scriptData.src.split('/').pop().split('?')[0]; // e.g., "config.js"
+                    const alreadyLoaded = document.head.querySelector(`script[src*="${scriptName}"]`) ||
+                                         document.body.querySelector(`script[src*="${scriptName}"]`);
+                    
+                    if (alreadyLoaded) {
+                        console.log('[SPA] Skipping already-loaded script:', scriptName);
+                        continue;
+                    }
+                    
+                    // Skip common third-party libraries
+                    if (scriptData.src.includes('jquery') || 
+                        scriptData.src.includes('bootstrap') ||
+                        scriptData.src.includes('cdn.tailwindcss') ||
+                        scriptData.src.includes('xlsx')) {
+                        console.log('[SPA] Skipping third-party library script:', scriptData.src);
+                        continue;
+                    }
+                    
                     try {
                         const script = document.createElement('script');
                         script.src = scriptData.src;
