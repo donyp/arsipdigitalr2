@@ -1658,54 +1658,8 @@
             }
         }
 
-        /* Page Loader */
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        /* Page Loader - REMOVED */
 
-        .page-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            opacity: 1;
-            transition: opacity 0.5s ease-out;
-        }
-
-        .page-loader.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .loader-content {
-            text-align: center;
-            color: white;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            margin: 0 auto 20px;
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        .loader-text {
-            font-size: 16px;
-            font-weight: 500;
-            letter-spacing: 1px;
-            color: white;
-        }
     </style>
     <style>
         html, body {
@@ -2400,20 +2354,9 @@
                     // DO NOT auto-load invoices here - wait for user to filter tahun/bulan first
                     // Data will be loaded when user clicks "Terapkan Filter" button
                     console.log('[Dashboard] ✅ Invoice system initialized (waiting for user to filter)');
-                    
-                    // Hide page loader after data is loaded
-                    const pageLoader = document.getElementById('pageLoader');
-                    if (pageLoader) {
-                        pageLoader.classList.add('hidden');
-                    }
                 }, 500);
             } catch (error) {
                 console.error('Error loading invoice content:', error);
-                // Hide loader even on error
-                const pageLoader = document.getElementById('pageLoader');
-                if (pageLoader) {
-                    pageLoader.classList.add('hidden');
-                }
             }
         });
     </script>
