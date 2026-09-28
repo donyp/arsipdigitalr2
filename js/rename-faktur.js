@@ -1,7 +1,10 @@
 // Rename Faktur Pajak
 // Extract nama toko & nominal from PDF, rename as: tax-NAMA_TOKO NOMINAL
 
-let selectedFiles = [];
+// Prevent redeclaration when script reloads via SPA
+if (typeof selectedFiles === 'undefined') {
+    var selectedFiles = [];
+}
 
 // ============================================
 // Setup Drag & Drop

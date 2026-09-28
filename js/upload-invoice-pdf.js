@@ -2,8 +2,11 @@
 // Bulk Upload Invoice PDF with Validation
 // ============================================
 
-let selectedFiles = [];
-let validationResults = [];
+// Prevent redeclaration when script reloads via SPA
+if (typeof selectedFiles === 'undefined') {
+    var selectedFiles = [];
+    var validationResults = [];
+}
 
 // Helper function to format currency as Rupiah
 function formatRupiah(amount) {

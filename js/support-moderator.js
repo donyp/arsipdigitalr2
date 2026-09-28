@@ -11,8 +11,11 @@ if (typeof currentTab === 'undefined') {
     var currentZona = '';
     var currentSearch = '';
 }
-let totalPages = 1;
-let zonasMap = {}; // Cache for zona lookup
+// Prevent redeclaration when script reloads via SPA
+if (typeof totalPages === 'undefined') {
+    var totalPages = 1;
+    var zonasMap = {}; // Cache for zona lookup
+}
 
 // Cache keys
 const CACHE_TICKETS = 'support_moderator_tickets';
