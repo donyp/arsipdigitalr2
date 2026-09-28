@@ -876,6 +876,12 @@
             pointer-events: none;
         }
 
+        /* Prevent scroll and layout shift during loading */
+        body:has(.page-loader:not(.hidden)) {
+            overflow: hidden;
+            height: 100vh;
+        }
+
         /* Blur everything behind the loader */
         body:has(.page-loader:not(.hidden)) #sidebar,
         body:has(.page-loader:not(.hidden)) #main-content,
