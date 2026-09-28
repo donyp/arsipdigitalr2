@@ -222,29 +222,15 @@ class SPARouter {
                     newScript.textContent = scriptContent;
                     document.body.appendChild(newScript);
                     console.log('[SPA] Executed inline script');
-                    // Don't remove script immediately - keep it in DOM for reference
-                    // document.body.removeChild(newScript);
-                    // Wait for script to fully execute
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    // Wait for script to fully execute before next one
+                    await new Promise(resolve => setTimeout(resolve, 50));
                 } catch (e) {
                     console.warn('[SPA] Error executing inline script:', e);
                 }
             }
 
-            // Wait a bit for all scripts to be defined
+            // Wait for page to stabilize after scripts
             await new Promise(resolve => setTimeout(resolve, 300));
-
-            // Manually trigger DOMContentLoaded event for pages that rely on it
-            // This is important for SPA because DOMContentLoaded only fires once on page load
-            console.log('[SPA] Dispatching DOMContentLoaded event to trigger page initialization');
-            const domevent = new Event('DOMContentLoaded');
-            document.dispatchEvent(domevent);
-            
-            // Also trigger on window for pages that listen there
-            window.dispatchEvent(domevent);
-            
-            // Wait for async initialization to complete
-            await new Promise(resolve => setTimeout(resolve, 800));
 
             // Update active sidebar state
             if (window.updateSidebarActiveState) {
