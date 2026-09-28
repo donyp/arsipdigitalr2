@@ -110,12 +110,12 @@
             width: 100%;
         }
     </style>
-    <div id="app">
+    <div id="app" style="width: 100%; display: flex; margin: 0; padding: 0; overflow-x: hidden;">
         <!-- Sidebar -->
         <div id="sidebar"></div>
 
         <!-- Main Content -->
-        <div style="margin-left: 20rem; width: calc(100% - 20rem); transition: all 300ms ease;">
+        <div id="main-content" style="flex: 1; min-width: 0; transition: all 300ms ease; display: flex; flex-direction: column;">
             <!-- Header -->
             <div class="bg-white sticky top-0 z-30 shadow-sm border-b border-gray-100">
                 <div class="px-6 py-4">
@@ -388,6 +388,7 @@
     </script>
 </body>
 </html>
+
 
 
 
