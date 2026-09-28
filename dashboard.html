@@ -58,6 +58,67 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* SMOOTH UX & ANIMATIONS */
+        * {
+            scroll-behavior: smooth;
+        }
+
+        html, body {
+            scroll-behavior: smooth;
+        }
+
+        #sidebar {
+            scroll-behavior: smooth;
+        }
+
+        /* Smooth transitions for all interactive elements */
+        a, button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: auto;
+        }
+
+        /* Smooth scroll for nav items */
+        #sidebar nav {
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
+        }
+
+        #sidebar nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #sidebar nav::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #sidebar nav::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.3);
+            border-radius: 3px;
+        }
+
+        #sidebar nav::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 116, 139, 0.5);
+        }
+
+        /* Dark mode scrollbar */
+        html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.4);
+        }
+
+        html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb:hover {
+            background: rgba(75, 85, 99, 0.6);
+        }
+
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
         /* DARK MODE CSS VARIABLES */
         :root {
             /* Backgrounds */

@@ -1,9 +1,9 @@
 // ============================================================
-// Shared Sidebar Component - v5.2 - Clean, Modern, Polished
+// Shared Sidebar Component - v5.3 - Smooth UX Experience
 // ============================================================
 
 (function() {
-    console.log('[Sidebar] Initializing v5.2 - Modern Polish...');
+    console.log('[Sidebar] Initializing v5.3 - Smooth UX...');
     
     const activePage = window.location.pathname.split('/').pop() || 'dashboard';
     
@@ -55,12 +55,23 @@
         if (!btn || !container) return;
 
         const isExpanded = btn.getAttribute('data-expanded') === 'true';
+        
+        // Smooth collapse/expand animation
         if (isExpanded) {
-            container.style.display = 'none';
+            container.style.maxHeight = '0px';
+            container.style.opacity = '0';
+            container.style.overflow = 'hidden';
+            setTimeout(() => {
+                container.style.display = 'none';
+            }, 300);
             btn.setAttribute('data-expanded', 'false');
             if (icon) icon.style.transform = 'rotate(0deg)';
         } else {
             container.style.display = 'block';
+            // Trigger reflow to start animation
+            const scrollHeight = container.scrollHeight;
+            container.style.maxHeight = scrollHeight + 'px';
+            container.style.opacity = '1';
             btn.setAttribute('data-expanded', 'true');
             if (icon) icon.style.transform = 'rotate(180deg)';
         }
@@ -83,7 +94,9 @@
         if (item.isDropdown) {
             const visibleChildren = item.children || [];
             const hasActiveChild = visibleChildren.some(child => activePage === child.href);
-            const displayStyle = hasActiveChild ? 'block' : 'none';
+            const maxHeightStyle = hasActiveChild ? 'auto' : '0px';
+            const opacityStyle = hasActiveChild ? '1' : '0';
+            const displayStyle = hasActiveChild ? 'block' : 'block';
 
             let childrenHTML = '';
             for (const child of visibleChildren) {
@@ -104,10 +117,11 @@
                         color: ${childText};
                         font-weight: ${childWeight};
                         text-decoration: none;
-                        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         letter-spacing: 0.01em;
-                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${childBg}'; this.style.color='${childText}'">
-                        <span style="margin-right: 0.5rem; font-size: 0.85rem;">${child.icon}</span><span>${child.label}</span>
+                        will-change: background-color, color;
+                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${childBg}'; this.style.color='${childText}'; this.style.transform='translateX(0)'">
+                        <span style="margin-right: 0.5rem; font-size: 0.85rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
                     </a>
                 `;
             }
@@ -126,16 +140,25 @@
                     text-decoration: none;
                     font-size: 0.9rem;
                     cursor: pointer;
-                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     text-align: left;
                     font-weight: 600;
                     border-radius: 0.4rem;
                     letter-spacing: 0.01em;
+                    will-change: background-color, color;
                 " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='transparent'; this.style.color='${textColor}'">
-                    <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem;">${item.icon}</span>${item.label}</span>
-                    <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); ${hasActiveChild ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
+                    <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
+                    <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${hasActiveChild ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                 </button>
-                <div id="${item.id}" style="display: ${displayStyle}; background: transparent;">
+                <div id="${item.id}" style="
+                    display: ${displayStyle};
+                    background: transparent;
+                    max-height: ${maxHeightStyle};
+                    opacity: ${opacityStyle};
+                    overflow: hidden;
+                    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    will-change: max-height, opacity;
+                ">
                     ${childrenHTML}
                 </div>
             `;
@@ -158,10 +181,11 @@
                     text-decoration: none;
                     font-size: 0.9rem;
                     cursor: pointer;
-                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     letter-spacing: 0.01em;
-                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${itemBg}'; this.style.color='${itemText}'">
-                    <span style="margin-right: 0.65rem; font-size: 0.95rem;">${item.icon}</span>${item.label}
+                    will-change: background-color, color, transform;
+                " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${itemBg}'; this.style.color='${itemText}'; this.style.transform='translateX(0)'">
+                    <span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
                 </a>
             `;
         }
@@ -189,26 +213,73 @@
             border-right: 1px solid ${borderColor};
             z-index: 9999;
             box-sizing: border-box;
+            transition: background-color 0.4s ease, border-color 0.4s ease;
+            will-change: background-color;
         `;
 
         sidebar.innerHTML = `
-            <div style="padding: 1.5rem 1.2rem; border-bottom: 1px solid ${borderColor}; flex-shrink: 0;">
-                <div style="font-weight: 900; font-size: 0.95rem; color: ${textColor}; letter-spacing: 0.15em; text-transform: uppercase;">Arsip Anka</div>
-                <div style="font-size: 0.65rem; color: ${tertiaryText}; margin-top: 0.35rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Admin Panel</div>
+            <div style="
+                padding: 1.5rem 1.2rem;
+                border-bottom: 1px solid ${borderColor};
+                flex-shrink: 0;
+                transition: border-color 0.4s ease;
+            ">
+                <div style="
+                    font-weight: 900;
+                    font-size: 0.95rem;
+                    color: ${textColor};
+                    letter-spacing: 0.15em;
+                    text-transform: uppercase;
+                    transition: color 0.4s ease;
+                ">Arsip Anka</div>
+                <div style="
+                    font-size: 0.65rem;
+                    color: ${tertiaryText};
+                    margin-top: 0.35rem;
+                    font-weight: 600;
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                    transition: color 0.4s ease;
+                ">Admin Panel</div>
             </div>
-            <nav style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1rem 0;">
+            <nav style="
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding: 1rem 0;
+                scroll-behavior: smooth;
+                transition: background-color 0.4s ease;
+            ">
                 ${navHTML}
             </nav>
-            <div style="padding: 1rem 1.2rem; border-top: 1px solid ${borderColor}; flex-shrink: 0; font-size: 0.6rem; color: ${tertiaryText}; text-align: center; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;">v5.2</div>
+            <div style="
+                padding: 1rem 1.2rem;
+                border-top: 1px solid ${borderColor};
+                flex-shrink: 0;
+                font-size: 0.6rem;
+                color: ${tertiaryText};
+                text-align: center;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                transition: border-color 0.4s ease, color 0.4s ease;
+            ">v5.3</div>
         `;
+
+        // Add smooth scroll styling for nav
+        const nav = sidebar.querySelector('nav');
+        if (nav) {
+            nav.style.scrollBehavior = 'smooth';
+        }
 
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
             mainContent.style.marginLeft = '20rem';
             mainContent.style.width = 'calc(100% - 20rem)';
+            mainContent.style.transition = 'all 0.4s ease';
         }
 
-        console.log('[Sidebar] v5.2 Modern polish complete');
+        console.log('[Sidebar] v5.3 Smooth UX complete');
     }
 
     if (document.readyState === 'loading') {
