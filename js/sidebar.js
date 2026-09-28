@@ -130,6 +130,9 @@
         }
     };
 
+    // Global color variables for theme consistency
+    let sidebarColors = {};
+
     function inject() {
         let sidebar = document.getElementById('sidebar');
         if (!sidebar) {
@@ -147,6 +150,9 @@
         const hoverBgColor = isDarkMode ? '#1e293b' : '#f7fafc';
         const activeBgColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
         const activeTextColor = isDarkMode ? '#60a5fa' : '#1e40af';
+
+        // Store in global for updateActiveStates to use
+        sidebarColors = { bgColor, borderColor, textColor, secondaryText, tertiaryText, hoverBgColor, activeBgColor, activeTextColor };
 
         // Generate navigation HTML with current colors
         let navHTML = '';
@@ -353,6 +359,8 @@
     function updateActiveStates(pathname) {
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
+
+        const { textColor = '#2d3748', activeTextColor = '#1e40af' } = sidebarColors;
 
         for (const item of menuItems) {
             if (item.isDropdown) {
