@@ -112,7 +112,7 @@
             top: ${topOffset};
             left: 0;
             width: 20rem;
-            height: 200vh;
+            min-height: 125vh;
             display: flex;
             flex-direction: column;
             background: ${bgColor};
