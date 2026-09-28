@@ -2993,6 +2993,20 @@
                 // Set current date/time greeting
                 setCurrentDate();
                 
+                // Load invoice filter options - this triggers data loading
+                console.log('[Dashboard Init] Loading filter options and invoice data...');
+                if (typeof loadFilterOptions === 'function') {
+                    await loadFilterOptions();
+                } else {
+                    console.log('[Dashboard Init] loadFilterOptions not available yet, will be called by invoice init');
+                }
+                
+                // Initialize invoice system
+                if (typeof initInvoiceSystem === 'function') {
+                    console.log('[Dashboard Init] Calling initInvoiceSystem...');
+                    await initInvoiceSystem();
+                }
+                
                 console.log('[Dashboard Init] ✅ Dashboard initialized successfully');
             } catch (err) {
                 console.error('[Dashboard Init] Initialization failed:', err);
