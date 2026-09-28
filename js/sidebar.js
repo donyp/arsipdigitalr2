@@ -147,7 +147,7 @@
             top: ${topOffset};
             left: 0;
             width: 16rem;
-            height: ${hasAnnouncement ? 'calc(100vh - 60px)' : '100vh'};
+            ${hasAnnouncement ? `height: calc(100vh - ${topOffset});` : 'height: 100vh;'}
             display: flex;
             flex-direction: column;
             background: ${bgColor};
@@ -155,7 +155,20 @@
             z-index: 9999;
             box-sizing: border-box;
             transition: background 0.3s, border-color 0.3s;
+            bottom: 0;
         `;
+
+        // Debug: Log the actual sidebar height
+        setTimeout(() => {
+            const nav = sidebar.querySelector('nav');
+            console.log('[Sidebar Debug]', {
+                sidebarHeight: sidebar.offsetHeight,
+                sidebarComputedHeight: window.getComputedStyle(sidebar).height,
+                navHeight: nav ? nav.offsetHeight : 'N/A',
+                hasAnnouncement: hasAnnouncement,
+                topOffset: topOffset
+            });
+        }, 100);
 
         sidebar.innerHTML = `
             <!-- Header Logo Section -->
