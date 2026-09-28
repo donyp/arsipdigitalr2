@@ -3,7 +3,7 @@
 // ============================================================
 
 (function() {
-    console.log('[Sidebar] Initializing v5.4 - Smart Active State...');
+    console.log('[Sidebar] Initializing v5.6 - Persistent & Consistent...');
     
     const activePage = window.location.pathname.split('/').pop() || 'dashboard';
     
@@ -244,10 +244,11 @@
             return;
         }
 
-        // Check if sidebar already injected to prevent re-rendering
-        const isAlreadyInjected = sidebar.getAttribute('data-injected') === 'true';
-        if (isAlreadyInjected) {
-            console.log('[Sidebar] Already injected, skipping re-render');
+        // Check if sidebar already injected in this page load to prevent re-rendering
+        if (sidebar.children.length > 0 && sidebar.getAttribute('data-injected') === 'true') {
+            console.log('[Sidebar] Already injected on this page, updating active states only');
+            const currentPath = window.location.pathname;
+            updateActiveStates(currentPath);
             return;
         }
 
@@ -392,6 +393,12 @@
             }
         }
     }
+
+    // Global function accessible from other pages
+    window.updateSidebarActiveState = function(pathname) {
+        updateActiveStates(pathname);
+        sessionStorage.setItem('sidebar_initialized', 'true');
+    };
 
 })();
 

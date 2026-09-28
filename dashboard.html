@@ -69,6 +69,20 @@
 
         #sidebar {
             scroll-behavior: smooth;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+        }
+
+        /* Force sidebar to never hide */
+        body {
+            position: relative;
+        }
+
+        #app {
+            display: flex;
+            width: 100%;
+            position: relative;
         }
 
         /* Smooth transitions for all interactive elements */
