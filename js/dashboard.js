@@ -223,6 +223,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
         // The chart and all statistic cards have now been rendered (or have
         // completed with an error handled by their own loaders).
+        
+        // Hide page loader after dashboard is ready
+        const pageLoader = document.getElementById('pageLoader');
+        if (pageLoader) {
+            pageLoader.classList.add('hidden');
+        }
     }
 });
 
