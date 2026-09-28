@@ -125,54 +125,6 @@ function toggleInlineDetail(event, id) {
 // Keep one loader over the dashboard while the archive list, cards, and chart
 // are all being prepared. The archive list has its own loader for refreshes,
 // so this one uses a separate ID and is only removed after initial rendering.
-function showDashboardInitialLoading() {
-    const target = document.getElementById('main-content');
-    if (!target || document.getElementById('dashboard-initial-loading')) return;
-
-    target.style.position = 'relative';
-    const loader = document.createElement('div');
-    loader.id = 'dashboard-initial-loading';
-    loader.className = 'absolute inset-0 z-[60] flex items-center justify-center bg-gray-950/80 backdrop-blur-sm';
-    loader.innerHTML = `
-        <style>
-            @keyframes rotateSpinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            @keyframes rotateDots { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        </style>
-        <div class="premium-loader">
-            <div style="position: relative; width: 100px; height: 100px; margin-bottom: 20px;">
-                <!-- Outer rotating ring -->
-                <div style="position: absolute; width: 100%; height: 100%; border: 4px solid rgba(59, 130, 246, 0.2); border-top: 4px solid #3b82f6; border-right: 4px solid #60a5fa; border-radius: 50%; animation: rotateSpinner 2s linear infinite;"></div>
-                <!-- Middle rotating ring -->
-                <div style="position: absolute; width: 75%; height: 75%; top: 12.5%; left: 12.5%; border: 3px solid rgba(96, 165, 250, 0.2); border-bottom: 3px solid #60a5fa; border-left: 3px solid #93c5fd; border-radius: 50%; animation: rotateSpinner 1.5s linear infinite reverse;"></div>
-                <!-- Inner dot -->
-                <div style="position: absolute; width: 20px; height: 20px; background: linear-gradient(135deg, #3b82f6, #60a5fa); border-radius: 50%; top: 40px; left: 40px; box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);"></div>
-            </div>
-            <div style="display: flex; gap: 6px; margin: 15px 0; justify-content: center;">
-                <div style="width: 6px; height: 6px; background: #3b82f6; border-radius: 50%; animation: rotateDots 1.4s infinite; animation-delay: 0s; box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);"></div>
-                <div style="width: 6px; height: 6px; background: #60a5fa; border-radius: 50%; animation: rotateDots 1.4s infinite; animation-delay: 0.2s; box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);"></div>
-                <div style="width: 6px; height: 6px; background: #93c5fd; border-radius: 50%; animation: rotateDots 1.4s infinite; animation-delay: 0.4s; box-shadow: 0 0 8px rgba(147, 197, 253, 0.5);"></div>
-            </div>
-            <span class="loader-text" style="color: white; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 15px; display: block; color: rgba(255,255,255,0.9);">Menyiapkan dashboard...</span>
-        </div>
-    `;
-    target.appendChild(loader);
-}
-
-function hideDashboardInitialLoading() {
-    const loader = document.getElementById('dashboard-initial-loading');
-    if (loader) {
-        console.log('[Dashboard] Hiding initial loading overlay');
-        loader.remove();
-    } else {
-        console.warn('[Dashboard] Initial loading overlay not found when trying to hide');
-    }
-    
-    // Show page by resetting opacity
-    console.log('[Dashboard] Showing page (removing opacity: 0)');
-    document.documentElement.style.opacity = '1';
-    document.documentElement.classList.remove('auth-loading');
-}
-
 // ---- Initialize Dashboard ----
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('[Dashboard] DOMContentLoaded fired');
@@ -184,8 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    console.log('[Dashboard] Auth successful, showing loading overlay');
-    showDashboardInitialLoading();
+    console.log('[Dashboard] Auth successful');
 
     // Trigger file count sync when dashboard loads (for accurate counts after manual file changes)
     console.log('[Dashboard] Triggering file count sync...');
@@ -272,7 +223,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
         // The chart and all statistic cards have now been rendered (or have
         // completed with an error handled by their own loaders).
-        hideDashboardInitialLoading();
     }
 });
 
