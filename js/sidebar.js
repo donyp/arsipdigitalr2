@@ -186,7 +186,7 @@
                             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                             letter-spacing: 0.01em;
                             will-change: background-color, color;
-                        " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${childBg}'; this.style.color='${childText}'; this.style.transform='translateX(0)'">
+                        " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
                             <span style="margin-right: 0.6rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
                         </a>
                     `;
@@ -215,7 +215,7 @@
                         border-radius: 0.4rem;
                         letter-spacing: 0.01em;
                         will-change: background-color, color;
-                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${dropdownBg}'; this.style.color='${dropdownText}'">
+                    " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
                         <span style="display: flex; align-items: center;"><span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
                         <span class="dropdown-arrow" style="font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                     </button>
@@ -253,7 +253,7 @@
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         letter-spacing: 0.01em;
                         will-change: background-color, color, transform;
-                    " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${itemBg}'; this.style.color='${itemText}'; this.style.transform='translateX(0)'">
+                    " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
                         <span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
                     </a>
                 `;
