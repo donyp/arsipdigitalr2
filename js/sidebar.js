@@ -466,7 +466,34 @@
     };
 
     // Function to update active states without full re-render
-    function updateActiveStates(pathname) {
+    // Check if sidebar needs to be re-injected (page type changed)
+function updateSidebarActiveState(pathname) {
+    const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
+    const isUploadFilePage = uploadFilePages.some(page => {
+        const normalizedPage = page.toLowerCase();
+        const normalizedPath = pathname.toLowerCase();
+        return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
+    });
+
+    // Check current sidebar width
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        const currentWidth = sidebar.style.width;
+        const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
+        
+        // If width doesn't match, we need to re-inject
+        if (currentWidth !== expectedWidth) {
+            console.log('[Sidebar] Page type changed, re-injecting sidebar');
+            inject();
+            return;
+        }
+    }
+
+    // Otherwise just update active states
+    updateActiveStates(pathname);
+}
+
+function updateActiveStates(pathname) {
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
 
