@@ -255,7 +255,9 @@ class SPARouter {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Update active sidebar state
+            console.log('[SPA] Checking for updateSidebarActiveState, exists:', !!window.updateSidebarActiveState);
             if (window.updateSidebarActiveState) {
+                console.log('[SPA] Calling updateSidebarActiveState with path:', path);
                 window.updateSidebarActiveState(path);
             }
 
