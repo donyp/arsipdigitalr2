@@ -300,7 +300,7 @@
             top: ${topOffset};
             left: 0;
             width: ${sidebarWidth};
-            min-height: 152vh;
+            height: calc(100vh - ${topOffset});
             display: flex;
             flex-direction: column;
             background: ${bgColor};
@@ -309,7 +309,7 @@
             box-sizing: border-box;
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
-            height: auto;
+            overflow: hidden;
         `;
 
         sidebar.innerHTML = `
