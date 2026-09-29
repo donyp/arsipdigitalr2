@@ -6,21 +6,21 @@
 if (!window.__supportVarsInitialized) {
     window.__supportVarsInitialized = true;
 
-let currentTab = 'active';
-let currentPage = 1;
-let currentLimit = 20;
-let currentStatus = 'all';
-let currentZona = '';
-let currentSearch = '';
-let totalPages = 1;
-let zonasMap = {}; // Cache for zona lookup
+    window.currentTab = 'active';
+    window.currentPage = 1;
+    window.currentLimit = 20;
+    window.currentStatus = 'all';
+    window.currentZona = '';
+    window.currentSearch = '';
+    window.totalPages = 1;
+    window.zonasMap = {}; // Cache for zona lookup
 
-// Cache keys
-const CACHE_TICKETS = 'support_moderator_tickets';
-const CACHE_STATS = 'support_moderator_stats';
-const CACHE_ZONAS = 'support_zonas';
-const CACHE_TIMESTAMP = 'support_cache_timestamp';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    // Cache keys
+    window.CACHE_TICKETS = 'support_moderator_tickets';
+    window.CACHE_STATS = 'support_moderator_stats';
+    window.CACHE_ZONAS = 'support_zonas';
+    window.CACHE_TIMESTAMP = 'support_cache_timestamp';
+    window.CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 } // End of variable initialization guard
 
@@ -53,8 +53,8 @@ async function initSupportPage() {
     loadZonas().catch(err => console.error('[Support-Moderator] Error loading zonas:', err));
     
     // Display cached data immediately
-    const cachedTickets = getCache(CACHE_TICKETS);
-    const cachedStats = getCache(CACHE_STATS);
+    const cachedTickets = getCache(window.CACHE_TICKETS);
+    const cachedStats = getCache(window.CACHE_STATS);
     
     if (cachedTickets && cachedStats) {
         console.log('[Support-Moderator] Displaying cached data immediately...');
@@ -86,24 +86,24 @@ async function initSupportPage() {
     
     if (searchInput) {
         searchInput.addEventListener('input', debounce(() => {
-            currentSearch = searchInput.value;
-            currentPage = 1;
+            window.currentSearch = searchInput.value;
+            window.currentPage = 1;
             loadTickets();
         }, 300));
     }
 
     if (filterStatus) {
         filterStatus.addEventListener('change', () => {
-            currentStatus = filterStatus.value;
-            currentPage = 1;
+            window.currentStatus = filterStatus.value;
+            window.currentPage = 1;
             loadTickets();
         });
     }
 
     if (filterZona) {
         filterZona.addEventListener('change', () => {
-            currentZona = filterZona.value;
-            currentPage = 1;
+            window.currentZona = filterZona.value;
+            window.currentPage = 1;
             loadTickets();
         });
     }
@@ -128,7 +128,7 @@ setTimeout(() => {
 }, 100);
 
 // Cache management functions
-function setCache(key, value, duration = CACHE_DURATION) {
+function setCache(key, value, duration = window.CACHE_DURATION) {
     try {
         const data = {
             value: value,
@@ -197,10 +197,10 @@ async function loadZonas() {
             
             // Create map: zona_id (id) -> zona_name (nama)
             zonas.forEach(zona => {
-                zonasMap[zona.id] = zona.nama;
+                window.zonasMap[zona.id] = zona.nama;
             });
             
-            console.log('[Support-Moderator] Zonas loaded:', zonasMap);
+            console.log('[Support-Moderator] Zonas loaded:', window.zonasMap);
             
             // Populate filter dropdown AFTER we have the map
             await populateZonaFilter(zonas);
@@ -237,7 +237,7 @@ async function populateZonaFilter(zonas) {
             
             // Add options for zonas that have tickets
             uniqueZonaIds.forEach(zonaId => {
-                const zonaName = zonasMap[zonaId] || `Zona ${zonaId}`;
+                const zonaName = window.zonasMap[zonaId] || `Zona ${zonaId}`;
                 const option = document.createElement('option');
                 option.value = zonaId;
                 option.textContent = zonaName;
@@ -265,8 +265,8 @@ function debounce(func, wait) {
 
 function switchTab(event, tab) {
     console.log('[Support-Moderator] Switching to tab:', tab);
-    currentTab = tab;
-    currentPage = 1;
+    window.currentTab = tab;
+    window.currentPage = 1;
     
     // Update tab UI
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -277,12 +277,12 @@ function switchTab(event, tab) {
     // Set status filter based on tab
     if (tab === 'active') {
         // Show only active statuses: Open, Answered
-        currentStatus = 'all';
+        window.currentStatus = 'all';
         // We'll filter on frontend for active tickets
         loadTickets();
     } else if (tab === 'history') {
         // Show only closed statuses: Resolved, Closed
-        currentStatus = 'all';
+        window.currentStatus = 'all';
         // We'll filter on frontend for history tickets
         loadTickets();
     }
@@ -316,7 +316,7 @@ async function loadStats() {
         const stats = data.stats || {};
 
         // Cache stats
-        setCache(CACHE_STATS, stats);
+        setCache(window.CACHE_STATS, stats);
         
         // Update UI
         updateCachedStats(stats);
@@ -331,11 +331,11 @@ async function loadStats() {
 async function loadTickets() {
     try {
         console.log('[Support-Moderator] Loading tickets with params:', {
-            page: currentPage,
-            limit: currentLimit,
-            status: currentStatus,
-            zona: currentZona,
-            search: currentSearch
+            page: window.currentPage,
+            limit: window.currentLimit,
+            status: window.currentStatus,
+            zona: window.currentZona,
+            search: window.currentSearch
         });
 
         const token = localStorage.getItem('jwt_token');
@@ -346,11 +346,11 @@ async function loadTickets() {
         }
 
         const params = new URLSearchParams({
-            page: currentPage,
-            limit: currentLimit,
-            ...(currentStatus !== 'all' && { status: currentStatus }),
-            ...(currentZona && { zona_id: currentZona }),
-            ...(currentSearch && { search: currentSearch })
+            page: window.currentPage,
+            limit: window.currentLimit,
+            ...(window.currentStatus !== 'all' && { status: window.currentStatus }),
+            ...(window.currentZona && { zona_id: window.currentZona }),
+            ...(window.currentSearch && { search: window.currentSearch })
         });
 
         const url = `/api/support/tickets?${params}`;
@@ -380,10 +380,10 @@ async function loadTickets() {
         const tickets = data.tickets || [];
         const pagination = data.pagination || {};
 
-        totalPages = pagination.pages || 1;
+        window.totalPages = pagination.pages || 1;
         
         // Cache tickets only if no filters applied (cache the main list)
-        if (!currentSearch && !currentZona && currentStatus === 'all') {
+        if (!window.currentSearch && !window.currentZona && window.currentStatus === 'all') {
             setCache(CACHE_TICKETS, tickets);
             console.log('[Support-Moderator] Tickets cached');
         }
@@ -437,12 +437,12 @@ function renderTickets(tickets) {
 
     // Filter tickets based on current tab
     let filteredTickets = tickets;
-    if (currentTab === 'active') {
+    if (window.currentTab === 'active') {
         // Show only active statuses
         filteredTickets = tickets.filter(t => 
             ['Open', 'Answered'].includes(t.status)
         );
-    } else if (currentTab === 'history') {
+    } else if (window.currentTab === 'history') {
         // Show only history statuses
         filteredTickets = tickets.filter(t => 
             ['Resolved', 'Closed'].includes(t.status)
@@ -477,8 +477,8 @@ function renderTickets(tickets) {
             } else {
                 zonaDisplay = ticket.zona_name;
             }
-        } else if (zonasMap[ticket.zona_id]) {
-            const zonaName = zonasMap[ticket.zona_id];
+        } else if (window.zonasMap[ticket.zona_id]) {
+            const zonaName = window.zonasMap[ticket.zona_id];
             const match = zonaName.match(/(\d+)/);
             if (match) {
                 zonaDisplay = 'Zona ' + (match[1].replace(/^0+/, '') || '0');
@@ -598,27 +598,27 @@ function getStatusColor(status) {
 }
 
 function updatePagination() {
-    const info = `Halaman ${currentPage} dari ${totalPages}`;
+    const info = `Halaman ${window.currentPage} dari ${window.totalPages}`;
     document.getElementById('paginationInfo').textContent = info;
 
     const prevBtn = document.getElementById('btnPrevPage');
     const nextBtn = document.getElementById('btnNextPage');
     
-    if (prevBtn) prevBtn.disabled = currentPage <= 1;
-    if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+    if (prevBtn) prevBtn.disabled = window.currentPage <= 1;
+    if (nextBtn) nextBtn.disabled = window.currentPage >= window.totalPages;
 }
 
 function nextPage() {
-    if (currentPage < totalPages) {
-        currentPage++;
+    if (window.currentPage < window.totalPages) {
+        window.currentPage++;
         loadTickets();
         window.scrollTo(0, 0);
     }
 }
 
 function previousPage() {
-    if (currentPage > 1) {
-        currentPage--;
+    if (window.currentPage > 1) {
+        window.currentPage--;
         loadTickets();
         window.scrollTo(0, 0);
     }
@@ -665,5 +665,7 @@ function getRelativeTime(dateString) {
         return '-';
     }
 }
+
+
 
 
