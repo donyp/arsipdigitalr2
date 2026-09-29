@@ -370,7 +370,8 @@
                 padding: 1rem 0;
                 scroll-behavior: smooth;
                 transition: background-color 0.4s ease;
-                max-height: calc(100% - 180px);
+                display: flex;
+                flex-direction: column;
             ">
                 ${navHTML}
             </nav>
