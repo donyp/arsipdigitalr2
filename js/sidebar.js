@@ -65,7 +65,7 @@
             label: 'Rename Tools',
             icon: '<i class="fas fa-tools"></i>',
             children: [
-                { href: '/rename-faktur', label: 'Faktur Pajak', icon: '<i class="fas fa-file-invoice"></i>' },
+                { href: '/rename-faktur', label: 'Rename Faktur', icon: '<i class="fas fa-file-invoice"></i>' },
             ]
         },
 
@@ -88,9 +88,9 @@
             label: 'Manajemen',
             icon: '<i class="fas fa-cog"></i>',
             children: [
-                { href: '/users', label: 'Manajemen Pengguna', icon: '<i class="fas fa-users"></i>' },
-                { href: '/tokos', label: 'Daftar Toko', icon: '<i class="fas fa-store"></i>' },
-                { href: '/zonas', label: 'Zona Operasional', icon: '<i class="fas fa-map-marked-alt"></i>' },
+                { href: '/users', label: 'Pengguna', icon: '<i class="fas fa-users"></i>' },
+                { href: '/tokos', label: 'Toko', icon: '<i class="fas fa-store"></i>' },
+                { href: '/zonas', label: 'Zona', icon: '<i class="fas fa-map-marked-alt"></i>' },
             ]
         },
     ];
