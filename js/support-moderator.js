@@ -40,10 +40,9 @@ async function initSupportPage() {
     if (sidebar) {
         const currentWidth = sidebar.style.width;
         const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
-        console.log('[Support-Moderator] Sidebar width check - Current:', currentWidth, 'Expected:', expectedWidth);
         
+        // If width doesn't match, we need to re-inject
         if (currentWidth !== expectedWidth) {
-            console.log('[Support-Moderator] Sidebar size mismatch, re-injecting sidebar');
             if (typeof inject === 'function') {
                 inject();
             }
