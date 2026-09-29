@@ -28,6 +28,28 @@ if (!window.__supportVarsInitialized) {
 async function initSupportPage() {
     console.log('[Support-Moderator] Page initialization starting');
     
+    // Check sidebar size and re-inject if page type changed
+    const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
+    const isUploadFilePage = uploadFilePages.some(page => {
+        const normalizedPage = page.toLowerCase();
+        const normalizedPath = (window.location.pathname).toLowerCase();
+        return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
+    });
+    
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        const currentWidth = sidebar.style.width;
+        const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
+        console.log('[Support-Moderator] Sidebar width check - Current:', currentWidth, 'Expected:', expectedWidth);
+        
+        if (currentWidth !== expectedWidth) {
+            console.log('[Support-Moderator] Sidebar size mismatch, re-injecting sidebar');
+            if (typeof inject === 'function') {
+                inject();
+            }
+        }
+    }
+    
     // Check if DOM is ready - wait for key elements
     const ticketsContainer = document.getElementById('ticketsContainer');
     if (!ticketsContainer) {
