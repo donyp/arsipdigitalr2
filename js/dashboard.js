@@ -128,14 +128,6 @@ function toggleInlineDetail(event, id) {
 // ---- Initialize Dashboard ----
 document.addEventListener('DOMContentLoaded', async () => {
     
-    // Force hide loader immediately on dashboard load
-    const pageLoader = document.getElementById('pageLoader');
-    if (pageLoader) {
-        pageLoader.classList.add('hidden');
-        document.body.classList.remove('loading-state');
-        document.documentElement.classList.remove('loading-state');
-    }
-    
     const user = await initAuth();
     if (!user) {
         // Auth failed — page already unclocked by initAuth()
@@ -226,24 +218,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('[Dashboard] Error loading dashboard:', err);
         if (window.Toast) {
             Toast.error('Error loading dashboard. Please refresh.');
-        }
-    } finally {
-        // The chart and all statistic cards have now been rendered (or have
-        // completed with an error handled by their own loaders).
-        
-        // Hide page loader after dashboard is ready
-        const pageLoader = document.getElementById('pageLoader');
-        if (pageLoader) {
-            pageLoader.classList.add('hidden');
-            document.body.classList.remove('loading-state');
-            document.documentElement.classList.remove('loading-state');
-            
-            // Remove from DOM after animation completes
-            setTimeout(() => {
-                if (pageLoader && pageLoader.parentNode) {
-                    pageLoader.remove();
-                }
-            }, 500);
         }
     }
 });

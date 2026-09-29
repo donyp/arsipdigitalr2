@@ -3007,8 +3007,36 @@
                 }
                 
                 console.log('[Dashboard Init] ✅ Dashboard initialized successfully');
+                
+                // Hide page loader AFTER all data is loaded
+                const pageLoader = document.getElementById('pageLoader');
+                if (pageLoader) {
+                    pageLoader.classList.add('hidden');
+                    document.body.classList.remove('loading-state');
+                    document.documentElement.classList.remove('loading-state');
+                    
+                    // Remove from DOM after animation completes
+                    setTimeout(() => {
+                        if (pageLoader && pageLoader.parentNode) {
+                            pageLoader.remove();
+                        }
+                    }, 500);
+                }
             } catch (err) {
                 console.error('[Dashboard Init] Initialization failed:', err);
+                
+                // Hide loader even on error
+                const pageLoader = document.getElementById('pageLoader');
+                if (pageLoader) {
+                    pageLoader.classList.add('hidden');
+                    document.body.classList.remove('loading-state');
+                    document.documentElement.classList.remove('loading-state');
+                    setTimeout(() => {
+                        if (pageLoader && pageLoader.parentNode) {
+                            pageLoader.remove();
+                        }
+                    }, 500);
+                }
             }
         }
 
