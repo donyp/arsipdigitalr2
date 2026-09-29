@@ -481,6 +481,8 @@ function updateSidebarActiveState(pathname) {
         const currentWidth = sidebar.style.width;
         const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
         
+        console.log('[Sidebar] Checking page type - Path:', pathname, 'IsUpload:', isUploadFilePage, 'CurrentWidth:', currentWidth, 'ExpectedWidth:', expectedWidth);
+        
         // If width doesn't match, we need to re-inject
         if (currentWidth !== expectedWidth) {
             console.log('[Sidebar] Page type changed, re-injecting sidebar');
