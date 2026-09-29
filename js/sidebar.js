@@ -224,8 +224,8 @@
         const secondaryText = isDarkMode ? '#cbd5e1' : '#718096';
         const tertiaryText = isDarkMode ? '#94a3b8' : '#a0aec0';
         const hoverBgColor = isDarkMode ? '#1e293b' : '#f7fafc';
-        const activeBgColor = isDarkMode ? '#1e3a5f' : '#eff6ff';
-        const activeTextColor = isDarkMode ? '#60a5fa' : '#1e40af';
+        const activeBgColor = isDarkMode ? '#1e3a5f' : '#dbeafe';
+        const activeTextColor = isDarkMode ? '#60a5fa' : '#0369a1';
 
         // Store in global for updateActiveStates to use
         sidebarColors = { bgColor, borderColor, textColor, secondaryText, tertiaryText, hoverBgColor, activeBgColor, activeTextColor };
