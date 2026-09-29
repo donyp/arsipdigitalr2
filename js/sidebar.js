@@ -263,11 +263,22 @@
         const hasAnnouncement = !!document.getElementById('global-announcement-banner');
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
+        // Check if current page is an Upload File menu item
+        const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur'];
+        const isUploadFilePage = uploadFilePages.some(page => {
+            const normalizedPage = page.toLowerCase();
+            const normalizedPath = (window.location.pathname).toLowerCase();
+            return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
+        });
+
+        // Use smaller width for upload file pages, normal width for others
+        const sidebarWidth = isUploadFilePage ? '16rem' : '20rem';
+
         sidebar.style.cssText = `
             position: fixed;
             top: ${topOffset};
             left: 0;
-            width: 20rem;
+            width: ${sidebarWidth};
             min-height: 152vh;
             display: flex;
             flex-direction: column;
@@ -331,8 +342,8 @@
 
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-            mainContent.style.marginLeft = '20rem';
-            mainContent.style.width = 'calc(100% - 20rem)';
+            mainContent.style.marginLeft = sidebarWidth;
+            mainContent.style.width = `calc(100% - ${sidebarWidth})`;
             mainContent.style.transition = 'all 0.4s ease';
         }
 
