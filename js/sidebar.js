@@ -162,7 +162,7 @@
             buttonPadding: '1rem 1rem',
             buttonMargin: '0.3rem 0.6rem',
             buttonFontSize: '1rem',
-            childPadding: '0.7rem 1rem 0.7rem 3.2rem',
+            childPadding: '0.7rem 1rem 0.7rem 4rem',
             childMargin: '0.25rem 0.4rem',
             childFontSize: '0.85rem',
             childIconSize: '0.95rem',
