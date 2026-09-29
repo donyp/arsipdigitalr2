@@ -146,7 +146,33 @@
                 }
             }, 350);
         } else {
-            // Expand animation
+            // Close all other dropdowns first (accordion behavior)
+            const allDropdownButtons = document.querySelectorAll('[id$="-btn"][data-expanded="true"]');
+            allDropdownButtons.forEach(otherBtn => {
+                if (otherBtn.id !== id + '-btn') {
+                    const otherId = otherBtn.id.replace('-btn', '');
+                    const otherContainer = document.getElementById(otherId);
+                    const otherIcon = otherBtn.querySelector('.dropdown-arrow');
+                    
+                    if (otherContainer) {
+                        // Close animation
+                        otherContainer.style.maxHeight = otherContainer.scrollHeight + 'px';
+                        void otherContainer.offsetHeight;
+                        otherContainer.style.maxHeight = '0px';
+                        otherContainer.style.opacity = '0';
+                        otherBtn.setAttribute('data-expanded', 'false');
+                        if (otherIcon) otherIcon.style.transform = 'rotate(0deg)';
+                        
+                        setTimeout(() => {
+                            if (otherBtn.getAttribute('data-expanded') === 'false') {
+                                otherContainer.style.display = 'none';
+                            }
+                        }, 350);
+                    }
+                }
+            });
+
+            // Expand animation for current dropdown
             container.style.display = 'block';
             container.style.overflow = 'hidden';
             
