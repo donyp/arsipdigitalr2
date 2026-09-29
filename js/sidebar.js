@@ -135,18 +135,18 @@
             // Force reflow to apply initial state
             void container.offsetHeight;
             
-            // Animate to full height (but cap at 1000px)
-            container.style.maxHeight = Math.min(fullHeight, 1000) + 'px';
+            // Animate to full height
+            container.style.maxHeight = fullHeight + 'px';
             container.style.opacity = '1';
             
             btn.setAttribute('data-expanded', 'true');
             if (icon) icon.style.transform = 'rotate(180deg)';
             
-            // Set to max 1000px after animation for responsive content
+            // Set to auto after animation for responsive content
             setTimeout(() => {
                 if (btn.getAttribute('data-expanded') === 'true') {
-                    container.style.maxHeight = '1000px';
-                    container.style.overflow = 'hidden';
+                    container.style.maxHeight = 'none';
+                    container.style.overflow = 'visible';
                 }
             }, 350);
         }
@@ -273,9 +273,9 @@
                     <div id="${item.id}" style="
                         display: ${itemIsActive ? 'block' : 'none'};
                         background: transparent;
-                        max-height: ${itemIsActive ? '1000px' : '0px'};
+                        max-height: ${itemIsActive ? 'none' : '0px'};
                         opacity: ${itemIsActive ? '1' : '0'};
-                        overflow: hidden;
+                        overflow: ${itemIsActive ? 'visible' : 'hidden'};
                         transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
                         will-change: max-height, opacity;
                     ">
@@ -370,8 +370,6 @@
                 padding: 1rem 0;
                 scroll-behavior: smooth;
                 transition: background-color 0.4s ease;
-                display: flex;
-                flex-direction: column;
             ">
                 ${navHTML}
             </nav>
