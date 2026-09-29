@@ -201,13 +201,13 @@
                         align-items: center;
                         justify-content: space-between;
                         width: calc(100% - 1.2rem);
-                        padding: 0.75rem 0.85rem;
-                        margin: 0.2rem 0.6rem;
+                        padding: 1rem 1rem;
+                        margin: 0.3rem 0.6rem;
                         border: none;
                         background: ${dropdownBg};
                         color: ${dropdownText};
                         text-decoration: none;
-                        font-size: 0.9rem;
+                        font-size: 1rem;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         text-align: left;
@@ -216,8 +216,8 @@
                         letter-spacing: 0.01em;
                         will-change: background-color, color;
                     " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'" onmouseout="this.style.backgroundColor='${dropdownBg}'; this.style.color='${dropdownText}'">
-                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
-                        <span class="dropdown-arrow" style="font-size: 0.65rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
+                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
+                        <span class="dropdown-arrow" style="font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                     </button>
                     <div id="${item.id}" style="
                         display: ${itemIsActive ? 'block' : 'none'};
@@ -241,20 +241,20 @@
                     <a href="${item.href}" style="
                         display: flex;
                         align-items: center;
-                        padding: 0.75rem 0.85rem;
-                        margin: 0.2rem 0.6rem;
+                        padding: 1rem 1rem;
+                        margin: 0.3rem 0.6rem;
                         border-radius: 0.4rem;
                         background: ${itemBg};
                         color: ${itemText};
                         font-weight: ${itemWeight};
                         text-decoration: none;
-                        font-size: 0.9rem;
+                        font-size: 1rem;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         letter-spacing: 0.01em;
                         will-change: background-color, color, transform;
                     " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${itemBg}'; this.style.color='${itemText}'; this.style.transform='translateX(0)'">
-                        <span style="margin-right: 0.65rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
+                        <span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
                     </a>
                 `;
             }
