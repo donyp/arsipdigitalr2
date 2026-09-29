@@ -24,6 +24,15 @@
         #sidebar::-webkit-scrollbar-thumb:hover {
             background: rgba(100, 120, 140, 0.8);
         }
+        
+        html[data-dark-mode="true"] #sidebar::-webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.6);
+            border-radius: 4px;
+        }
+        
+        html[data-dark-mode="true"] #sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(75, 85, 99, 0.8);
+        }
     `;
     document.head.appendChild(scrollbarStyle);
     
