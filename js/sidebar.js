@@ -140,6 +140,35 @@
             return;
         }
 
+        // Check if current page is an Upload File menu item
+        const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur'];
+        const isUploadFilePage = uploadFilePages.some(page => {
+            const normalizedPage = page.toLowerCase();
+            const normalizedPath = (window.location.pathname).toLowerCase();
+            return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
+        });
+
+        // Menu item sizes - smaller for upload file pages
+        const menuSizes = isUploadFilePage ? {
+            buttonPadding: '0.65rem 0.8rem',
+            buttonMargin: '0.2rem 0.4rem',
+            buttonFontSize: '0.9rem',
+            childPadding: '0.5rem 0.8rem 0.5rem 2rem',
+            childMargin: '0.15rem 0.3rem',
+            childFontSize: '0.75rem',
+            childIconSize: '0.85rem',
+            iconSize: '0.95rem'
+        } : {
+            buttonPadding: '1rem 1rem',
+            buttonMargin: '0.3rem 0.6rem',
+            buttonFontSize: '1rem',
+            childPadding: '0.7rem 1rem 0.7rem 2.5rem',
+            childMargin: '0.25rem 0.4rem',
+            childFontSize: '0.85rem',
+            childIconSize: '0.95rem',
+            iconSize: '1.1rem'
+        };
+
         // Recalculate colors based on current dark mode
         const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
         const bgColor = isDarkMode ? '#0f172a' : '#ffffff';
@@ -175,10 +204,10 @@
                         <a href="${child.href}" onclick="event.stopPropagation();" style="
                             display: flex;
                             align-items: center;
-                            padding: 0.7rem 1rem 0.7rem 2.5rem;
-                            margin: 0.25rem 0.4rem;
+                            padding: ${menuSizes.childPadding};
+                            margin: ${menuSizes.childMargin};
                             border-radius: 0.3rem;
-                            font-size: 0.85rem;
+                            font-size: ${menuSizes.childFontSize};
                             background: ${childBg};
                             color: ${childText};
                             font-weight: ${childWeight};
@@ -187,7 +216,7 @@
                             letter-spacing: 0.01em;
                             will-change: background-color, color;
                         " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                            <span style="margin-right: 0.6rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
+                            <span style="margin-right: 0.6rem; font-size: ${menuSizes.childIconSize}; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
                         </a>
                     `;
                 }
@@ -201,13 +230,13 @@
                         align-items: center;
                         justify-content: space-between;
                         width: calc(100% - 1.2rem);
-                        padding: 1rem 1rem;
-                        margin: 0.3rem 0.6rem;
+                        padding: ${menuSizes.buttonPadding};
+                        margin: ${menuSizes.buttonMargin};
                         border: none;
                         background: ${dropdownBg};
                         color: ${dropdownText};
                         text-decoration: none;
-                        font-size: 1rem;
+                        font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         text-align: left;
@@ -216,7 +245,7 @@
                         letter-spacing: 0.01em;
                         will-change: background-color, color;
                     " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
+                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.8rem; font-size: ${menuSizes.iconSize}; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
                         <span class="dropdown-arrow" style="font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                     </button>
                     <div id="${item.id}" style="
@@ -241,20 +270,20 @@
                     <a href="${item.href}" style="
                         display: flex;
                         align-items: center;
-                        padding: 1rem 1rem;
-                        margin: 0.3rem 0.6rem;
+                        padding: ${menuSizes.buttonPadding};
+                        margin: ${menuSizes.buttonMargin};
                         border-radius: 0.4rem;
                         background: ${itemBg};
                         color: ${itemText};
                         font-weight: ${itemWeight};
                         text-decoration: none;
-                        font-size: 1rem;
+                        font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         letter-spacing: 0.01em;
                         will-change: background-color, color, transform;
                     " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                        <span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
+                        <span style="margin-right: 0.8rem; font-size: ${menuSizes.iconSize}; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
                     </a>
                 `;
             }
