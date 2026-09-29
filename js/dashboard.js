@@ -127,19 +127,18 @@ function toggleInlineDetail(event, id) {
 // so this one uses a separate ID and is only removed after initial rendering.
 // ---- Initialize Dashboard ----
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Dashboard] DOMContentLoaded fired');
+    
     
     const user = await initAuth();
     if (!user) {
         // Auth failed — page already unclocked by initAuth()
-        console.warn('[Dashboard] Auth initialization failed');
         return;
     }
 
-    console.log('[Dashboard] Auth successful');
+    
 
     // Trigger file count sync when dashboard loads (for accurate counts after manual file changes)
-    console.log('[Dashboard] Triggering file count sync...');
+    
     fetch(`${CONFIG.API_URL}/api/invoice/sync-all-file-counts`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${API.getToken()}` }
@@ -148,16 +147,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       .catch(e => console.warn('[Dashboard] Sync trigger failed (non-blocking):', e.message));
 
     try {
-    console.log('[Dashboard] Starting dashboard initialization...');
+    
     setCurrentDate();
     await loadZonas();
     
     // NEW DASHBOARD: Skip populateFilters and loadArchives - only load stats
-    console.log('[Dashboard] Loading stats only...');
+    
     // populateFilters(); // DISABLED
     // await loadArchives(); // DISABLED
     
-    console.log('[Dashboard] Loading notifications...');
+    
     loadNotifications();
     // await loadBroadcast(); // Removed: now handled globally by sidebar.js
 
@@ -200,7 +199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // window.addEventListener('focus', () => {
     //     const now = Date.now();
     //     if (now - lastFocusTime > 2000) {
-    //         console.log('[Dashboard] Window focused, reloading archives to sync data');
+    //         
     //         loadArchives();
     //     }
     //     lastFocusTime = now;
@@ -246,27 +245,24 @@ function escapeNoticeHtml(value) {
 
 async function checkUpdateNotice() {
     try {
-        console.log('[Update Notice] Checking for new updates...');
+        
         const status = await API.get('/api/system/maintenance');
 
         if (!status || !status.lastResult) {
-            console.log('[Update Notice] No updates found in system status.');
+            
             return;
         }
 
         const lastReadId = localStorage.getItem('last_read_update_id');
-        console.log(`[Update Notice] System ID: ${status.lastResult.id}, Local ID: ${lastReadId}`);
-
-        if (lastReadId === status.lastResult.id) {
-            console.log('[Update Notice] Update already read.');
+                if (lastReadId === status.lastResult.id) {
+            
             return;
         }
 
         // Show Modal
-        console.log('[Update Notice] Displaying What\'s New modal!');
+        
         showUpdateModal(status.lastResult);
     } catch (err) {
-        console.warn('[Update Notice] Error:', err.message);
     }
 }
 
@@ -411,7 +407,6 @@ async function loadZonas() {
             await populateTokoFilter();
         }
     } catch (err) {
-        console.warn('Failed to load zonas:', err);
     }
 }
 
@@ -505,8 +500,8 @@ async function loadArchives(append = false) {
     }
 
     try {
-        console.log('[loadArchives] API object:', typeof API !== 'undefined' ? 'DEFINED' : 'UNDEFINED');
-        console.log('[loadArchives] Token:', API?.getToken?.() ? 'PRESENT' : 'MISSING');
+        
+        
         
         let endpoint = viewMode === 'deleted' && isSuperAdmin() ? '/api/files/trash' : '/api/files';
 
@@ -542,19 +537,19 @@ async function loadArchives(append = false) {
         }
 
         const fullUrl = `${endpoint}?${params.toString()}`;
-        console.log('[loadArchives] Calling API:', fullUrl);
-        console.log('[loadArchives] Full params object:', Object.fromEntries(params));
+        
+        
         
         const res = await API.get(fullUrl);
         
-        console.log('[loadArchives] API Response:', res);
+        
 
         if (res.files && res.files.length > 0) {
             archives = append ? [...archives, ...res.files] : res.files;
-            console.log('[loadArchives] Files loaded:', res.files.length);
+            
         } else if (!append) {
             archives = [];
-            console.log('[loadArchives] No files found');
+            
         }
 
         totalPages = res.totalPages || 1;
@@ -602,7 +597,6 @@ async function loadUploaderNames() {
             });
         });
     } catch (err) {
-        console.warn('[loadUploaderNames] Error:', err.message);
         // Fallback: show userId if fetch fails
         archives.filter(f => f.uploaded_by).forEach(file => {
             const badge = document.getElementById(`uploader-${file.id}`);
@@ -631,7 +625,6 @@ async function loadSyncStatuses() {
         document.getElementById('sync-primary-summary')?.replaceChildren(document.createTextNode(`Primary: ${primary}/${paths.length} terverifikasi`));
         document.getElementById('sync-backup-summary')?.replaceChildren(document.createTextNode(`Cadangan: ${backup}/${paths.length} terverifikasi`));
     } catch (err) {
-        console.warn('Gagal membaca status sinkronisasi:', err.message);
     }
 }
 
@@ -701,7 +694,6 @@ async function updateStats(res = {}) {
         const piutangCount = res.totalPiutang ?? filteredArchives.filter(a => a.category === 'PIUTANG').length;
         if (el('stat-piutang')) el('stat-piutang').textContent = piutangCount;
     } catch (err) {
-        console.warn('Stats update error:', err);
     }
 }
 
@@ -723,12 +715,12 @@ async function scanMissingFiles() {
     btn.innerHTML = '<span class="inline-block animate-spin">⏳</span> Scanning...';
     
     try {
-        console.log('[Scan Missing] Starting scan...');
+        
         const res = await API.post('/api/admin/scan-missing-files');
         
         if (res.status === 'success') {
             Toast.success(`✓ Scan selesai: ${res.missing} file hilang ditemukan`);
-            console.log('[Scan Missing] Result:', res);
+            
             
             // Reload archives to show updated missing status
             await loadArchives();
@@ -957,7 +949,7 @@ setInterval(() => {
 
 // ---- Render Table ----
 function renderTable() {
-    console.log('[renderTable] START - Called with', archives.length, 'files');
+    
     
     let tbody = document.getElementById('archive-body');
     
@@ -987,12 +979,12 @@ function renderTable() {
         return;
     }
 
-    console.log('[renderTable] Rendering', pageItems.length, 'items');
+    
     
     // Client-side enrichment: for PIUTANG files with toko_id but no toko object, fetch toko data
     const piutangFilesNeedingToko = pageItems.filter(f => f.category === 'PIUTANG' && f.toko_id && !f.toko);
     if (piutangFilesNeedingToko.length > 0) {
-        console.log('[renderTable] Found', piutangFilesNeedingToko.length, 'PIUTANG files needing toko enrichment');
+        
         // Try to enrich from API
         API.get('/api/toko').then(response => {
             const allTokos = response.tokos || [];
@@ -1004,7 +996,7 @@ function renderTable() {
             pageItems.forEach(f => {
                 if (f.category === 'PIUTANG' && f.toko_id && !f.toko && tokoMap[f.toko_id]) {
                     f.toko = tokoMap[f.toko_id];
-                    console.log('[renderTable] Enriched:', f.nama_file, '→ toko:', f.toko.nama);
+                    
                 }
             });
             
@@ -1703,7 +1695,7 @@ function closePreview() {
 
 // Handler when preview iframe loads
 function handlePreviewLoaded() {
-    console.log('[Preview] iframe loaded successfully');
+    
     const loading = document.getElementById('preview-loading');
     if (loading) loading.classList.add('hidden');
 }
@@ -1836,7 +1828,6 @@ async function loadStorageStats() {
                 _alistInvoiceLoaded = true;
             }
         } catch (err) {
-            console.warn('Failed to load invoice count from database:', err);
         }
 
         // 4. NEW: Invoice System Statistics (from invoice_file_list table)
@@ -1871,12 +1862,10 @@ async function loadStorageStats() {
                 if (quickPending) quickPending.textContent = (pending_count || 0).toLocaleString('id-ID');
             }
         } catch (err) {
-            console.warn('Failed to load new invoice stats:', err);
             // Invoice system might not be available yet (dependencies not installed)
         }
 
     } catch (err) {
-        console.warn('Failed to load storage stats:', err);
     }
 }
 
@@ -2421,7 +2410,6 @@ async function loadMaintenanceStatus() {
         const sys = await API.get('/api/system/maintenance');
         updateMaintenanceUI(sys.isMaintenance);
     } catch (err) {
-        console.warn('Failed to load maintenance status:', err);
     }
 }
 
@@ -2540,7 +2528,7 @@ function syncSearch(value) {
  * Handles both old format (category=NON_PPN) and new format (category=INVOICE, tipe_ppn=NON)
  */
 function getCategoryBadges(category, tipe_ppn) {
-    console.log('[getCategoryBadges] Input:', { category, tipe_ppn });
+    
     
     // Handle INVOICE category
     if (category === 'INVOICE') {
@@ -2549,7 +2537,7 @@ function getCategoryBadges(category, tipe_ppn) {
             typeLabel: typeName,
             categoryLabel: 'Invoice Merah'
         };
-        console.log('[getCategoryBadges] Result:', result);
+        
         return result;
     }
     
@@ -2559,7 +2547,7 @@ function getCategoryBadges(category, tipe_ppn) {
             typeLabel: 'NON',
             categoryLabel: 'Invoice Merah'
         };
-        console.log('[getCategoryBadges] Result (legacy NON):', result);
+        
         return result;
     }
     
@@ -2568,7 +2556,7 @@ function getCategoryBadges(category, tipe_ppn) {
             typeLabel: 'PPN',
             categoryLabel: 'Invoice Merah'
         };
-        console.log('[getCategoryBadges] Result (legacy PPN):', result);
+        
         return result;
     }
     
@@ -2577,7 +2565,7 @@ function getCategoryBadges(category, tipe_ppn) {
         typeLabel: null,
         categoryLabel: category === 'PIUTANG' || category === 'BUKTI PIUTANG' ? 'Bukti Piutang' : category
     };
-    console.log('[getCategoryBadges] Result (other):', result);
+    
     return result;
 }
 
@@ -2684,12 +2672,11 @@ function loadInvoiceFilterState() {
         const saved = localStorage.getItem('invoiceFilterState');
         if (saved) {
             const state = JSON.parse(saved);
-            console.log('[FilterState] Loaded from localStorage:', state);
+            
             invoiceFilterState = state;
             return state;
         }
     } catch (e) {
-        console.warn('[FilterState] Error loading from localStorage:', e);
     }
     return invoiceFilterState;
 }
@@ -2700,9 +2687,8 @@ function loadInvoiceFilterState() {
 function saveInvoiceFilterState() {
     try {
         localStorage.setItem('invoiceFilterState', JSON.stringify(invoiceFilterState));
-        console.log('[FilterState] Saved to localStorage:', invoiceFilterState);
+        
     } catch (e) {
-        console.warn('[FilterState] Error saving to localStorage:', e);
     }
 }
 
@@ -2766,16 +2752,16 @@ async function loadMonitoringStats() {
         }
 
     } catch (err) {
-        console.log('[Dashboard] Monitoring stats (non-critical):', err.message);
+        
     }
 }
 
 async function loadInvoicesInDashboard(page = 1) {
     try {
-        console.log('[LoadInvoices] ===== LOADING PAGE', page, '=====');
+        
         
         const token = API.getToken() || localStorage.getItem('jwt_token');
-        console.log('[LoadInvoices] Auth token present:', !!token);
+        
         
         const headers = {};
         if (token) {
@@ -2784,14 +2770,14 @@ async function loadInvoicesInDashboard(page = 1) {
         
         const offset = (page - 1) * INVOICE_PAGE_SIZE;
         const url = `${CONFIG.API_URL}/api/invoice/list?limit=${INVOICE_PAGE_SIZE}&offset=${offset}`;
-        console.log('[LoadInvoices] Fetching from:', url);
+        
         
         const response = await fetch(url, {
             method: 'GET',
             headers: headers
         });
         
-        console.log('[LoadInvoices] Response status:', response.status);
+        
         
         if (!response.ok) {
             const errText = await response.text();
@@ -2799,9 +2785,9 @@ async function loadInvoicesInDashboard(page = 1) {
         }
         
         const result = await response.json();
-        console.log('[LoadInvoices] API Response:', JSON.stringify(result, null, 2));
-        console.log('[LoadInvoices] Data length:', (result.data || []).length);
-        console.log('[LoadInvoices] Count:', result.count);
+        
+        
+        
         
         renderInvoiceTable(result.data || []);
         invoiceCurrentPage = page;
@@ -2809,11 +2795,10 @@ async function loadInvoicesInDashboard(page = 1) {
         // Track total count for pagination
         if (result.count !== undefined) {
             invoiceTotalCount = result.count;
-            console.log('[LoadInvoices] ✅ Set invoiceTotalCount to', invoiceTotalCount);
+            
             updatePaginationInfo();
             updateInvoiceStatsFromData(result.data || [], result.count);
         } else {
-            console.warn('[LoadInvoices] ⚠️ result.count is undefined! Using data.length instead');
             invoiceTotalCount = (result.data || []).length;
             updatePaginationInfo();
             updateInvoiceStatsFromData(result.data || [], invoiceTotalCount);
@@ -2830,15 +2815,13 @@ async function loadInvoicesInDashboard(page = 1) {
 async function renderInvoiceTable(invoices) {
     const tbody = document.getElementById('invoiceTableBody');
     if (!tbody) {
-        console.warn('[RenderTable] invoiceTableBody not found - available elements:');
         console.warn('[RenderTable] All tbody elements:', document.querySelectorAll('tbody').length);
         document.querySelectorAll('tbody').forEach((el, i) => {
-            console.warn(`  tbody[${i}] id=${el.id}, class=${el.className}`);
         });
         return;
     }
     
-    console.log('[RenderTable] Rendering', invoices.length, 'invoices');
+    
     
     if (invoices.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px; color: #7f8c8d;">Belum ada data invoice</td></tr>';
@@ -2960,7 +2943,7 @@ async function renderInvoiceTable(invoices) {
     // Use collected results instead
     const invoicesWithFileStatus = allInvoicesWithStatus;
     
-    console.log('[RenderTable] File checks complete, rendering final table...');
+    
     
     // Render rows with placeholder status
     tbody.innerHTML = invoicesWithFileStatus.map(inv => {
@@ -3077,7 +3060,7 @@ async function renderInvoiceTable(invoices) {
             </tr>
         `}).join('');
         
-        console.log('[RenderTable] ✅ Rendered successfully with file checks complete');
+        
         
         // Update stats based on actual file existence
         updateInvoiceStatsFromData(invoicesWithFileStatus, invoiceTotalCount);
@@ -3476,24 +3459,24 @@ async function combinePDF(faktur) {
 // Load unique filter values from database
 async function loadFilterOptions() {
     try {
-        console.log('[Filter] Starting loadFilterOptions');
+        
         const token = API.getToken() || localStorage.getItem('jwt_token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         
-        console.log('[Filter] Auth token present:', !!token);
-        console.log('[Filter] Current user role:', currentUser?.role, 'zona_id:', currentUser?.zona_id);
+        
+        
         
         // Get all invoices with high limit to count everything
         // Note: API automatically filters by zona_id for admin_zona users
         const url = `${CONFIG.API_URL}/api/invoice/list?limit=10000&offset=0`;
-        console.log('[Filter] Fetching from:', url);
+        
         
         const response = await fetch(url, {
             method: 'GET',
             headers: headers
         });
         
-        console.log('[Filter] Response status:', response.status, response.statusText);
+        
         
         if (!response.ok) {
             const errText = await response.text();
@@ -3501,16 +3484,15 @@ async function loadFilterOptions() {
         }
         
         const result = await response.json();
-        console.log('[Filter] Full API response:', JSON.stringify(result, null, 2));
+        
         
         const invoices = result.data || [];
         invoiceTotalCount = result.count || invoices.length || 0;
         
-        console.log('[Filter] Total invoice count set to:', invoiceTotalCount, 'Invoices received:', invoices.length);
-        console.log('[Filter] For admin_zona users, this is already filtered by their zone');
+        
+        
         
         if (invoices.length === 0) {
-            console.warn('[Filter] ⚠️ WARNING: No invoices returned from API!');
         }
         
         // Get unique values from filtered invoices
@@ -3538,9 +3520,9 @@ async function loadFilterOptions() {
         const years = Array.from(yearSet).sort().reverse();
         const months = Array.from(monthSet).sort((a, b) => a - b);
         
-        console.log('[Filter] Loaded options - Years:', years.length, 'Months with data:', months.length, 'Tokos:', tokos.length, 'Keterangans:', keterangans.length);
+        
         if (currentUser?.role === 'admin_zona') {
-            console.log('[Filter] ✅ Admin Zona: Showing actual konsumen (store) names from invoices');
+            
         }
         
         // Populate year select (CUSTOM DROPDOWN)
@@ -3549,7 +3531,7 @@ async function loadFilterOptions() {
             // Create options array with value and label
             const yearOptions = years.map(year => ({ value: year, label: year }));
             populateCustomDropdownOptions('tahunDropdown', yearOptions);
-            console.log('[Filter] Year dropdown populated with', years.length, 'options');
+            
         }
         
         // Populate month select - ONLY with months that have data (CUSTOM DROPDOWN)
@@ -3562,18 +3544,18 @@ async function loadFilterOptions() {
                 label: monthNames[month - 1] 
             }));
             populateCustomDropdownOptions('bulanDropdown', monthOptions);
-            console.log('[Filter] Month dropdown populated with', months.length, 'options (only months with data)');
+            
         }
         
         // Populate toko custom dropdown
         const tokoOptions = tokos.map(toko => ({ value: toko, label: toko }));
         populateCustomDropdownOptions('tokoDropdown', tokoOptions);
-        console.log('[Filter] Toko dropdown populated with', tokos.length, 'options');
+        
         
         // Populate kategori (keterangan) custom dropdown
         const keteranganOptions = keterangans.map(ket => ({ value: ket, label: ket }));
         populateCustomDropdownOptions('kategoriDropdown', keteranganOptions);
-        console.log('[Filter] Kategori dropdown populated with', keterangans.length, 'options');
+        
         
         // Update pagination and stats based on loaded data
         updateInvoiceStatsFromData(invoices, invoiceTotalCount);
@@ -3585,8 +3567,8 @@ async function loadFilterOptions() {
 
 // Update stats from loaded invoice data
 function updateInvoiceStatsFromData(invoices, totalCount) {
-    console.log('[StatsFromData] ===== UPDATING STATS =====');
-    console.log('[StatsFromData] Invoices:', invoices.length, 'Total count:', totalCount);
+    
+    
     
     // Count statuses based on ACTUAL file existence (isComplete flag)
     // isComplete is set after checking if all required files exist on remote storage
@@ -3605,7 +3587,7 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     let finalLunasCount = lunasCount;
     let finalBelumLunasCount = totalCount - lunasCount; // Always subtract from total
     
-    console.log('[StatsFromData] Counts - Total:', totalCount, 'Lunas:', finalLunasCount, 'Belum Lunas:', finalBelumLunasCount);
+    
     
     // Update stat elements by ID
     const elements = {
@@ -3614,14 +3596,14 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
         pending: document.getElementById('statPending')
     };
     
-    console.log('[StatsFromData] Found elements - total:', !!elements.total, 'uploaded:', !!elements.uploaded, 'pending:', !!elements.pending);
+    
     
     if (elements.total) elements.total.textContent = totalCount;
     if (elements.uploaded) elements.uploaded.textContent = finalLunasCount;    // Renamed to Lunas
     if (elements.pending) elements.pending.textContent = finalBelumLunasCount;  // Renamed to Belum Lunas
     
-    console.log('[StatsFromData] ✅ Stats updated successfully');
-    console.log('[StatsFromData] ===== STATS UPDATE COMPLETE =====');
+    
+    
 }
 
 // Initialize dashboard stats and empty state (but DON'T auto-load data)
@@ -3782,7 +3764,7 @@ async function deleteInvoice(faktur, invoiceId) {
                 const token = API.getToken() || localStorage.getItem('jwt_token');
                 const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
                 
-                console.log('[DeleteInvoice] Deleting invoice:', faktur, 'ID:', invoiceId);
+                
                 
                 // Show loading animation
                 Swal.fire({
@@ -3844,8 +3826,8 @@ async function deleteInvoice(faktur, invoiceId) {
                 }
                 
                 const result = await response.json();
-                console.log('[DeleteInvoice] ✅ Invoice deleted successfully');
-                console.log('[DeleteInvoice] Files deleted:', result.filesDeleted);
+                
+                
                 
                 // Show success with details
                 Swal.fire({
@@ -3932,19 +3914,19 @@ async function applyInvoiceFilters() {
         const month = document.getElementById('filterMonth')?.value || '';
         const search = document.getElementById('filterSearch')?.value || '';
         
-        console.log('[Filter] Applying filters:', { status, toko, keterangan, year, month, search });
+        
         
         // Save filter state to localStorage (year and month are sticky)
         invoiceFilterState.hasFiltered = true;
         invoiceFilterState.year = year;
         invoiceFilterState.month = month;
         saveInvoiceFilterState();
-        console.log('[Filter] ✅ Filter state saved to localStorage:', invoiceFilterState);
+        
         
         // Start filtered background scan (async, don't wait)
         invoiceBackgroundScanStarted = false; // Reset so scan runs
         startInvoiceBackgroundScan();
-        console.log('[Filter] ✅ Filtered background scan started (not blocking)');
+        
         
         const token = API.getToken() || localStorage.getItem('jwt_token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -3964,14 +3946,14 @@ async function applyInvoiceFilters() {
             const dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
             params.append('date_from', dateFromValue);
             params.append('date_to', dateToValue);
-            console.log('[Filter] Filtering by year-month:', { year, month, dateFromValue, dateToValue });
+            
         } else if (year) {
             // Only year selected
             const dateFromValue = `${year}-01-01`;
             const dateToValue = `${year}-12-31`;
             params.append('date_from', dateFromValue);
             params.append('date_to', dateToValue);
-            console.log('[Filter] Filtering by year only:', { year, dateFromValue, dateToValue });
+            
         } else if (month) {
             // Only month (use current year)
             const currentYear = new Date().getFullYear();
@@ -3980,13 +3962,13 @@ async function applyInvoiceFilters() {
             const dateToValue = `${currentYear}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
             params.append('date_from', dateFromValue);
             params.append('date_to', dateToValue);
-            console.log('[Filter] Filtering by month only:', { month, dateFromValue, dateToValue });
+            
         }
         
         params.append('limit', INVOICE_PAGE_SIZE);
         params.append('offset', 0);
         
-        console.log('[Filter] Query params:', params.toString());
+        
         
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
             method: 'GET',
@@ -3998,7 +3980,7 @@ async function applyInvoiceFilters() {
         }
         
         const result = await response.json();
-        console.log('[Filter] Result:', result);
+        
         
         renderInvoiceTable(result.data || []);
         invoiceCurrentPage = 1;
@@ -4006,7 +3988,7 @@ async function applyInvoiceFilters() {
         // Track total count for pagination
         if (result.count !== undefined) {
             invoiceTotalCount = result.count;
-            console.log('[Filter] Set invoiceTotalCount to', invoiceTotalCount);
+            
             updatePaginationInfo();
             updateInvoiceStatsFromData(result.data || [], result.count);
         }
@@ -4041,11 +4023,11 @@ function updateTotalNominalDisplay(invoices) {
     }).format(total);
     
     totalDisplay.textContent = `Total: ${formattedTotal}`;
-    console.log('[Total] Updated nominal display:', formattedTotal, 'from', invoices.length, 'invoices');
+    
 }
 
 function resetInvoiceFilters() {
-    console.log('[Filter] Resetting all filters to default');
+    
     const filterStatus = document.getElementById('filterStatus');
     const filterToko = document.getElementById('filterToko');
     const filterKeterangan = document.getElementById('filterKeterangan');
@@ -4072,12 +4054,12 @@ function resetInvoiceFilters() {
     saveInvoiceFilterState();
     showInvoiceEmptyState();
     
-    console.log('[Filter] ✅ All filters reset to default');
+    
 }
 
 // Setup admin zona specific filters - hide stats
 function setupAdminZonaFilters() {
-    console.log('[AdminZonaFilters] Setting up admin zona specific filters');
+    
     
     // Hide stats for admin zona (they only see their zone's data)
     const statTotal = document.getElementById('statTotal');
@@ -4096,12 +4078,12 @@ function setupAdminZonaFilters() {
     
     if (invoiceTableSection) {
         invoiceTableSection.style.display = 'none';
-        console.log('[AdminZonaFilters] ✅ Invoice table section hidden');
+        
     }
     
     if (adminZonaFilterSection) {
         adminZonaFilterSection.style.display = 'block';
-        console.log('[AdminZonaFilters] ✅ Admin Zona filter section shown');
+        
     }
     
     // Restore saved year and month from invoiceFilterState
@@ -4109,7 +4091,7 @@ function setupAdminZonaFilters() {
         const yearSelect = document.getElementById('filterYear');
         if (yearSelect) {
             yearSelect.value = invoiceFilterState.year;
-            console.log('[AdminZonaFilters] ✅ Restored saved year:', invoiceFilterState.year);
+            
         }
     }
     
@@ -4117,23 +4099,23 @@ function setupAdminZonaFilters() {
         const monthSelect = document.getElementById('filterAdminZonaMonth');
         if (monthSelect) {
             monthSelect.value = invoiceFilterState.month;
-            console.log('[AdminZonaFilters] ✅ Restored saved month:', invoiceFilterState.month);
+            
         }
     }
     
-    console.log('[AdminZonaFilters] ✅ Admin Zona filters setup complete (with restored state)');
+    
 }
 
 // Setup regular filters for super_admin and moderator - restore saved filter state
 function setupRegularFilters() {
-    console.log('[RegularFilters] Setting up regular user filters (super_admin/moderator)');
+    
     
     // Restore saved year and month from invoiceFilterState
     if (invoiceFilterState.year) {
         const yearSelect = document.getElementById('filterYear');
         if (yearSelect) {
             yearSelect.value = invoiceFilterState.year;
-            console.log('[RegularFilters] ✅ Restored saved year:', invoiceFilterState.year);
+            
         }
     }
     
@@ -4141,7 +4123,7 @@ function setupRegularFilters() {
         const monthSelect = document.getElementById('filterMonth');
         if (monthSelect) {
             monthSelect.value = invoiceFilterState.month;
-            console.log('[RegularFilters] ✅ Restored saved month:', invoiceFilterState.month);
+            
         }
     }
     
@@ -4157,11 +4139,11 @@ function setupRegularFilters() {
             
             // Attach change event listener
             document.getElementById(id).addEventListener('change', applyInvoiceFilters);
-            console.log('[RegularFilters] ✅ Event listener attached to:', id);
+            
         }
     });
     
-    console.log('[RegularFilters] ✅ Regular user filters active (with restored state)');
+    
 }
 
 // Admin Zona Filter Functions
@@ -4171,14 +4153,14 @@ async function applyAdminZonaFilters() {
     const year = document.getElementById('filterYear')?.value || '';
     const month = document.getElementById('filterAdminZonaMonth')?.value || '';
     
-    console.log('[AdminZonaFilter] Applying filters:', { supplier, keterangan, year, month });
+    
     
     // Save filter state (year and month are sticky)
     invoiceFilterState.hasFiltered = true;
     invoiceFilterState.year = year;
     invoiceFilterState.month = month;
     saveInvoiceFilterState();
-    console.log('[AdminZonaFilter] ✅ Filter state saved to localStorage:', invoiceFilterState);
+    
     
     try {
         const params = new URLSearchParams();
@@ -4188,10 +4170,10 @@ async function applyAdminZonaFilters() {
         if (month) params.append('month', month);
         
         const url = `${CONFIG.API_URL}/api/invoice/list?${params.toString()}`;
-        console.log('[AdminZonaFilter] Calling:', url);
+        
         
         const response = await API.get(url);
-        console.log('[AdminZonaFilter] Response:', response);
+        
         
         // Display results - for now just log
         Toast.info(`Found ${response.count || 0} invoices matching filters`, 'ℹ️ Result');
@@ -4213,10 +4195,10 @@ function resetAdminZonaFilters() {
     saveInvoiceFilterState();
     showInvoiceEmptyState();
     
-    console.log('[AdminZonaFilter] ✅ Filters reset (year/month preserved), showing empty state');
+    
 }
 function populateMonthDropdown() {
-    console.log('[PopulateMonth] Month input (type=month) is handled by browser');
+    
     // input type="month" returns value in YYYY-MM format automatically
 }
 
@@ -4227,7 +4209,6 @@ function populateMonthDropdown() {
 function showInvoiceEmptyState() {
     const tableBody = document.getElementById('invoiceTableBody');
     if (!tableBody) {
-        console.warn('[EmptyState] invoiceTableBody not found');
         return;
     }
     
@@ -4241,7 +4222,7 @@ function showInvoiceEmptyState() {
         </tr>
     `;
     
-    console.log('[EmptyState] Empty state displayed in table');
+    
 }
 
 /**
@@ -4250,12 +4231,12 @@ function showInvoiceEmptyState() {
  */
 async function startInvoiceBackgroundScan() {
     if (invoiceBackgroundScanStarted) {
-        console.log('[BackgroundScan] Already started, skipping');
+        
         return;
     }
     
     invoiceBackgroundScanStarted = true;
-    console.log('[BackgroundScan] ⏳ Starting filtered scan based on user selection...');
+    
     
     try {
         const year = document.getElementById('filterYear')?.value || '';
@@ -4294,51 +4275,50 @@ async function startInvoiceBackgroundScan() {
         }
         
         const result = await response.json();
-        console.log('[BackgroundScan] ✅ Scanning complete - found', result.count || 0, 'invoices matching filter');
+        
         
     } catch (error) {
-        console.warn('[BackgroundScan] Error during scan:', error);
         // Don't show error to user - this is background task
     }
 }
 
 // Initialize invoice system after content is loaded
 async function initInvoiceSystem() {
-    console.log('[InvoiceInit] ===== INITIALIZING INVOICE SYSTEM =====');
-    console.log('[InvoiceInit] currentUser:', currentUser);
-    console.log('[InvoiceInit] currentUser?.role:', currentUser?.role);
-    console.log('[InvoiceInit] Check: currentUser !== undefined:', typeof currentUser !== 'undefined');
-    console.log('[InvoiceInit] Check: currentUser truthy:', !!currentUser);
+    
+    
+    
+    
+    
     
     // Load filter state from localStorage
     loadInvoiceFilterState();
-    console.log('[InvoiceInit] Filter state loaded:', invoiceFilterState);
+    
     
     // RESET: Clear filter state to force default "Semua" on refresh
     invoiceFilterState.year = '';
     invoiceFilterState.month = '';
     invoiceFilterState.hasFiltered = false;
     saveInvoiceFilterState();
-    console.log('[InvoiceInit] Filter state cleared for fresh start');
+    
     
     // Show EMPTY STATE message (no data yet)
     showInvoiceEmptyState();
-    console.log('[InvoiceInit] ✅ Empty state displayed');
+    
     
     // Load filter options from data (populate year/month/etc dropdowns)
     await loadFilterOptions();
-    console.log('[InvoiceInit] ✅ Filter options loaded');
+    
     
     // DO NOT start background scan here - wait for user to filter first
     // Background scan will be triggered when user clicks "Terapkan Filter"
     
     // Setup admin zona specific filters or regular filters based on role
     if (typeof currentUser !== 'undefined' && currentUser && currentUser.role === 'admin_zona') {
-        console.log('[InvoiceInit] ✅ Admin Zona detected - setting up admin zona filters');
+        
         setupAdminZonaFilters();
     } else {
-        console.log('[InvoiceInit] ✅ Regular user (super_admin/moderator) detected - setting up regular filters');
-        console.log('[InvoiceInit] currentUser.role =', currentUser?.role);
+        
+        
         setupRegularFilters();
     }
     
@@ -4348,16 +4328,14 @@ async function initInvoiceSystem() {
     
     if (btnNext) {
         btnNext.onclick = nextInvoicePage;
-        console.log('[InvoiceInit] ✅ Next button event listener attached');
+        
     } else {
-        console.warn('[InvoiceInit] ⚠️ btnNextPage not found');
     }
     
     if (btnPrev) {
         btnPrev.onclick = previousInvoicePage;
-        console.log('[InvoiceInit] ✅ Prev button event listener attached');
+        
     } else {
-        console.warn('[InvoiceInit] ⚠️ btnPrevPage not found');
     }
     
     // Setup filter buttons with IDs from invoice-list.html
@@ -4366,19 +4344,17 @@ async function initInvoiceSystem() {
     
     if (btnApply) {
         btnApply.onclick = applyInvoiceFilters;
-        console.log('[InvoiceInit] ✅ Apply filter button event listener attached');
+        
     } else {
-        console.warn('[InvoiceInit] ⚠️ btnApplyFilter not found');
     }
     
     if (btnReset) {
         btnReset.onclick = resetInvoiceFilters;
-        console.log('[InvoiceInit] ✅ Reset filter button event listener attached');
+        
     } else {
-        console.warn('[InvoiceInit] ⚠️ btnResetFilter not found');
     }
     
-    console.log('[InvoiceInit] ===== INVOICE SYSTEM INITIALIZED =====');
+    
 }
 
 function updatePaginationInfo() {
@@ -4408,7 +4384,7 @@ function updatePaginationInfo() {
         nextBtn.disabled = invoiceCurrentPage >= totalPages;
     }
     
-    console.log('[Pagination] Updated - Page', invoiceCurrentPage, 'Total:', total, 'Showing', start, '-', end);
+    
 }
 
 function nextInvoicePage() {
@@ -4423,3 +4399,5 @@ function previousInvoicePage() {
         loadInvoicesInDashboard(invoiceCurrentPage - 1);
     }
 }
+
+
