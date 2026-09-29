@@ -114,6 +114,7 @@ async function initSupportPage() {
 } // End of variable and function initialization guard
 
 // Listen for both direct page load and SPA navigation
+} // End of variable and function initialization guard
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('[Support-Moderator] DOMContentLoaded event fired');
     await initSupportPage();
@@ -666,4 +667,5 @@ function getRelativeTime(dateString) {
         return '-';
     }
 }
+
 
