@@ -175,10 +175,10 @@
                         <a href="${child.href}" onclick="event.stopPropagation();" style="
                             display: flex;
                             align-items: center;
-                            padding: 0.7rem 1rem 0.7rem 2.5rem;
-                            margin: 0.25rem 0.4rem;
+                            padding: 0.5rem 1rem 0.5rem 2.5rem;
+                            margin: 0.15rem 0.4rem;
                             border-radius: 0.3rem;
-                            font-size: 0.85rem;
+                            font-size: 0.8rem;
                             background: ${childBg};
                             color: ${childText};
                             font-weight: ${childWeight};
@@ -187,7 +187,7 @@
                             letter-spacing: 0.01em;
                             will-change: background-color, color;
                         " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                            <span style="margin-right: 0.6rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
+                            <span style="margin-right: 0.6rem; font-size: 0.9rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
                         </a>
                     `;
                 }
@@ -201,13 +201,13 @@
                         align-items: center;
                         justify-content: space-between;
                         width: calc(100% - 1.2rem);
-                        padding: 1rem 1rem;
-                        margin: 0.3rem 0.6rem;
+                        padding: 0.75rem 1rem;
+                        margin: 0.2rem 0.6rem;
                         border: none;
                         background: ${dropdownBg};
                         color: ${dropdownText};
                         text-decoration: none;
-                        font-size: 1rem;
+                        font-size: 0.95rem;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         text-align: left;
@@ -216,7 +216,7 @@
                         letter-spacing: 0.01em;
                         will-change: background-color, color;
                     " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
+                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.8rem; font-size: 1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
                         <span class="dropdown-arrow" style="font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
                     </button>
                     <div id="${item.id}" style="
@@ -241,20 +241,20 @@
                     <a href="${item.href}" style="
                         display: flex;
                         align-items: center;
-                        padding: 1rem 1rem;
-                        margin: 0.3rem 0.6rem;
+                        padding: 0.75rem 1rem;
+                        margin: 0.2rem 0.6rem;
                         border-radius: 0.4rem;
                         background: ${itemBg};
                         color: ${itemText};
                         font-weight: ${itemWeight};
                         text-decoration: none;
-                        font-size: 1rem;
+                        font-size: 0.95rem;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         letter-spacing: 0.01em;
                         will-change: background-color, color, transform;
                     " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                        <span style="margin-right: 0.8rem; font-size: 1.1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
+                        <span style="margin-right: 0.8rem; font-size: 1rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
                     </a>
                 `;
             }
@@ -268,7 +268,7 @@
             top: ${topOffset};
             left: 0;
             width: 20rem;
-            min-height: 152vh;
+            height: calc(100vh - ${topOffset});
             display: flex;
             flex-direction: column;
             background: ${bgColor};
@@ -277,7 +277,8 @@
             box-sizing: border-box;
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
-            height: auto;
+            overflow-y: auto;
+            overflow-x: hidden;
         `;
 
         sidebar.innerHTML = `
