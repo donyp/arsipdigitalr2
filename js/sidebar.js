@@ -292,14 +292,6 @@
         const hasAnnouncement = !!document.getElementById('global-announcement-banner');
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
-        // Check if current page is an Upload File menu item
-        const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur'];
-        const isUploadFilePage = uploadFilePages.some(page => {
-            const normalizedPage = page.toLowerCase();
-            const normalizedPath = (window.location.pathname).toLowerCase();
-            return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
-        });
-
         // Use smaller width for upload file pages, normal width for others
         const sidebarWidth = isUploadFilePage ? '16rem' : '20rem';
 
