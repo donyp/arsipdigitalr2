@@ -5,6 +5,28 @@
 (function() {
     console.log('[Sidebar] Initializing v5.6 - Persistent & Consistent...');
     
+    // Add scrollbar styling for sidebar
+    const scrollbarStyle = document.createElement('style');
+    scrollbarStyle.textContent = `
+        #sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        #sidebar::-webkit-scrollbar-thumb {
+            background: rgba(100, 120, 140, 0.6);
+            border-radius: 4px;
+        }
+        
+        #sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 120, 140, 0.8);
+        }
+    `;
+    document.head.appendChild(scrollbarStyle);
+    
     const activePage = window.location.pathname.split('/').pop() || 'dashboard';
     
     const menuItems = [
@@ -295,12 +317,17 @@
         // Use smaller width for upload file pages, normal width for others
         const sidebarWidth = isUploadFilePage ? '14rem' : '20rem';
 
+        // Use different height strategy based on page type
+        const sidebarHeight = isUploadFilePage 
+            ? `height: calc(100vh - ${topOffset}); overflow: hidden;`
+            : `min-height: calc(100vh - ${topOffset});`;
+
         sidebar.style.cssText = `
             position: fixed;
             top: ${topOffset};
             left: 0;
             width: ${sidebarWidth};
-            height: calc(100vh - ${topOffset});
+            ${sidebarHeight}
             display: flex;
             flex-direction: column;
             background: ${bgColor};
@@ -309,7 +336,6 @@
             box-sizing: border-box;
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
-            overflow: hidden;
         `;
 
         sidebar.innerHTML = `
