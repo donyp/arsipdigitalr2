@@ -153,7 +153,7 @@
             buttonPadding: '0.5rem 0.6rem',
             buttonMargin: '0.15rem 0.3rem',
             buttonFontSize: '0.85rem',
-            childPadding: '0.4rem 0.6rem 0.4rem 0.6rem',
+            childPadding: '0.4rem 0.6rem 0.4rem 2.2rem',
             childMargin: '0.1rem 0.2rem',
             childFontSize: '0.7rem',
             childIconSize: '0.8rem',
