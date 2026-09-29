@@ -137,14 +137,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     
 
-    // Trigger file count sync when dashboard loads (for accurate counts after manual file changes)
-    
+    // Endpoint tidak ada di backend - disabled
+    /*
     fetch(`${CONFIG.API_URL}/api/invoice/sync-all-file-counts`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${API.getToken()}` }
     }).then(r => r.json())
       .then(d => console.log('[Dashboard] Sync triggered:', d.status))
       .catch(e => console.warn('[Dashboard] Sync trigger failed (non-blocking):', e.message));
+    */
 
     try {
     
