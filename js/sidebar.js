@@ -365,23 +365,35 @@
         // Normalize pathname for comparison
         const normalizedPath = pathname.replace('.html', '').replace(/\/$/, '').toLowerCase();
         
-        console.log('[Sidebar] updateActiveStates called with path:', normalizedPath);
+        console.log('[Sidebar] updateActiveStates - Input pathname:', pathname);
+        console.log('[Sidebar] updateActiveStates - Normalized path:', normalizedPath);
+        console.log('[Sidebar] Menu items count:', menuItems.length);
 
         for (const item of menuItems) {
             if (item.isDropdown) {
                 const btn = document.getElementById(item.id + '-btn');
                 const container = document.getElementById(item.id);
-                if (!btn || !container) continue;
+                if (!btn || !container) {
+                    console.log('[Sidebar] Dropdown button/container not found for:', item.label);
+                    continue;
+                }
 
                 // Check if any child matches current path
                 let itemIsActive = false;
+                console.log('[Sidebar] Checking dropdown:', item.label, '- checking', item.children.length, 'children');
+                
                 for (const child of item.children) {
                     const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
+                    console.log('[Sidebar]   Child:', child.label, '| href:', child.href, '| childPath:', childPath, '| match:', normalizedPath === childPath);
+                    
                     if (normalizedPath === childPath) {
                         itemIsActive = true;
+                        console.log('[Sidebar] ✓ Found active child:', child.label, 'in dropdown:', item.label);
                         break;
                     }
                 }
+
+                console.log('[Sidebar] Dropdown', item.label, '- isActive:', itemIsActive);
 
                 // Update button color and state
                 if (itemIsActive) {
@@ -395,6 +407,7 @@
                     container.style.maxHeight = 'none';
                     container.style.overflow = 'visible';
                     btn.setAttribute('data-expanded', 'true');
+                    console.log('[Sidebar] ✓ Opened dropdown and highlighted:', item.label);
                 } else {
                     btn.style.backgroundColor = 'transparent';
                     btn.style.color = textColor;
@@ -404,6 +417,7 @@
                     container.style.opacity = '0';
                     container.style.maxHeight = '0px';
                     btn.setAttribute('data-expanded', 'false');
+                    console.log('[Sidebar] ✓ Closed dropdown:', item.label);
                 }
 
                 // Highlight active child item
@@ -416,6 +430,7 @@
                         if (isChildActive) {
                             childLink.style.backgroundColor = activeBgColor;
                             childLink.style.color = activeTextColor;
+                            console.log('[Sidebar] ✓ Highlighted child link:', child.label);
                         } else {
                             childLink.style.backgroundColor = 'transparent';
                             childLink.style.color = textColor;
@@ -429,11 +444,12 @@
                     const itemPath = item.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
                     const isActive = normalizedPath === itemPath;
                     
-                    console.log('[Sidebar] Checking item:', itemPath, 'vs', normalizedPath, '=', isActive);
+                    console.log('[Sidebar] Regular item:', item.label, '| href:', item.href, '| itemPath:', itemPath, '| isActive:', isActive);
                     
                     if (isActive) {
                         link.style.backgroundColor = activeBgColor;
                         link.style.color = activeTextColor;
+                        console.log('[Sidebar] ✓ Highlighted regular item:', item.label);
                     } else {
                         link.style.backgroundColor = 'transparent';
                         link.style.color = textColor;
@@ -441,6 +457,7 @@
                 }
             }
         }
+        console.log('[Sidebar] updateActiveStates complete');
     }
 
     // Global function accessible from other pages
