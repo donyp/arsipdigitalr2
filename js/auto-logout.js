@@ -168,11 +168,11 @@ class AutoLogoutManager {
                 icon: 'info',
                 confirmButtonText: 'OK'
             }).then(() => {
-                window.location.href = '/';
+                window.location.href = '/login';
             });
         } else {
             alert('Anda telah logout otomatis. Silakan login kembali.');
-            window.location.href = '/';
+            window.location.href = '/login';
         }
     }
 }

@@ -161,7 +161,7 @@ async function logout() {
         currentUser = null;
         
         // Redirect immediately (session invalidation happens server-side)
-        window.location.href = '/index';
+        window.location.href = '/login';
     }
 }
 
