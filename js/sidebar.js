@@ -150,14 +150,14 @@
 
         // Menu item sizes - smaller for upload file pages
         const menuSizes = isUploadFilePage ? {
-            buttonPadding: '0.65rem 0.8rem',
-            buttonMargin: '0.2rem 0.4rem',
-            buttonFontSize: '0.9rem',
-            childPadding: '0.5rem 0.8rem 0.5rem 2rem',
-            childMargin: '0.15rem 0.3rem',
-            childFontSize: '0.75rem',
-            childIconSize: '0.85rem',
-            iconSize: '0.95rem'
+            buttonPadding: '0.5rem 0.6rem',
+            buttonMargin: '0.15rem 0.3rem',
+            buttonFontSize: '0.85rem',
+            childPadding: '0.4rem 0.6rem 0.4rem 1.8rem',
+            childMargin: '0.1rem 0.2rem',
+            childFontSize: '0.7rem',
+            childIconSize: '0.8rem',
+            iconSize: '0.9rem'
         } : {
             buttonPadding: '1rem 1rem',
             buttonMargin: '0.3rem 0.6rem',
