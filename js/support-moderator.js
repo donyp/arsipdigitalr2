@@ -1,12 +1,6 @@
-// ============================================
+﻿// ============================================
 // Support Ticketing - Moderator Dashboard
 // ============================================
-
-// Prevent re-execution on SPA reload
-if (window.__supportModeratorActive) {
-    // Script already loaded, don't execute
-} else {
-    window.__supportModeratorActive = true;
 
 let currentTab = 'active';
 let currentPage = 1;
@@ -453,7 +447,7 @@ function renderTickets(tickets) {
             <tr>
                 <td colspan="7" style="padding: 48px 16px; text-align: center; background: ${bgDefault}; border-bottom: 1px solid ${borderColor};">
                     <div class="empty-state" style="padding: 0; color: ${secondaryTextColor};">
-                        <div class="empty-state-icon">📭</div>
+                        <div class="empty-state-icon">ðŸ“­</div>
                         <div>Tidak ada tiket ditemukan</div>
                     </div>
                 </td>
@@ -664,7 +658,3 @@ function getRelativeTime(dateString) {
         return '-';
     }
 }
-
-} // Close the if (!window.__supportModeratorActive) block
-
-

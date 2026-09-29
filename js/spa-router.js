@@ -146,6 +146,10 @@ class SPARouter {
             // Inject page-specific styles into head
             const pageStyles = pageData.styles || [];
             if (pageStyles.length > 0) {
+                // First, remove any old page-specific styles to avoid conflicts
+                const oldStyles = document.querySelectorAll('style[data-spa-page-style]');
+                oldStyles.forEach(style => style.remove());
+                
                 console.log('[SPA] Injecting', pageStyles.length, 'styles from page');
                 pageStyles.forEach((styleData, index) => {
                     const styleEl = document.createElement('style');
