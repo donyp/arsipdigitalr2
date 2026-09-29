@@ -2,6 +2,10 @@
 // Support Ticketing - Moderator Dashboard
 // ============================================
 
+// Only declare variables once
+if (!window.__supportVarsInitialized) {
+    window.__supportVarsInitialized = true;
+
 let currentTab = 'active';
 let currentPage = 1;
 let currentLimit = 20;
@@ -17,6 +21,8 @@ const CACHE_STATS = 'support_moderator_stats';
 const CACHE_ZONAS = 'support_zonas';
 const CACHE_TIMESTAMP = 'support_cache_timestamp';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+} // End of variable initialization guard
 
 // SPA-aware initialization
 async function initSupportPage() {
@@ -104,6 +110,8 @@ async function initSupportPage() {
 
     console.log('[Support-Moderator] Dashboard initialized - showing cached data if available');
 }
+
+} // End of variable and function initialization guard
 
 // Listen for both direct page load and SPA navigation
 document.addEventListener('DOMContentLoaded', async () => {
@@ -658,3 +666,4 @@ function getRelativeTime(dateString) {
         return '-';
     }
 }
+
