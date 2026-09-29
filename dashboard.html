@@ -969,21 +969,20 @@
         }
 
         /* Prevent scroll and layout shift during loading */
-        body:has(.page-loader:not(.hidden)) {
+        body.loading-state {
             overflow: hidden !important;
             height: 100vh !important;
-            position: fixed !important;
             width: 100% !important;
         }
 
-        html:has(.page-loader:not(.hidden)) {
+        html.loading-state {
             overflow: hidden !important;
         }
 
         /* Blur everything behind the loader */
-        body:has(.page-loader:not(.hidden)) #sidebar,
-        body:has(.page-loader:not(.hidden)) #main-content,
-        body:has(.page-loader:not(.hidden)) #app {
+        body.loading-state #sidebar,
+        body.loading-state #main-content,
+        body.loading-state #app {
             filter: blur(8px);
             transition: filter 0.5s ease-out;
         }

@@ -228,6 +228,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const pageLoader = document.getElementById('pageLoader');
         if (pageLoader) {
             pageLoader.classList.add('hidden');
+            document.body.classList.remove('loading-state');
+            document.documentElement.classList.remove('loading-state');
         }
     }
 });

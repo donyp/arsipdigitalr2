@@ -107,6 +107,8 @@ class SPARouter {
                 loader = document.querySelector('.page-loader');
                 if (loader) {
                     loader.classList.remove('hidden');
+                    document.body.classList.add('loading-state');
+                    document.documentElement.classList.add('loading-state');
                     console.log('[SPA] Loader shown on first load');
                 }
             }
@@ -287,6 +289,8 @@ class SPARouter {
                 });
                 
                 loader.classList.add('hidden');
+                document.body.classList.remove('loading-state');
+                document.documentElement.classList.remove('loading-state');
                 console.log('[SPA] Loader hidden after data loaded');
                 this.isFirstLoad = false;
             }
@@ -302,6 +306,8 @@ class SPARouter {
             const loader = document.querySelector('.page-loader');
             if (loader) {
                 loader.classList.add('hidden');
+                document.body.classList.remove('loading-state');
+                document.documentElement.classList.remove('loading-state');
             }
             this.isFirstLoad = false;
         } finally {
