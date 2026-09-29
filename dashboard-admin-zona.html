@@ -981,6 +981,40 @@
                             <div class="stat-description">Menunggu pembayaran</div>
                         </div>
                     </div>
+
+                    <!-- NEW: Rupiah Stats -->
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #8b5cf6;">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Pengambilan</div>
+                            <p class="stat-value" id="statTotalPengambilan">Rp 0</p>
+                            <div class="stat-description">Total semua invoice</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #059669;">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Pembayaran Lunas</div>
+                            <p class="stat-value" id="statPembayaranLunas">Rp 0</p>
+                            <div class="stat-description">Invoice yang sudah dibayar</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #dc2626;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Belum Lunas</div>
+                            <p class="stat-value" id="statTotalBelumLunas">Rp 0</p>
+                            <div class="stat-description">Piutang pending</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1364,6 +1398,15 @@
                     return sum + nominal;
                 }, 0);
 
+                // Calculate Rupiah stats
+                const lunasAmount = invoices
+                    .filter(inv => inv.status === 'UPLOADED')
+                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+                
+                const belumLunasAmount = invoices
+                    .filter(inv => inv.status === 'PENDING')
+                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+
                 // Format currency
                 const formatter = new Intl.NumberFormat('id-ID', {
                     style: 'currency',
@@ -1376,11 +1419,21 @@
                 const statLunas = document.getElementById('statLunas');
                 const statBelumLunas = document.getElementById('statBelumLunas');
                 const totalInvoiceDisplay = document.getElementById('totalInvoice');
+                
+                // Update Rupiah stats
+                const statTotalPengambilan = document.getElementById('statTotalPengambilan');
+                const statPembayaranLunas = document.getElementById('statPembayaranLunas');
+                const statTotalBelumLunas = document.getElementById('statTotalBelumLunas');
 
                 if (statTotalInvoice) statTotalInvoice.textContent = totalInvoice;
                 if (statLunas) statLunas.textContent = lunas;
                 if (statBelumLunas) statBelumLunas.textContent = belumLunas;
                 if (totalInvoiceDisplay) totalInvoiceDisplay.textContent = formatter.format(totalAmount);
+                
+                // Update NEW Rupiah stats
+                if (statTotalPengambilan) statTotalPengambilan.textContent = formatter.format(totalAmount);
+                if (statPembayaranLunas) statPembayaranLunas.textContent = formatter.format(lunasAmount);
+                if (statTotalBelumLunas) statTotalBelumLunas.textContent = formatter.format(belumLunasAmount);
 
                 // === POPULATE FILTER OPTIONS ===
                 // Extract unique years and months
@@ -1481,6 +1534,15 @@
                     return sum + nominal;
                 }, 0);
 
+                // Calculate Rupiah stats
+                const lunasAmount = invoices
+                    .filter(inv => inv.status === 'UPLOADED')
+                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+                
+                const belumLunasAmount = invoices
+                    .filter(inv => inv.status === 'PENDING')
+                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+
                 // Format currency
                 const formatter = new Intl.NumberFormat('id-ID', {
                     style: 'currency',
@@ -1493,6 +1555,15 @@
                 document.getElementById('statLunas').textContent = lunas;
                 document.getElementById('statBelumLunas').textContent = belumLunas;
                 document.getElementById('totalInvoice').textContent = formatter.format(totalAmount);
+
+                // Update NEW Rupiah stats
+                const statTotalPengambilan = document.getElementById('statTotalPengambilan');
+                const statPembayaranLunas = document.getElementById('statPembayaranLunas');
+                const statTotalBelumLunas = document.getElementById('statTotalBelumLunas');
+                
+                if (statTotalPengambilan) statTotalPengambilan.textContent = formatter.format(totalAmount);
+                if (statPembayaranLunas) statPembayaranLunas.textContent = formatter.format(lunasAmount);
+                if (statTotalBelumLunas) statTotalBelumLunas.textContent = formatter.format(belumLunasAmount);
 
             } catch (err) {
                 console.error('Error updating welcome stats:', err);
@@ -1652,6 +1723,15 @@
                     return sum + nominal;
                 }, 0);
 
+                // Calculate Rupiah stats
+                const lunasAmount = allFilteredInvoices
+                    .filter(inv => inv.status === 'UPLOADED')
+                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+                
+                const belumLunasAmount = allFilteredInvoices
+                    .filter(inv => inv.status === 'PENDING')
+                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+
                 // Format currency
                 const formatter = new Intl.NumberFormat('id-ID', {
                     style: 'currency',
@@ -1664,6 +1744,15 @@
                 document.getElementById('statLunas').textContent = lunas;
                 document.getElementById('statBelumLunas').textContent = belumLunas;
                 document.getElementById('totalInvoice').textContent = formatter.format(totalAmount);
+                
+                // Update NEW Rupiah stats
+                const statTotalPengambilan = document.getElementById('statTotalPengambilan');
+                const statPembayaranLunas = document.getElementById('statPembayaranLunas');
+                const statTotalBelumLunas = document.getElementById('statTotalBelumLunas');
+                
+                if (statTotalPengambilan) statTotalPengambilan.textContent = formatter.format(totalAmount);
+                if (statPembayaranLunas) statPembayaranLunas.textContent = formatter.format(lunasAmount);
+                if (statTotalBelumLunas) statTotalBelumLunas.textContent = formatter.format(belumLunasAmount);
                 
                 console.log('[WelcomeStats] Updated with ALL filtered - Total count: ' + totalInvoice + ', Total Rp: ' + formatter.format(totalAmount));
             } catch (err) {
