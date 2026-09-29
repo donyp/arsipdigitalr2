@@ -128,6 +128,20 @@ function toggleInlineDetail(event, id) {
 // ---- Initialize Dashboard ----
 document.addEventListener('DOMContentLoaded', async () => {
     
+    // Force hide loader immediately on dashboard load
+    const pageLoader = document.getElementById('pageLoader');
+    if (pageLoader) {
+        pageLoader.classList.add('hidden');
+        document.body.classList.remove('loading-state');
+        document.documentElement.classList.remove('loading-state');
+        
+        // Remove from DOM after animation
+        setTimeout(() => {
+            if (pageLoader && pageLoader.parentNode) {
+                pageLoader.remove();
+            }
+        }, 500);
+    }
     
     const user = await initAuth();
     if (!user) {
@@ -230,6 +244,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             pageLoader.classList.add('hidden');
             document.body.classList.remove('loading-state');
             document.documentElement.classList.remove('loading-state');
+            
+            // Remove from DOM after animation completes
+            setTimeout(() => {
+                if (pageLoader && pageLoader.parentNode) {
+                    pageLoader.remove();
+                }
+            }, 500);
         }
     }
 });

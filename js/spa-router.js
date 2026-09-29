@@ -291,6 +291,14 @@ class SPARouter {
                 loader.classList.add('hidden');
                 document.body.classList.remove('loading-state');
                 document.documentElement.classList.remove('loading-state');
+                
+                // Remove loader from DOM entirely after animation completes
+                setTimeout(() => {
+                    if (loader && loader.parentNode) {
+                        loader.remove();
+                    }
+                }, 500);
+                
                 console.log('[SPA] Loader hidden after data loaded');
                 this.isFirstLoad = false;
             }
@@ -308,6 +316,13 @@ class SPARouter {
                 loader.classList.add('hidden');
                 document.body.classList.remove('loading-state');
                 document.documentElement.classList.remove('loading-state');
+                
+                // Remove loader from DOM after animation
+                setTimeout(() => {
+                    if (loader && loader.parentNode) {
+                        loader.remove();
+                    }
+                }, 500);
             }
             this.isFirstLoad = false;
         } finally {
