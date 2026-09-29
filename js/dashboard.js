@@ -3563,15 +3563,34 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     
     // Count statuses based on ACTUAL file existence (isComplete flag)
     // isComplete is set after checking if all required files exist on remote storage
-    const lunasCount = invoices.filter(r => {
+    const lunasInvoices = invoices.filter(r => {
         // Lunas = all required files exist (isComplete = true)
         return r.isComplete === true;
-    }).length;
+    });
     
-    const belumLunasCount = invoices.filter(r => {
+    const belumLunasInvoices = invoices.filter(r => {
         // Belum Lunas = not all files exist yet
         return r.isComplete !== true;
-    }).length;
+    });
+    
+    const lunasCount = lunasInvoices.length;
+    const belumLunasCount = belumLunasInvoices.length;
+    
+    // Calculate totals in Rupiah
+    let totalAmount = 0;
+    let lunasAmount = 0;
+    let belumLunasAmount = 0;
+    
+    invoices.forEach(inv => {
+        const nominal = parseFloat(inv.nominal) || 0;
+        totalAmount += nominal;
+        
+        if (inv.isComplete === true) {
+            lunasAmount += nominal;
+        } else {
+            belumLunasAmount += nominal;
+        }
+    });
     
     // Calculate final counts
     // If we're showing only a subset (pagination), we need to extrapolate
@@ -3584,7 +3603,10 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     const elements = {
         total: document.getElementById('statTotal'),
         uploaded: document.getElementById('statUploaded'),
-        pending: document.getElementById('statPending')
+        pending: document.getElementById('statPending'),
+        totalAmount: document.getElementById('statTotalAmount'),
+        lunasAmount: document.getElementById('statLunasAmount'),
+        pendingAmount: document.getElementById('statPendingAmount')
     };
     
     
@@ -3592,6 +3614,11 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     if (elements.total) elements.total.textContent = totalCount;
     if (elements.uploaded) elements.uploaded.textContent = finalLunasCount;    // Renamed to Lunas
     if (elements.pending) elements.pending.textContent = finalBelumLunasCount;  // Renamed to Belum Lunas
+    
+    // Update Rupiah stats
+    if (elements.totalAmount) elements.totalAmount.textContent = formatCurrency(totalAmount);
+    if (elements.lunasAmount) elements.lunasAmount.textContent = formatCurrency(lunasAmount);
+    if (elements.pendingAmount) elements.pendingAmount.textContent = formatCurrency(belumLunasAmount);
     
     
     
