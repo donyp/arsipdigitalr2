@@ -362,16 +362,19 @@
 
         const { textColor = '#2d3748', activeTextColor = '#1e40af', activeBgColor = '#eff6ff', hoverBgColor = '#f7fafc' } = sidebarColors;
 
+        // Normalize pathname for comparison
+        const normalizedPath = pathname.replace('.html', '').replace(/\/$/, '').toLowerCase();
+
         for (const item of menuItems) {
             if (item.isDropdown) {
                 const btn = document.getElementById(item.id + '-btn');
                 const container = document.getElementById(item.id);
                 if (!btn || !container) continue;
 
+                // Check if any child matches current path
                 const itemIsActive = item.children.some(child => {
-                    const childPath = child.href.replace('.html', '');
-                    const currentPath = pathname.replace('.html', '').split('/').pop();
-                    return currentPath === childPath.split('/').pop() || pathname === child.href;
+                    const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
+                    return normalizedPath === childPath || normalizedPath.endsWith(childPath);
                 });
 
                 // Update button color and state
@@ -398,9 +401,8 @@
                 for (const child of item.children) {
                     const childLink = sidebar.querySelector(`a[href="${child.href}"]`);
                     if (childLink) {
-                        const childPath = child.href.replace('.html', '');
-                        const currentPath = pathname.replace('.html', '').split('/').pop();
-                        const isChildActive = currentPath === childPath.split('/').pop() || pathname === child.href;
+                        const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
+                        const isChildActive = normalizedPath === childPath || normalizedPath.endsWith(childPath);
                         
                         if (isChildActive) {
                             childLink.style.backgroundColor = activeBgColor;
@@ -415,7 +417,9 @@
                 // Regular menu item
                 const link = sidebar.querySelector(`a[href="${item.href}"]`);
                 if (link) {
-                    const isActive = pathname.includes(item.href.replace('.html', '').replace('/', ''));
+                    const itemPath = item.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
+                    const isActive = normalizedPath === itemPath || normalizedPath.endsWith(itemPath);
+                    
                     if (isActive) {
                         link.style.backgroundColor = activeBgColor;
                         link.style.color = activeTextColor;
