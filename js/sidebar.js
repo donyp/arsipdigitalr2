@@ -441,10 +441,9 @@
 
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-            // Only use marginLeft, don't set width to avoid calc() overflow issues
             mainContent.style.marginLeft = sidebarWidth;
-            // Remove explicit width - let it flow naturally from margin
-            mainContent.style.width = 'auto';
+            mainContent.style.width = '100%';
+            mainContent.style.boxSizing = 'border-box';
             mainContent.style.transition = 'all 0.4s ease';
         }
 
