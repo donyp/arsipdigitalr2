@@ -319,7 +319,7 @@
 
         // Use different height strategy based on page type
         const sidebarHeight = isUploadFilePage 
-            ? `min-height: 110vh;`
+            ? `min-height: 108vh;`
             : `min-height: 148vh;`;
 
         sidebar.style.cssText = `
@@ -370,7 +370,7 @@
                 padding: 1rem 0;
                 scroll-behavior: smooth;
                 transition: background-color 0.4s ease;
-                ${isUploadFilePage ? 'max-height: calc(110vh - 180px);' : ''}
+                ${isUploadFilePage ? 'max-height: calc(108vh - 180px);' : ''}
             ">
                 ${navHTML}
             </nav>
