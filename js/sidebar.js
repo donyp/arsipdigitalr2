@@ -360,10 +360,12 @@
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
 
-        const { textColor = '#2d3748', activeTextColor = '#1e40af', activeBgColor = '#eff6ff', hoverBgColor = '#f7fafc' } = sidebarColors;
+        const { textColor = '#2d3748', activeTextColor = '#1e40af', activeBgColor = '#eff6ff' } = sidebarColors;
 
         // Normalize pathname for comparison
         const normalizedPath = pathname.replace('.html', '').replace(/\/$/, '').toLowerCase();
+        
+        console.log('[Sidebar] updateActiveStates called with path:', normalizedPath);
 
         for (const item of menuItems) {
             if (item.isDropdown) {
@@ -372,10 +374,14 @@
                 if (!btn || !container) continue;
 
                 // Check if any child matches current path
-                const itemIsActive = item.children.some(child => {
+                let itemIsActive = false;
+                for (const child of item.children) {
                     const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
-                    return normalizedPath === childPath || normalizedPath.endsWith(childPath);
-                });
+                    if (normalizedPath === childPath) {
+                        itemIsActive = true;
+                        break;
+                    }
+                }
 
                 // Update button color and state
                 if (itemIsActive) {
@@ -383,9 +389,12 @@
                     btn.style.color = activeTextColor;
                     const arrow = btn.querySelector('.dropdown-arrow');
                     if (arrow) arrow.style.transform = 'rotate(180deg)';
+                    // Auto-open dropdown when child is active
                     container.style.display = 'block';
                     container.style.opacity = '1';
                     container.style.maxHeight = 'none';
+                    container.style.overflow = 'visible';
+                    btn.setAttribute('data-expanded', 'true');
                 } else {
                     btn.style.backgroundColor = 'transparent';
                     btn.style.color = textColor;
@@ -394,15 +403,15 @@
                     container.style.display = 'none';
                     container.style.opacity = '0';
                     container.style.maxHeight = '0px';
+                    btn.setAttribute('data-expanded', 'false');
                 }
-                btn.setAttribute('data-expanded', itemIsActive ? 'true' : 'false');
 
                 // Highlight active child item
                 for (const child of item.children) {
                     const childLink = sidebar.querySelector(`a[href="${child.href}"]`);
                     if (childLink) {
                         const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
-                        const isChildActive = normalizedPath === childPath || normalizedPath.endsWith(childPath);
+                        const isChildActive = normalizedPath === childPath;
                         
                         if (isChildActive) {
                             childLink.style.backgroundColor = activeBgColor;
@@ -418,7 +427,9 @@
                 const link = sidebar.querySelector(`a[href="${item.href}"]`);
                 if (link) {
                     const itemPath = item.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
-                    const isActive = normalizedPath === itemPath || normalizedPath.endsWith(itemPath);
+                    const isActive = normalizedPath === itemPath;
+                    
+                    console.log('[Sidebar] Checking item:', itemPath, 'vs', normalizedPath, '=', isActive);
                     
                     if (isActive) {
                         link.style.backgroundColor = activeBgColor;
