@@ -319,7 +319,7 @@
 
         // Use different height strategy based on page type
         const sidebarHeight = isUploadFilePage 
-            ? `min-height: 148vh;`
+            ? `min-height: 130vh;`
             : `min-height: 148vh;`;
 
         sidebar.style.cssText = `
