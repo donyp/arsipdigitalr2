@@ -442,7 +442,7 @@
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
             mainContent.style.marginLeft = sidebarWidth;
-            mainContent.style.width = `calc(100vw - ${sidebarWidth})`;
+            mainContent.style.width = '100%';
             mainContent.style.boxSizing = 'border-box';
             mainContent.style.transition = 'all 0.4s ease';
         }
