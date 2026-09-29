@@ -206,14 +206,14 @@
             childIconSize: '0.8rem',
             iconSize: '0.9rem'
         } : {
-            buttonPadding: '1rem 1rem',
-            buttonMargin: '0.3rem 0.6rem',
-            buttonFontSize: '1rem',
-            childPadding: '0.7rem 1rem 0.7rem 4rem',
-            childMargin: '0.25rem 0.4rem',
-            childFontSize: '0.85rem',
-            childIconSize: '0.95rem',
-            iconSize: '1.1rem'
+            buttonPadding: '1.2rem 1.2rem',
+            buttonMargin: '0.4rem 0.8rem',
+            buttonFontSize: '1.1rem',
+            childPadding: '0.9rem 1.2rem 0.9rem 4.5rem',
+            childMargin: '0.3rem 0.5rem',
+            childFontSize: '0.95rem',
+            childIconSize: '1.05rem',
+            iconSize: '1.3rem'
         };
 
         // Recalculate colors based on current dark mode
