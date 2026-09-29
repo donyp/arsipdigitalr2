@@ -5,33 +5,49 @@
 (function() {
     console.log('[Sidebar] Initializing v5.6 - Persistent & Consistent...');
     
-    // Add scrollbar styling for sidebar
+    // Add scrollbar styling for sidebar - both light and dark mode
     const scrollbarStyle = document.createElement('style');
     scrollbarStyle.textContent = `
-        #sidebar::-webkit-scrollbar {
+        /* Light mode scrollbar */
+        #sidebar::-webkit-scrollbar,
+        #sidebar nav::-webkit-scrollbar {
             width: 8px;
         }
         
-        #sidebar::-webkit-scrollbar-track {
+        #sidebar::-webkit-scrollbar-track,
+        #sidebar nav::-webkit-scrollbar-track {
             background: transparent;
         }
         
-        #sidebar::-webkit-scrollbar-thumb {
+        #sidebar::-webkit-scrollbar-thumb,
+        #sidebar nav::-webkit-scrollbar-thumb {
             background: rgba(100, 120, 140, 0.6);
             border-radius: 4px;
+            transition: background 0.3s ease;
         }
         
-        #sidebar::-webkit-scrollbar-thumb:hover {
+        #sidebar::-webkit-scrollbar-thumb:hover,
+        #sidebar nav::-webkit-scrollbar-thumb:hover {
             background: rgba(100, 120, 140, 0.8);
         }
         
+        /* Dark mode scrollbar - higher specificity */
         html[data-dark-mode="true"] #sidebar::-webkit-scrollbar-thumb {
-            background: rgba(75, 85, 99, 0.6);
+            background: rgba(75, 85, 99, 0.6) !important;
+            border-radius: 4px;
+        }
+        
+        html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.6) !important;
             border-radius: 4px;
         }
         
         html[data-dark-mode="true"] #sidebar::-webkit-scrollbar-thumb:hover {
-            background: rgba(75, 85, 99, 0.8);
+            background: rgba(75, 85, 99, 0.8) !important;
+        }
+        
+        html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb:hover {
+            background: rgba(75, 85, 99, 0.8) !important;
         }
     `;
     document.head.appendChild(scrollbarStyle);
