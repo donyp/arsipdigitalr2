@@ -390,6 +390,45 @@
                 flex: 1;
             }
         }
+        
+        /* SweetAlert2 Dark Mode */
+        html[data-dark-mode="true"] .swal2-popup {
+            background: #1e293b !important;
+            color: #f1f5f9 !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-title {
+            color: #f1f5f9 !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-html-container {
+            color: #cbd5e1 !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-actions button {
+            background: #3b82f6 !important;
+            color: #ffffff !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-actions button:hover {
+            background: #2563eb !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-icon {
+            border-color: #3b82f6 !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-icon.swal2-success {
+            border-color: #10b981 !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-icon.swal2-success [class*='success-line'] {
+            background: #10b981 !important;
+        }
+        
+        html[data-dark-mode="true"] .swal2-icon.swal2-error {
+            border-color: #ef4444 !important;
+        }
     </style>
 </head>
 
@@ -403,7 +442,7 @@
                 <h1 class="left-heading">Sistem Arsip Digital</h1>
 
             </div>
-            <div class="left-footer">� 2026 Anka Aksesoris. All rights reserved.</div>
+            <div class="left-footer">� 2026 Anka Aksesoris. All rights reserved.</div>
         </div>
 
         <!-- Right Side -->
@@ -591,9 +630,9 @@
                 if (result.user?.role === 'admin_zona') {
                     dashboardPage = '/zona/dashboard';
                 } else if (result.user?.role === 'super_admin' || result.user?.role === 'moderator') {
-                    dashboardPage = '/dashboard.html';
+                    dashboardPage = '/dashboard';
                 } else {
-                    dashboardPage = '/dashboard.html';
+                    dashboardPage = '/dashboard';
                 }
                 
                 console.log('[Login] User role:', result.user?.role, '? Redirecting to:', dashboardPage);
@@ -671,7 +710,7 @@
             const isDark = localStorage.getItem('dark_mode_enabled') === 'true';
             const icon = document.getElementById('theme-icon');
             if (icon) {
-                icon.textContent = isDark ? '??' : '??';
+                icon.textContent = isDark ? '☀️' : '🌙';
             }
         }
         
