@@ -175,10 +175,10 @@
                         <a href="${child.href}" onclick="event.stopPropagation();" style="
                             display: flex;
                             align-items: center;
-                            padding: 0.4rem 0.8rem 0.4rem 2.2rem;
-                            margin: 0.15rem 0.4rem;
+                            padding: 0.7rem 1rem 0.7rem 2.5rem;
+                            margin: 0.25rem 0.4rem;
                             border-radius: 0.3rem;
-                            font-size: 0.7rem;
+                            font-size: 0.85rem;
                             background: ${childBg};
                             color: ${childText};
                             font-weight: ${childWeight};
@@ -187,7 +187,7 @@
                             letter-spacing: 0.01em;
                             will-change: background-color, color;
                         " onmouseover="this.style.backgroundColor='${hoverBgColor}'; this.style.color='${activeTextColor}'; this.style.transform='translateX(4px)'" onmouseout="this.style.backgroundColor='${childBg}'; this.style.color='${childText}'; this.style.transform='translateX(0)'">
-                            <span style="margin-right: 0.4rem; font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
+                            <span style="margin-right: 0.6rem; font-size: 0.95rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
                         </a>
                     `;
                 }
