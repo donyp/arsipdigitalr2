@@ -551,6 +551,8 @@
 
     // Global function accessible from other pages
     window.updateSidebarActiveState = function(pathname) {
+        console.log('[Sidebar] updateSidebarActiveState called with pathname:', pathname);
+        
         const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
         const isUploadFilePage = uploadFilePages.some(page => {
             const normalizedPage = page.toLowerCase();
@@ -572,6 +574,8 @@
                 inject();
                 return;
             }
+        } else {
+            console.log('[Sidebar] Sidebar element not found');
         }
 
         // Otherwise just update active states
