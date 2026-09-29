@@ -360,7 +360,7 @@
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
 
-        const { textColor = '#2d3748', activeTextColor = '#1e40af' } = sidebarColors;
+        const { textColor = '#2d3748', activeTextColor = '#1e40af', activeBgColor = '#eff6ff', hoverBgColor = '#f7fafc' } = sidebarColors;
 
         for (const item of menuItems) {
             if (item.isDropdown) {
@@ -376,6 +376,7 @@
 
                 // Update button color and state
                 if (itemIsActive) {
+                    btn.style.backgroundColor = activeBgColor;
                     btn.style.color = activeTextColor;
                     const arrow = btn.querySelector('.dropdown-arrow');
                     if (arrow) arrow.style.transform = 'rotate(180deg)';
@@ -383,6 +384,7 @@
                     container.style.opacity = '1';
                     container.style.maxHeight = 'none';
                 } else {
+                    btn.style.backgroundColor = 'transparent';
                     btn.style.color = textColor;
                     const arrow = btn.querySelector('.dropdown-arrow');
                     if (arrow) arrow.style.transform = 'rotate(0deg)';
@@ -391,6 +393,37 @@
                     container.style.maxHeight = '0px';
                 }
                 btn.setAttribute('data-expanded', itemIsActive ? 'true' : 'false');
+
+                // Highlight active child item
+                for (const child of item.children) {
+                    const childLink = sidebar.querySelector(`a[href="${child.href}"]`);
+                    if (childLink) {
+                        const childPath = child.href.replace('.html', '');
+                        const currentPath = pathname.replace('.html', '').split('/').pop();
+                        const isChildActive = currentPath === childPath.split('/').pop() || pathname === child.href;
+                        
+                        if (isChildActive) {
+                            childLink.style.backgroundColor = activeBgColor;
+                            childLink.style.color = activeTextColor;
+                        } else {
+                            childLink.style.backgroundColor = 'transparent';
+                            childLink.style.color = textColor;
+                        }
+                    }
+                }
+            } else {
+                // Regular menu item
+                const link = sidebar.querySelector(`a[href="${item.href}"]`);
+                if (link) {
+                    const isActive = pathname.includes(item.href.replace('.html', '').replace('/', ''));
+                    if (isActive) {
+                        link.style.backgroundColor = activeBgColor;
+                        link.style.color = activeTextColor;
+                    } else {
+                        link.style.backgroundColor = 'transparent';
+                        link.style.color = textColor;
+                    }
+                }
             }
         }
     }
