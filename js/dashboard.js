@@ -134,13 +134,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         pageLoader.classList.add('hidden');
         document.body.classList.remove('loading-state');
         document.documentElement.classList.remove('loading-state');
-        
-        // Remove from DOM after animation
-        setTimeout(() => {
-            if (pageLoader && pageLoader.parentNode) {
-                pageLoader.remove();
-            }
-        }, 500);
     }
     
     const user = await initAuth();
@@ -172,7 +165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // await loadArchives(); // DISABLED
     
     
-    loadNotifications();
+    await loadNotifications();
     // await loadBroadcast(); // Removed: now handled globally by sidebar.js
 
     await loadStorageStats();
@@ -190,7 +183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (hasPermission('manage_system') || user.role === 'moderator' || user.role === 'super_admin') {
         document.getElementById('maintenance-btn')?.classList.replace('hidden', 'md:flex');
         document.getElementById('btn-manage-broadcast')?.classList.remove('hidden');
-        loadMaintenanceStatus();
+        await loadMaintenanceStatus();
     } else {
         // Explicitly remove restricted elements for other roles
         document.getElementById('maintenance-btn')?.remove();
@@ -251,6 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     pageLoader.remove();
                 }
             }, 500);
+        }
         }
     }
 });
