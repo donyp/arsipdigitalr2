@@ -477,8 +477,11 @@
 
     // Global function accessible from other pages
     window.updateSidebarActiveState = function(pathname) {
+        console.log('🔴 GLOBAL updateSidebarActiveState called with pathname:', pathname);
+        console.log('🔴 updateActiveStates function exists:', typeof updateActiveStates === 'function');
         updateActiveStates(pathname);
         sessionStorage.setItem('sidebar_initialized', 'true');
+        console.log('🔴 updateSidebarActiveState completed');
     };
 
 })();
