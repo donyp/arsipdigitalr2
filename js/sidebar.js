@@ -370,6 +370,7 @@
                 padding: 1rem 0;
                 scroll-behavior: smooth;
                 transition: background-color 0.4s ease;
+                ${isUploadFilePage ? 'max-height: calc(50vh - 180px);' : ''}
             ">
                 ${navHTML}
             </nav>
