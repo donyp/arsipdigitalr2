@@ -3582,7 +3582,7 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     let belumLunasAmount = 0;
     
     invoices.forEach(inv => {
-        const nominal = parseFloat(inv.nominal) || 0;
+        const nominal = parseFloat(inv.total_jumlah_jual) || 0;
         totalAmount += nominal;
         
         if (inv.isComplete === true) {
