@@ -466,36 +466,7 @@
     };
 
     // Function to update active states without full re-render
-    // Check if sidebar needs to be re-injected (page type changed)
-function updateSidebarActiveState(pathname) {
-    const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
-    const isUploadFilePage = uploadFilePages.some(page => {
-        const normalizedPage = page.toLowerCase();
-        const normalizedPath = pathname.toLowerCase();
-        return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
-    });
-
-    // Check current sidebar width
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        const currentWidth = sidebar.style.width;
-        const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
-        
-        console.log('[Sidebar] Checking page type - Path:', pathname, 'IsUpload:', isUploadFilePage, 'CurrentWidth:', currentWidth, 'ExpectedWidth:', expectedWidth);
-        
-        // If width doesn't match, we need to re-inject
-        if (currentWidth !== expectedWidth) {
-            console.log('[Sidebar] Page type changed, re-injecting sidebar');
-            inject();
-            return;
-        }
-    }
-
-    // Otherwise just update active states
-    updateActiveStates(pathname);
-}
-
-function updateActiveStates(pathname) {
+    function updateActiveStates(pathname) {
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
 
@@ -580,6 +551,30 @@ function updateActiveStates(pathname) {
 
     // Global function accessible from other pages
     window.updateSidebarActiveState = function(pathname) {
+        const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
+        const isUploadFilePage = uploadFilePages.some(page => {
+            const normalizedPage = page.toLowerCase();
+            const normalizedPath = pathname.toLowerCase();
+            return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
+        });
+
+        // Check current sidebar width
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            const currentWidth = sidebar.style.width;
+            const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
+            
+            console.log('[Sidebar] Checking page type - Path:', pathname, 'IsUpload:', isUploadFilePage, 'CurrentWidth:', currentWidth, 'ExpectedWidth:', expectedWidth);
+            
+            // If width doesn't match, we need to re-inject
+            if (currentWidth !== expectedWidth) {
+                console.log('[Sidebar] Page type changed, re-injecting sidebar');
+                inject();
+                return;
+            }
+        }
+
+        // Otherwise just update active states
         updateActiveStates(pathname);
         sessionStorage.setItem('sidebar_initialized', 'true');
     };
