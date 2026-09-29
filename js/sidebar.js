@@ -293,7 +293,7 @@
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
         // Use smaller width for upload file pages, normal width for others
-        const sidebarWidth = isUploadFilePage ? '16rem' : '20rem';
+        const sidebarWidth = isUploadFilePage ? '14rem' : '20rem';
 
         sidebar.style.cssText = `
             position: fixed;
