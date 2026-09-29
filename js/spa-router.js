@@ -60,15 +60,11 @@ class SPARouter {
         if (!link) return;
 
         const href = link.getAttribute('href');
-        console.log('[SPA Router] Link clicked:', href);
         
         // Check if it's a valid SPA route
         if (this.isValidRoute(href)) {
-            console.log('[SPA Router] ✓ Valid SPA route, preventing default and navigating');
             e.preventDefault();
             this.navigate(href);
-        } else {
-            console.log('[SPA Router] ✗ NOT a valid SPA route, allowing default navigation');
         }
     }
 
@@ -78,10 +74,8 @@ class SPARouter {
     }
 
     navigate(path) {
-        console.log('[SPA Router] navigate() called with path:', path);
         // Update URL without reload
         window.history.pushState({ page: path }, '', path);
-        console.log('[SPA Router] URL pushed, calling loadPage...');
         this.loadPage(path, true);
     }
 
@@ -243,12 +237,8 @@ class SPARouter {
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             // Update active sidebar state
-            console.log('[SPA Router] Calling updateSidebarActiveState with path:', path);
             if (window.updateSidebarActiveState) {
-                console.log('[SPA Router] updateSidebarActiveState function found, calling it...');
                 window.updateSidebarActiveState(path);
-            } else {
-                console.warn('[SPA Router] updateSidebarActiveState function NOT found!');
             }
 
             // Update current page

@@ -358,56 +358,28 @@
     // Function to update active states without full re-render
     function updateActiveStates(pathname) {
         const sidebar = document.getElementById('sidebar');
-        if (!sidebar) {
-            console.error('[Sidebar] ERROR: sidebar element not found!');
-            return;
-        }
+        if (!sidebar) return;
 
         const { textColor = '#2d3748', activeTextColor = '#1e40af', activeBgColor = '#eff6ff' } = sidebarColors;
 
         // Normalize pathname for comparison
         const normalizedPath = pathname.replace('.html', '').replace(/\/$/, '').toLowerCase();
-        
-        console.log('='.repeat(60));
-        console.log('[Sidebar] *** updateActiveStates CALLED ***');
-        console.log('[Sidebar] Input pathname:', JSON.stringify(pathname));
-        console.log('[Sidebar] Normalized path:', JSON.stringify(normalizedPath));
-        console.log('[Sidebar] Menu items count:', menuItems.length);
-        console.log('[Sidebar] menuItems:', JSON.stringify(menuItems.map(m => ({
-            id: m.id,
-            label: m.label,
-            href: m.href,
-            isDropdown: m.isDropdown,
-            childrenCount: m.children ? m.children.length : 0,
-            children: m.children ? m.children.map(c => ({ label: c.label, href: c.href })) : []
-        }))));
 
         for (const item of menuItems) {
             if (item.isDropdown) {
                 const btn = document.getElementById(item.id + '-btn');
                 const container = document.getElementById(item.id);
-                if (!btn || !container) {
-                    console.warn('[Sidebar] ⚠️ Dropdown button/container not found for:', item.label, '(ID:', item.id + ')');
-                    continue;
-                }
+                if (!btn || !container) continue;
 
                 // Check if any child matches current path
                 let itemIsActive = false;
-                console.log('[Sidebar] Checking dropdown:', item.label, '- checking', item.children.length, 'children');
-                
                 for (const child of item.children) {
                     const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
-                    const isMatch = normalizedPath === childPath;
-                    console.log('[Sidebar]   ├─ Child:', child.label, '| href:', child.href, '| normalized:', childPath, '| MATCH:', isMatch);
-                    
-                    if (isMatch) {
+                    if (normalizedPath === childPath) {
                         itemIsActive = true;
-                        console.log('[Sidebar] ✓✓✓ FOUND ACTIVE CHILD:', child.label, 'in dropdown:', item.label);
                         break;
                     }
                 }
-
-                console.log('[Sidebar] └─ Dropdown', item.label, '- RESULT isActive:', itemIsActive);
 
                 // Update button color and state
                 if (itemIsActive) {
@@ -421,7 +393,6 @@
                     container.style.maxHeight = 'none';
                     container.style.overflow = 'visible';
                     btn.setAttribute('data-expanded', 'true');
-                    console.log('[Sidebar] ✓ HIGHLIGHTED and OPENED dropdown:', item.label);
                 } else {
                     btn.style.backgroundColor = 'transparent';
                     btn.style.color = textColor;
@@ -431,7 +402,6 @@
                     container.style.opacity = '0';
                     container.style.maxHeight = '0px';
                     btn.setAttribute('data-expanded', 'false');
-                    console.log('[Sidebar] ✓ CLOSED dropdown:', item.label);
                 }
 
                 // Highlight active child item
@@ -444,7 +414,6 @@
                         if (isChildActive) {
                             childLink.style.backgroundColor = activeBgColor;
                             childLink.style.color = activeTextColor;
-                            console.log('[Sidebar] ✓ HIGHLIGHTED child link:', child.label);
                         } else {
                             childLink.style.backgroundColor = 'transparent';
                             childLink.style.color = textColor;
@@ -458,12 +427,9 @@
                     const itemPath = item.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
                     const isActive = normalizedPath === itemPath;
                     
-                    console.log('[Sidebar] Regular item:', item.label, '| href:', item.href, '| itemPath:', itemPath, '| isActive:', isActive);
-                    
                     if (isActive) {
                         link.style.backgroundColor = activeBgColor;
                         link.style.color = activeTextColor;
-                        console.log('[Sidebar] ✓ HIGHLIGHTED regular item:', item.label);
                     } else {
                         link.style.backgroundColor = 'transparent';
                         link.style.color = textColor;
@@ -471,17 +437,12 @@
                 }
             }
         }
-        console.log('[Sidebar] *** updateActiveStates COMPLETE ***');
-        console.log('='.repeat(60));
     }
 
     // Global function accessible from other pages
     window.updateSidebarActiveState = function(pathname) {
-        console.log('🔴 GLOBAL updateSidebarActiveState called with pathname:', pathname);
-        console.log('🔴 updateActiveStates function exists:', typeof updateActiveStates === 'function');
         updateActiveStates(pathname);
         sessionStorage.setItem('sidebar_initialized', 'true');
-        console.log('🔴 updateSidebarActiveState completed');
     };
 
 })();
