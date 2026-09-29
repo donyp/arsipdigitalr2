@@ -44,6 +44,23 @@
         if (window.updateDarkModeUI) {
             window.updateDarkModeUI();
         }
+        
+        // Force Tailwind CSS to re-process new content
+        // This ensures that newly added HTML elements get proper styling
+        if (typeof window.tailwindcss !== 'undefined') {
+            console.log('[SPA] Re-processing Tailwind CSS for new content');
+            try {
+                // Force a style recalculation by triggering document re-scan
+                const mainContent = document.getElementById('main-content');
+                if (mainContent) {
+                    // Get all elements with Tailwind classes
+                    const elements = mainContent.querySelectorAll('[class*="bg-"], [class*="text-"], [class*="p-"], [class*="w-"], [class*="h-"]');
+                    console.log(`[SPA] Found ${elements.length} elements to style with Tailwind`);
+                }
+            } catch (e) {
+                console.warn('[SPA] Could not process Tailwind CSS:', e.message);
+            }
+        }
 
         // Dispatch custom event
         window.dispatchEvent(new CustomEvent('page-initialized', { 

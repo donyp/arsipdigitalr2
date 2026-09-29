@@ -142,6 +142,20 @@ class SPARouter {
             mainContent.innerHTML = htmlContent;
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
+            
+            // Inject page-specific styles into head
+            const pageStyles = pageData.styles || [];
+            if (pageStyles.length > 0) {
+                console.log('[SPA] Injecting', pageStyles.length, 'styles from page');
+                pageStyles.forEach((styleData, index) => {
+                    const styleEl = document.createElement('style');
+                    styleEl.textContent = styleData.textContent;
+                    styleEl.setAttribute('data-spa-page-style', 'true');
+                    styleEl.setAttribute('data-page', path);
+                    document.head.appendChild(styleEl);
+                    console.log('[SPA] Injected style', index + 1);
+                });
+            }
 
             // Separate inline scripts from external scripts in pageScripts array
             const inlineScripts = pageScripts.filter(s => !s.src);
@@ -342,12 +356,21 @@ class SPARouter {
                 type: script.type
             }));
 
-            console.log('[SPA] Found ' + scriptData.length + ' scripts in page:', url);
+            // Also extract styles from head (for pages with custom styling)
+            const allStyles = Array.from(doc.querySelectorAll('style'));
+            const styleData = allStyles.map(style => ({
+                textContent: style.textContent,
+                type: style.type || 'text/css'
+            }));
 
-            // Return both HTML and script data
+            console.log('[SPA] Found ' + scriptData.length + ' scripts in page:', url);
+            console.log('[SPA] Found ' + styleData.length + ' styles in page:', url);
+
+            // Return both HTML, script data, and style data
             return {
                 html: mainContent.innerHTML,
-                scripts: scriptData
+                scripts: scriptData,
+                styles: styleData
             };
         } catch (error) {
             console.error('[SPA] Fetch error:', error);
