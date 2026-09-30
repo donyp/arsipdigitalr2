@@ -105,17 +105,6 @@
             overflow: hidden;
         }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 100px;
-            height: 100px;
-            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
         /* TAB STYLING - MODERN */
         .tab-container {
             background: var(--color-bg-secondary);
@@ -186,6 +175,11 @@
         html[data-dark-mode="true"] .message-box {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
             border-left-color: #10b981;
+            color: var(--color-text-primary) !important;
+        }
+
+        html[data-dark-mode="true"] .message-box * {
+            color: var(--color-text-primary) !important;
         }
 
         /* BUTTONS - MODERN */
