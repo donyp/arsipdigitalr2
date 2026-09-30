@@ -2634,29 +2634,33 @@
                 }
                 
                 // Build menu HTML with modern design
-                let menuHTML = `
-                <div style="position: relative;">
-                    <button onclick="Swal.close()" style="
-                        position: absolute;
-                        top: -35px;
-                        right: 0;
-                        background: none;
-                        border: none;
-                        font-size: 24px;
-                        cursor: pointer;
-                        color: ${isDarkMode ? '#94a3b8' : '#95a5a6'};
-                        padding: 0;
-                        width: 32px;
-                        height: 32px;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        transition: all 0.2s;
-                    " onmouseover="this.style.color='#e74c3c'; this.style.transform='rotate(90deg)';" onmouseout="this.style.color='${isDarkMode ? '#94a3b8' : '#95a5a6'}'; this.style.transform='rotate(0deg)';">
-                        <i class="fas fa-times"></i>
-                    </button>
-                    <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 4px 0;">
+                let menuHTML = '<div style="position: relative;">';
                 
+                // Add close button
+                menuHTML += '<button id="download-close-btn" style="' +
+                    'position: absolute;' +
+                    'top: -35px;' +
+                    'right: 0;' +
+                    'background: none;' +
+                    'border: none;' +
+                    'font-size: 24px;' +
+                    'cursor: pointer;' +
+                    'color: ' + (isDarkMode ? '#94a3b8' : '#95a5a6') + ';' +
+                    'padding: 0;' +
+                    'width: 32px;' +
+                    'height: 32px;' +
+                    'display: flex;' +
+                    'align-items: center;' +
+                    'justify-content: center;' +
+                    'transition: all 0.2s;' +
+                    '">' +
+                    '<i class="fas fa-times"></i>' +
+                    '</button>';
+                
+                // Start content container
+                menuHTML += '<div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 4px 0;">';
+                
+                let hasFiles = false;
                 
                 // Download invoice button if exists
                 if (invoice.invoice_pdf_path) {
@@ -2889,6 +2893,22 @@
                                 `;
                                 document.head.appendChild(style);
                             }
+                            
+                            // Add close button event listener
+                            setTimeout(() => {
+                                const closeBtn = document.getElementById('download-close-btn');
+                                if (closeBtn) {
+                                    closeBtn.addEventListener('click', () => Swal.close());
+                                    closeBtn.addEventListener('mouseover', function() {
+                                        this.style.color = '#e74c3c';
+                                        this.style.transform = 'rotate(90deg)';
+                                    });
+                                    closeBtn.addEventListener('mouseout', function() {
+                                        this.style.color = isDarkMode ? '#94a3b8' : '#95a5a6';
+                                        this.style.transform = 'rotate(0deg)';
+                                    });
+                                }
+                            }, 50);
                         }
                     }
                 });
