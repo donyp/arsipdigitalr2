@@ -1426,10 +1426,130 @@
                     </td>
                 </tr>
             `;
+            
+            // Reset stats to 0
+            const formatter = new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            });
+            
+            document.getElementById('statTotalInvoice').textContent = '0';
+            document.getElementById('statLunas').textContent = '0';
+            document.getElementById('statBelumLunas').textContent = '0';
+            document.getElementById('statTotalPengambilan').textContent = formatter.format(0);
+            document.getElementById('statPembayaranLunas').textContent = formatter.format(0);
+            document.getElementById('statTotalBelumLunas').textContent = formatter.format(0);
         }
 
 
         // ============================================
+        // LOAD FILTER OPTIONS ONLY (NO STATS UPDATE)
+        // ============================================
+        async function loadFilterOptionsOnly() {
+            try {
+                // Single API call to get all invoice data
+                const res = await API.get('/api/invoice/list?limit=10000&offset=0');
+                const invoices = res.data || [];
+                
+                // Store invoices globally for use in filter and download functions
+                window.allAdminZonaInvoices = invoices;
+
+                // === POPULATE FILTER OPTIONS ONLY (NO STATS UPDATE) ===
+                // Extract unique years and months
+                const yearsSet = new Set();
+                const monthsSet = new Set();
+
+                invoices.forEach(inv => {
+                    if (inv.tanggal) {
+                        const date = new Date(inv.tanggal);
+                        yearsSet.add(date.getFullYear().toString());
+                        monthsSet.add(String(date.getMonth() + 1).padStart(2, '0'));
+                    }
+                });
+
+                // Populate year dropdown
+                const yearDropdown = document.getElementById('yearDropdown');
+                const yearOptions = yearDropdown.querySelector('.dropdown-options');
+                const years = Array.from(yearsSet).sort((a, b) => b - a);
+                
+                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">✓</span><span>Semua Tahun</span></div>';
+                years.forEach(year => {
+                    yearHTML += `<div class="dropdown-option" onclick="selectOption(event, 'yearDropdown', '${year}', '${year}')"><span class="checkmark"></span><span>${year}</span></div>`;
+                });
+                yearOptions.innerHTML = yearHTML;
+
+                // Populate month dropdown
+                const monthDropdown = document.getElementById('monthDropdown');
+                const monthOptions = monthDropdown.querySelector('.dropdown-options');
+                const monthNames = {
+                    '01': 'Januari', '02': 'Februari', '03': 'Maret', '04': 'April',
+                    '05': 'Mei', '06': 'Juni', '07': 'Juli', '08': 'Agustus',
+                    '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
+                };
+                
+                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">✓</span><span>Semua Bulan</span></div>';
+                const months = Array.from(monthsSet).sort();
+                months.forEach(month => {
+                    monthHTML += `<div class="dropdown-option" onclick="selectOption(event, 'monthDropdown', '${month}', '${monthNames[month]}')"><span class="checkmark"></span><span>${monthNames[month]}</span></div>`;
+                });
+                monthOptions.innerHTML = monthHTML;
+
+                // Populate toko (konsumen) dropdown
+                const tokoList = [...new Set(invoices.map(inv => inv.konsumen).filter(Boolean))].sort();
+                const tokoDropdown = document.getElementById('tokoDropdown');
+                const tokoOptions = tokoDropdown.querySelector('.dropdown-options');
+                
+                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">✓</span><span>Semua Toko</span></div>';
+                tokoList.forEach(toko => {
+                    const escaped = toko.replace(/'/g, "\\'");
+                    tokoHTML += `<div class="dropdown-option" onclick="selectOption(event, 'tokoDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${toko}</span></div>`;
+                });
+                tokoOptions.innerHTML = tokoHTML;
+
+                // Populate supplier dropdown
+                const suppliers = [...new Set(invoices.map(inv => inv.toko).filter(Boolean))].sort();
+                const supplierDropdown = document.getElementById('supplierDropdown');
+                const supplierOptions = supplierDropdown.querySelector('.dropdown-options');
+                
+                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">✓</span><span>Semua Supplier</span></div>';
+                suppliers.forEach(supplier => {
+                    const escaped = supplier.replace(/'/g, "\\'");
+                    supplierHTML += `<div class="dropdown-option" onclick="selectOption(event, 'supplierDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${supplier}</span></div>`;
+                });
+                supplierOptions.innerHTML = supplierHTML;
+
+                console.log('✅ Filter options loaded -', invoices.length, 'invoices available (stats NOT updated - waiting for filter)');
+                
+                // Show empty state in table
+                const tableBody = document.getElementById('invoiceTableBody');
+                if (tableBody) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="15" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                                <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                                <div style="font-size: 1.1rem; font-weight: 500; margin-bottom: 0.5rem;">Silakan Filter Bulan</div>
+                                <div style="font-size: 0.9rem; opacity: 0.8;">Pilih bulan untuk melihat data invoice</div>
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // Hide page loader after dropdowns are populated
+                const pageLoader = document.getElementById('pageLoader');
+                if (pageLoader) {
+                    pageLoader.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error('❌ Error loading filter options:', err);
+                // Hide loader even on error
+                const pageLoader = document.getElementById('pageLoader');
+                if (pageLoader) {
+                    pageLoader.classList.add('hidden');
+                }
+            }
+        }
+
         // COMBINED: LOAD STATS AND INVOICES DATA
         // ============================================
         async function loadAllInvoicesAndStats() {
@@ -1754,17 +1874,7 @@
         // Update welcome stats based on ALL filtered invoices (across all pages)
         function updateWelcomeStatsWithAllFiltered(allFilteredInvoices) {
             try {
-                const year = document.getElementById('filterYear')?.value;
-                const month = document.getElementById('filterMonth')?.value;
-                const supplier = document.getElementById('filterSupplier')?.value;
-                
-                // Only update if there's an active filter
-                if (!year && !month && !supplier) {
-                    // No filter - show all stats
-                    return;
-                }
-                
-                const totalInvoice = allFilteredInvoices.length;  // Total dari SEMUA yang match filter
+                const totalInvoice = allFilteredInvoices.length;
                 const lunas = allFilteredInvoices.filter(inv => inv.status === 'UPLOADED').length;
                 const belumLunas = allFilteredInvoices.filter(inv => inv.status === 'PENDING').length;
 
@@ -1804,9 +1914,9 @@
                 if (statPembayaranLunas) statPembayaranLunas.textContent = formatter.format(lunasAmount);
                 if (statTotalBelumLunas) statTotalBelumLunas.textContent = formatter.format(belumLunasAmount);
                 
-                console.log('[WelcomeStats] Updated with ALL filtered - Total count: ' + totalInvoice + ', Total Rp: ' + formatter.format(totalAmount));
+                console.log('✅ [Stats Updated] Total: ' + totalInvoice + ', Lunas: ' + lunas + ', Belum Lunas: ' + belumLunas + ', Total Rp: ' + formatter.format(totalAmount));
             } catch (err) {
-                console.error('Error updating welcome stats:', err);
+                console.error('❌ Error updating welcome stats:', err);
             }
         }
 
@@ -2212,8 +2322,8 @@
                 const welcomeInfoEl = document.getElementById('welcome-info');
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
 
-                // Load data in background (don't await - let it run in parallel)
-                loadAllInvoicesAndStats();
+                // Load filter options only (DON'T load stats until user filters)
+                await loadFilterOptionsOnly();
 
             } catch (err) {
                 console.error('Init error:', err);
