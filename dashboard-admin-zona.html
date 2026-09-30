@@ -2321,6 +2321,9 @@
             invoiceFilterState.month = month;
             saveAdminZonaFilterState();
 
+            // Enable sort headers when filter is applied
+            enableSortHeaders(true);
+
             currentPage = 1;
             loadInvoices();
         }
@@ -2373,6 +2376,9 @@
             invoiceFilterState.year = '';
             invoiceFilterState.month = '';
             saveAdminZonaFilterState();
+
+            // Disable sort headers when filters are reset
+            enableSortHeaders(false);
 
             currentPage = 1;
             showEmptyState();
@@ -2488,6 +2494,9 @@
                 initializeDarkMode();
                 loadAdminZonaFilterState();
                 showEmptyState();
+                
+                // Disable sort headers by default until filter is applied
+                enableSortHeaders(false);
                 
                 // Disable all filters except month on page load
                 updateFilterState();
