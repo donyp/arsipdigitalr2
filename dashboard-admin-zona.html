@@ -2898,7 +2898,19 @@
                             setTimeout(() => {
                                 const closeBtn = document.getElementById('download-close-btn');
                                 if (closeBtn) {
-                                    closeBtn.addEventListener('click', () => Swal.close());
+                                    closeBtn.addEventListener('click', () => {
+                                        // Force close the popup
+                                        const backdrop = document.querySelector('.swal2-backdrop-show');
+                                        const container = document.querySelector('.swal2-container');
+                                        
+                                        if (container) container.style.display = 'none';
+                                        if (backdrop) backdrop.style.display = 'none';
+                                        
+                                        // Also try Swal's official close
+                                        if (typeof Swal !== 'undefined' && Swal.getPopup && Swal.getPopup()) {
+                                            Swal.getPopup().style.display = 'none';
+                                        }
+                                    });
                                     closeBtn.addEventListener('mouseover', function() {
                                         this.style.color = '#e74c3c';
                                         this.style.transform = 'rotate(90deg)';
