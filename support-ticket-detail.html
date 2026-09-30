@@ -5,6 +5,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Tiket - Support</title>
+    
+    <!-- EARLY REDIRECT for admin_zona users accessing old URL -->
+    <script>
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            
+            // Only redirect if accessing old URL and we're on the old path
+            if (id && window.location.pathname.includes('support-ticket-detail.html')) {
+                // Check if localStorage has admin_zona role (cached from previous session)
+                try {
+                    const userData = localStorage.getItem('user_data');
+                    if (userData) {
+                        const user = JSON.parse(userData);
+                        if (user.role === 'admin_zona') {
+                            window.location.replace(`/zona/ticket?id=${id}`);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    // Continue if localStorage check fails
+                }
+            }
+        })();
+    </script>
+    
     <!-- DARK MODE - Apply immediately to prevent flash -->
     <script>
         (function() {
@@ -556,12 +582,6 @@
             
             if (!currentUser) {
                 window.location.href = '/login';
-                return;
-            }
-
-            // Redirect old URLs to new format for admin_zona
-            if (currentUser.role === 'admin_zona' && window.location.pathname.includes('support-ticket-detail.html')) {
-                window.location.replace(`/zona/ticket?id=${ticketId}`);
                 return;
             }
 
