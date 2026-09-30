@@ -558,6 +558,12 @@
                 return;
             }
 
+            // Redirect old URLs to new format for admin_zona
+            if (currentUser.role === 'admin_zona' && window.location.pathname.includes('support-ticket-detail.html')) {
+                window.location.replace(`/zona/ticket?id=${ticketId}`);
+                return;
+            }
+
             await loadTicketDetail();
         });
 
