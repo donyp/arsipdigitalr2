@@ -3593,10 +3593,11 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
         }
     });
     
-    // Calculate final counts
-    // If we're showing only a subset (pagination), we need to extrapolate
-    let finalLunasCount = lunasCount;
-    let finalBelumLunasCount = totalCount - lunasCount; // Always subtract from total
+    // Use the provided totalCount (which is already the filtered count)
+    // Don't extrapolate - use actual counts from filtered data
+    const finalTotalCount = totalCount;
+    const finalLunasCount = lunasCount;
+    const finalBelumLunasCount = belumLunasCount;
     
     
     
@@ -3612,9 +3613,9 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     
     
     
-    if (elements.total) elements.total.textContent = totalCount;
-    if (elements.uploaded) elements.uploaded.textContent = finalLunasCount;    // Renamed to Lunas
-    if (elements.pending) elements.pending.textContent = finalBelumLunasCount;  // Renamed to Belum Lunas
+    if (elements.total) elements.total.textContent = finalTotalCount;
+    if (elements.uploaded) elements.uploaded.textContent = finalLunasCount;
+    if (elements.pending) elements.pending.textContent = finalBelumLunasCount;
     
     // Update Rupiah stats
     if (elements.totalAmount) elements.totalAmount.textContent = formatCurrency(totalAmount);
