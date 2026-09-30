@@ -1141,10 +1141,7 @@
         }
 
         .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+            position: fixed;
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -1156,6 +1153,7 @@
             overflow-y: auto;
             z-index: 9999;
             box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25);
+            min-width: 200px;
         }
             border-bottom-left-radius: 8px;
             border-bottom-right-radius: 8px;
@@ -3035,7 +3033,13 @@
             });
             
             // Toggle current dropdown
-            if (menu.style.display === 'none') {
+            if (menu.style.display === 'none' || !menu.style.display) {
+                // Calculate position for fixed dropdown
+                const triggerRect = trigger.getBoundingClientRect();
+                menu.style.top = (triggerRect.bottom) + 'px';
+                menu.style.left = triggerRect.left + 'px';
+                menu.style.width = triggerRect.width + 'px';
+                
                 menu.style.display = 'block';
                 trigger.classList.add('active');
                 dropdown.classList.add('active'); // Add active to parent
@@ -3138,6 +3142,25 @@
                 });
             }
         });
+        
+        // Reposition dropdowns on scroll/resize
+        function repositionOpenDropdowns() {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                if (menu.style.display === 'block') {
+                    const dropdown = menu.parentElement;
+                    const trigger = dropdown.querySelector('.dropdown-trigger');
+                    if (trigger) {
+                        const triggerRect = trigger.getBoundingClientRect();
+                        menu.style.top = (triggerRect.bottom) + 'px';
+                        menu.style.left = triggerRect.left + 'px';
+                        menu.style.width = triggerRect.width + 'px';
+                    }
+                }
+            });
+        }
+        
+        window.addEventListener('scroll', repositionOpenDropdowns, true);
+        window.addEventListener('resize', repositionOpenDropdowns);
 
         // Populate custom dropdown options
         function populateCustomDropdownOptions(dropdownId, options, optionFormatter) {
