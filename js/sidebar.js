@@ -368,8 +368,8 @@
         // Use smaller width for upload file pages, normal width for others
         const sidebarWidth = isUploadFilePage ? '14rem' : '20rem';
 
-        // Use consistent height for sidebar - 100vh from top offset
-        const sidebarHeight = `height: calc(100vh - ${hasAnnouncement ? '60px' : '0px'});`;
+        // Use min-height: 100vh to ensure sidebar is always full height but can grow if needed
+        const sidebarHeight = `min-height: 100vh;`;
 
         sidebar.style.cssText = `
             position: fixed;
