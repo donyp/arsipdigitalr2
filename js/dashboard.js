@@ -3978,7 +3978,8 @@ async function applyInvoiceFilters() {
         
         // Build query string
         const params = new URLSearchParams();
-        if (status) params.append('status', status);
+        // DON'T send status to backend - we'll filter it in frontend based on isComplete
+        // if (status) params.append('status', status);
         if (toko) params.append('toko', toko);
         if (keterangan) params.append('keterangan', keterangan);
         if (search) params.append('search', search);
@@ -4035,7 +4036,33 @@ async function applyInvoiceFilters() {
             invoiceTotalCount = result.count;
             
             updatePaginationInfo();
-            updateInvoiceStatsFromData(result.data || [], result.count);
+            
+            // Filter by status AFTER receiving data (because status is calculated from isComplete)
+            let filteredData = result.data || [];
+            if (status) {
+                filteredData = filteredData.filter(inv => {
+                    const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
+                    const filesRequired = isPPN ? 3 : 2;
+                    const filesUploaded = (inv.files_uploaded_count || 0);
+                    const isComplete = filesUploaded >= filesRequired;
+                    
+                    if (status === 'Lunas') {
+                        return isComplete;
+                    } else if (status === 'Belum Lunas') {
+                        return !isComplete;
+                    }
+                    return true;
+                });
+                
+                // Re-render table with filtered data
+                renderInvoiceTable(filteredData);
+                
+                // Update total count based on filtered data
+                invoiceTotalCount = filteredData.length;
+                updatePaginationInfo();
+            }
+            
+            updateInvoiceStatsFromData(filteredData, filteredData.length);
         }
         
         // Calculate and display total nominal
