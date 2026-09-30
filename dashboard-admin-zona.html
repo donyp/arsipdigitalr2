@@ -925,21 +925,20 @@
                         <p id="welcome-info">Informasi data zona anda</p>
                     </div>
                     
-                    <button class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
-                        <i class="fas fa-moon"></i>
-                        <span id="themeLabel">Dark</span>
-                    </button>
-                </div>
-                
-                <div class="welcome-actions">
-                    <a href="/support-dashboard-customer" class="btn-action btn-support" title="Support Tickets">
-                        <i class="fas fa-headset"></i>
-                        <span>Support</span>
-                    </a>
-                    <button class="btn-action btn-logout-action" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <a href="/support-dashboard-customer" class="btn-action btn-support" title="Support Tickets">
+                            <i class="fas fa-headset"></i>
+                            <span>Support</span>
+                        </a>
+                        <button class="btn-action btn-logout-action" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Logout</span>
+                        </button>
+                        <button class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                            <i class="fas fa-moon"></i>
+                            <span id="themeLabel">Dark</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="stats-grid">
