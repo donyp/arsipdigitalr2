@@ -4328,6 +4328,14 @@ async function startInvoiceBackgroundScan() {
 
 // Initialize invoice system after content is loaded
 async function initInvoiceSystem() {
+    // Prevent multiple initializations
+    if (window.invoiceSystemInitialized) {
+        console.log('[Dashboard] Invoice system already initialized, skipping...');
+        return;
+    }
+    
+    console.log('[Dashboard] Initializing invoice system...');
+    window.invoiceSystemInitialized = true;
     
     
     
