@@ -12,9 +12,9 @@
             const params = new URLSearchParams(window.location.search);
             const id = params.get('id');
             
-            // Only redirect if accessing old URL and we're on the old path
+            // Only redirect if accessing old URL path
             if (id && window.location.pathname.includes('support-ticket-detail.html')) {
-                // Check if localStorage has admin_zona role (cached from previous session)
+                // Try localStorage first (faster)
                 try {
                     const userData = localStorage.getItem('user_data');
                     if (userData) {
@@ -27,6 +27,11 @@
                 } catch (e) {
                     // Continue if localStorage check fails
                 }
+                
+                // If localStorage check didn't work, still redirect for admin_zona
+                // The server will serve the right page based on the route
+                // This prevents the glitch by redirecting unconditionally to new URL
+                window.location.replace(`/zona/ticket?id=${id}`);
             }
         })();
     </script>
@@ -566,9 +571,10 @@
     <script>
         let ticketId = null;
         let ticketData = null;
+        const DEBUG = false; // Set to true for debugging
 
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Ticket-Detail] Page loaded');
+            if (DEBUG) console.log('[Ticket-Detail] Page loaded');
             
             const params = new URLSearchParams(window.location.search);
             ticketId = params.get('id');
@@ -605,8 +611,6 @@
 
                 // Get zona name - fetch all zonas and find by zona_id
                 let zonaName = 'N/A';
-                console.log('[Ticket-Detail] currentUser:', currentUser);
-                console.log('[Ticket-Detail] zona_id:', currentUser.zona_id);
                 
                 if (currentUser.zona_id) {
                     try {
@@ -615,7 +619,6 @@
                         });
                         if (zonaResponse.ok) {
                             const zonaData = await zonaResponse.json();
-                            console.log('[Ticket-Detail] All zonas response:', zonaData);
                             
                             // Handle different response formats
                             let zonas = [];
@@ -627,29 +630,18 @@
                                 zonas = zonaData.zonas;
                             }
                             
-                            console.log('[Ticket-Detail] Parsed zonas array:', zonas);
-                            console.log('[Ticket-Detail] Looking for zona_id:', currentUser.zona_id, 'type:', typeof currentUser.zona_id);
-                            
                             // Find by id (try both string and number comparison)
-                            const userZona = zonas.find(z => {
-                                console.log('[Ticket-Detail] Checking zona:', z.id, 'against', currentUser.zona_id, 'match:', z.id == currentUser.zona_id);
-                                return z.id == currentUser.zona_id || String(z.id) === String(currentUser.zona_id);
-                            });
+                            const userZona = zonas.find(z => z.id == currentUser.zona_id || String(z.id) === String(currentUser.zona_id));
                             
                             if (userZona) {
                                 zonaName = userZona.nama || userZona.name || userZona.Nama || 'N/A';
-                                console.log('[Ticket-Detail] Found zona:', zonaName, userZona);
-                            } else {
-                                console.warn('[Ticket-Detail] Zona not found for zona_id:', currentUser.zona_id);
-                                console.log('[Ticket-Detail] Available zonas:', zonas.map(z => ({ id: z.id, nama: z.nama })));
                             }
                         }
                     } catch (e) {
-                        console.warn('[Ticket-Detail] Could not fetch zonas:', e);
+                        if (DEBUG) console.warn('[Ticket-Detail] Could not fetch zonas:', e);
                     }
                 }
 
-                console.log('[Ticket-Detail] Final zonaName:', zonaName);
                 renderTicketDetail(zonaName);
                 renderMessages(zonaName);
 
@@ -669,9 +661,6 @@
         function renderTicketDetail(zonaName) {
             const ticket = ticketData;
             const priorityClass = (ticket.priority || 'Medium').toLowerCase();
-
-            console.log('[Ticket-Detail] Ticket data:', ticket);
-            console.log('[Ticket-Detail] Created at:', ticket.created_at);
 
             const ticketNumberEl = document.getElementById('ticketNumber');
             if (ticketNumberEl) ticketNumberEl.textContent = ticket.ticket_number || 'N/A';
@@ -725,7 +714,6 @@
             }
             
             const createdFormatted = formatDateTimeWIB(ticket.created_at);
-            console.log('[Ticket-Detail] Created formatted:', createdFormatted);
             if (sidebarCreated) {
                 sidebarCreated.textContent = createdFormatted;
                 sidebarCreated.style.background = 'none';
@@ -850,8 +838,6 @@
         function formatDateTimeWIB(dateString) {
             if (!dateString) return '-';
             
-            console.log('[DateFormat] Raw input:', dateString);
-            
             try {
                 let date = new Date(dateString);
                 
@@ -859,28 +845,17 @@
                     return '-';
                 }
                 
-                console.log('[DateFormat] Parsed date:', date.toString());
-                console.log('[DateFormat] toISOString:', date.toISOString());
-                
                 const localHours = date.getHours();
                 const utcHours = date.getUTCHours();
-                console.log('[DateFormat] localHours:', localHours, 'utcHours:', utcHours);
                 
                 // Detect if browser is in WIB timezone
-                // If localHours matches what we expect for WIB, use it directly
-                // Otherwise, manually calculate WIB from UTC
                 let wibDate;
-                
-                // Check offset between local and UTC
                 const offset = localHours - utcHours;
-                console.log('[DateFormat] Timezone offset hours:', offset);
                 
                 // If offset is 7 or -17 (next day), browser is already in WIB
                 if (offset === 7 || offset === -17) {
-                    console.log('[DateFormat] Browser is in WIB, use local time');
                     wibDate = date;
                 } else {
-                    console.log('[DateFormat] Browser not in WIB, add 7 hours manually');
                     wibDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
                 }
                 
@@ -891,10 +866,7 @@
                 const minutes = String(wibDate.getMinutes()).padStart(2, '0');
                 const seconds = String(wibDate.getSeconds()).padStart(2, '0');
                 
-                const formatted = `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
-                console.log('[DateFormat] Final formatted:', formatted);
-                
-                return formatted;
+                return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
             } catch (e) {
                 console.error('[DateFormat] Error:', e);
                 return '-';
