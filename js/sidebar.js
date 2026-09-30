@@ -213,6 +213,15 @@
             return;
         }
 
+        // Check if sidebar was already injected in this navigation
+        if (sidebar.hasAttribute('data-injected')) {
+            console.log('[Sidebar] Sidebar already injected, skipping re-render');
+            return;
+        }
+
+        // Mark sidebar as injected
+        sidebar.setAttribute('data-injected', 'true');
+
         // Check if current page is an Upload File menu item
         const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur'];
         const isUploadFilePage = uploadFilePages.some(page => {

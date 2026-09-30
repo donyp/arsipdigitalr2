@@ -256,6 +256,12 @@ class SPARouter {
             // This is crucial - pages need time to fetch data and render
             await new Promise(resolve => setTimeout(resolve, 1000));
 
+            // Clear sidebar inject flag to allow re-render on next page
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                sidebar.removeAttribute('data-injected');
+            }
+
             // Update active sidebar state
             if (window.updateSidebarActiveState) {
                 window.updateSidebarActiveState(path);
