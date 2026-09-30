@@ -3548,8 +3548,9 @@ async function loadFilterOptions() {
         populateCustomDropdownOptions('kategoriDropdown', keteranganOptions);
         
         
-        // Update pagination and stats based on loaded data
-        updateInvoiceStatsFromData(invoices, invoiceTotalCount);
+        // DO NOT update stats here - stats should remain at 0 until user applies filter
+        // updateInvoiceStatsFromData(invoices, invoiceTotalCount); // REMOVED
+        console.log('[Filter] ✅ Filter options loaded, stats remain at 0 (waiting for filter)');
         
     } catch (error) {
         console.error('[Filter] Error loading options:', error);
