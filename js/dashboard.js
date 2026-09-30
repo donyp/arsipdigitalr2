@@ -4092,6 +4092,9 @@ function resetInvoiceFilters() {
     const totalDisplay = document.getElementById('totalNominalDisplay');
     if (totalDisplay) totalDisplay.textContent = 'Total: Rp 0';
     
+    // Reset stats to 0
+    resetInvoiceStatsToZero();
+    
     // Clear filter state completely
     invoiceFilterState.year = '';
     invoiceFilterState.month = '';
