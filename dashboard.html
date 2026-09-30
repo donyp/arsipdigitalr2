@@ -1076,11 +1076,11 @@
         .custom-dropdown {
             position: relative;
             width: 100%;
-            z-index: 100;
+            z-index: 1000;
         }
         
         .custom-dropdown.active {
-            z-index: 9999;
+            z-index: 10000;
         }
 
         .dropdown-trigger {
@@ -1154,7 +1154,7 @@
             border-bottom-right-radius: 12px;
             max-height: 280px;
             overflow-y: auto;
-            z-index: 9999;
+            z-index: 10001;
             box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25);
         }
             border-bottom-left-radius: 8px;
@@ -1463,6 +1463,13 @@
             background: linear-gradient(135deg, #1f2937, #374151);
             color: white;
             border-bottom: 2px solid #3b82f6;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .invoice-table {
+            position: relative;
+            z-index: 1;
         }
 
         html[data-dark-mode="true"] .invoice-table thead {
@@ -2231,7 +2238,7 @@
                             </style>
 
                             <!-- Modern Filter Section with Glassmorphism -->
-                            <div style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 20px; border-radius: 16px; border: 2px solid rgba(102, 126, 234, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.2);">
+                            <div style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); padding: 20px; border-radius: 16px; border: 2px solid rgba(102, 126, 234, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.2); position: relative; z-index: 100;">
                                 <!-- Row 1: Modern Search Bar with Icon -->
                                 <div style="margin-bottom: 16px; position: relative;">
                                     <div style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none;">
