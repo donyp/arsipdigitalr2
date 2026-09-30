@@ -957,6 +957,79 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 };
             });
             
+            // ============================================
+            // Calculate aggregated stats from ALL data (not just this page)
+            // This is needed for accurate stat cards in frontend
+            // ============================================
+            let aggregatedStats = null;
+            
+            // Build same query but fetch ALL data (no pagination) for stats calculation
+            let statsQuery = supabase
+                .from('invoice_file_list')
+                .select('id, keterangan, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, files_uploaded_count, total_jumlah_jual');
+            
+            // Apply same filters as main query
+            if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
+                const userZonaId = parseInt(req.user.zona_id) || req.user.zona_id;
+                statsQuery = statsQuery.eq('zona_id', userZonaId);
+            }
+            if (status) statsQuery = statsQuery.eq('status', status);
+            if (toko) statsQuery = statsQuery.eq('toko', toko);
+            if (keterangan) statsQuery = statsQuery.eq('keterangan', keterangan);
+            if (date_from) statsQuery = statsQuery.gte('tanggal', date_from);
+            if (date_to) statsQuery = statsQuery.lte('tanggal', date_to);
+            if (search) {
+                const trimmedSearch = search.trim();
+                statsQuery = statsQuery.or(`faktur.ilike.%${trimmedSearch}%,konsumen.ilike.%${trimmedSearch}%`);
+            }
+            
+            const { data: allData, error: statsError } = await statsQuery;
+            
+            if (!statsError && allData) {
+                let lunasCount = 0;
+                let belumLunasCount = 0;
+                let totalAmount = 0;
+                let lunasAmount = 0;
+                let belumLunasAmount = 0;
+                
+                allData.forEach(inv => {
+                    // Calculate files uploaded
+                    let filesUploaded = 0;
+                    if (inv.invoice_pdf_path) filesUploaded++;
+                    if (inv.bukti_bayar_path) filesUploaded++;
+                    if (inv.faktur_pajak_path) filesUploaded++;
+                    if (filesUploaded === 0 && inv.files_uploaded_count) {
+                        filesUploaded = inv.files_uploaded_count;
+                    }
+                    
+                    const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
+                    const filesRequired = isPPN ? 3 : 2;
+                    const isComplete = filesUploaded >= filesRequired;
+                    
+                    const nominal = parseFloat(inv.total_jumlah_jual) || 0;
+                    totalAmount += nominal;
+                    
+                    if (isComplete) {
+                        lunasCount++;
+                        lunasAmount += nominal;
+                    } else {
+                        belumLunasCount++;
+                        belumLunasAmount += nominal;
+                    }
+                });
+                
+                aggregatedStats = {
+                    totalCount: allData.length,
+                    lunasCount,
+                    belumLunasCount,
+                    totalAmount,
+                    lunasAmount,
+                    belumLunasAmount
+                };
+                
+                console.log(`[Invoice List] Aggregated stats:`, aggregatedStats);
+            }
+            
             // Debug: Show sample data if admin_zona returns 0 results
             if (req.user && req.user.role === 'admin_zona' && count === 0) {
                 console.warn(`[Invoice List] ⚠️ Admin_zona ${req.user.userId} (zona_id: ${req.user.zona_id}) returned 0 invoices!`);
@@ -974,6 +1047,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 count,
                 limit: parseInt(limit),
                 offset: parseInt(offset),
+                aggregatedStats,  // Include aggregated stats for accurate stat cards
                 _refreshedAt: new Date().toISOString()  // Cache busting
             });
             

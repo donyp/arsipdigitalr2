@@ -3626,6 +3626,30 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     
 }
 
+// Update stats from aggregated backend data (accurate stats from ALL invoices, not just current page)
+function updateInvoiceStatsFromAggregated(stats) {
+    console.log('[Dashboard] Updating stats from aggregated backend data:', stats);
+    
+    const elements = {
+        total: document.getElementById('statTotal'),
+        uploaded: document.getElementById('statUploaded'),
+        pending: document.getElementById('statPending'),
+        totalAmount: document.getElementById('statTotalAmount'),
+        lunasAmount: document.getElementById('statLunasAmount'),
+        pendingAmount: document.getElementById('statPendingAmount')
+    };
+    
+    // Update count stats
+    if (elements.total) elements.total.textContent = stats.totalCount || 0;
+    if (elements.uploaded) elements.uploaded.textContent = stats.lunasCount || 0;
+    if (elements.pending) elements.pending.textContent = stats.belumLunasCount || 0;
+    
+    // Update Rupiah stats
+    if (elements.totalAmount) elements.totalAmount.textContent = formatCurrency(stats.totalAmount || 0);
+    if (elements.lunasAmount) elements.lunasAmount.textContent = formatCurrency(stats.lunasAmount || 0);
+    if (elements.pendingAmount) elements.pendingAmount.textContent = formatCurrency(stats.belumLunasAmount || 0);
+}
+
 // Reset stats to 0 (called on initial load before filtering)
 function resetInvoiceStatsToZero() {
     console.log('[Dashboard] Resetting stats to 0...');
@@ -4036,7 +4060,6 @@ async function applyInvoiceFilters() {
             
             // Filter by status AFTER receiving data (because status is calculated from isComplete)
             let filteredData = result.data || [];
-            let dataForStats = result.data || []; // Use FULL data for stats calculation
             
             if (status) {
                 filteredData = filteredData.filter(inv => {
@@ -4062,9 +4085,15 @@ async function applyInvoiceFilters() {
             invoiceCurrentPage = 1;
             updatePaginationInfo();
             
-            // IMPORTANT: Always use FULL data for stats (not filtered by status)
-            // This ensures stats show correct counts for Total/Lunas/Belum Lunas
-            updateInvoiceStatsFromData(dataForStats, result.count);
+            // IMPORTANT: Use aggregatedStats from backend if available (accurate stats from ALL data)
+            // Otherwise fall back to calculating from current page data
+            if (result.aggregatedStats) {
+                console.log('[Filter] Using aggregated stats from backend:', result.aggregatedStats);
+                updateInvoiceStatsFromAggregated(result.aggregatedStats);
+            } else {
+                console.log('[Filter] No aggregated stats, calculating from current page data');
+                updateInvoiceStatsFromData(result.data || [], result.count);
+            }
         }
         
         // Calculate and display total nominal
