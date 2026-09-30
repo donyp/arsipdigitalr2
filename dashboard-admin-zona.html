@@ -1328,14 +1328,14 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 9%; cursor: pointer; user-select: none;" onclick="sortTable('tanggal')">
+                            <th id="th-tanggal" style="width: 9%; cursor: pointer; user-select: none; opacity: 0.5; pointer-events: none;" onclick="sortTable('tanggal')">
                                 TANGGAL <span class="sort-indicator" id="sort-tanggal">↓</span>
                             </th>
                             <th style="width: 11%;">NO FAKTUR</th>
                             <th style="width: 10%;">METODE BAYAR</th>
                             <th style="width: 18%;">TOKO</th>
                             <th style="width: 11%;">SUPPLIER</th>
-                            <th style="width: 10%; cursor: pointer; user-select: none;" onclick="sortTable('total')">
+                            <th id="th-total" style="width: 10%; cursor: pointer; user-select: none; opacity: 0.5; pointer-events: none;" onclick="sortTable('total')">
                                 TOTAL <span class="sort-indicator" id="sort-total"></span>
                             </th>
                             <th style="width: 12%;">KETERANGAN</th>
@@ -2060,6 +2060,37 @@
         // ============================================
         // SORTING FUNCTIONS
         // ============================================
+        function enableSortHeaders(enable = true) {
+            const tanggalHeader = document.getElementById('th-tanggal');
+            const totalHeader = document.getElementById('th-total');
+            
+            if (enable) {
+                // Enable headers
+                if (tanggalHeader) {
+                    tanggalHeader.style.opacity = '1';
+                    tanggalHeader.style.pointerEvents = 'auto';
+                    tanggalHeader.style.cursor = 'pointer';
+                }
+                if (totalHeader) {
+                    totalHeader.style.opacity = '1';
+                    totalHeader.style.pointerEvents = 'auto';
+                    totalHeader.style.cursor = 'pointer';
+                }
+            } else {
+                // Disable headers
+                if (tanggalHeader) {
+                    tanggalHeader.style.opacity = '0.5';
+                    tanggalHeader.style.pointerEvents = 'none';
+                    tanggalHeader.style.cursor = 'not-allowed';
+                }
+                if (totalHeader) {
+                    totalHeader.style.opacity = '0.5';
+                    totalHeader.style.pointerEvents = 'none';
+                    totalHeader.style.cursor = 'not-allowed';
+                }
+            }
+        }
+
         function sortTable(column) {
             // Update sort indicators
             document.querySelectorAll('.sort-indicator').forEach(el => {
@@ -2208,6 +2239,9 @@
         function updateFilterState() {
             const monthValue = document.getElementById('filterMonth')?.value;
             const isMonthSelected = monthValue && monthValue.trim() !== '';
+            
+            // Enable/disable sort headers
+            enableSortHeaders(isMonthSelected);
             
             // Filter IDs that should be disabled until month selected
             const dependentFilters = [
