@@ -4029,17 +4029,15 @@ async function applyInvoiceFilters() {
         const result = await response.json();
         
         
-        renderInvoiceTable(result.data || []);
-        invoiceCurrentPage = 1;
         
         // Track total count for pagination
         if (result.count !== undefined) {
             invoiceTotalCount = result.count;
             
-            updatePaginationInfo();
-            
             // Filter by status AFTER receiving data (because status is calculated from isComplete)
             let filteredData = result.data || [];
+            let dataForStats = result.data || []; // Use FULL data for stats calculation
+            
             if (status) {
                 filteredData = filteredData.filter(inv => {
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
@@ -4055,15 +4053,18 @@ async function applyInvoiceFilters() {
                     return true;
                 });
                 
-                // Re-render table with filtered data
-                renderInvoiceTable(filteredData);
-                
-                // Update total count based on filtered data
+                // Update total count based on filtered data (for table display)
                 invoiceTotalCount = filteredData.length;
-                updatePaginationInfo();
             }
             
-            updateInvoiceStatsFromData(filteredData, filteredData.length);
+            // Render table with filtered data (if status filter applied) or all data
+            renderInvoiceTable(filteredData);
+            invoiceCurrentPage = 1;
+            updatePaginationInfo();
+            
+            // IMPORTANT: Always use FULL data for stats (not filtered by status)
+            // This ensures stats show correct counts for Total/Lunas/Belum Lunas
+            updateInvoiceStatsFromData(dataForStats, result.count);
         }
         
         // Calculate and display total nominal
