@@ -3190,6 +3190,15 @@
                                                 title.style.margin = '0 0 8px 0';
                                             }
                                         }
+                                    },
+                                    didOpen: () => {
+                                        // Force auto-close after 1800ms
+                                        setTimeout(() => {
+                                            const popup = Swal.getPopup();
+                                            if (popup && popup.style.display !== 'none') {
+                                                Swal.close();
+                                            }
+                                        }, 1800);
                                     }
                                 });
                                 
@@ -3415,6 +3424,15 @@
                                             title.style.margin = '0 0 8px 0';
                                         }
                                     }
+                                },
+                                didOpen: () => {
+                                    // Force auto-close after 1800ms
+                                    setTimeout(() => {
+                                        const popup = Swal.getPopup();
+                                        if (popup && popup.style.display !== 'none') {
+                                            Swal.close();
+                                        }
+                                    }, 1800);
                                 }
                             });
                             
