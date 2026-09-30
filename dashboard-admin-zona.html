@@ -2920,6 +2920,19 @@
                                         this.style.transform = 'rotate(0deg)';
                                     });
                                 }
+                                
+                                // Add backdrop click handler to close popup
+                                const backdrop = document.querySelector('.swal2-backdrop-show');
+                                if (backdrop) {
+                                    backdrop.addEventListener('click', (e) => {
+                                        if (e.target === backdrop) {
+                                            // Force close the popup
+                                            const container = document.querySelector('.swal2-container');
+                                            if (container) container.style.display = 'none';
+                                            backdrop.style.display = 'none';
+                                        }
+                                    });
+                                }
                             }, 50);
                         }
                     }
