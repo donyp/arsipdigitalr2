@@ -389,276 +389,6 @@
             color: var(--color-accent);
         }
     </style>
-        html[data-dark-mode="true"] .text-gray-800,
-        html[data-dark-mode="true"] .text-gray-900 {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-gray-500,
-        html[data-dark-mode="true"] .text-gray-600 {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] .border-gray-200,
-        html[data-dark-mode="true"] .border-gray-100,
-        html[data-dark-mode="true"] .border-yellow-200 {
-            border-color: var(--color-border) !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-yellow-50 {
-            background-color: var(--color-bg-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-yellow-800 {
-            color: #fef3c7 !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-gray-100,
-        html[data-dark-mode="true"] .bg-gray-200 {
-            background-color: var(--color-bg-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-yellow-800 {
-            color: #fef3c7 !important;
-        }
-        
-        html[data-dark-mode="true"] .text-purple-100 {
-            color: #e9d5ff !important;
-        }
-        
-        html[data-dark-mode="true"] .text-purple-600 {
-            color: #a855f7 !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-purple-600 {
-            background-color: #a855f7 !important;
-        }
-        
-        html[data-dark-mode="true"] .hover\:bg-purple-700:hover {
-            background-color: #9333ea !important;
-        }
-        
-        html[data-dark-mode="true"] #dropZone {
-            background: var(--color-bg-secondary) !important;
-            border-color: #a855f7 !important;
-        }
-        
-        /* Stats cards dark mode */
-        html[data-dark-mode="true"] #stats div[style*="background: #f8f9fa"] {
-            background: var(--color-bg-tertiary) !important;
-        }
-        
-        html[data-dark-mode="true"] #stats div[style*="color: #2c3e50"] {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] #stats div[style*="color: #7f8c8d"] {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        /* File list items dark mode */
-        html[data-dark-mode="true"] #filesContainer div[style*="background: #f8f9fa"] {
-            background: var(--color-bg-tertiary) !important;
-        }
-        
-        html[data-dark-mode="true"] #filesContainer div[style*="color: #2c3e50"] {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] #filesContainer div[style*="color: #7f8c8d"] {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        /* Loading/Validating spinner */
-        html[data-dark-mode="true"] #validating {
-            color: #a855f7 !important;
-        }
-        
-        html[data-dark-mode="true"] #validating p {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-gray-400 {
-            background-color: #6b7280 !important;
-        }
-        
-        html[data-dark-mode="true"] .hover\:bg-gray-500:hover {
-            background-color: #4b5563 !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-f8f9fa {
-            background-color: var(--color-bg-tertiary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-a855f7 {
-            color: #a855f7 !important;
-        }
-        
-        html[data-dark-mode="true"] .text-ef4444 {
-            color: #ef4444 !important;
-        }
-
-        .gradient-header {
-            background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-        }
-
-        .file-item {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: #f8f9fa;
-            border-radius: 6px;
-            margin-bottom: 10px;
-            border-left: 4px solid #95a5a6;
-            gap: 12px;
-        }
-
-        .file-item.valid {
-            border-left-color: #a855f7;
-            background: #faf5ff;
-        }
-
-        html[data-dark-mode="true"] .file-item.valid {
-            background: var(--color-bg-tertiary) !important;
-        }
-
-        .file-item.invalid {
-            border-left-color: #ef4444;
-            background: #fef2f2;
-        }
-
-        html[data-dark-mode="true"] .file-item.invalid {
-            background: var(--color-bg-secondary) !important;
-        }
-
-        .file-item-icon {
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: white;
-            border-radius: 50%;
-            font-weight: 700;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-
-        html[data-dark-mode="true"] .file-item-icon {
-            background: var(--color-bg-secondary) !important;
-            color: var(--color-text-secondary) !important;
-        }
-
-        .file-item.valid .file-item-icon {
-            background: #a855f7;
-            color: white;
-        }
-
-        .file-item.invalid .file-item-icon {
-            background: #ef4444;
-            color: white;
-        }
-
-        .file-item-name {
-            flex: 1;
-            color: #2c3e50;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        html[data-dark-mode="true"] .file-item-name {
-            color: var(--color-text-primary) !important;
-        }
-
-        .file-item-info {
-            font-size: 12px;
-            color: #2c3e50;
-            margin-top: 4px;
-            font-weight: 500;
-        }
-
-        html[data-dark-mode="true"] .file-item-info {
-            color: var(--color-text-secondary) !important;
-        }
-
-        .delete-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
-            margin-left: 8px;
-            font-size: 16px;
-        }
-
-        .delete-btn:hover {
-            background: #dc2626;
-            transform: scale(1.1);
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 4px solid #ecf0f1;
-            border-top-color: #a855f7;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .upload-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-        }
-
-        .upload-overlay.show {
-            display: flex;
-        }
-
-        .upload-spinner {
-            text-align: center;
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        html[data-dark-mode="true"] .upload-spinner {
-            background: var(--color-bg-secondary) !important;
-            color: var(--color-text-primary) !important;
-        }
-
-        .upload-spinner i {
-            font-size: 48px;
-            color: #a855f7;
-            margin-bottom: 20px;
-            animation: spin 2s linear infinite;
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-    </style>
 </head>
 <body class="bg-gray-50">
     <!-- Apply dark mode if enabled -->
@@ -670,6 +400,10 @@
     <style>
         #app {
             width: 100%;
+        }
+        #dropZone.drag-over {
+            border-color: #8b5cf6 !important;
+            background-color: rgba(139, 92, 246, 0.05) !important;
         }
     </style>
     <div id="app">
@@ -711,7 +445,7 @@
 
                     <input type="file" id="fileInput" accept=".pdf" multiple style="display: none;">
 
-                    <!-- Validating -->
+                    <!-- Validating Spinner -->
                     <div id="validating" style="display: none; text-align: center; padding: 32px;">
                         <div class="inline-block animate-spin text-5xl mb-4">⏳</div>
                         <p class="text-base font-semibold text-gray-900 mb-2">Validating Files...</p>
@@ -995,10 +729,6 @@
                 console.error('Init error:', error);
             }
         })();
-    </script>
-    <script>
-        if (!window.__uploadFakturPajakInit && document.readyState !== 'loading') {
-        }
     </script>
 </body>
 </html>
