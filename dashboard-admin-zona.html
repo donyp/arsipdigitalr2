@@ -3192,15 +3192,29 @@
                                         }
                                     },
                                     didOpen: () => {
-                                        // Force close after 1800ms by hiding container and backdrop
+                                        // Auto close with fade-out animation after 1800ms
                                         setTimeout(() => {
+                                            const popup = Swal.getPopup();
                                             const container = document.querySelector('.swal2-container');
                                             const backdrop = document.querySelector('.swal2-backdrop-show');
-                                            const popup = Swal.getPopup();
                                             
-                                            if (popup) popup.style.display = 'none';
-                                            if (container) container.style.display = 'none';
-                                            if (backdrop) backdrop.style.display = 'none';
+                                            if (popup) {
+                                                // Fade out animation
+                                                popup.style.animation = 'popupOut 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+                                                
+                                                // Fade out backdrop
+                                                if (backdrop) {
+                                                    backdrop.style.transition = 'opacity 0.4s ease';
+                                                    backdrop.style.opacity = '0';
+                                                }
+                                                
+                                                // Hide after animation completes
+                                                setTimeout(() => {
+                                                    if (popup) popup.style.display = 'none';
+                                                    if (container) container.style.display = 'none';
+                                                    if (backdrop) backdrop.style.display = 'none';
+                                                }, 400);
+                                            }
                                         }, 1800);
                                     }
                                 });
@@ -3429,15 +3443,29 @@
                                     }
                                 },
                                 didOpen: () => {
-                                    // Force close after 1800ms by hiding container and backdrop
+                                    // Auto close with fade-out animation after 1800ms
                                     setTimeout(() => {
+                                        const popup = Swal.getPopup();
                                         const container = document.querySelector('.swal2-container');
                                         const backdrop = document.querySelector('.swal2-backdrop-show');
-                                        const popup = Swal.getPopup();
                                         
-                                        if (popup) popup.style.display = 'none';
-                                        if (container) container.style.display = 'none';
-                                        if (backdrop) backdrop.style.display = 'none';
+                                        if (popup) {
+                                            // Fade out animation
+                                            popup.style.animation = 'popupOut 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+                                            
+                                            // Fade out backdrop
+                                            if (backdrop) {
+                                                backdrop.style.transition = 'opacity 0.4s ease';
+                                                backdrop.style.opacity = '0';
+                                            }
+                                            
+                                            // Hide after animation completes
+                                            setTimeout(() => {
+                                                if (popup) popup.style.display = 'none';
+                                                if (container) container.style.display = 'none';
+                                                if (backdrop) backdrop.style.display = 'none';
+                                            }, 400);
+                                        }
                                     }, 1800);
                                 }
                             });
