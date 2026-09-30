@@ -3192,12 +3192,15 @@
                                         }
                                     },
                                     didOpen: () => {
-                                        // Force auto-close after 1800ms
+                                        // Force close after 1800ms by hiding container and backdrop
                                         setTimeout(() => {
+                                            const container = document.querySelector('.swal2-container');
+                                            const backdrop = document.querySelector('.swal2-backdrop-show');
                                             const popup = Swal.getPopup();
-                                            if (popup && popup.style.display !== 'none') {
-                                                Swal.close();
-                                            }
+                                            
+                                            if (popup) popup.style.display = 'none';
+                                            if (container) container.style.display = 'none';
+                                            if (backdrop) backdrop.style.display = 'none';
                                         }, 1800);
                                     }
                                 });
@@ -3426,12 +3429,15 @@
                                     }
                                 },
                                 didOpen: () => {
-                                    // Force auto-close after 1800ms
+                                    // Force close after 1800ms by hiding container and backdrop
                                     setTimeout(() => {
+                                        const container = document.querySelector('.swal2-container');
+                                        const backdrop = document.querySelector('.swal2-backdrop-show');
                                         const popup = Swal.getPopup();
-                                        if (popup && popup.style.display !== 'none') {
-                                            Swal.close();
-                                        }
+                                        
+                                        if (popup) popup.style.display = 'none';
+                                        if (container) container.style.display = 'none';
+                                        if (backdrop) backdrop.style.display = 'none';
                                     }, 1800);
                                 }
                             });
