@@ -24,8 +24,15 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 .select('id, ticket_number, subject, category, priority, status, assigned_to, user_id, zona_id, created_at, updated_at, resolved_at', { count: 'exact' });
 
             // Moderator and Super Admin can see all tickets from all zonas
+            // Admin Zona can see tickets only from their zona
             // Other users only see their own tickets
-            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin') {
+            if (req.user.role === 'moderator' || req.user.role === 'super_admin') {
+                // Moderator/Super Admin can see all
+            } else if (req.user.role === 'admin_zona') {
+                // Admin zona sees tickets from their zona
+                query = query.eq('zona_id', req.user.zona_id);
+            } else {
+                // Regular users see only their own
                 query = query.eq('user_id', req.user.userId);
             }
 
@@ -115,8 +122,14 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
 
             let baseQuery = supabase.from('support_tickets').select('status', { count: 'exact' });
 
-            // Moderator/Super Admin see all, others see their own
-            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin') {
+            // Moderator/Super Admin see all, Admin Zona sees their zona, others see their own
+            if (req.user.role === 'moderator' || req.user.role === 'super_admin') {
+                // See all
+            } else if (req.user.role === 'admin_zona') {
+                // See only their zona's tickets
+                baseQuery = baseQuery.eq('zona_id', req.user.zona_id);
+            } else {
+                // Regular users see only their own
                 baseQuery = baseQuery.eq('user_id', req.user.userId);
             }
 
@@ -162,8 +175,12 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 return res.status(404).json({ error: 'Ticket not found' });
             }
 
-            // Check authorization (own ticket or moderator/super_admin)
-            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin' && ticket.user_id !== req.user.userId) {
+            // Check authorization (own ticket, moderator/super_admin, or admin_zona for their zona)
+            const isOwner = ticket.user_id === req.user.userId;
+            const isModerator = req.user.role === 'moderator' || req.user.role === 'super_admin';
+            const isAdminZona = req.user.role === 'admin_zona' && ticket.zona_id === req.user.zona_id;
+            
+            if (!isOwner && !isModerator && !isAdminZona) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
@@ -487,11 +504,15 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             // Check authorization
             const { data: ticket } = await supabase
                 .from('support_tickets')
-                .select('user_id')
+                .select('user_id, zona_id')
                 .eq('id', ticketId)
                 .single();
 
-            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin' && ticket.user_id !== req.user.userId) {
+            const isOwner = ticket.user_id === req.user.userId;
+            const isModerator = req.user.role === 'moderator' || req.user.role === 'super_admin';
+            const isAdminZona = req.user.role === 'admin_zona' && ticket.zona_id === req.user.zona_id;
+            
+            if (!isOwner && !isModerator && !isAdminZona) {
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
