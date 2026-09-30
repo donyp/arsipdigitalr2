@@ -369,6 +369,63 @@
         html[data-dark-mode="true"] [style*="background: #ecfdf5"] {
             background: rgba(16, 185, 129, 0.1) !important;
         }
+        
+        /* Dark Mode - Filter Section & Dropdowns */
+        html[data-dark-mode="true"] .dropdown-trigger {
+            background: rgba(30, 41, 59, 0.9) !important;
+            border-color: rgba(71, 85, 105, 0.6) !important;
+            color: var(--color-text-primary) !important;
+        }
+        
+        html[data-dark-mode="true"] .dropdown-trigger:hover {
+            background: rgba(30, 41, 59, 1) !important;
+            border-color: rgba(102, 126, 234, 0.6) !important;
+        }
+        
+        html[data-dark-mode="true"] .dropdown-menu {
+            background: rgba(30, 41, 59, 0.98) !important;
+            border-color: rgba(102, 126, 234, 0.6) !important;
+        }
+        
+        html[data-dark-mode="true"] .dropdown-option {
+            color: var(--color-text-primary) !important;
+            border-bottom-color: rgba(71, 85, 105, 0.4) !important;
+        }
+        
+        html[data-dark-mode="true"] .dropdown-option:hover {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.15), transparent) !important;
+        }
+        
+        html[data-dark-mode="true"] .dropdown-option.selected {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.25), rgba(118, 75, 162, 0.25)) !important;
+        }
+        
+        html[data-dark-mode="true"] #filterSearch {
+            background: rgba(30, 41, 59, 0.9) !important;
+            border-color: rgba(71, 85, 105, 0.5) !important;
+            color: var(--color-text-primary) !important;
+        }
+        
+        html[data-dark-mode="true"] #filterSearch:hover {
+            background: rgba(30, 41, 59, 1) !important;
+            border-color: rgba(102, 126, 234, 0.4) !important;
+        }
+        
+        html[data-dark-mode="true"] #filterSearch:focus {
+            background: rgba(30, 41, 59, 1) !important;
+            border-color: #667eea !important;
+        }
+        
+        html[data-dark-mode="true"] #filterSearch::placeholder {
+            color: var(--color-text-tertiary) !important;
+        }
+        
+        /* Dark Mode - Stat Cards */
+        html[data-dark-mode="true"] .modern-stat-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.8)) !important;
+            backdrop-filter: blur(16px) !important;
+            -webkit-backdrop-filter: blur(16px) !important;
+        }
 
         /* Override Tailwind classes in dark mode */
         html[data-dark-mode="true"] .bg-white {
@@ -1430,18 +1487,6 @@
             border-bottom: 1px solid rgba(229, 231, 235, 0.5);
             position: relative;
         }
-        
-        .invoice-table tbody tr::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 0;
-            background: linear-gradient(90deg, rgba(102, 126, 234, 0.08), transparent);
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 0;
-        }
 
         html[data-dark-mode="true"] .invoice-table tbody tr {
             border-bottom: 1px solid rgba(71, 85, 105, 0.6) !important;
@@ -1450,16 +1495,11 @@
         .invoice-table tbody tr:hover {
             background: linear-gradient(90deg, rgba(102, 126, 234, 0.06), transparent);
             box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-            transform: translateX(4px);
-        }
-        
-        .invoice-table tbody tr:hover::before {
-            width: 100%;
         }
 
         html[data-dark-mode="true"] .invoice-table tbody tr:hover {
-            background: linear-gradient(90deg, rgba(102, 126, 234, 0.2), transparent) !important;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15) !important;
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.15), transparent) !important;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2) !important;
         }
 
         .invoice-table td {
@@ -2015,128 +2055,129 @@
                                 <h2 style="font-size: 24px; font-weight: 700; color: white; margin: 0;" id="invoice-title-heading" class="invoice-title-heading">📋 Daftar File Invoice</h2>
                             </div>
 
-                            <!-- Modern Stats Cards - Clean Design -->
+                            <!-- Modern Stats Cards with Glassmorphism & Animations -->
                             <!-- First Row: Count Stats -->
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
-                                <!-- Total Invoice Card -->
-                                <div style="background: var(--color-bg-secondary); border: 2px solid #667eea; border-left: 5px solid #667eea; padding: 20px; border-radius: 14px; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.12); transition: all 0.3s ease; position: relative; overflow: hidden;">
-                                    <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), transparent); border-radius: 50%; pointer-events: none;"></div>
+                                <!-- Total Invoice Card - Enhanced -->
+                                <div class="modern-stat-card" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(102, 126, 234, 0.03)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 2px solid rgba(102, 126, 234, 0.3); border-left: 5px solid #667eea; padding: 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                                    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(102, 126, 234, 0.15), transparent); border-radius: 50%; pointer-events: none; animation: pulse 3s ease-in-out infinite;"></div>
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
                                         <div>
-                                            <div style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">Total Invoice</div>
-                                            <div style="font-size: 32px; font-weight: 800; color: #667eea; line-height: 1;" data-stat="total" id="statTotal">0</div>
+                                            <div style="font-size: 10px; color: #667eea; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background: #667eea; border-radius: 50%; animation: blink 2s ease-in-out infinite;"></span>
+                                                Total Invoice
+                                            </div>
+                                            <div style="font-size: 36px; font-weight: 900; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; line-height: 1; text-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);" data-stat="total" id="statTotal">0</div>
                                         </div>
-                                        <div style="width: 52px; height: 52px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(102, 126, 234, 0.05)); border-radius: 12px; border: 2px solid rgba(102, 126, 234, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">📊</div>
+                                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.1)); border-radius: 14px; border: 2px solid rgba(102, 126, 234, 0.3); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);">📊</div>
                                     </div>
                                 </div>
 
-                                <!-- Lunas Card -->
-                                <div style="background: var(--color-bg-secondary); border: 2px solid #10b981; border-left: 5px solid #10b981; padding: 20px; border-radius: 14px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.12); transition: all 0.3s ease; position: relative; overflow: hidden;">
-                                    <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent); border-radius: 50%; pointer-events: none;"></div>
+                                <!-- Lunas Card - Enhanced -->
+                                <div class="modern-stat-card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.03)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 2px solid rgba(16, 185, 129, 0.3); border-left: 5px solid #10b981; padding: 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                                    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(16, 185, 129, 0.15), transparent); border-radius: 50%; pointer-events: none; animation: pulse 3s ease-in-out infinite;"></div>
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
                                         <div>
-                                            <div style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">Lunas</div>
-                                            <div style="font-size: 32px; font-weight: 800; color: #10b981; line-height: 1;" data-stat="uploaded" id="statUploaded">0</div>
+                                            <div style="font-size: 10px; color: #10b981; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background: #10b981; border-radius: 50%; animation: blink 2s ease-in-out infinite;"></span>
+                                                Lunas
+                                            </div>
+                                            <div style="font-size: 36px; font-weight: 900; color: #10b981; line-height: 1; text-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);" data-stat="uploaded" id="statUploaded">0</div>
                                         </div>
-                                        <div style="width: 52px; height: 52px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05)); border-radius: 12px; border: 2px solid rgba(16, 185, 129, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">✅</div>
+                                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)); border-radius: 14px; border: 2px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);">✅</div>
                                     </div>
                                 </div>
 
-                                <!-- Belum Lunas Card -->
-                                <div style="background: var(--color-bg-secondary); border: 2px solid #f59e0b; border-left: 5px solid #f59e0b; padding: 20px; border-radius: 14px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12); transition: all 0.3s ease; position: relative; overflow: hidden;">
-                                    <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), transparent); border-radius: 50%; pointer-events: none;"></div>
+                                <!-- Belum Lunas Card - Enhanced -->
+                                <div class="modern-stat-card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(245, 158, 11, 0.03)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 2px solid rgba(245, 158, 11, 0.3); border-left: 5px solid #f59e0b; padding: 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                                    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(245, 158, 11, 0.15), transparent); border-radius: 50%; pointer-events: none; animation: pulse 3s ease-in-out infinite;"></div>
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
                                         <div>
-                                            <div style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">Belum Lunas</div>
-                                            <div style="font-size: 32px; font-weight: 800; color: #f59e0b; line-height: 1;" data-stat="pending" id="statPending">0</div>
+                                            <div style="font-size: 10px; color: #f59e0b; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background: #f59e0b; border-radius: 50%; animation: blink 2s ease-in-out infinite;"></span>
+                                                Belum Lunas
+                                            </div>
+                                            <div style="font-size: 36px; font-weight: 900; color: #f59e0b; line-height: 1; text-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);" data-stat="pending" id="statPending">0</div>
                                         </div>
-                                        <div style="width: 52px; height: 52px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05)); border-radius: 12px; border: 2px solid rgba(245, 158, 11, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">⏳</div>
+                                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1)); border-radius: 14px; border: 2px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);">⏳</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Second Row: Rupiah Stats -->
+                            <!-- Second Row: Rupiah Stats - Enhanced -->
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px;">
-                                <!-- Total Penjualan Card -->
-                                <div style="background: var(--color-bg-secondary); border: 2px solid #8b5cf6; border-left: 5px solid #8b5cf6; padding: 20px; border-radius: 14px; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.12); transition: all 0.3s ease; position: relative; overflow: hidden;">
-                                    <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), transparent); border-radius: 50%; pointer-events: none;"></div>
+                                <!-- Total Penjualan Card - Enhanced -->
+                                <div class="modern-stat-card" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(139, 92, 246, 0.03)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 2px solid rgba(139, 92, 246, 0.3); border-left: 5px solid #8b5cf6; padding: 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(139, 92, 246, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                                    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent); border-radius: 50%; pointer-events: none; animation: pulse 3s ease-in-out infinite;"></div>
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
                                         <div style="width: 100%;">
-                                            <div style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">Total Penjualan</div>
-                                            <div style="font-size: 24px; font-weight: 800; color: #8b5cf6; line-height: 1.2;" id="statTotalAmount">Rp 0</div>
-                                            <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 6px; font-weight: 600;">Semua Invoice</div>
+                                            <div style="font-size: 10px; color: #8b5cf6; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background: #8b5cf6; border-radius: 50%; animation: blink 2s ease-in-out infinite;"></span>
+                                                Total Penjualan
+                                            </div>
+                                            <div style="font-size: 26px; font-weight: 900; color: #8b5cf6; line-height: 1.2; text-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);" id="statTotalAmount">Rp 0</div>
+                                            <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 8px; font-weight: 600; opacity: 0.8;">Semua Invoice</div>
                                         </div>
-                                        <div style="width: 52px; height: 52px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.05)); border-radius: 12px; border: 2px solid rgba(139, 92, 246, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">💰</div>
+                                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1)); border-radius: 14px; border: 2px solid rgba(139, 92, 246, 0.3); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);">💰</div>
                                     </div>
                                 </div>
 
-                                <!-- Total Invoice Lunas (Rupiah) Card -->
-                                <div style="background: var(--color-bg-secondary); border: 2px solid #059669; border-left: 5px solid #059669; padding: 20px; border-radius: 14px; box-shadow: 0 2px 8px rgba(5, 150, 105, 0.12); transition: all 0.3s ease; position: relative; overflow: hidden;">
-                                    <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: linear-gradient(135deg, rgba(5, 150, 105, 0.05), transparent); border-radius: 50%; pointer-events: none;"></div>
+                                <!-- Total Invoice Lunas (Rupiah) Card - Enhanced -->
+                                <div class="modern-stat-card" style="background: linear-gradient(135deg, rgba(5, 150, 105, 0.08), rgba(5, 150, 105, 0.03)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 2px solid rgba(5, 150, 105, 0.3); border-left: 5px solid #059669; padding: 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(5, 150, 105, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                                    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(5, 150, 105, 0.15), transparent); border-radius: 50%; pointer-events: none; animation: pulse 3s ease-in-out infinite;"></div>
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
                                         <div style="width: 100%;">
-                                            <div style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">Invoice Lunas</div>
-                                            <div style="font-size: 24px; font-weight: 800; color: #059669; line-height: 1.2;" id="statLunasAmount">Rp 0</div>
-                                            <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 6px; font-weight: 600;">Total Terbayar</div>
+                                            <div style="font-size: 10px; color: #059669; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background: #059669; border-radius: 50%; animation: blink 2s ease-in-out infinite;"></span>
+                                                Invoice Lunas
+                                            </div>
+                                            <div style="font-size: 26px; font-weight: 900; color: #059669; line-height: 1.2; text-shadow: 0 2px 8px rgba(5, 150, 105, 0.2);" id="statLunasAmount">Rp 0</div>
+                                            <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 8px; font-weight: 600; opacity: 0.8;">Total Terbayar</div>
                                         </div>
-                                        <div style="width: 52px; height: 52px; background: linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(5, 150, 105, 0.05)); border-radius: 12px; border: 2px solid rgba(5, 150, 105, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">💵</div>
+                                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, rgba(5, 150, 105, 0.2), rgba(5, 150, 105, 0.1)); border-radius: 14px; border: 2px solid rgba(5, 150, 105, 0.3); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);">💵</div>
                                     </div>
                                 </div>
 
-                                <!-- Total Belum Lunas (Rupiah) Card -->
-                                <div style="background: var(--color-bg-secondary); border: 2px solid #dc2626; border-left: 5px solid #dc2626; padding: 20px; border-radius: 14px; box-shadow: 0 2px 8px rgba(220, 38, 38, 0.12); transition: all 0.3s ease; position: relative; overflow: hidden;">
-                                    <div style="position: absolute; top: 0; right: 0; width: 100px; height: 100px; background: linear-gradient(135deg, rgba(220, 38, 38, 0.05), transparent); border-radius: 50%; pointer-events: none;"></div>
+                                <!-- Total Belum Lunas (Rupiah) Card - Enhanced -->
+                                <div class="modern-stat-card" style="background: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(220, 38, 38, 0.03)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 2px solid rgba(220, 38, 38, 0.3); border-left: 5px solid #dc2626; padding: 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative; overflow: hidden;">
+                                    <div style="position: absolute; top: -50px; right: -50px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(220, 38, 38, 0.15), transparent); border-radius: 50%; pointer-events: none; animation: pulse 3s ease-in-out infinite;"></div>
                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1;">
                                         <div style="width: 100%;">
-                                            <div style="font-size: 11px; color: var(--color-text-tertiary); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px;">Belum Lunas</div>
-                                            <div style="font-size: 24px; font-weight: 800; color: #dc2626; line-height: 1.2;" id="statPendingAmount">Rp 0</div>
-                                            <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 6px; font-weight: 600;">Piutang Pending</div>
+                                            <div style="font-size: 10px; color: #dc2626; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                                <span style="display: inline-block; width: 6px; height: 6px; background: #dc2626; border-radius: 50%; animation: blink 2s ease-in-out infinite;"></span>
+                                                Belum Lunas
+                                            </div>
+                                            <div style="font-size: 26px; font-weight: 900; color: #dc2626; line-height: 1.2; text-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);" id="statPendingAmount">Rp 0</div>
+                                            <div style="font-size: 10px; color: var(--color-text-tertiary); margin-top: 8px; font-weight: 600; opacity: 0.8;">Piutang Pending</div>
                                         </div>
-                                        <div style="width: 52px; height: 52px; background: linear-gradient(135deg, rgba(220, 38, 38, 0.15), rgba(220, 38, 38, 0.05)); border-radius: 12px; border: 2px solid rgba(220, 38, 38, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px;">⚠️</div>
+                                        <div style="width: 56px; height: 56px; background: linear-gradient(135deg, rgba(220, 38, 38, 0.2), rgba(220, 38, 38, 0.1)); border-radius: 14px; border: 2px solid rgba(220, 38, 38, 0.3); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);">⚠️</div>
                                     </div>
                                 </div>
                             </div>
 
                             <style>
-                                /* Hover effects for modern stat cards */
-                                div[style*="border: 2px solid"] {
+                                /* Modern Stat Cards Animations */
+                                @keyframes pulse {
+                                    0%, 100% { transform: scale(1); opacity: 0.6; }
+                                    50% { transform: scale(1.1); opacity: 0.8; }
+                                }
+                                
+                                @keyframes blink {
+                                    0%, 100% { opacity: 1; }
+                                    50% { opacity: 0.3; }
+                                }
+                                
+                                .modern-stat-card {
                                     cursor: pointer;
                                 }
                                 
-                                div[style*="border: 2px solid #667eea"]:hover {
-                                    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.2) !important;
-                                    transform: translateY(-3px) !important;
-                                    border: 2px solid #667eea !important;
+                                .modern-stat-card:hover {
+                                    transform: translateY(-6px) scale(1.02);
+                                    box-shadow: 0 12px 32px rgba(102, 126, 234, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
                                 }
                                 
-                                div[style*="border: 2px solid #10b981"]:hover {
-                                    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.2) !important;
-                                    transform: translateY(-3px) !important;
-                                    border: 2px solid #10b981 !important;
-                                }
-                                
-                                div[style*="border: 2px solid #f59e0b"]:hover {
-                                    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.2) !important;
-                                    transform: translateY(-3px) !important;
-                                    border: 2px solid #f59e0b !important;
-                                }
-
-                                div[style*="border: 2px solid #8b5cf6"]:hover {
-                                    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.2) !important;
-                                    transform: translateY(-3px) !important;
-                                    border: 2px solid #8b5cf6 !important;
-                                }
-
-                                div[style*="border: 2px solid #059669"]:hover {
-                                    box-shadow: 0 6px 16px rgba(5, 150, 105, 0.2) !important;
-                                    transform: translateY(-3px) !important;
-                                    border: 2px solid #059669 !important;
-                                }
-
-                                div[style*="border: 2px solid #dc2626"]:hover {
-                                    box-shadow: 0 6px 16px rgba(220, 38, 38, 0.2) !important;
-                                    transform: translateY(-3px) !important;
-                                    border: 2px solid #dc2626 !important;
+                                .modern-stat-card:active {
+                                    transform: translateY(-2px) scale(0.98);
                                 }
                             </style>
                         </div>
