@@ -2501,6 +2501,11 @@
                 // Set current date/time greeting
                 setCurrentDate();
 
+                // Invoice list content is now embedded directly in dashboard.html
+                // No need to load external files
+                console.log('[Dashboard] Using embedded invoice list for role:', userAuth.role);
+
+                /* REMOVED: External file loading - content now embedded
                 // Determine which invoice list file to load based on user role
                 const invoiceFile = (userAuth.role === 'admin_zona') ? 'invoice-list.html' : 'invoice-list-admin.html';
                 console.log('[Dashboard] Loading invoice file:', invoiceFile, 'for role:', userAuth.role);
@@ -2561,6 +2566,7 @@
                 } catch (invoiceLoadError) {
                     console.warn('[Dashboard] invoice-list.html not found, using embedded filters');
                 }
+                */
                 
                 // Initialize invoice system with role-based filters (ALWAYS call this)
                 setTimeout(async () => {
