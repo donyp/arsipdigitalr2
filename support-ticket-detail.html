@@ -658,14 +658,26 @@
             console.log('[Ticket-Detail] Ticket data:', ticket);
             console.log('[Ticket-Detail] Created at:', ticket.created_at);
 
-            document.getElementById('ticketNumber').textContent = ticket.ticket_number || 'N/A';
-            document.getElementById('ticketSubject').textContent = ticket.subject || 'N/A';
-            document.getElementById('ticketStatus').textContent = ticket.status || 'Open';
+            const ticketNumberEl = document.getElementById('ticketNumber');
+            if (ticketNumberEl) ticketNumberEl.textContent = ticket.ticket_number || 'N/A';
+            
+            const ticketSubjectEl = document.getElementById('ticketSubject');
+            if (ticketSubjectEl) {
+                ticketSubjectEl.textContent = ticket.subject || 'N/A';
+                ticketSubjectEl.style.background = 'none';
+                ticketSubjectEl.style.animation = 'none';
+                ticketSubjectEl.style.minHeight = 'auto';
+            }
+            
+            const ticketStatusEl = document.getElementById('ticketStatus');
+            if (ticketStatusEl) ticketStatusEl.textContent = ticket.status || 'Open';
             
             const priorityBadge = document.getElementById('ticketPriority');
             if (priorityBadge) {
                 priorityBadge.textContent = ticket.priority || 'Medium';
                 priorityBadge.className = `priority-badge priority-${priorityClass}`;
+                priorityBadge.style.background = '';
+                priorityBadge.style.color = '';
             }
 
             const sidebarStatus = document.getElementById('sidebarStatus');
@@ -675,16 +687,52 @@
             const sidebarLastReply = document.getElementById('sidebarLastReply');
             const sidebarTotalMessages = document.getElementById('sidebarTotalMessages');
 
-            if (sidebarStatus) sidebarStatus.textContent = ticket.status || '-';
-            if (sidebarPriority) sidebarPriority.textContent = ticket.priority || '-';
-            if (sidebarCategory) sidebarCategory.textContent = ticket.category || '-';
+            if (sidebarStatus) {
+                sidebarStatus.textContent = ticket.status || '-';
+                sidebarStatus.style.background = 'none';
+                sidebarStatus.style.animation = 'none';
+                sidebarStatus.style.height = 'auto';
+                sidebarStatus.style.width = 'auto';
+            }
+            if (sidebarPriority) {
+                sidebarPriority.textContent = ticket.priority || '-';
+                sidebarPriority.style.background = 'none';
+                sidebarPriority.style.animation = 'none';
+                sidebarPriority.style.height = 'auto';
+                sidebarPriority.style.width = 'auto';
+            }
+            if (sidebarCategory) {
+                sidebarCategory.textContent = ticket.category || '-';
+                sidebarCategory.style.background = 'none';
+                sidebarCategory.style.animation = 'none';
+                sidebarCategory.style.height = 'auto';
+                sidebarCategory.style.width = 'auto';
+            }
             
             const createdFormatted = formatDateTimeWIB(ticket.created_at);
             console.log('[Ticket-Detail] Created formatted:', createdFormatted);
-            if (sidebarCreated) sidebarCreated.textContent = createdFormatted;
+            if (sidebarCreated) {
+                sidebarCreated.textContent = createdFormatted;
+                sidebarCreated.style.background = 'none';
+                sidebarCreated.style.animation = 'none';
+                sidebarCreated.style.height = 'auto';
+                sidebarCreated.style.width = 'auto';
+            }
             
-            if (sidebarLastReply) sidebarLastReply.textContent = getLastReplyTime(ticket);
-            if (sidebarTotalMessages) sidebarTotalMessages.textContent = (ticketData.messages || []).length + 1;
+            if (sidebarLastReply) {
+                sidebarLastReply.textContent = getLastReplyTime(ticket);
+                sidebarLastReply.style.background = 'none';
+                sidebarLastReply.style.animation = 'none';
+                sidebarLastReply.style.height = 'auto';
+                sidebarLastReply.style.width = 'auto';
+            }
+            if (sidebarTotalMessages) {
+                sidebarTotalMessages.textContent = (ticketData.messages || []).length + 1;
+                sidebarTotalMessages.style.background = 'none';
+                sidebarTotalMessages.style.animation = 'none';
+                sidebarTotalMessages.style.height = 'auto';
+                sidebarTotalMessages.style.width = 'auto';
+            }
         }
 
         function renderMessages(zonaName) {
