@@ -2780,7 +2780,7 @@ async function loadInvoicesInDashboard(page = 1) {
         
         
         
-        renderInvoiceTable(result.data || []);
+        await renderInvoiceTable(result.data || []);
         invoiceCurrentPage = page;
         
         // Track total count for pagination
@@ -2788,7 +2788,15 @@ async function loadInvoicesInDashboard(page = 1) {
             invoiceTotalCount = result.count;
             
             updatePaginationInfo();
-            updateInvoiceStatsFromData(result.data || [], result.count);
+            
+            // Use aggregatedStats from backend if available
+            if (result.aggregatedStats) {
+                console.log('[LoadInvoices] Using aggregated stats from backend');
+                updateInvoiceStatsFromAggregated(result.aggregatedStats);
+            } else {
+                // Fallback to old method
+                updateInvoiceStatsFromData(result.data || [], result.count);
+            }
         } else {
             invoiceTotalCount = (result.data || []).length;
             updatePaginationInfo();
@@ -3053,8 +3061,9 @@ async function renderInvoiceTable(invoices) {
         
         
         
-        // Update stats based on actual file existence
-        updateInvoiceStatsFromData(invoicesWithFileStatus, invoiceTotalCount);
+        // DO NOT update stats here - stats are now calculated from aggregated backend data
+        // which provides accurate counts from ALL invoices, not just current page
+        // updateInvoiceStatsFromData(invoicesWithFileStatus, invoiceTotalCount); // REMOVED - causes wrong counts with pagination
 }
 
 // Removed checkAndUpdateInvoiceButtons - now checking happens before render
@@ -4081,7 +4090,7 @@ async function applyInvoiceFilters() {
             }
             
             // Render table with filtered data (if status filter applied) or all data
-            renderInvoiceTable(filteredData);
+            await renderInvoiceTable(filteredData);
             invoiceCurrentPage = 1;
             updatePaginationInfo();
             
