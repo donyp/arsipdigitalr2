@@ -368,10 +368,8 @@
         // Use smaller width for upload file pages, normal width for others
         const sidebarWidth = isUploadFilePage ? '14rem' : '20rem';
 
-        // Use different height strategy based on page type
-        const sidebarHeight = isUploadFilePage 
-            ? `min-height: 108vh;`
-            : `min-height: 148vh;`;
+        // Use consistent height for sidebar - 100vh from top offset
+        const sidebarHeight = `height: calc(100vh - ${hasAnnouncement ? '60px' : '0px'});`;
 
         sidebar.style.cssText = `
             position: fixed;
@@ -387,6 +385,8 @@
             box-sizing: border-box;
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
+            overflow-y: auto;
+            overflow-x: hidden;
         `;
 
         sidebar.innerHTML = `
@@ -421,7 +421,6 @@
                 padding: 1rem 0;
                 scroll-behavior: smooth;
                 transition: background-color 0.4s ease;
-                ${isUploadFilePage ? 'max-height: calc(108vh - 180px);' : ''}
             ">
                 ${navHTML}
             </nav>
