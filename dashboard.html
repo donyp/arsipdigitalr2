@@ -3291,6 +3291,14 @@
         // Initialize dashboard for SPA support
         async function initDashboard() {
             console.log('[Dashboard Init] Page initializing for SPA...');
+            
+            // Reset invoice system flag for SPA navigation
+            window.invoiceSystemInitialized = false;
+            
+            // Reset pagination state
+            window.invoiceCurrentPage = 1;
+            window.invoiceTotalCount = 0;
+            
             try {
                 // Auth
                 await initAuth();
