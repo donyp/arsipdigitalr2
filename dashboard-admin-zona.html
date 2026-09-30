@@ -929,12 +929,6 @@
                         <i class="fas fa-moon"></i>
                         <span id="themeLabel">Dark</span>
                     </button>
-                    
-                    <div class="welcome-credit">
-                        <span class="welcome-credit-label">Total Invoice</span>
-                        <i class="fas fa-calculator welcome-credit-icon"></i>
-                        <p class="welcome-credit-value" id="totalInvoice">Rp 0</p>
-                    </div>
                 </div>
                 
                 <div class="welcome-actions">
@@ -1418,7 +1412,6 @@
                 const statTotalInvoice = document.getElementById('statTotalInvoice');
                 const statLunas = document.getElementById('statLunas');
                 const statBelumLunas = document.getElementById('statBelumLunas');
-                const totalInvoiceDisplay = document.getElementById('totalInvoice');
                 
                 // Update Rupiah stats
                 const statTotalPengambilan = document.getElementById('statTotalPengambilan');
@@ -1428,7 +1421,6 @@
                 if (statTotalInvoice) statTotalInvoice.textContent = totalInvoice;
                 if (statLunas) statLunas.textContent = lunas;
                 if (statBelumLunas) statBelumLunas.textContent = belumLunas;
-                if (totalInvoiceDisplay) totalInvoiceDisplay.textContent = formatter.format(totalAmount);
                 
                 // Update NEW Rupiah stats
                 if (statTotalPengambilan) statTotalPengambilan.textContent = formatter.format(totalAmount);
@@ -1554,7 +1546,6 @@
                 document.getElementById('statTotalInvoice').textContent = totalInvoice;
                 document.getElementById('statLunas').textContent = lunas;
                 document.getElementById('statBelumLunas').textContent = belumLunas;
-                document.getElementById('totalInvoice').textContent = formatter.format(totalAmount);
 
                 // Update NEW Rupiah stats
                 const statTotalPengambilan = document.getElementById('statTotalPengambilan');
@@ -1743,7 +1734,6 @@
                 document.getElementById('statTotalInvoice').textContent = totalInvoice;
                 document.getElementById('statLunas').textContent = lunas;
                 document.getElementById('statBelumLunas').textContent = belumLunas;
-                document.getElementById('totalInvoice').textContent = formatter.format(totalAmount);
                 
                 // Update NEW Rupiah stats
                 const statTotalPengambilan = document.getElementById('statTotalPengambilan');
