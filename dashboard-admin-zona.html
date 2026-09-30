@@ -790,6 +790,34 @@
             text-transform: uppercase;
         }
 
+        th[onclick] {
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        th[onclick]:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sort-indicator {
+            display: inline-block;
+            margin-left: 4px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        th[onclick]:hover .sort-indicator {
+            opacity: 0.8;
+        }
+
+        .sort-indicator.active {
+            opacity: 1;
+            color: var(--color-accent);
+        }
+
         tbody tr {
             border-bottom: 1px solid var(--color-border);
             transition: background 0.2s;
@@ -1300,12 +1328,16 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 9%;">TANGGAL</th>
+                            <th style="width: 9%; cursor: pointer; user-select: none;" onclick="sortTable('tanggal')">
+                                TANGGAL <span class="sort-indicator" id="sort-tanggal">↓</span>
+                            </th>
                             <th style="width: 11%;">NO FAKTUR</th>
                             <th style="width: 10%;">METODE BAYAR</th>
                             <th style="width: 18%;">TOKO</th>
                             <th style="width: 11%;">SUPPLIER</th>
-                            <th style="width: 10%;">TOTAL</th>
+                            <th style="width: 10%; cursor: pointer; user-select: none;" onclick="sortTable('total')">
+                                TOTAL <span class="sort-indicator" id="sort-total"></span>
+                            </th>
                             <th style="width: 12%;">KETERANGAN</th>
                             <th style="width: 7%; text-align: center;">AKSI</th>
                         </tr>
@@ -1464,6 +1496,13 @@
             year: '',
             month: ''
         };
+
+        // Sorting state
+        let sortState = {
+            column: 'tanggal',     // 'tanggal' or 'total'
+            direction: 'desc'      // 'desc' = newest/highest, 'asc' = oldest/lowest
+        };
+        let allInvoices = [];      // Store all invoices for sorting
 
         // ============================================
         // FILTER STATE MANAGEMENT
@@ -1927,19 +1966,39 @@
                     totalCount = invoices.length;
                 }
                 
-                // Store all filtered invoices for stats
-                const allFilteredInvoices = invoices;
+                // Store all filtered invoices for stats and sorting
+                allInvoices = invoices;
+                totalCount = invoices.length;
                 
-                // Now apply pagination to the filtered results
+                // Apply sorting to all invoices
+                allInvoices.sort((a, b) => {
+                    let aVal, bVal;
+
+                    if (sortState.column === 'tanggal') {
+                        aVal = new Date(a.tanggal || 0).getTime();
+                        bVal = new Date(b.tanggal || 0).getTime();
+                    } else if (sortState.column === 'total') {
+                        aVal = parseFloat(a.total_jumlah_jual) || 0;
+                        bVal = parseFloat(b.total_jumlah_jual) || 0;
+                    }
+
+                    if (sortState.direction === 'desc') {
+                        return bVal - aVal;
+                    } else {
+                        return aVal - bVal;
+                    }
+                });
+                
+                // Now apply pagination to the sorted results
                 const startIdx = (currentPage - 1) * pageSize;
                 const endIdx = startIdx + pageSize;
-                const paginatedInvoices = invoices.slice(startIdx, endIdx);
+                const paginatedInvoices = allInvoices.slice(startIdx, endIdx);
 
                 renderInvoices(paginatedInvoices);
                 updatePagination();
                 
                 // Update welcome stats with ALL filtered invoices
-                updateWelcomeStatsWithAllFiltered(allFilteredInvoices);
+                updateWelcomeStatsWithAllFiltered(allInvoices);
 
             } catch (err) {
                 console.error('Error loading invoices:', err);
@@ -1996,6 +2055,67 @@
             } catch (err) {
                 console.error('❌ Error updating welcome stats:', err);
             }
+        }
+
+        // ============================================
+        // SORTING FUNCTIONS
+        // ============================================
+        function sortTable(column) {
+            // Update sort indicators
+            document.querySelectorAll('.sort-indicator').forEach(el => {
+                el.classList.remove('active');
+                el.textContent = column === 'tanggal' ? '↓' : '';
+            });
+
+            // Toggle direction if same column clicked, otherwise default
+            if (sortState.column === column) {
+                sortState.direction = sortState.direction === 'desc' ? 'asc' : 'desc';
+            } else {
+                sortState.column = column;
+                sortState.direction = 'desc'; // Default: newest/highest first
+            }
+
+            // Update indicator
+            const indicator = document.getElementById(`sort-${column}`);
+            if (indicator) {
+                indicator.classList.add('active');
+                indicator.textContent = sortState.direction === 'desc' ? '↓' : '↑';
+            }
+
+            // Sort the data
+            const sorted = [...allInvoices].sort((a, b) => {
+                let aVal, bVal;
+
+                if (column === 'tanggal') {
+                    aVal = new Date(a.tanggal || 0).getTime();
+                    bVal = new Date(b.tanggal || 0).getTime();
+                } else if (column === 'total') {
+                    aVal = parseFloat(a.total_jumlah_jual) || 0;
+                    bVal = parseFloat(b.total_jumlah_jual) || 0;
+                }
+
+                if (sortState.direction === 'desc') {
+                    return bVal - aVal;
+                } else {
+                    return aVal - bVal;
+                }
+            });
+
+            // Update allInvoices with sorted data
+            allInvoices = sorted;
+
+            // Reset to page 1 and reload
+            currentPage = 1;
+            displaySortedInvoices();
+        }
+
+        function displaySortedInvoices() {
+            const startIdx = (currentPage - 1) * pageSize;
+            const endIdx = startIdx + pageSize;
+            const paginatedInvoices = allInvoices.slice(startIdx, endIdx);
+
+            renderInvoices(paginatedInvoices);
+            updatePagination();
         }
 
         // ============================================
@@ -2071,14 +2191,14 @@
         function nextPage() {
             if ((currentPage * pageSize) < totalCount) {
                 currentPage++;
-                loadInvoices();
+                displaySortedInvoices();
             }
         }
 
         function previousPage() {
             if (currentPage > 1) {
                 currentPage--;
-                loadInvoices();
+                displaySortedInvoices();
             }
         }
 
