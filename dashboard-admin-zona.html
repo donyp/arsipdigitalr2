@@ -2887,6 +2887,24 @@
                                             transform: scale(1) translateY(0);
                                         }
                                     }
+                                    @keyframes popupOut {
+                                        from {
+                                            opacity: 1;
+                                            transform: scale(1) translateY(0);
+                                        }
+                                        to {
+                                            opacity: 0;
+                                            transform: scale(0.95) translateY(-20px);
+                                        }
+                                    }
+                                    @keyframes backdropOut {
+                                        from {
+                                            opacity: 1;
+                                        }
+                                        to {
+                                            opacity: 0;
+                                        }
+                                    }
                                     .swal2-backdrop-show {
                                         background: rgba(0, 0, 0, 0.5) !important;
                                     }
@@ -2894,23 +2912,31 @@
                                 document.head.appendChild(style);
                             }
                             
+                            // Helper function to close popup with animation
+                            const closePopupSmooth = () => {
+                                const popup = Swal.getPopup();
+                                const backdrop = document.querySelector('.swal2-backdrop-show');
+                                const container = document.querySelector('.swal2-container');
+                                
+                                if (popup) {
+                                    popup.style.animation = 'popupOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards';
+                                }
+                                if (backdrop) {
+                                    backdrop.style.animation = 'backdropOut 0.3s ease forwards';
+                                }
+                                
+                                // Hide after animation completes
+                                setTimeout(() => {
+                                    if (container) container.style.display = 'none';
+                                    if (backdrop) backdrop.style.display = 'none';
+                                }, 300);
+                            };
+                            
                             // Add close button event listener
                             setTimeout(() => {
                                 const closeBtn = document.getElementById('download-close-btn');
                                 if (closeBtn) {
-                                    closeBtn.addEventListener('click', () => {
-                                        // Force close the popup
-                                        const backdrop = document.querySelector('.swal2-backdrop-show');
-                                        const container = document.querySelector('.swal2-container');
-                                        
-                                        if (container) container.style.display = 'none';
-                                        if (backdrop) backdrop.style.display = 'none';
-                                        
-                                        // Also try Swal's official close
-                                        if (typeof Swal !== 'undefined' && Swal.getPopup && Swal.getPopup()) {
-                                            Swal.getPopup().style.display = 'none';
-                                        }
-                                    });
+                                    closeBtn.addEventListener('click', closePopupSmooth);
                                     closeBtn.addEventListener('mouseover', function() {
                                         this.style.color = '#e74c3c';
                                         this.style.transform = 'rotate(90deg)';
@@ -2926,10 +2952,7 @@
                                 if (backdrop) {
                                     backdrop.addEventListener('click', (e) => {
                                         if (e.target === backdrop) {
-                                            // Force close the popup
-                                            const container = document.querySelector('.swal2-container');
-                                            if (container) container.style.display = 'none';
-                                            backdrop.style.display = 'none';
+                                            closePopupSmooth();
                                         }
                                     });
                                 }
