@@ -301,49 +301,97 @@ function renderTickets(tickets) {
         return;
     }
 
-    const html = `
-        <table class="ticket-table">
-            <thead>
-                <tr>
-                    <th style="width: 15%;">TIKET</th>
-                    <th style="width: 30%;">SUBJEK</th>
-                    <th style="width: 15%;">DEPARTMENT</th>
-                    <th style="width: 12%;">STATUS</th>
-                    <th style="width: 18%;">BALASAN TERAKHIR</th>
-                    <th style="width: 10%;">AKSI</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${tickets.map(ticket => {
-                    const statusClass = (ticket.status || 'Open').toLowerCase().replace(/\s+/g, '-');
-                    const statusValue = ticket.status || 'Open';
-                    return `
-                        <tr onclick="openTicket('${ticket.id}')">
-                            <td>
-                                <div class="ticket-number-col">${ticket.ticket_number || 'N/A'}</div>
-                                <span class="ticket-date-col">${formatTicketDate(ticket.created_at)}</span>
-                            </td>
-                            <td class="ticket-subject-col">${ticket.subject || 'N/A'}</td>
-                            <td class="ticket-category-col">${ticket.category || 'General'}</td>
-                            <td>
-                                <span class="status-dot ${statusClass}"></span>
-                                <span class="status-text status-${statusClass}">● ${statusValue}</span>
-                            </td>
-                            <td class="last-update-col">${formatDate(ticket.updated_at)}</td>
-                            <td class="action-col" onclick="event.stopPropagation();">
-                                <button onclick="openTicket('${ticket.id}')" title="Lihat Detail">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </td>
+    // Separate tickets into active and closed
+    const activeTickets = tickets.filter(t => t.status !== 'Closed');
+    const closedTickets = tickets.filter(t => t.status === 'Closed');
+
+    console.log('[Support-Customer] Active:', activeTickets.length, 'Closed:', closedTickets.length);
+
+    let html = '';
+
+    // Active Tickets Section
+    if (activeTickets.length > 0) {
+        html += `
+            <div style="margin-bottom: 32px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <div style="width: 4px; height: 28px; background: linear-gradient(180deg, #667eea 0%, #764ba2 100%); border-radius: 4px;"></div>
+                    <h2 style="font-size: 20px; font-weight: 800; color: var(--color-text-primary); margin: 0;">Tiket Aktif</h2>
+                    <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700;">${activeTickets.length}</span>
+                </div>
+                <table class="ticket-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">TIKET</th>
+                            <th style="width: 30%;">SUBJEK</th>
+                            <th style="width: 15%;">DEPARTMENT</th>
+                            <th style="width: 12%;">STATUS</th>
+                            <th style="width: 18%;">BALASAN TERAKHIR</th>
+                            <th style="width: 10%;">AKSI</th>
                         </tr>
-                    `;
-                }).join('')}
-            </tbody>
-        </table>
-    `;
+                    </thead>
+                    <tbody>
+                        ${activeTickets.map(ticket => renderTicketRow(ticket)).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // Closed Tickets Section
+    if (closedTickets.length > 0) {
+        html += `
+            <div style="margin-top: 40px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                    <div style="width: 4px; height: 28px; background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%); border-radius: 4px;"></div>
+                    <h2 style="font-size: 20px; font-weight: 800; color: var(--color-text-secondary); margin: 0;">Tiket Closed</h2>
+                    <span style="background: rgba(107, 114, 128, 0.2); color: var(--color-text-secondary); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 700;">${closedTickets.length}</span>
+                </div>
+                <table class="ticket-table" style="opacity: 0.7;">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">TIKET</th>
+                            <th style="width: 30%;">SUBJEK</th>
+                            <th style="width: 15%;">DEPARTMENT</th>
+                            <th style="width: 12%;">STATUS</th>
+                            <th style="width: 18%;">DITUTUP PADA</th>
+                            <th style="width: 10%;">AKSI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${closedTickets.map(ticket => renderTicketRow(ticket)).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
     
     container.innerHTML = html;
-    console.log('[Support-Customer] Table rendered with', tickets.length, 'rows');
+    console.log('[Support-Customer] Rendered - Active:', activeTickets.length, 'Closed:', closedTickets.length);
+}
+
+function renderTicketRow(ticket) {
+    const statusClass = (ticket.status || 'Open').toLowerCase().replace(/\s+/g, '-');
+    const statusValue = ticket.status || 'Open';
+    return `
+        <tr onclick="openTicket('${ticket.id}')">
+            <td>
+                <div class="ticket-number-col">${ticket.ticket_number || 'N/A'}</div>
+                <span class="ticket-date-col">${formatTicketDate(ticket.created_at)}</span>
+            </td>
+            <td class="ticket-subject-col">${ticket.subject || 'N/A'}</td>
+            <td class="ticket-category-col">${ticket.category || 'General'}</td>
+            <td>
+                <span class="status-dot ${statusClass}"></span>
+                <span class="status-text status-${statusClass}">● ${statusValue}</span>
+            </td>
+            <td class="last-update-col">${formatDate(ticket.updated_at)}</td>
+            <td class="action-col" onclick="event.stopPropagation();">
+                <button onclick="openTicket('${ticket.id}')" title="Lihat Detail">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </td>
+        </tr>
+    `;
 }
 
 function getPriorityColor(priority) {
