@@ -2987,6 +2987,7 @@
                     willOpen: () => {
                         const popup = Swal.getPopup();
                         if (popup) {
+                            popup.style.width = '320px';
                             popup.style.borderRadius = '12px';
                             popup.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
                             popup.style.animation = 'popupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
@@ -3097,10 +3098,10 @@
                                 Swal.fire({
                                     title: `✅ ${colorConfig.text} Berhasil Diunduh!`,
                                     html: `
-                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 0;">
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px 0;">
                                             <div style="
-                                                width: 80px;
-                                                height: 80px;
+                                                width: 70px;
+                                                height: 70px;
                                                 background: linear-gradient(135deg, #27ae60, #229954);
                                                 border-radius: 50%;
                                                 display: flex;
@@ -3109,13 +3110,13 @@
                                                 animation: successBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
                                                 box-shadow: 0 8px 24px rgba(39, 174, 96, 0.3);
                                             ">
-                                                <i class="fas fa-check" style="font-size: 40px; color: white;"></i>
+                                                <i class="fas fa-check" style="font-size: 36px; color: white;"></i>
                                             </div>
                                             <div style="text-align: center;">
-                                                <p style="margin: 0; font-size: 16px; color: ${isDarkMode ? '#f1f5f9' : '#2c3e50'}; font-weight: 600;">
+                                                <p style="margin: 0; font-size: 14px; color: ${isDarkMode ? '#f1f5f9' : '#2c3e50'}; font-weight: 600;">
                                                     File sudah tersimpan
                                                 </p>
-                                                <p style="margin: 8px 0 0 0; font-size: 13px; color: ${isDarkMode ? '#cbd5e1' : '#7f8c8d'}; font-weight: 500;">
+                                                <p style="margin: 6px 0 0 0; font-size: 12px; color: ${isDarkMode ? '#cbd5e1' : '#7f8c8d'}; font-weight: 500;">
                                                     Cek folder download Anda
                                                 </p>
                                             </div>
@@ -3123,7 +3124,8 @@
                                     `,
                                     background: isDarkMode ? '#1e293b' : '#f8f9fa',
                                     color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                                    timer: 2500,
+                                    timer: 2000,
+                                    timerProgressBar: true,
                                     showConfirmButton: false,
                                     customClass: {
                                         popup: 'download-success-popup'
@@ -3131,6 +3133,7 @@
                                     willOpen: () => {
                                         const popup = Swal.getPopup();
                                         if (popup) {
+                                            popup.style.width = '320px';
                                             popup.style.borderRadius = '12px';
                                             popup.style.boxShadow = isDarkMode 
                                                 ? '0 20px 60px rgba(0,0,0,0.4)' 
@@ -3217,6 +3220,7 @@
                     willOpen: () => {
                         const popup = Swal.getPopup();
                         if (popup) {
+                            popup.style.width = '320px';
                             popup.style.borderRadius = '12px';
                             popup.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
                             popup.style.animation = 'popupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
@@ -3275,10 +3279,10 @@
                             Swal.fire({
                                 title: `✅ PDF Berhasil Digabungkan!`,
                                 html: `
-                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 0;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 16px 0;">
                                         <div style="
-                                            width: 80px;
-                                            height: 80px;
+                                            width: 70px;
+                                            height: 70px;
                                             background: linear-gradient(135deg, #e67e22, #d35400);
                                             border-radius: 50%;
                                             display: flex;
@@ -3287,13 +3291,13 @@
                                             animation: successBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
                                             box-shadow: 0 8px 24px rgba(230, 126, 34, 0.3);
                                         ">
-                                            <i class="fas fa-file-pdf" style="font-size: 40px; color: white;"></i>
+                                            <i class="fas fa-file-pdf" style="font-size: 36px; color: white;"></i>
                                         </div>
                                         <div style="text-align: center;">
-                                            <p style="margin: 0; font-size: 16px; color: ${isDarkMode ? '#f1f5f9' : '#2c3e50'}; font-weight: 600;">
+                                            <p style="margin: 0; font-size: 14px; color: ${isDarkMode ? '#f1f5f9' : '#2c3e50'}; font-weight: 600;">
                                                 File sudah tersimpan
                                             </p>
-                                            <p style="margin: 8px 0 0 0; font-size: 13px; color: ${isDarkMode ? '#cbd5e1' : '#7f8c8d'}; font-weight: 500;">
+                                            <p style="margin: 6px 0 0 0; font-size: 12px; color: ${isDarkMode ? '#cbd5e1' : '#7f8c8d'}; font-weight: 500;">
                                                 Cek folder download Anda
                                             </p>
                                         </div>
@@ -3301,11 +3305,13 @@
                                 `,
                                 background: isDarkMode ? '#1e293b' : '#f8f9fa',
                                 color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                                timer: 2500,
+                                timer: 2000,
+                                timerProgressBar: true,
                                 showConfirmButton: false,
                                 willOpen: () => {
                                     const popup = Swal.getPopup();
                                     if (popup) {
+                                        popup.style.width = '320px';
                                         popup.style.borderRadius = '12px';
                                         popup.style.boxShadow = isDarkMode 
                                             ? '0 20px 60px rgba(0,0,0,0.4)' 
