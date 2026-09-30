@@ -190,6 +190,11 @@
             transition: all 0.2s;
         }
 
+        html[data-dark-mode="true"] .file-item {
+            background: var(--color-bg-card) !important;
+            border-color: var(--color-border) !important;
+        }
+
         .file-item:hover {
             border-color: var(--color-accent);
         }
@@ -200,7 +205,9 @@
         }
 
         html[data-dark-mode="true"] .file-item.valid {
-            background: rgba(16, 185, 129, 0.08);
+            background: var(--color-bg-card) !important;
+            border-color: var(--color-success) !important;
+            border-left-color: var(--color-success) !important;
         }
 
         .file-item.invalid {
@@ -209,7 +216,9 @@
         }
 
         html[data-dark-mode="true"] .file-item.invalid {
-            background: rgba(239, 68, 68, 0.08);
+            background: var(--color-bg-card) !important;
+            border-color: var(--color-danger) !important;
+            border-left-color: var(--color-danger) !important;
         }
 
         .file-item-icon {
@@ -240,10 +249,18 @@
             text-overflow: ellipsis;
         }
 
+        html[data-dark-mode="true"] .file-item-name {
+            color: var(--color-text-primary) !important;
+        }
+
         .file-item-meta {
             font-size: 12px;
             color: var(--color-text-secondary);
             margin-top: 4px;
+        }
+
+        html[data-dark-mode="true"] .file-item-meta {
+            color: var(--color-text-secondary) !important;
         }
 
         .file-item-badge {
