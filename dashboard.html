@@ -1141,7 +1141,10 @@
         }
 
         .dropdown-menu {
-            position: fixed;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
@@ -1153,7 +1156,6 @@
             overflow-y: auto;
             z-index: 9999;
             box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25);
-            min-width: 200px;
         }
             border-bottom-left-radius: 8px;
             border-bottom-right-radius: 8px;
@@ -2186,7 +2188,7 @@
                         </div>
 
                         <!-- Invoice Table - HIDDEN FOR ADMIN_ZONA -->
-                        <div id="invoiceTableSection" style="padding: 10px; overflow-x: auto;">
+                        <div id="invoiceTableSection" style="padding: 10px; overflow: visible;">
                             <!-- Modern Filter Section with Custom Dropdown Styling -->
                             <style>
                                 /* Custom Select Styling */
@@ -2434,6 +2436,7 @@
                             </div>
 
                             <!-- Modern Table Section with Enhanced Design -->
+                            <div style="overflow-x: auto; border-radius: 12px;">
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
@@ -2461,6 +2464,7 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                             
                             <style>
                                 @keyframes shimmer {
@@ -3026,7 +3030,7 @@
             document.querySelectorAll('.dropdown-menu').forEach(m => {
                 if (m !== menu) {
                     m.style.display = 'none';
-                    m.parentElement.classList.remove('active'); // Remove active from parent
+                    m.parentElement.classList.remove('active');
                 }
                 const t = m.parentElement.querySelector('.dropdown-trigger');
                 if (t) t.classList.remove('active');
@@ -3034,19 +3038,13 @@
             
             // Toggle current dropdown
             if (menu.style.display === 'none' || !menu.style.display) {
-                // Calculate position for fixed dropdown
-                const triggerRect = trigger.getBoundingClientRect();
-                menu.style.top = (triggerRect.bottom) + 'px';
-                menu.style.left = triggerRect.left + 'px';
-                menu.style.width = triggerRect.width + 'px';
-                
                 menu.style.display = 'block';
                 trigger.classList.add('active');
-                dropdown.classList.add('active'); // Add active to parent
+                dropdown.classList.add('active');
             } else {
                 menu.style.display = 'none';
                 trigger.classList.remove('active');
-                dropdown.classList.remove('active'); // Remove active from parent
+                dropdown.classList.remove('active');
             }
         }
 
@@ -3137,30 +3135,11 @@
                 document.querySelectorAll('.dropdown-menu').forEach(menu => {
                     menu.style.display = 'none';
                     const parentDropdown = menu.parentElement;
-                    parentDropdown.classList.remove('active'); // Remove active from parent
+                    parentDropdown.classList.remove('active');
                     parentDropdown.querySelector('.dropdown-trigger').classList.remove('active');
                 });
             }
         });
-        
-        // Reposition dropdowns on scroll/resize
-        function repositionOpenDropdowns() {
-            document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                if (menu.style.display === 'block') {
-                    const dropdown = menu.parentElement;
-                    const trigger = dropdown.querySelector('.dropdown-trigger');
-                    if (trigger) {
-                        const triggerRect = trigger.getBoundingClientRect();
-                        menu.style.top = (triggerRect.bottom) + 'px';
-                        menu.style.left = triggerRect.left + 'px';
-                        menu.style.width = triggerRect.width + 'px';
-                    }
-                }
-            });
-        }
-        
-        window.addEventListener('scroll', repositionOpenDropdowns, true);
-        window.addEventListener('resize', repositionOpenDropdowns);
 
         // Populate custom dropdown options
         function populateCustomDropdownOptions(dropdownId, options, optionFormatter) {
