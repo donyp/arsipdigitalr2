@@ -516,7 +516,7 @@
         <div class="header-bg">
             <div style="padding: 32px 24px;">
                 <div style="display: flex; align-items: center; gap: 16px; max-width: 100%;">
-                    <a href="/support-dashboard-customer" class="back-btn" title="Back" style="background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.3);">
+                    <a href="/zona/support" class="back-btn" title="Back" style="background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.3);">
                         <i class="fas fa-arrow-left"></i>
                     </a>
                     <div>
@@ -596,7 +596,7 @@
 
                 <!-- Buttons -->
                 <div class="button-group">
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/support-dashboard-customer';">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/zona/support';">
                         <i class="fas fa-times"></i> Batal
                     </button>
                     <button type="submit" class="btn btn-primary">
@@ -762,13 +762,13 @@
         }
 
         function closeSuccessModal() {
-            window.location.href = `/support-dashboard-customer`;
+            window.location.href = `/zona/support`;
         }
 
         // Auto redirect after showing success modal
         function autoRedirectAfterSuccess() {
             setTimeout(() => {
-                window.location.href = `/support-dashboard-customer`;
+                window.location.href = `/zona/support`;
             }, 2000); // Redirect after 2 seconds
         }
     </script>

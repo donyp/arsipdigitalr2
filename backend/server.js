@@ -332,6 +332,24 @@ app.get('/support-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));
 });
 
+// Admin Zona Support Routes
+app.get('/zona/support', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'support-dashboard-customer.html'));
+});
+
+app.get('/zona/ticket', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'support-create-ticket.html'));
+});
+
+// Legacy support routes (keep for backward compatibility)
+app.get('/support-dashboard-customer', (req, res) => {
+    res.redirect(301, '/zona/support');
+});
+
+app.get('/support-create-ticket.html', (req, res) => {
+    res.redirect(301, '/zona/ticket');
+});
+
 app.get('/support-ticket-detail.html', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
 });

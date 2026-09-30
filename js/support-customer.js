@@ -438,7 +438,7 @@ function openTicket(ticketId) {
 
 function showCreateModal() {
     // Navigate to create ticket page instead of showing modal
-    window.location.href = '/support-create-ticket.html';
+    window.location.href = '/zona/ticket';
 }
 
 async function submitCreateTicket(e) {
