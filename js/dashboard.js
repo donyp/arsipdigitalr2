@@ -4067,6 +4067,9 @@ async function applyInvoiceFilters() {
         if (result.count !== undefined) {
             invoiceTotalCount = result.count;
             
+            // Get aggregated stats (from ALL data before status filter)
+            let aggregatedStats = result.aggregatedStats;
+            
             // Filter by status AFTER receiving data (because status is calculated from isComplete)
             let filteredData = result.data || [];
             
@@ -4087,6 +4090,32 @@ async function applyInvoiceFilters() {
                 
                 // Update total count based on filtered data (for table display)
                 invoiceTotalCount = filteredData.length;
+                
+                // IMPORTANT: When status filter is applied, we need to recalculate aggregated stats
+                // to only show stats for the filtered status
+                if (aggregatedStats) {
+                    if (status === 'Lunas') {
+                        // Show only Lunas stats
+                        aggregatedStats = {
+                            totalCount: aggregatedStats.lunasCount,
+                            lunasCount: aggregatedStats.lunasCount,
+                            belumLunasCount: 0,
+                            totalAmount: aggregatedStats.lunasAmount,
+                            lunasAmount: aggregatedStats.lunasAmount,
+                            belumLunasAmount: 0
+                        };
+                    } else if (status === 'Belum Lunas') {
+                        // Show only Belum Lunas stats
+                        aggregatedStats = {
+                            totalCount: aggregatedStats.belumLunasCount,
+                            lunasCount: 0,
+                            belumLunasCount: aggregatedStats.belumLunasCount,
+                            totalAmount: aggregatedStats.belumLunasAmount,
+                            lunasAmount: 0,
+                            belumLunasAmount: aggregatedStats.belumLunasAmount
+                        };
+                    }
+                }
             }
             
             // Render table with filtered data (if status filter applied) or all data
@@ -4095,10 +4124,10 @@ async function applyInvoiceFilters() {
             updatePaginationInfo();
             
             // IMPORTANT: Use aggregatedStats from backend if available (accurate stats from ALL data)
-            // Otherwise fall back to calculating from current page data
-            if (result.aggregatedStats) {
-                console.log('[Filter] Using aggregated stats from backend:', result.aggregatedStats);
-                updateInvoiceStatsFromAggregated(result.aggregatedStats);
+            // Stats are adjusted based on status filter above
+            if (aggregatedStats) {
+                console.log('[Filter] Using aggregated stats from backend:', aggregatedStats);
+                updateInvoiceStatsFromAggregated(aggregatedStats);
             } else {
                 console.log('[Filter] No aggregated stats, calculating from current page data');
                 updateInvoiceStatsFromData(result.data || [], result.count);
