@@ -1503,6 +1503,7 @@
             direction: 'desc'      // 'desc' = newest/highest, 'asc' = oldest/lowest
         };
         let allInvoices = [];      // Store all invoices for sorting
+        let isLoading = false;     // Prevent multiple simultaneous loads
 
         // ============================================
         // FILTER STATE MANAGEMENT
@@ -1923,6 +1924,9 @@
         }
 
         async function loadInvoices() {
+            if (isLoading) return; // Prevent multiple simultaneous loads
+            isLoading = true;
+            
             try {
                 const supplier = document.getElementById('filterSupplier')?.value;
                 const toko = document.getElementById('filterToko')?.value;
@@ -2005,6 +2009,8 @@
                 document.getElementById('invoiceTableBody').innerHTML = `
                     <tr><td colspan="8" class="empty-state" style="color: red;">Error: ${err.message}</td></tr>
                 `;
+            } finally {
+                isLoading = false; // Always reset loading flag
             }
         }
         
@@ -2483,6 +2489,18 @@
                 
                 // Disable all filters except month on page load
                 updateFilterState();
+
+                // Wait for initAuth to be available
+                let authRetries = 0;
+                while (typeof initAuth !== 'function' && authRetries < 100) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    authRetries++;
+                }
+
+                if (typeof initAuth !== 'function') {
+                    console.error('initAuth not loaded after timeout');
+                    return;
+                }
 
                 await initAuth();
 
