@@ -484,13 +484,13 @@
         <div class="page-title">
             <div>
                 <div class="ticket-number" id="ticketNumber">-</div>
-                <h1 class="ticket-subject" id="ticketSubject" style="min-height: 32px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;">-</h1>
+                <h1 class="ticket-subject" id="ticketSubject" style="min-height: 32px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;">-</h1>
                 <div class="ticket-status-row">
                     <span>
                         <span class="status-dot"></span>
                         <span class="status-text" id="ticketStatus">-</span>
                     </span>
-                    <span class="priority-badge priority-medium" id="ticketPriority" style="background: #e5e7eb; color: #e5e7eb;">-</span>
+                    <span class="priority-badge priority-medium" id="ticketPriority" style="background: var(--color-bg-tertiary); color: var(--color-text-tertiary);">-</span>
                 </div>
             </div>
         </div>
@@ -499,11 +499,11 @@
         <div class="main-layout">
             <!-- Messages -->
             <div class="messages-section" id="messagesContainer">
-                <div style="padding: 24px; border-left: 4px solid #4f46e5; border-bottom: 1px solid #f3f4f6; display: flex; gap: 16px;">
-                    <div style="width: 48px; height: 48px; border-radius: 8px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; flex-shrink: 0;"></div>
+                <div style="padding: 24px; border-left: 4px solid var(--color-accent); border-bottom: 1px solid var(--color-border); display: flex; gap: 16px;">
+                    <div style="width: 48px; height: 48px; border-radius: 8px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; flex-shrink: 0;"></div>
                     <div style="flex: 1;">
-                        <div style="height: 14px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; margin-bottom: 8px; width: 60%;"></div>
-                        <div style="height: 60px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></div>
+                        <div style="height: 14px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px; margin-bottom: 8px; width: 60%;"></div>
+                        <div style="height: 60px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></div>
                     </div>
                 </div>
             </div>
@@ -514,32 +514,32 @@
                 
                 <div class="sidebar-item">
                     <span class="sidebar-label">Status</span>
-                    <span id="sidebarStatus" class="sidebar-value" style="height: 14px; width: 60px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
+                    <span id="sidebarStatus" class="sidebar-value" style="height: 14px; width: 60px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
                 </div>
                 
                 <div class="sidebar-item">
                     <span class="sidebar-label">Prioritas</span>
-                    <span id="sidebarPriority" class="sidebar-value" style="height: 14px; width: 60px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
+                    <span id="sidebarPriority" class="sidebar-value" style="height: 14px; width: 60px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
                 </div>
                 
                 <div class="sidebar-item">
                     <span class="sidebar-label">Department</span>
-                    <span id="sidebarCategory" class="sidebar-value" style="height: 14px; width: 100px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
+                    <span id="sidebarCategory" class="sidebar-value" style="height: 14px; width: 100px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
                 </div>
                 
                 <div class="sidebar-item">
                     <span class="sidebar-label">Dibuat</span>
-                    <span id="sidebarCreated" class="sidebar-value" style="height: 14px; width: 80px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
+                    <span id="sidebarCreated" class="sidebar-value" style="height: 14px; width: 80px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
                 </div>
                 
                 <div class="sidebar-item">
                     <span class="sidebar-label">Balasan Terakhir</span>
-                    <span id="sidebarLastReply" class="sidebar-value" style="height: 14px; width: 70px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
+                    <span id="sidebarLastReply" class="sidebar-value" style="height: 14px; width: 70px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
                 </div>
                 
                 <div class="sidebar-item">
                     <span class="sidebar-label">Total Pesan</span>
-                    <span id="sidebarTotalMessages" class="sidebar-value" style="height: 14px; width: 40px; background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
+                    <span id="sidebarTotalMessages" class="sidebar-value" style="height: 14px; width: 40px; background: linear-gradient(90deg, var(--color-border) 25%, var(--color-bg-tertiary) 50%, var(--color-border) 75%); background-size: 200% 100%; animation: skeleton-loading 1.5s infinite; border-radius: 4px;"></span>
                 </div>
             </div>
         </div>
