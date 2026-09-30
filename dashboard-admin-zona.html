@@ -2960,7 +2960,22 @@
             return new Promise((resolve) => {
                 Swal.fire({
                     title: `${colorConfig.icon} Mengunduh ${colorConfig.text}`,
-                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang mengunduh file...</p>',
+                    html: `
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 0;">
+                            <div class="download-spinner" style="
+                                width: 60px;
+                                height: 60px;
+                                border: 3px solid rgba(255,255,255,0.2);
+                                border-top: 3px solid white;
+                                border-radius: 50%;
+                                animation: spin 1s linear infinite;
+                            "></div>
+                            <div style="text-align: center;">
+                                <p style="margin: 0; font-size: 15px; color: rgba(255,255,255,0.95); font-weight: 500;">Sedang mengunduh file...</p>
+                                <p style="margin: 6px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.7);">Jangan tutup halaman ini</p>
+                            </div>
+                        </div>
+                    `,
                     showConfirmButton: false,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
@@ -2968,6 +2983,56 @@
                     color: '#ffffff',
                     customClass: {
                         popup: 'colored-download-popup'
+                    },
+                    willOpen: () => {
+                        const popup = Swal.getPopup();
+                        if (popup) {
+                            popup.style.borderRadius = '12px';
+                            popup.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
+                            popup.style.animation = 'popupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                            
+                            // Add spin animation keyframes
+                            if (!document.querySelector('#download-animations')) {
+                                const style = document.createElement('style');
+                                style.id = 'download-animations';
+                                style.textContent = `
+                                    @keyframes spin {
+                                        to { transform: rotate(360deg); }
+                                    }
+                                    @keyframes popupIn {
+                                        from {
+                                            opacity: 0;
+                                            transform: scale(0.95) translateY(-20px);
+                                        }
+                                        to {
+                                            opacity: 1;
+                                            transform: scale(1) translateY(0);
+                                        }
+                                    }
+                                    @keyframes popupOut {
+                                        from {
+                                            opacity: 1;
+                                            transform: scale(1) translateY(0);
+                                        }
+                                        to {
+                                            opacity: 0;
+                                            transform: scale(0.95) translateY(-20px);
+                                        }
+                                    }
+                                    @keyframes successBounce {
+                                        0% { transform: scale(0); }
+                                        50% { transform: scale(1.1); }
+                                        100% { transform: scale(1); }
+                                    }
+                                    @keyframes checkmark {
+                                        0% { stroke-dashoffset: 50; opacity: 0; }
+                                        50% { opacity: 1; }
+                                        100% { stroke-dashoffset: 0; opacity: 1; }
+                                    }
+                                `;
+                                document.head.appendChild(style);
+                            }
+                        }
                     },
                     didOpen: async () => {
                         try {
@@ -3030,18 +3095,30 @@
                                 
                                 // Show success
                                 Swal.fire({
-                                    title: '✅ Berhasil!',
+                                    title: `✅ ${colorConfig.text} Berhasil Diunduh!`,
                                     html: `
-                                        <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                            <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
-                                                ✅
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 0;">
+                                            <div style="
+                                                width: 80px;
+                                                height: 80px;
+                                                background: linear-gradient(135deg, #27ae60, #229954);
+                                                border-radius: 50%;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                animation: successBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+                                                box-shadow: 0 8px 24px rgba(39, 174, 96, 0.3);
+                                            ">
+                                                <i class="fas fa-check" style="font-size: 40px; color: white;"></i>
                                             </div>
-                                            <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
-                                                ${colorConfig.text} berhasil diunduh!
-                                            </p>
-                                            <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
-                                                File tersimpan di folder download Anda
-                                            </p>
+                                            <div style="text-align: center;">
+                                                <p style="margin: 0; font-size: 16px; color: ${isDarkMode ? '#f1f5f9' : '#2c3e50'}; font-weight: 600;">
+                                                    File sudah tersimpan
+                                                </p>
+                                                <p style="margin: 8px 0 0 0; font-size: 13px; color: ${isDarkMode ? '#cbd5e1' : '#7f8c8d'}; font-weight: 500;">
+                                                    Cek folder download Anda
+                                                </p>
+                                            </div>
                                         </div>
                                     `,
                                     background: isDarkMode ? '#1e293b' : '#f8f9fa',
@@ -3050,6 +3127,19 @@
                                     showConfirmButton: false,
                                     customClass: {
                                         popup: 'download-success-popup'
+                                    },
+                                    willOpen: () => {
+                                        const popup = Swal.getPopup();
+                                        if (popup) {
+                                            popup.style.borderRadius = '12px';
+                                            popup.style.boxShadow = isDarkMode 
+                                                ? '0 20px 60px rgba(0,0,0,0.4)' 
+                                                : '0 20px 60px rgba(0,0,0,0.15)';
+                                            popup.style.border = isDarkMode 
+                                                ? '1px solid rgba(71, 85, 105, 0.3)' 
+                                                : '1px solid rgba(226, 232, 240, 0.5)';
+                                            popup.style.animation = 'popupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                                        }
                                     }
                                 });
                                 
@@ -3060,9 +3150,30 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Download Gagal',
-                                    text: error.message,
+                                    html: `
+                                        <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px 0;">
+                                            <div style="
+                                                width: 70px;
+                                                height: 70px;
+                                                background: linear-gradient(135deg, #e74c3c, #c0392b);
+                                                border-radius: 50%;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                                animation: successBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+                                            ">
+                                                <i class="fas fa-exclamation" style="font-size: 36px; color: white;"></i>
+                                            </div>
+                                            <p style="margin: 0; font-size: 14px; color: #e74c3c; font-weight: 600;">
+                                                ${error.message}
+                                            </p>
+                                        </div>
+                                    `,
                                     background: isDarkMode ? '#1e293b' : '#f8f9fa',
                                     color: isDarkMode ? '#f1f5f9' : '#2c3e50',
+                                    confirmButtonColor: '#e74c3c',
+                                    confirmButtonText: 'Tutup'
+                                });
                                     confirmButtonColor: '#e74c3c'
                                 });
                                 resolve();
@@ -3084,12 +3195,35 @@
             return new Promise((resolve) => {
                 Swal.fire({
                     title: '📦 Menggabungkan PDF',
-                    html: '<p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.9);">Mohon tunggu, sedang menggabungkan file...</p>',
+                    html: `
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 0;">
+                            <div class="download-spinner" style="
+                                width: 60px;
+                                height: 60px;
+                                border: 3px solid rgba(255,255,255,0.2);
+                                border-top: 3px solid white;
+                                border-radius: 50%;
+                                animation: spin 1s linear infinite;
+                            "></div>
+                            <div style="text-align: center;">
+                                <p style="margin: 0; font-size: 15px; color: rgba(255,255,255,0.95); font-weight: 500;">Sedang menggabungkan file...</p>
+                                <p style="margin: 6px 0 0 0; font-size: 12px; color: rgba(255,255,255,0.7);">Jangan tutup halaman ini</p>
+                            </div>
+                        </div>
+                    `,
                     showConfirmButton: false,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     background: '#e67e22',
                     color: '#ffffff',
+                    willOpen: () => {
+                        const popup = Swal.getPopup();
+                        if (popup) {
+                            popup.style.borderRadius = '12px';
+                            popup.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
+                            popup.style.animation = 'popupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                        }
+                    },
                     didOpen: async () => {
                         try {
                             console.log('[CombinePDF] Popup opened, showing loading spinner...');
@@ -3141,24 +3275,50 @@
                             window.URL.revokeObjectURL(url);
                             
                             Swal.fire({
-                                title: '✅ Berhasil!',
+                                title: `✅ PDF Berhasil Digabungkan!`,
                                 html: `
-                                    <div style="margin: 20px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                                        <div style="font-size: 3rem; animation: popIn 0.5s ease-out;">
-                                            ✅
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 24px 0;">
+                                        <div style="
+                                            width: 80px;
+                                            height: 80px;
+                                            background: linear-gradient(135deg, #e67e22, #d35400);
+                                            border-radius: 50%;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            animation: successBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+                                            box-shadow: 0 8px 24px rgba(230, 126, 34, 0.3);
+                                        ">
+                                            <i class="fas fa-file-pdf" style="font-size: 40px; color: white;"></i>
                                         </div>
-                                        <p style="margin: 0; font-size: 16px; color: #27ae60; font-weight: 700;">
-                                            PDF berhasil digabungkan!
-                                        </p>
-                                        <p style="margin: 5px 0 0 0; font-size: 13px; color: #666; font-weight: 500;">
-                                            File tersimpan di folder download Anda
-                                        </p>
+                                        <div style="text-align: center;">
+                                            <p style="margin: 0; font-size: 16px; color: ${isDarkMode ? '#f1f5f9' : '#2c3e50'}; font-weight: 600;">
+                                                File sudah tersimpan
+                                            </p>
+                                            <p style="margin: 8px 0 0 0; font-size: 13px; color: ${isDarkMode ? '#cbd5e1' : '#7f8c8d'}; font-weight: 500;">
+                                                Cek folder download Anda
+                                            </p>
+                                        </div>
                                     </div>
                                 `,
                                 background: isDarkMode ? '#1e293b' : '#f8f9fa',
                                 color: isDarkMode ? '#f1f5f9' : '#2c3e50',
                                 timer: 2500,
                                 showConfirmButton: false,
+                                willOpen: () => {
+                                    const popup = Swal.getPopup();
+                                    if (popup) {
+                                        popup.style.borderRadius = '12px';
+                                        popup.style.boxShadow = isDarkMode 
+                                            ? '0 20px 60px rgba(0,0,0,0.4)' 
+                                            : '0 20px 60px rgba(0,0,0,0.15)';
+                                        popup.style.border = isDarkMode 
+                                            ? '1px solid rgba(71, 85, 105, 0.3)' 
+                                            : '1px solid rgba(226, 232, 240, 0.5)';
+                                        popup.style.animation = 'popupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                                    }
+                                }
+                            });
                                 customClass: {
                                     popup: 'download-success-popup'
                                 }
@@ -3171,10 +3331,29 @@
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Gabung PDF Gagal',
-                                text: error.message,
+                                html: `
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px 0;">
+                                        <div style="
+                                            width: 70px;
+                                            height: 70px;
+                                            background: linear-gradient(135deg, #e74c3c, #c0392b);
+                                            border-radius: 50%;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                            animation: successBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+                                        ">
+                                            <i class="fas fa-exclamation" style="font-size: 36px; color: white;"></i>
+                                        </div>
+                                        <p style="margin: 0; font-size: 14px; color: #e74c3c; font-weight: 600;">
+                                            ${error.message}
+                                        </p>
+                                    </div>
+                                `,
                                 background: isDarkMode ? '#1e293b' : '#f8f9fa',
                                 color: isDarkMode ? '#f1f5f9' : '#2c3e50',
-                                confirmButtonColor: '#e74c3c'
+                                confirmButtonColor: '#e74c3c',
+                                confirmButtonText: 'Tutup'
                             });
                             resolve();
                         }
