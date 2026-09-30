@@ -401,57 +401,6 @@
                 </div>
             </div>
         </div>
-
-                    <!-- Drop Zone -->
-                    <div id="dropZone" style="border: 2px dashed #10b981; border-radius: 12px; padding: 40px 30px; text-align: center; cursor: pointer; transition: all 0.3s; background: #f0fdf4;">
-                        <i class="fas fa-file-upload" style="font-size: 48px; color: #10b981; margin-bottom: 12px; display: block;"></i>
-                        <p style="margin: 0 0 12px 0; color: #2c3e50; font-weight: 600; font-size: 14px;">Drag & drop file di sini</p>
-                        <span style="font-size: 12px; color: #7f8c8d;">atau klik untuk memilih file (PDF, JPG, PNG)</span>
-                    </div>
-
-                    <!-- Validating Spinner -->
-                    <div id="validating" style="display: none; text-align: center; padding: 25px;">
-                        <div style="font-size: 36px; margin-bottom: 10px;">⏳</div>
-                        <p style="color: #2c3e50; font-weight: 600; margin-bottom: 8px; font-size: 13px;">Validating Files...</p>
-                        <p style="color: #7f8c8d; font-size: 12px;">Please wait while we check your files</p>
-                    </div>
-
-                    <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png" multiple style="display: none;">
-
-                    <!-- Stats -->
-                    <div id="stats" style="display: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0;">
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: 700; color: #2c3e50;" id="totalFiles">0</div>
-                            <div style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-top: 3px;">Total File</div>
-                        </div>
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: 700; color: #10b981;" id="validFiles">0</div>
-                            <div style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-top: 3px;">Valid ✓</div>
-                        </div>
-                        <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; text-align: center;">
-                            <div style="font-size: 24px; font-weight: 700; color: #e74c3c;" id="invalidFiles">0</div>
-                            <div style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-top: 3px;">Invalid ✗</div>
-                        </div>
-                    </div>
-
-                    <!-- Files List -->
-                    <div id="filesList" style="display: none; margin-top: 20px;">
-                        <h4 style="color: #2c3e50; margin-bottom: 12px; font-size: 14px; font-weight: 600;">File Selection:</h4>
-                        <div id="filesContainer"></div>
-                    </div>
-
-                    <!-- Buttons -->
-                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                        <button class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-5 rounded-lg transition text-sm" onclick="resetUpload()">
-                            <i class="fas fa-redo"></i> Reset
-                        </button>
-                        <button class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-5 rounded-lg transition text-sm" id="btnUpload" disabled>
-                            <i class="fas fa-upload"></i> Upload Bukti Bayar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script src="js/config.js"></script>
@@ -762,9 +711,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
