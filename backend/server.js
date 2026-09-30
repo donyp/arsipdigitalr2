@@ -360,7 +360,7 @@ app.get('/zona/support', (req, res) => {
 });
 
 app.get('/zona/ticket', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'support-create-ticket.html'));
+    res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
 });
 
 // Generic page router

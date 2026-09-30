@@ -255,7 +255,7 @@ async function submitCreateTicket(e) {
 function goToTicket(ticketId) {
     // Route to appropriate detail page based on user role
     if (currentUser && currentUser.role === 'admin_zona') {
-        window.location.href = `/zona/support?id=${ticketId}`;
+        window.location.href = `/zona/ticket?id=${ticketId}`;
     } else {
         window.location.href = `/support-ticket-detail.html?id=${ticketId}`;
     }
