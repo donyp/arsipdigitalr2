@@ -2860,23 +2860,12 @@
                                             transform: scale(1) translateY(0);
                                         }
                                     }
+                                    .swal2-backdrop-show {
+                                        background: rgba(0, 0, 0, 0.5) !important;
+                                    }
                                 `;
                                 document.head.appendChild(style);
                             }
-                            
-                            // Add backdrop click handler to close popup
-                            const backdrop = document.querySelector('.swal2-backdrop-show');
-                            if (backdrop) {
-                                backdrop.style.cursor = 'pointer';
-                                backdrop.addEventListener('click', () => Swal.close());
-                            }
-                        }
-                    },
-                    didDestroy: () => {
-                        // Cleanup
-                        const backdrop = document.querySelector('.swal2-backdrop-show');
-                        if (backdrop) {
-                            backdrop.removeEventListener('click', () => Swal.close());
                         }
                     }
                 });
