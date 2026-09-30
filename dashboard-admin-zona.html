@@ -2636,29 +2636,6 @@
                 // Build menu HTML with modern design
                 let menuHTML = '<div style="position: relative;">';
                 
-                // Add close button
-                menuHTML += '<button id="download-close-btn" style="' +
-                    'position: fixed;' +
-                    'z-index: 9999;' +
-                    'background: none;' +
-                    'border: none;' +
-                    'font-size: 28px;' +
-                    'cursor: pointer;' +
-                    'color: ' + (isDarkMode ? '#94a3b8' : '#95a5a6') + ';' +
-                    'padding: 8px;' +
-                    'width: 44px;' +
-                    'height: 44px;' +
-                    'display: flex;' +
-                    'align-items: center;' +
-                    'justify-content: center;' +
-                    'transition: all 0.2s;' +
-                    'top: 50%;' +
-                    'left: 50%;' +
-                    'transform: translate(calc(-50% + 185px), calc(-50% - 205px));' +
-                    '">' +
-                    '<i class="fas fa-times"></i>' +
-                    '</button>';
-                
                 // Start content container
                 menuHTML += '<div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 4px 0;">';
                 
@@ -2934,22 +2911,8 @@
                                 }, 300);
                             };
                             
-                            // Add close button event listener
+                            // Add backdrop click handler to close popup
                             setTimeout(() => {
-                                const closeBtn = document.getElementById('download-close-btn');
-                                if (closeBtn) {
-                                    closeBtn.addEventListener('click', closePopupSmooth);
-                                    closeBtn.addEventListener('mouseover', function() {
-                                        this.style.color = '#e74c3c';
-                                        this.style.transform = 'rotate(90deg)';
-                                    });
-                                    closeBtn.addEventListener('mouseout', function() {
-                                        this.style.color = isDarkMode ? '#94a3b8' : '#95a5a6';
-                                        this.style.transform = 'rotate(0deg)';
-                                    });
-                                }
-                                
-                                // Add backdrop click handler to close popup
                                 const backdrop = document.querySelector('.swal2-backdrop-show');
                                 if (backdrop) {
                                     backdrop.addEventListener('click', (e) => {
