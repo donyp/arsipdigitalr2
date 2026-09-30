@@ -2867,6 +2867,20 @@
                                 document.head.appendChild(style);
                             }
                         }
+                    },
+                    didOpen: async () => {
+                        // Add click handler to backdrop to close popup
+                        setTimeout(() => {
+                            const backdrop = document.querySelector('.swal2-backdrop-show');
+                            if (backdrop) {
+                                backdrop.addEventListener('click', function closeOnBackdropClick(e) {
+                                    if (e.target === backdrop) {
+                                        Swal.close();
+                                        backdrop.removeEventListener('click', closeOnBackdropClick);
+                                    }
+                                });
+                            }
+                        }, 100);
                     }
                 });
                 
