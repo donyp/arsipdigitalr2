@@ -540,6 +540,23 @@
         let ticketId = null;
         let ticketData = null;
 
+        // Change URL immediately before DOMContentLoaded
+        (async () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            
+            if (id && window.location.pathname.includes('support-ticket-detail.html')) {
+                // Wait for auth to initialize
+                await initAuth();
+                
+                if (currentUser && currentUser.role === 'admin_zona') {
+                    // Redirect to new URL for admin_zona
+                    window.location.replace(`/zona/support?id=${id}`);
+                    return;
+                }
+            }
+        })();
+
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Ticket-Detail] Page loaded');
             
@@ -556,12 +573,6 @@
             if (!currentUser) {
                 window.location.href = '/login';
                 return;
-            }
-
-            // Change URL to new format for admin_zona
-            if (currentUser.role === 'admin_zona' && !window.location.pathname.includes('/zona/support')) {
-                const newUrl = `/zona/support?id=${ticketId}`;
-                window.history.replaceState(null, '', newUrl);
             }
 
             await loadTicketDetail();
