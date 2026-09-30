@@ -16,141 +16,294 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --color-bg-primary: #ffffff;
-            --color-bg-secondary: #f5f7fa;
-            --color-bg-tertiary: #ffffff;
-            --color-text-primary: #1f2937;
-            --color-text-secondary: #6b7280;
-            --color-border: #e5e7eb;
+            --color-bg-primary: #f8fafc;
+            --color-bg-secondary: #ffffff;
+            --color-bg-card: #ffffff;
+            --color-text-primary: #0f172a;
+            --color-text-secondary: #64748b;
+            --color-border: #e2e8f0;
+            --color-accent: #10b981;
+            --color-accent-hover: #059669;
+            --color-success: #10b981;
+            --color-danger: #ef4444;
         }
         
         html[data-dark-mode="true"] {
             --color-bg-primary: #0f172a;
             --color-bg-secondary: #1e293b;
-            --color-bg-tertiary: #334155;
+            --color-bg-card: #1e293b;
             --color-text-primary: #f1f5f9;
-            --color-text-secondary: #cbd5e1;
-            --color-border: #475569;
+            --color-text-secondary: #94a3b8;
+            --color-border: #334155;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
             background: var(--color-bg-primary);
             color: var(--color-text-primary);
-            transition: background 0.3s, color 0.3s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+            transition: background 0.2s, color 0.2s;
         }
         
-        html[data-dark-mode="true"] .bg-white {
-            background-color: var(--color-bg-secondary) !important;
-            color: var(--color-text-primary);
-        }
-        
-        html[data-dark-mode="true"] .bg-gray-50 {
-            background-color: var(--color-bg-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-gray-400,
-        html[data-dark-mode="true"] .bg-green-600 {
-            background-color: inherit !important;
-        }
-        
-        html[data-dark-mode="true"] .text-gray-800,
-        html[data-dark-mode="true"] .text-gray-900 {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-gray-500,
-        html[data-dark-mode="true"] .text-gray-600 {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] .border-gray-200,
-        html[data-dark-mode="true"] .border-gray-100,
-        html[data-dark-mode="true"] .border-blue-200 {
-            border-color: var(--color-border) !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-blue-50 {
-            background-color: var(--color-bg-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-blue-800 {
-            color: #93c5fd !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-green-600 {
-            background-color: #10b981 !important;
-        }
-        
-        html[data-dark-mode="true"] .hover\:bg-green-700:hover {
-            background-color: #059669 !important;
-        }
-        
-        html[data-dark-mode="true"] .text-green-100 {
-            color: #d1fae5 !important;
-        }
-        
-        html[data-dark-mode="true"] .text-green-600 {
-            color: #10b981 !important;
-        }
-        
-        html[data-dark-mode="true"] #dropZone {
-            background: var(--color-bg-secondary) !important;
-            border-color: #10b981 !important;
-        }
-        
-        /* Stats cards dark mode */
-        html[data-dark-mode="true"] #stats div[style*="background: #f8f9fa"] {
-            background: var(--color-bg-tertiary) !important;
-        }
-        
-        html[data-dark-mode="true"] #stats div[style*="color: #2c3e50"] {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] #stats div[style*="color: #7f8c8d"] {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        /* File list items dark mode */
-        html[data-dark-mode="true"] #filesContainer div[style*="background: #f8f9fa"] {
-            background: var(--color-bg-tertiary) !important;
-        }
-        
-        html[data-dark-mode="true"] #filesContainer div[style*="color: #2c3e50"] {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] #filesContainer div[style*="color: #7f8c8d"] {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        /* Validating spinner dark mode */
-        html[data-dark-mode="true"] #validating {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] #validating p {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-gray-400 {
-            background-color: #6b7280 !important;
-        }
-        
-        html[data-dark-mode="true"] .hover\:bg-gray-500:hover {
-            background-color: #4b5563 !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-f8f9fa {
-            background-color: var(--color-bg-tertiary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-e74c3c {
-            color: #e74c3c !important;
+        html, body { zoom: 0.8; }
+
+        /* Modern Card */
+        .modern-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.2s ease;
         }
 
-        .gradient-header {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        .modern-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        html[data-dark-mode="true"] .modern-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Clean Header */
+        .page-header {
+            background: var(--color-bg-card);
+            border-bottom: 1px solid var(--color-border);
+            padding: 24px 32px;
+        }
+
+        /* Modern Dropzone */
+        .dropzone {
+            border: 2px dashed var(--color-border);
+            border-radius: 12px;
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--color-bg-primary);
+        }
+
+        .dropzone:hover {
+            border-color: var(--color-accent);
+            background: rgba(16, 185, 129, 0.02);
+        }
+
+        html[data-dark-mode="true"] .dropzone:hover {
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .dropzone.drag-over {
+            border-color: var(--color-accent);
+            background: rgba(16, 185, 129, 0.05);
+            transform: scale(0.99);
+        }
+
+        /* Stat Card - Minimal */
+        .stat-card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* File Item - Clean */
+        .file-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-card);
+            transition: all 0.2s;
+        }
+
+        .file-item:hover {
+            border-color: var(--color-accent);
+        }
+
+        .file-item.valid {
+            border-left: 3px solid var(--color-success);
+            background: rgba(16, 185, 129, 0.03);
+        }
+
+        html[data-dark-mode="true"] .file-item.valid {
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        .file-item.invalid {
+            border-left: 3px solid var(--color-danger);
+            background: rgba(239, 68, 68, 0.03);
+        }
+
+        html[data-dark-mode="true"] .file-item.invalid {
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        .file-item-icon {
+            font-size: 24px;
+            min-width: 32px;
+            text-align: center;
+        }
+
+        .file-item.valid .file-item-icon {
+            color: var(--color-success);
+        }
+
+        .file-item.invalid .file-item-icon {
+            color: var(--color-danger);
+        }
+
+        .file-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-item-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--color-text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-item-meta {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .file-item-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .file-item.valid .file-item-badge {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--color-success);
+        }
+
+        .file-item.invalid .file-item-badge {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--color-danger);
+        }
+
+        /* Clean Buttons */
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--color-accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-card);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        /* Delete Button */
+        .delete-btn {
+            padding: 8px 12px;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-danger);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: var(--color-danger);
+            color: white;
+        }
+
+        /* Animation */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: slideUp 0.3s ease;
+        }
+
+        /* Dark mode text overrides */
+        html[data-dark-mode="true"] .text-gray-900,
+        html[data-dark-mode="true"] .text-gray-800 {
+            color: var(--color-text-primary) !important;
+        }
+
+        html[data-dark-mode="true"] .text-gray-600,
+        html[data-dark-mode="true"] .text-gray-500 {
+            color: var(--color-text-secondary) !important;
+        }
+
+        /* Icon styling */
+        .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .icon-wrapper i {
+            font-size: 24px;
+            color: var(--color-accent);
         }
     </style>
 </head>
@@ -172,32 +325,82 @@
 
         <!-- Main Content -->
         <div id="main-content" style="margin-left: 20rem; width: calc(100% - 20rem); transition: all 300ms ease;">
-            <!-- Header -->
-            <div class="gradient-header text-white sticky top-0 z-30 shadow-lg">
-                <div class="px-6 py-4">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-white/20 p-2 rounded-lg">
-                            <i class="fas fa-receipt text-xl"></i>
+            <!-- Modern Header -->
+            <div class="page-header sticky top-0 z-30">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="icon-wrapper">
+                            <i class="fas fa-receipt"></i>
                         </div>
                         <div>
-                            <h1 class="text-2xl font-bold">Upload Bukti Bayar</h1>
-                            <p class="text-green-100 text-xs mt-0.5">Upload dokumen bukti pembayaran invoice</p>
+                            <h1 class="text-2xl font-black text-gray-900">Upload Bukti Bayar</h1>
+                            <p class="text-sm text-gray-600 mt-1">Upload dokumen bukti pembayaran invoice</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Main Content Area -->
-            <div class="p-4">
-                <!-- Info Box -->
-                <!-- Removed for compact layout -->
-
+            <div class="p-8">
                 <!-- Upload Card -->
-                <div class="bg-white rounded-lg shadow-md p-5 mb-4">
-                    <h2 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                        <i class="fas fa-cloud-upload-alt text-green-600"></i>
-                        Drag & Drop Bukti Bayar
+                <div class="modern-card mb-6">
+                    <h2 class="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                        <i class="fas fa-cloud-upload-alt text-green-500"></i>
+                        <span>Upload Area</span>
                     </h2>
+
+                    <!-- Drop Zone -->
+                    <div id="dropZone" class="dropzone mb-6">
+                        <i class="fas fa-receipt text-green-500 mb-4" style="font-size: 56px;"></i>
+                        <p class="text-base font-semibold text-gray-900 mb-2">Drag & drop bukti bayar here</p>
+                        <p class="text-sm text-gray-500">atau klik untuk memilih file dari komputer</p>
+                    </div>
+
+                    <!-- Validating Spinner -->
+                    <div id="validating" style="display: none; text-align: center; padding: 32px;">
+                        <div class="inline-block animate-spin text-5xl mb-4">⏳</div>
+                        <p class="text-base font-semibold text-gray-900 mb-2">Validating Files...</p>
+                        <p class="text-sm text-gray-500">Mohon tunggu sementara kami memeriksa file Anda</p>
+                    </div>
+
+                    <input type="file" id="fileInput" accept=".pdf,image/*" multiple style="display: none;">
+
+                    <!-- Stats -->
+                    <div id="stats" style="display: none;" class="grid grid-cols-3 gap-4 mb-6">
+                        <div class="stat-card">
+                            <div class="text-3xl font-black text-gray-900 mb-2" id="totalFiles">0</div>
+                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total File</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="text-3xl font-black text-green-600 mb-2" id="validFiles">0</div>
+                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Valid ✓</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="text-3xl font-black text-red-500 mb-2" id="invalidFiles">0</div>
+                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Invalid ✗</div>
+                        </div>
+                    </div>
+
+                    <!-- Files List -->
+                    <div id="filesList" style="display: none;">
+                        <h4 class="text-sm font-bold text-gray-900 mb-4">Selected Files:</h4>
+                        <div id="filesContainer"></div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="flex gap-3 justify-end mt-6">
+                        <button class="btn btn-secondary" onclick="resetUpload()">
+                            <i class="fas fa-redo"></i>
+                            <span>Reset</span>
+                        </button>
+                        <button class="btn btn-primary" id="btnUpload" disabled>
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Bukti Bayar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
                     <!-- Drop Zone -->
                     <div id="dropZone" style="border: 2px dashed #10b981; border-radius: 12px; padding: 40px 30px; text-align: center; cursor: pointer; transition: all 0.3s; background: #f0fdf4;">
