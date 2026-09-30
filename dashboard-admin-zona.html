@@ -2637,7 +2637,7 @@
                 let menuHTML = '<div style="position: relative;">';
                 
                 // Start content container
-                menuHTML += '<div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 4px 0;">';
+                menuHTML += '<div style="display: flex; flex-direction: column; gap: 10px; text-align: left; padding: 0;">';
                 
                 let hasFiles = false;
                 
@@ -2648,14 +2648,14 @@
                     <button onclick="downloadAdminZonaFile('${faktur}', 'invoice')" 
                             style="
                                 width: 100%; 
-                                padding: 14px 16px; 
+                                padding: 12px 14px; 
                                 background: linear-gradient(135deg, #3498db, #2980b9);
                                 color: white; 
                                 border: none; 
                                 border-radius: 8px; 
                                 cursor: pointer; 
                                 font-weight: 600; 
-                                font-size: 14px; 
+                                font-size: 13px; 
                                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                                 display: flex;
                                 align-items: center;
@@ -2677,14 +2677,14 @@
                     <button onclick="downloadAdminZonaFile('${faktur}', 'bukti_bayar')" 
                             style="
                                 width: 100%; 
-                                padding: 14px 16px; 
+                                padding: 12px 14px; 
                                 background: linear-gradient(135deg, #27ae60, #229954);
                                 color: white; 
                                 border: none; 
                                 border-radius: 8px; 
                                 cursor: pointer; 
                                 font-weight: 600; 
-                                font-size: 14px; 
+                                font-size: 13px; 
                                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                                 display: flex;
                                 align-items: center;
@@ -2706,14 +2706,14 @@
                     <button onclick="downloadAdminZonaFile('${faktur}', 'faktur_pajak')" 
                             style="
                                 width: 100%; 
-                                padding: 14px 16px; 
+                                padding: 12px 14px; 
                                 background: linear-gradient(135deg, #9b59b6, #8e44ad);
                                 color: white; 
                                 border: none; 
                                 border-radius: 8px; 
                                 cursor: pointer; 
                                 font-weight: 600; 
-                                font-size: 14px; 
+                                font-size: 13px; 
                                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                                 display: flex;
                                 align-items: center;
@@ -2739,14 +2739,14 @@
                     <button onclick="combinePDFAdminZona('${faktur}')" 
                             style="
                                 width: 100%; 
-                                padding: 14px 16px; 
+                                padding: 12px 14px; 
                                 background: linear-gradient(135deg, #e67e22, #d35400);
                                 color: white; 
                                 border: none; 
                                 border-radius: 8px; 
                                 cursor: pointer; 
                                 font-weight: 600; 
-                                font-size: 14px; 
+                                font-size: 13px; 
                                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                                 display: flex;
                                 align-items: center;
@@ -2812,7 +2812,7 @@
                     willOpen: () => {
                         const popup = Swal.getPopup();
                         if (popup) {
-                            popup.style.width = '420px';
+                            popup.style.width = '340px';
                             popup.style.maxWidth = '90vw';
                             popup.style.borderRadius = '12px';
                             popup.style.boxShadow = isDarkMode 
