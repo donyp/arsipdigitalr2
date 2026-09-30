@@ -540,23 +540,6 @@
         let ticketId = null;
         let ticketData = null;
 
-        // Change URL immediately before DOMContentLoaded
-        (async () => {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get('id');
-            
-            if (id && window.location.pathname.includes('support-ticket-detail.html')) {
-                // Wait for auth to initialize
-                await initAuth();
-                
-                if (currentUser && currentUser.role === 'admin_zona') {
-                    // Redirect to new URL for admin_zona
-                    window.location.replace(`/zona/ticket?id=${id}`);
-                    return;
-                }
-            }
-        })();
-
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('[Ticket-Detail] Page loaded');
             

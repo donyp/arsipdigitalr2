@@ -337,10 +337,6 @@ app.get('/zona/support', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard-customer.html'));
 });
 
-app.get('/zona/ticket', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'support-create-ticket.html'));
-});
-
 // Legacy support routes (keep for backward compatibility)
 app.get('/support-dashboard-customer', (req, res) => {
     res.redirect(301, '/zona/support');
@@ -355,12 +351,14 @@ app.get('/support-ticket-detail.html', (req, res) => {
 });
 
 // Zona routes - must come BEFORE generic /:page router
-app.get('/zona/support', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
-});
-
 app.get('/zona/ticket', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
+    // If has ID query param, it's viewing a ticket detail
+    if (req.query.id) {
+        res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
+    } else {
+        // Otherwise it's creating a new ticket
+        res.sendFile(path.join(__dirname, '..', 'support-create-ticket.html'));
+    }
 });
 
 // Generic page router
