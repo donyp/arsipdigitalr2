@@ -62,19 +62,22 @@
             margin: 0;
             padding: 0;
             transition: background 0.3s, color 0.3s;
+            min-height: 100vh;
         }
         
         .form-group {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
         
         .form-label {
             display: block;
-            font-weight: 600;
-            margin-bottom: 10px;
+            font-weight: 700;
+            margin-bottom: 12px;
             color: var(--color-text-primary);
             font-size: 14px;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-size: 12px;
         }
         
         .form-required {
@@ -83,101 +86,127 @@
         
         .form-input, .form-select, .form-textarea {
             width: 100%;
-            padding: 12px 16px;
-            border: 1.5px solid var(--color-border-dark);
-            border-radius: 10px;
+            padding: 14px 18px;
+            border: 2px solid var(--color-border-dark);
+            border-radius: 12px;
             font-size: 14px;
             font-family: inherit;
             background: var(--color-bg-secondary);
             color: var(--color-text-primary);
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .form-input:hover, .form-select:hover, .form-textarea:hover {
-            border-color: var(--color-border);
+            border-color: #667eea;
         }
         
         .form-input:focus, .form-select:focus, .form-textarea:focus {
             outline: none;
-            border-color: #4f46e5;
+            border-color: #667eea;
             background: var(--color-bg-secondary);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-        }
-        
-        .form-textarea {
-            min-height: 150px;
-            resize: vertical;
-        }
-        
-        .upload-area {
-            border: 2px dashed var(--color-border-dark);
-            border-radius: 14px;
-            padding: 40px 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
-        }
-        
-        .upload-area:hover {
-            border-color: #4f46e5;
-            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
             transform: translateY(-1px);
         }
         
-        .upload-area.active {
-            border-color: #4f46e5;
+        .form-textarea {
+            min-height: 180px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+        
+        .upload-area {
+            border: 3px dashed var(--color-border-dark);
+            border-radius: 16px;
+            padding: 48px 28px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
-            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+        }
+        
+        .upload-area:hover::before {
+            left: 100%;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+        }
+        
+        .upload-area.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, var(--color-bg-secondary) 100%);
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
+            transform: scale(1.02);
         }
         
         .upload-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
-            color: #6366f1;
+            font-size: 52px;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             animation: float 3s ease-in-out infinite;
         }
         
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-4px); }
+            50% { transform: translateY(-8px); }
         }
         
         .upload-text {
-            font-size: 14px;
+            font-size: 16px;
             color: var(--color-text-primary);
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-weight: 700;
+            margin-bottom: 6px;
         }
         
         .upload-hint {
-            font-size: 12px;
+            font-size: 13px;
             color: var(--color-text-secondary);
-            margin-top: 8px;
+            margin-top: 10px;
         }
         
         .file-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 14px;
+            padding: 14px 16px;
             background: var(--color-bg-tertiary);
-            border: 1px solid var(--color-border);
-            border-radius: 10px;
-            margin-bottom: 10px;
-            font-size: 13px;
-            transition: all 0.2s;
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .file-item:hover {
-            border-color: var(--color-border-dark);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border-color: #667eea;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
+            transform: translateX(4px);
         }
         
         .file-item-icon {
-            color: #6366f1;
-            margin-right: 10px;
-            font-size: 13px;
+            color: #667eea;
+            margin-right: 12px;
+            font-size: 16px;
         }
         
         .file-item-name {
@@ -186,16 +215,17 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            font-weight: 500;
+            font-weight: 600;
         }
         
         .file-item-size {
             color: var(--color-text-secondary);
-            margin-left: 10px;
+            margin-left: 12px;
             font-size: 12px;
             background: var(--color-bg-secondary);
-            padding: 2px 8px;
-            border-radius: 6px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 600;
         }
         
         .file-remove-btn {
@@ -203,48 +233,74 @@
             border: none;
             color: var(--color-text-tertiary);
             cursor: pointer;
-            padding: 6px 8px;
-            margin-left: 10px;
-            transition: all 0.2s;
-            font-size: 14px;
+            padding: 8px 10px;
+            margin-left: 12px;
+            transition: all 0.3s;
+            font-size: 16px;
+            border-radius: 8px;
         }
         
         .file-remove-btn:hover {
             color: #ef4444;
-            background: rgba(239, 68, 68, 0.08);
-            border-radius: 6px;
+            background: rgba(239, 68, 68, 0.1);
+            transform: scale(1.1);
         }
         
         .button-group {
             display: flex;
-            gap: 14px;
-            margin-top: 36px;
+            gap: 16px;
+            margin-top: 40px;
         }
         
         .btn {
-            padding: 13px 28px;
+            padding: 15px 32px;
             border: none;
-            border-radius: 10px;
-            font-weight: 600;
+            border-radius: 12px;
+            font-weight: 700;
             cursor: pointer;
             font-size: 14px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn > * {
+            position: relative;
+            z-index: 1;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
         }
         
         .btn-primary:hover {
-            background: linear-gradient(135deg, #4338ca 0%, #3f2fc7 100%);
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
             transform: translateY(-2px);
         }
         
@@ -255,68 +311,71 @@
         .btn-secondary {
             background: var(--color-bg-secondary);
             color: var(--color-text-primary);
-            border: 1.5px solid var(--color-border-dark);
-            transition: all 0.3s ease;
+            border: 2px solid var(--color-border-dark);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .btn-secondary:hover {
             background: var(--color-bg-tertiary);
-            border-color: var(--color-border);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border-color: #667eea;
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
         }
         
         .back-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
             color: var(--color-text-secondary);
             background: var(--color-bg-secondary);
-            border: 1.5px solid var(--color-border);
-            border-radius: 10px;
+            border: 2px solid var(--color-border);
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
-            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 18px;
             text-decoration: none;
         }
         
         .back-btn:hover {
             background: var(--color-bg-tertiary);
-            color: var(--color-text-primary);
-            border-color: var(--color-border-dark);
+            color: #667eea;
+            border-color: #667eea;
+            transform: translateX(-4px);
         }
         
         .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 24px;
         }
         
         .divider {
-            height: 1px;
+            height: 2px;
             background: linear-gradient(90deg, transparent 0%, var(--color-border) 50%, transparent 100%);
-            margin: 28px 0;
+            margin: 36px 0;
         }
         
         .form-hint {
             font-size: 12px;
             color: var(--color-text-tertiary);
-            margin-top: 8px;
+            margin-top: 10px;
             font-style: italic;
         }
         
         .form-card {
             background: var(--color-bg-secondary);
-            border-radius: 14px;
-            padding: 32px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            padding: 36px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             border: 1px solid var(--color-border);
             transition: all 0.3s ease;
         }
         
         .header-bg {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
         }
         
         .loading-overlay {
@@ -340,14 +399,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            gap: 24px;
         }
         
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
+            width: 64px;
+            height: 64px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top: 4px solid #667eea;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -359,8 +418,9 @@
         
         .loading-text {
             color: white;
-            font-weight: 600;
-            font-size: 16px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 0.5px;
         }
         
         .success-modal {
@@ -369,15 +429,15 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: var(--color-bg-secondary);
-            border-radius: 16px;
-            padding: 40px;
-            max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 48px;
+            max-width: 540px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
             z-index: 10000;
             display: none;
             text-align: center;
-            animation: slideUp 0.4s ease;
-            border: 1px solid var(--color-border);
+            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid var(--color-border);
         }
         
         .success-modal.active {
@@ -386,7 +446,7 @@
         
         @keyframes slideUp {
             from {
-                transform: translate(-50%, calc(-50% + 30px));
+                transform: translate(-50%, calc(-50% + 40px));
                 opacity: 0;
             }
             to {
@@ -396,8 +456,8 @@
         }
         
         .success-icon {
-            width: 80px;
-            height: 80px;
+            width: 96px;
+            height: 96px;
             border-radius: 50%;
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             display: flex;
@@ -444,20 +504,23 @@
         }
         
         .success-button {
-            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 12px 32px;
-            border-radius: 10px;
-            font-weight: 600;
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 24px;
-            transition: all 0.3s ease;
+            margin-top: 28px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
         }
         
         .success-button:hover {
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
             transform: translateY(-2px);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
         }
         
         /* Dark mode overlay background */
@@ -514,21 +577,21 @@
             <button class="success-button" onclick="closeSuccessModal()">Kembali ke Dashboard</button>
         </div>
         <div class="header-bg">
-            <div style="padding: 32px 24px;">
-                <div style="display: flex; align-items: center; gap: 16px; max-width: 100%;">
-                    <a href="/zona/support" class="back-btn" title="Back" style="background: rgba(255,255,255,0.2); color: white; border: 1.5px solid rgba(255,255,255,0.3);">
+            <div style="padding: 40px 28px;">
+                <div style="display: flex; align-items: center; gap: 20px; max-width: 100%;">
+                    <a href="/zona/support" class="back-btn" title="Back" style="background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);">
                         <i class="fas fa-arrow-left"></i>
                     </a>
                     <div>
-                        <h1 style="font-size: 28px; font-weight: 800; color: white; margin: 0; letter-spacing: -0.5px;">Buka Tiket Support</h1>
-                        <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 8px 0 0 0; font-weight: 500;">Hubungi tim support kami untuk bantuan lebih lanjut</p>
+                        <h1 style="font-size: 36px; font-weight: 900; color: white; margin: 0; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.1);">Buka Tiket Support</h1>
+                        <p style="color: rgba(255,255,255,0.95); font-size: 15px; margin: 10px 0 0 0; font-weight: 500; letter-spacing: 0.3px;">Hubungi tim support kami untuk bantuan lebih lanjut</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Main Content -->
-        <div style="padding: 32px 24px; display: flex; justify-content: center;">
+        <div style="padding: 40px 28px; display: flex; justify-content: center;">
             <form id="createTicketForm" onsubmit="submitTicket(event)" class="form-card" style="width: 100%; max-width: 100%;">
 
                 <!-- Department & Priority -->
