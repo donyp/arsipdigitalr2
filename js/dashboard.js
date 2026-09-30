@@ -4095,6 +4095,11 @@ function resetInvoiceFilters() {
     // Reset stats to 0
     resetInvoiceStatsToZero();
     
+    // Disable all filters except month again after reset
+    if (typeof disableFiltersExceptMonth === 'function') {
+        disableFiltersExceptMonth();
+    }
+    
     // Clear filter state completely
     invoiceFilterState.year = '';
     invoiceFilterState.month = '';
@@ -4368,6 +4373,8 @@ async function initInvoiceSystem() {
     // Load filter options from data (populate year/month/etc dropdowns)
     await loadFilterOptions();
     
+    // DISABLE all filters except MONTH on initial load
+    disableFiltersExceptMonth();
     
     // DO NOT start background scan here - wait for user to filter first
     // Background scan will be triggered when user clicks "Terapkan Filter"
@@ -4461,3 +4468,70 @@ function previousInvoicePage() {
 }
 
 
+
+
+// ========================================
+// MONTH-FIRST FILTER LOGIC
+// ========================================
+
+// Disable all filter dropdowns except month
+function disableFiltersExceptMonth() {
+    const dropdownsToDisable = [
+        'statusDropdown',
+        'kategoriDropdown', 
+        'tokoDropdown',
+        'tahunDropdown'
+    ];
+    
+    dropdownsToDisable.forEach(dropdownId => {
+        const dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            if (trigger) {
+                trigger.disabled = true;
+                trigger.style.opacity = '0.5';
+                trigger.style.cursor = 'not-allowed';
+                trigger.style.pointerEvents = 'none';
+            }
+        }
+    });
+    
+    console.log('[Filter] ✓ Disabled all filters except month - user must select month first');
+}
+
+// Enable all filter dropdowns after month is selected
+function enableAllFilters() {
+    const dropdownsToEnable = [
+        'statusDropdown',
+        'kategoriDropdown',
+        'tokoDropdown', 
+        'tahunDropdown'
+    ];
+    
+    dropdownsToEnable.forEach(dropdownId => {
+        const dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            if (trigger) {
+                trigger.disabled = false;
+                trigger.style.opacity = '1';
+                trigger.style.cursor = 'pointer';
+                trigger.style.pointerEvents = 'auto';
+            }
+        }
+    });
+    
+    console.log('[Filter] ✓ Enabled all filters - month has been selected');
+}
+
+// Check if month is selected and enable/disable accordingly
+function checkMonthSelectionAndToggleFilters() {
+    const monthInput = document.getElementById('filterMonth');
+    const monthValue = monthInput ? monthInput.value : '';
+    
+    if (monthValue && monthValue !== '') {
+        enableAllFilters();
+    } else {
+        disableFiltersExceptMonth();
+    }
+}

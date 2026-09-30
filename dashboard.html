@@ -3115,6 +3115,14 @@
             dropdown.querySelector('.dropdown-trigger').classList.remove('active');
             dropdown.classList.remove('active'); // Remove active from parent
             
+            // If month dropdown was selected, enable other filters
+            if (dropdownId === 'bulanDropdown' && value && value !== '') {
+                console.log('[Filter] Month selected, enabling other filters...');
+                if (typeof enableAllFilters === 'function') {
+                    enableAllFilters();
+                }
+            }
+            
             // Trigger change event on hidden input so filters work
             hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
