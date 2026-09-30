@@ -2248,8 +2248,8 @@
             const monthValue = document.getElementById('filterMonth')?.value;
             const isMonthSelected = monthValue && monthValue.trim() !== '';
             
-            // Enable/disable sort headers
-            enableSortHeaders(isMonthSelected);
+            // DO NOT enable sort headers here - they should only enable when "Terapkan Filter" is clicked
+            // Sort headers will be controlled separately in applyFilters() and resetFilters()
             
             // Filter IDs that should be disabled until month selected
             const dependentFilters = [
