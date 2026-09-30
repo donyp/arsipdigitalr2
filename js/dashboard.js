@@ -3624,6 +3624,32 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
     
 }
 
+// Reset stats to 0 (called on initial load before filtering)
+function resetInvoiceStatsToZero() {
+    console.log('[Dashboard] Resetting stats to 0...');
+    
+    const elements = {
+        total: document.getElementById('statTotal'),
+        uploaded: document.getElementById('statUploaded'),
+        pending: document.getElementById('statPending'),
+        totalAmount: document.getElementById('statTotalAmount'),
+        lunasAmount: document.getElementById('statLunasAmount'),
+        pendingAmount: document.getElementById('statPendingAmount')
+    };
+    
+    // Set counts to 0
+    if (elements.total) elements.total.textContent = '0';
+    if (elements.uploaded) elements.uploaded.textContent = '0';
+    if (elements.pending) elements.pending.textContent = '0';
+    
+    // Set Rupiah amounts to Rp 0
+    if (elements.totalAmount) elements.totalAmount.textContent = formatCurrency(0);
+    if (elements.lunasAmount) elements.lunasAmount.textContent = formatCurrency(0);
+    if (elements.pendingAmount) elements.pendingAmount.textContent = formatCurrency(0);
+    
+    console.log('[Dashboard] ✅ Stats reset to 0');
+}
+
 // Initialize dashboard stats and empty state (but DON'T auto-load data)
 // ============================================
 // DELETE INVOICE
@@ -4317,6 +4343,10 @@ async function initInvoiceSystem() {
     invoiceFilterState.month = '';
     invoiceFilterState.hasFiltered = false;
     saveInvoiceFilterState();
+    
+    
+    // Reset stats to 0 (don't load data until user filters)
+    resetInvoiceStatsToZero();
     
     
     // Show EMPTY STATE message (no data yet)
