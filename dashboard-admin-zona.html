@@ -2634,9 +2634,29 @@
                 }
                 
                 // Build menu HTML with modern design
-                let menuHTML = `<div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 4px 0;">`;
+                let menuHTML = `
+                <div style="position: relative;">
+                    <button onclick="Swal.close()" style="
+                        position: absolute;
+                        top: -35px;
+                        right: 0;
+                        background: none;
+                        border: none;
+                        font-size: 24px;
+                        cursor: pointer;
+                        color: ${isDarkMode ? '#94a3b8' : '#95a5a6'};
+                        padding: 0;
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        transition: all 0.2s;
+                    " onmouseover="this.style.color='#e74c3c'; this.style.transform='rotate(90deg)';" onmouseout="this.style.color='${isDarkMode ? '#94a3b8' : '#95a5a6'}'; this.style.transform='rotate(0deg)';">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 4px 0;">
                 
-                let hasFiles = false;
                 
                 // Download invoice button if exists
                 if (invoice.invoice_pdf_path) {
@@ -2786,7 +2806,10 @@
                             </div>`;
                 }
                 
-                menuHTML += `</div>`;
+                menuHTML += `
+                    </div>
+                </div>
+                `;
                 
                 // Show popup with dark mode support
                 Swal.fire({
@@ -2801,7 +2824,7 @@
                         title: 'download-menu-title',
                         icon: 'swal-icon-clean'
                     },
-                    allowOutsideClick: true,
+                    allowOutsideClick: false,
                     allowEscapeKey: true,
                     willOpen: () => {
                         const popup = Swal.getPopup();
@@ -2867,20 +2890,6 @@
                                 document.head.appendChild(style);
                             }
                         }
-                    },
-                    didOpen: async () => {
-                        // Add click handler to backdrop to close popup
-                        setTimeout(() => {
-                            const backdrop = document.querySelector('.swal2-backdrop-show');
-                            if (backdrop) {
-                                backdrop.addEventListener('click', function closeOnBackdropClick(e) {
-                                    if (e.target === backdrop) {
-                                        Swal.close();
-                                        backdrop.removeEventListener('click', closeOnBackdropClick);
-                                    }
-                                });
-                            }
-                        }, 100);
                     }
                 });
                 
