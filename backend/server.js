@@ -354,17 +354,21 @@ app.get('/support-ticket-detail.html', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
 });
 
-// Zona support ticket detail route
+// Zona routes - must come BEFORE generic /:page router
 app.get('/zona/support', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
+});
+
+app.get('/zona/ticket', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'support-create-ticket.html'));
 });
 
 // Generic page router
 app.get('/:page', (req, res, next) => {
     const page = req.params.page;
     
-    // Skip if it's an API route or has a dot (file extension)
-    if (page.startsWith('api') || page.includes('.')) {
+    // Skip if it's an API route, has a dot, or is nested (contains /)
+    if (page.startsWith('api') || page.includes('.') || page.includes('/')) {
         return next();
     }
     
