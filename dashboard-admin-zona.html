@@ -1336,7 +1336,7 @@
                             <th style="width: 18%;">TOKO</th>
                             <th style="width: 11%;">SUPPLIER</th>
                             <th id="th-total" style="width: 10%; cursor: default; user-select: none;" onclick="sortTable('total')">
-                                TOTAL <span class="sort-indicator" id="sort-total"></span>
+                                TOTAL <span class="sort-indicator" id="sort-total">↓</span>
                             </th>
                             <th style="width: 12%;">KETERANGAN</th>
                             <th style="width: 7%; text-align: center;">AKSI</th>
@@ -2097,7 +2097,9 @@
             // Update sort indicators
             document.querySelectorAll('.sort-indicator').forEach(el => {
                 el.classList.remove('active');
-                el.textContent = column === 'tanggal' ? '↓' : '';
+                // Reset to default icons
+                if (el.id === 'sort-tanggal') el.textContent = '↓';
+                if (el.id === 'sort-total') el.textContent = '↓';
             });
 
             // Toggle direction if same column clicked, otherwise default
