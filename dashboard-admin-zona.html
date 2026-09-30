@@ -802,20 +802,24 @@
 
         .sort-indicator {
             display: inline-block;
-            margin-left: 4px;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-            font-weight: 700;
-            font-size: 12px;
+            margin-left: 6px;
+            opacity: 0.4;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            color: var(--color-accent);
         }
 
         th[onclick]:hover .sort-indicator {
-            opacity: 0.8;
+            opacity: 0.7;
         }
 
         .sort-indicator.active {
             opacity: 1;
             color: var(--color-accent);
+        }
+
+        .sort-indicator.asc {
+            transform: rotate(180deg);
         }
 
         tbody tr {
@@ -1329,14 +1333,14 @@
                     <thead>
                         <tr>
                             <th id="th-tanggal" style="width: 9%; cursor: default; user-select: none;" onclick="sortTable('tanggal')">
-                                TANGGAL <span class="sort-indicator" id="sort-tanggal">↓</span>
+                                TANGGAL <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i>
                             </th>
                             <th style="width: 11%;">NO FAKTUR</th>
                             <th style="width: 10%;">METODE BAYAR</th>
                             <th style="width: 18%;">TOKO</th>
                             <th style="width: 11%;">SUPPLIER</th>
                             <th id="th-total" style="width: 10%; cursor: default; user-select: none;" onclick="sortTable('total')">
-                                TOTAL <span class="sort-indicator" id="sort-total">↓</span>
+                                TOTAL <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i>
                             </th>
                             <th style="width: 12%;">KETERANGAN</th>
                             <th style="width: 7%; text-align: center;">AKSI</th>
@@ -2096,10 +2100,7 @@
         function sortTable(column) {
             // Update sort indicators
             document.querySelectorAll('.sort-indicator').forEach(el => {
-                el.classList.remove('active');
-                // Reset to default icons
-                if (el.id === 'sort-tanggal') el.textContent = '↓';
-                if (el.id === 'sort-total') el.textContent = '↓';
+                el.classList.remove('active', 'asc');
             });
 
             // Toggle direction if same column clicked, otherwise default
@@ -2110,11 +2111,14 @@
                 sortState.direction = 'desc'; // Default: newest/highest first
             }
 
-            // Update indicator
+            // Update indicator with FontAwesome icon rotation
             const indicator = document.getElementById(`sort-${column}`);
             if (indicator) {
                 indicator.classList.add('active');
-                indicator.textContent = sortState.direction === 'desc' ? '↓' : '↑';
+                // Add 'asc' class to rotate icon 180deg when ascending
+                if (sortState.direction === 'asc') {
+                    indicator.classList.add('asc');
+                }
             }
 
             // Sort the data
