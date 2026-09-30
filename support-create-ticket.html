@@ -66,52 +66,77 @@
         }
         
         .form-group {
-            margin-bottom: 28px;
+            margin-bottom: 32px;
+            position: relative;
         }
         
         .form-label {
             display: block;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             color: var(--color-text-primary);
-            font-size: 14px;
+            font-size: 13px;
             letter-spacing: 0.5px;
-            text-transform: uppercase;
-            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-label i {
+            color: #667eea;
+            font-size: 14px;
         }
         
         .form-required {
-            color: #ef4444;
+            color: #f093fb;
+            font-weight: 900;
         }
         
         .form-input, .form-select, .form-textarea {
             width: 100%;
-            padding: 14px 18px;
-            border: 2px solid var(--color-border-dark);
-            border-radius: 12px;
-            font-size: 14px;
+            padding: 16px 20px;
+            border: 2px solid var(--color-border);
+            border-radius: 14px;
+            font-size: 15px;
             font-family: inherit;
-            background: var(--color-bg-secondary);
+            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
             color: var(--color-text-primary);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
         
         .form-input:hover, .form-select:hover, .form-textarea:hover {
             border-color: #667eea;
+            background: var(--color-bg-secondary);
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.08);
         }
         
         .form-input:focus, .form-select:focus, .form-textarea:focus {
             outline: none;
             border-color: #667eea;
             background: var(--color-bg-secondary);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
-            transform: translateY(-1px);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15), 0 8px 24px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .form-input::placeholder, .form-textarea::placeholder {
+            color: var(--color-text-tertiary);
+            font-style: italic;
+        }
+        
+        .form-select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23667eea' d='M1 1l7 7 7-7'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 48px;
         }
         
         .form-textarea {
-            min-height: 180px;
+            min-height: 200px;
             resize: vertical;
-            line-height: 1.6;
+            line-height: 1.7;
         }
         
         .upload-area {
@@ -348,13 +373,26 @@
         .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 24px;
+            gap: 28px;
         }
         
         .divider {
-            height: 2px;
-            background: linear-gradient(90deg, transparent 0%, var(--color-border) 50%, transparent 100%);
-            margin: 36px 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.3) 50%, transparent 100%);
+            margin: 40px 0;
+            position: relative;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
         }
         
         .form-hint {
@@ -362,15 +400,41 @@
             color: var(--color-text-tertiary);
             margin-top: 10px;
             font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .form-hint i {
+            color: #667eea;
         }
         
         .form-card {
             background: var(--color-bg-secondary);
-            border-radius: 16px;
-            padding: 36px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border: 1px solid var(--color-border);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 2px solid var(--color-border);
             transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
         
         .header-bg {
@@ -598,23 +662,27 @@
                 <div class="two-column">
                     <div class="form-group">
                         <label class="form-label">
+                            <i class="fas fa-tag"></i>
                             Kategori Laporan <span class="form-required">*</span>
                         </label>
                         <select id="formCategory" class="form-select" required>
                             <option value="">Pilih kategori laporan...</option>
-                            <option value="Data Issue">Data Issue</option>
-                            <option value="Bug">Bug</option>
-                            <option value="Other">Lainnya</option>
+                            <option value="Data Issue">📊 Data Issue</option>
+                            <option value="Bug">🐛 Bug</option>
+                            <option value="Other">📝 Lainnya</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">Prioritas</label>
+                        <label class="form-label">
+                            <i class="fas fa-flag"></i>
+                            Prioritas
+                        </label>
                         <select id="formPriority" class="form-select">
-                            <option value="Low">Low</option>
-                            <option value="Medium" selected>Medium</option>
-                            <option value="High">High</option>
-                            <option value="Urgent">Urgent</option>
+                            <option value="Low">🟢 Low</option>
+                            <option value="Medium" selected>🟡 Medium</option>
+                            <option value="High">🟠 High</option>
+                            <option value="Urgent">🔴 Urgent</option>
                         </select>
                     </div>
                 </div>
@@ -624,34 +692,42 @@
                 <!-- Subject -->
                 <div class="form-group">
                     <label class="form-label">
+                        <i class="fas fa-heading"></i>
                         Subjek <span class="form-required">*</span>
                     </label>
-                    <input type="text" id="formSubject" class="form-input" placeholder="Ringkas masalah Anda" required>
+                    <input type="text" id="formSubject" class="form-input" placeholder="Contoh: Tidak bisa download file invoice" required>
                 </div>
 
                 <!-- Description -->
                 <div class="form-group">
                     <label class="form-label">
+                        <i class="fas fa-align-left"></i>
                         Penjelasan <span class="form-required">*</span>
                     </label>
-                    <textarea id="formDescription" class="form-textarea" placeholder="Jelaskan masalah atau pertanyaan Anda secara detail..." required></textarea>
-                    <div class="form-hint">Tulis penjelasan yang jelas dan detail agar kami dapat membantu lebih baik</div>
+                    <textarea id="formDescription" class="form-textarea" placeholder="Jelaskan masalah atau pertanyaan Anda secara detail...&#10;&#10;Contoh:&#10;- Apa yang terjadi?&#10;- Kapan masalah mulai muncul?&#10;- Langkah apa yang sudah dicoba?" required></textarea>
+                    <div class="form-hint">
+                        <i class="fas fa-lightbulb"></i>
+                        Tulis penjelasan yang jelas dan detail agar kami dapat membantu lebih baik
+                    </div>
                 </div>
 
                 <div class="divider"></div>
 
                 <!-- File Upload -->
                 <div class="form-group">
-                    <label class="form-label">Lampiran (Opsional)</label>
+                    <label class="form-label">
+                        <i class="fas fa-paperclip"></i>
+                        Lampiran (Opsional)
+                    </label>
                     <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click();">
                         <div class="upload-icon">
                             <i class="fas fa-cloud-arrow-up"></i>
                         </div>
                         <div class="upload-text">Drag & drop atau klik untuk upload file</div>
-                        <div class="upload-hint">Max. 5 file, 2MB per file (JPG, PNG, PDF)</div>
+                        <div class="upload-hint">Max. 5 file, 2MB per file • JPG, PNG, PDF</div>
                         <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.pdf" style="display: none;" onchange="handleFileSelect(event)">
                     </div>
-                    <div id="fileList" style="margin-top: 14px;"></div>
+                    <div id="fileList" style="margin-top: 16px;"></div>
                 </div>
 
                 <!-- Divider before buttons -->
