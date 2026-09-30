@@ -354,6 +354,11 @@ app.get('/support-ticket-detail.html', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
 });
 
+// Zona support ticket detail route
+app.get('/zona/support', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'support-ticket-detail.html'));
+});
+
 // Generic page router
 app.get('/:page', (req, res, next) => {
     const page = req.params.page;
