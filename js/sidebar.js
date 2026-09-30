@@ -368,8 +368,8 @@
         // Use smaller width for upload file pages, normal width for others
         const sidebarWidth = isUploadFilePage ? '14rem' : '20rem';
 
-        // Use min-height: 100vh to ensure sidebar is always full height but can grow if needed
-        const sidebarHeight = `min-height: 100vh;`;
+        // Use min-height: 148vh for ideal full page coverage
+        const sidebarHeight = `min-height: 148vh;`;
 
         sidebar.style.cssText = `
             position: fixed;
