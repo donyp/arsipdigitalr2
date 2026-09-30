@@ -2633,32 +2633,95 @@
                     return;
                 }
                 
-                // Build menu HTML based on available files
-                let menuHTML = `<div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">`;
+                // Build menu HTML with modern design
+                let menuHTML = `<div style="display: flex; flex-direction: column; gap: 12px; text-align: left; padding: 4px 0;">`;
                 
                 let hasFiles = false;
                 
                 // Download invoice button if exists
                 if (invoice.invoice_pdf_path) {
                     hasFiles = true;
-                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'invoice')" style="width: 100%; padding: 10px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#2980b9'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#3498db'; this.style.transform='translateY(0)';">
-                        📄 Invoice
+                    menuHTML += `
+                    <button onclick="downloadAdminZonaFile('${faktur}', 'invoice')" 
+                            style="
+                                width: 100%; 
+                                padding: 14px 16px; 
+                                background: linear-gradient(135deg, #3498db, #2980b9);
+                                color: white; 
+                                border: none; 
+                                border-radius: 8px; 
+                                cursor: pointer; 
+                                font-weight: 600; 
+                                font-size: 14px; 
+                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+                            " 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(52, 152, 219, 0.35)';" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(52, 152, 219, 0.2)';">
+                        <i class="fas fa-file-pdf" style="font-size: 18px; min-width: 24px; text-align: center;"></i>
+                        <span style="flex: 1; text-align: left;">Invoice</span>
+                        <i class="fas fa-arrow-down-to-line" style="font-size: 14px; opacity: 0.8;"></i>
                     </button>`;
                 }
                 
                 // Download bukti bayar button if exists
                 if (invoice.bukti_bayar_path) {
                     hasFiles = true;
-                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'bukti_bayar')" style="width: 100%; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#229954'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#27ae60'; this.style.transform='translateY(0)';">
-                        💰 Bukti Bayar
+                    menuHTML += `
+                    <button onclick="downloadAdminZonaFile('${faktur}', 'bukti_bayar')" 
+                            style="
+                                width: 100%; 
+                                padding: 14px 16px; 
+                                background: linear-gradient(135deg, #27ae60, #229954);
+                                color: white; 
+                                border: none; 
+                                border-radius: 8px; 
+                                cursor: pointer; 
+                                font-weight: 600; 
+                                font-size: 14px; 
+                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                box-shadow: 0 2px 8px rgba(39, 174, 96, 0.2);
+                            " 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(39, 174, 96, 0.35)';" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(39, 174, 96, 0.2)';">
+                        <i class="fas fa-receipt" style="font-size: 18px; min-width: 24px; text-align: center;"></i>
+                        <span style="flex: 1; text-align: left;">Bukti Bayar</span>
+                        <i class="fas fa-arrow-down-to-line" style="font-size: 14px; opacity: 0.8;"></i>
                     </button>`;
                 }
                 
                 // Download faktur pajak button if exists (PPN only)
                 if (invoice.faktur_pajak_path) {
                     hasFiles = true;
-                    menuHTML += `<button onclick="downloadAdminZonaFile('${faktur}', 'faktur_pajak')" style="width: 100%; padding: 10px; background: #9b59b6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#8e44ad'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#9b59b6'; this.style.transform='translateY(0)';">
-                        📋 Faktur Pajak
+                    menuHTML += `
+                    <button onclick="downloadAdminZonaFile('${faktur}', 'faktur_pajak')" 
+                            style="
+                                width: 100%; 
+                                padding: 14px 16px; 
+                                background: linear-gradient(135deg, #9b59b6, #8e44ad);
+                                color: white; 
+                                border: none; 
+                                border-radius: 8px; 
+                                cursor: pointer; 
+                                font-weight: 600; 
+                                font-size: 14px; 
+                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2);
+                            " 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(155, 89, 182, 0.35)';" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(155, 89, 182, 0.2)';">
+                        <i class="fas fa-file-invoice-dollar" style="font-size: 18px; min-width: 24px; text-align: center;"></i>
+                        <span style="flex: 1; text-align: left;">Faktur Pajak</span>
+                        <i class="fas fa-arrow-down-to-line" style="font-size: 14px; opacity: 0.8;"></i>
                     </button>`;
                 }
                 
@@ -2669,20 +2732,58 @@
                 
                 if (filesUploaded >= filesRequired) {
                     hasFiles = true;
-                    menuHTML += `<button onclick="combinePDFAdminZona('${faktur}')" style="width: 100%; padding: 10px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.2s;" onmouseover="this.style.background='#d35400'; this.style.transform='translateY(-1px)';" onmouseout="this.style.background='#e67e22'; this.style.transform='translateY(0)';">
-                        📦 Combine (${filesUploaded}/${filesRequired})
+                    menuHTML += `
+                    <button onclick="combinePDFAdminZona('${faktur}')" 
+                            style="
+                                width: 100%; 
+                                padding: 14px 16px; 
+                                background: linear-gradient(135deg, #e67e22, #d35400);
+                                color: white; 
+                                border: none; 
+                                border-radius: 8px; 
+                                cursor: pointer; 
+                                font-weight: 600; 
+                                font-size: 14px; 
+                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                box-shadow: 0 2px 8px rgba(230, 126, 34, 0.2);
+                                margin-top: 8px;
+                                border-top: 1px solid rgba(255, 255, 255, 0.15);
+                                padding-top: 20px;
+                            " 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(230, 126, 34, 0.35)';" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(230, 126, 34, 0.2)';">
+                        <i class="fas fa-cube" style="font-size: 18px; min-width: 24px; text-align: center;"></i>
+                        <span style="flex: 1; text-align: left;">Gabung Semua (${filesUploaded}/${filesRequired})</span>
+                        <i class="fas fa-arrow-down-to-line" style="font-size: 14px; opacity: 0.8;"></i>
                     </button>`;
                 }
                 
                 // If no files uploaded
                 if (!hasFiles) {
-                    const infoBg = isDarkMode ? '#334155' : '#f0f0f0';
+                    const infoBg = isDarkMode ? 'rgba(30, 41, 59, 0.8)' : 'rgba(248, 249, 250, 0.6)';
+                    const infoBorder = isDarkMode ? '1px solid rgba(71, 85, 105, 0.5)' : '1px solid rgba(226, 232, 240, 0.8)';
                     const infoTextColor = isDarkMode ? '#cbd5e1' : '#7f8c8d';
-                    menuHTML += `<div style="padding: 16px; background: ${infoBg}; border-radius: 6px; text-align: center;">
-                        <p style="color: ${infoTextColor}; font-size: 13px; margin: 0; line-height: 1.5; font-weight: 500;">
-                            📁 File belum diupload oleh admin anka
-                        </p>
-                    </div>`;
+                    const infoIconColor = isDarkMode ? '#94a3b8' : '#bdc3c7';
+                    
+                    menuHTML += `<div style="
+                                    padding: 28px 20px; 
+                                    background: ${infoBg};
+                                    border: ${infoBorder};
+                                    border-radius: 10px; 
+                                    text-align: center;
+                                    backdrop-filter: blur(2px);
+                                ">
+                                <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.7;">📁</div>
+                                <p style="color: ${infoTextColor}; font-size: 14px; margin: 0; line-height: 1.6; font-weight: 500;">
+                                    Belum ada file yang diupload
+                                </p>
+                                <p style="color: ${infoTextColor}; font-size: 12px; margin: 8px 0 0 0; opacity: 0.75;">
+                                    Silakan upload invoice, bukti bayar, atau faktur pajak
+                                </p>
+                            </div>`;
                 }
                 
                 menuHTML += `</div>`;
@@ -2705,22 +2806,62 @@
                     willOpen: () => {
                         const popup = Swal.getPopup();
                         if (popup) {
-                            popup.style.width = '360px';
+                            popup.style.width = '420px';
                             popup.style.maxWidth = '90vw';
-                            popup.style.borderRadius = '8px';
+                            popup.style.borderRadius = '12px';
                             popup.style.boxShadow = isDarkMode 
-                                ? '0 10px 40px rgba(0,0,0,0.5)' 
-                                : '0 10px 40px rgba(0,0,0,0.15)';
+                                ? '0 20px 60px rgba(0,0,0,0.6)' 
+                                : '0 20px 60px rgba(0,0,0,0.15)';
+                            popup.style.border = isDarkMode 
+                                ? '1px solid rgba(71, 85, 105, 0.3)' 
+                                : '1px solid rgba(226, 232, 240, 0.5)';
+                            popup.style.backdropFilter = 'blur(10px)';
                             
-                            // Clean up icon styling - larger circle with smaller ! inside
+                            // Animate popup entrance
+                            popup.style.animation = 'popupIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                            
+                            // Clean up icon styling
                             const icon = popup.querySelector('.swal2-icon');
                             if (icon) {
-                                icon.style.width = '70px';
-                                icon.style.height = '70px';
-                                icon.style.borderWidth = '2px';
+                                icon.style.width = '80px';
+                                icon.style.height = '80px';
+                                icon.style.borderWidth = '3px';
                                 icon.style.marginTop = '8px';
                                 icon.style.marginBottom = '24px';
-                                icon.style.fontSize = '18px';
+                                icon.style.fontSize = '40px';
+                                icon.style.borderColor = isDarkMode ? '#3b82f6' : '#3498db';
+                                icon.style.color = isDarkMode ? '#60a5fa' : '#3498db';
+                                icon.style.background = isDarkMode 
+                                    ? 'rgba(59, 130, 246, 0.1)' 
+                                    : 'rgba(52, 152, 219, 0.1)';
+                            }
+                            
+                            // Style title
+                            const title = popup.querySelector('.swal2-title');
+                            if (title) {
+                                title.style.fontSize = '22px';
+                                title.style.fontWeight = '700';
+                                title.style.marginBottom = '16px';
+                                title.style.letterSpacing = '-0.3px';
+                            }
+                            
+                            // Add animation keyframes
+                            if (!document.querySelector('#swal-popup-animations')) {
+                                const style = document.createElement('style');
+                                style.id = 'swal-popup-animations';
+                                style.textContent = `
+                                    @keyframes popupIn {
+                                        from {
+                                            opacity: 0;
+                                            transform: scale(0.95) translateY(-20px);
+                                        }
+                                        to {
+                                            opacity: 1;
+                                            transform: scale(1) translateY(0);
+                                        }
+                                    }
+                                `;
+                                document.head.appendChild(style);
                             }
                         }
                     }
