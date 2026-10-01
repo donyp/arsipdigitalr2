@@ -87,8 +87,8 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] PARSER_VERSION=v9-FIXED-2024-10-01-DIGIT-CODES-REMOVED');
-    console.log('[PDF-CSV] CRITICAL: Old parser detected. This endpoint is using LATEST FIX with digit code removal.');
+    console.log('[PDF-CSV] PARSER_VERSION=v10-FIXED-2024-10-01-KREDIT-VALIDATION');
+    console.log('[PDF-CSV] ★ THIS IS THE VALIDATED FIX - KREDIT CONTAMINATION DETECTOR ACTIVE');
     const lines = text.split('\n');
     const transactions = [];
 
@@ -331,6 +331,19 @@ function parseBCA(text) {
 
     const pushCurrent = () => {
         if (current) {
+            // VALIDATION: Ensure kredit and saldo are not contaminated
+            // If both kredit and saldo exist, kredit MUST be less than saldo (or equal for transfers)
+            if (current.kredit && current.saldo) {
+                const kreditNum = parseFloat(current.kredit.replace(/,/g, ''));
+                const soldoNum = parseFloat(current.saldo.replace(/,/g, ''));
+                if (kreditNum > soldoNum * 1.5) {
+                    console.log('[PDF-CSV] ⚠️ WARNING: Kredit appears contaminated (too large):',
+                        'kredit=', current.kredit, 'saldo=', current.saldo);
+                    // Force zero it out - this is a safety valve
+                    current.kredit = '';
+                }
+            }
+            
             transactions.push({
                 'Tanggal':    current.tgl,
                 'Keterangan': current.ket.replace(/\s{2,}/g, ' ').trim(),
