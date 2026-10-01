@@ -350,14 +350,29 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
     // POST /api/pdf-to-csv/debug - Dump raw PDF text (dev use)
     app.post('/api/pdf-to-csv/debug', authenticateToken, upload.single('pdf'), async (req, res) => {
         try {
-            if (!req.file) return res.status(400).json({ error: 'No file' });
-            const pdfData = await pdf(req.file.buffer);
-            const lines = pdfData.text.split('\n').map((l, i) => `${i}: ${JSON.stringify(l)}`);
+            let buffer;
+            
+            // Support both multipart file upload AND base64 JSON body
+            if (req.file) {
+                buffer = req.file.buffer;
+            } else if (req.body && req.body.base64) {
+                buffer = Buffer.from(req.body.base64, 'base64');
+            } else {
+                return res.status(400).json({ 
+                    error: 'No file provided. Send as multipart OR JSON {base64: "..."}',
+                    tip: 'Make sure to select a file before running the debug command'
+                });
+            }
+            
+            const pdfData = await pdf(buffer);
+            const rawText = pdfData.text;
+            const lines = rawText.split('\n').map((l, i) => `${i}: ${JSON.stringify(l)}`);
             res.json({
                 pageCount: pdfData.numpages,
-                totalChars: pdfData.text.length,
-                detectedBank: detectBank(pdfData.text),
-                lines: lines.slice(0, 120)   // first 120 lines
+                totalChars: rawText.length,
+                detectedBank: detectBank(rawText),
+                rawTextPreview: rawText.substring(0, 3000),
+                lines: lines.slice(0, 150)
             });
         } catch (e) {
             res.status(500).json({ error: e.message });
