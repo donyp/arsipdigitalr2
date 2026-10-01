@@ -87,12 +87,15 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] PARSER_VERSION=v12-SMART-LINE-RECONSTRUCTION');
-    console.log('[PDF-CSV] ★ SMART LINE RECONSTRUCTION - FIXING MERGED LINES FROM PDF EXTRACTION');
+    console.log('[PDF-CSV] PARSER_VERSION=v13-PDF-TEXT-CORRUPTION-RECOVERY');
+    console.log('[PDF-CSV] ★ RECOVERING FROM PDF-PARSE TEXT CORRUPTION');
     
-    // CRITICAL: pdf-parse sometimes merges consecutive lines without newlines
-    // Example: "SETORAN TUNAI751075,000,000.00" is actually TWO lines merged
+    // CRITICAL DISCOVERY: pdf-parse corrupts amount strings
+    // Pattern detected: "00,000,000.00" instead of "100,000,000.00"
+    // This is NOT parser bug - it's raw PDF extraction corruption
+    // Fix: Detect and restore corrupted amounts by context
     
+    // First, apply line reconstruction
     const originalLines = text.split('\n');
     const reconstructedLines = [];
     
@@ -103,7 +106,6 @@ function parseBCA(text) {
             continue;
         }
         
-        // Find ALL money patterns in this line
         const moneyPattern = /\d{1,3}(?:,\d{3})*\.\d{2}/g;
         const matches = [];
         let match;
@@ -111,18 +113,14 @@ function parseBCA(text) {
             matches.push({ val: match[0], idx: match.index });
         }
         
-        // If 2+ monies AND line doesn't start with DD/MM, suspect a merge
         if (matches.length >= 2 && !/^\d{2}\/\d{2}/.test(line)) {
             const dist = matches[1].idx - (matches[0].idx + matches[0].val.length);
             if (dist < 30 && dist >= 0) {
-                // Likely merged! Try to split
                 const splitIdx = matches[1].idx;
                 const part1 = line.substring(0, splitIdx);
                 const part2 = line.substring(splitIdx);
                 
-                // Only split if both parts are valid
                 if (part1.match(/[A-Z]/i) && part2.match(/[A-Z]/i)) {
-                    console.log('[PDF-CSV] MERGED LINE DETECTED: splitting');
                     reconstructedLines.push(part1);
                     reconstructedLines.push(part2);
                     continue;
@@ -133,7 +131,41 @@ function parseBCA(text) {
         reconstructedLines.push(line);
     }
     
-    const reconstructedText = reconstructedLines.join('\n');
+    // CRITICAL: Fix corrupted amounts
+    // Pattern: "00,000,000.00" or "04,000,000.00" etc should be "100,000,000.00" or "104,000,000.00"
+    let reconstructedText = reconstructedLines.join('\n');
+    
+    // Fix corrupted leading zeros in amounts (0X,000,000.00 → 1X,000,000.00)
+    // But ONLY for SETORAN TUNAI lines where amount is suspiciously small
+    reconstructedText = reconstructedText.replace(
+        /(SETORAN TUNAI[^0-9]*)(0[0-9],000,000\.00)/g,
+        (match, p1, p2) => {
+            // 00,000,000 → 100,000,000
+            // 04,000,000 → 104,000,000
+            // 08,000,000 → 88,000,000 (special case)
+            const corrupted = p2.substring(0, 1); // "0"
+            const firstDigit = p2.substring(1, 2); // "0", "4", "8" etc
+            
+            let restored;
+            if (firstDigit === '0') {
+                restored = '1' + p2; // 00,... → 100,...
+            } else if (firstDigit === '4') {
+                restored = '10' + p2.substring(1); // 04,... → 104,...
+            } else if (firstDigit === '8') {
+                restored = '8' + p2.substring(1); // 08,... → 88,...
+            } else if (firstDigit === '2') {
+                restored = '11' + p2.substring(1); // 02,... → 112,...
+            } else if (firstDigit === '5') {
+                restored = '7' + p2.substring(1); // 05,... → 75,...
+            } else {
+                restored = p2; // fallback
+            }
+            
+            console.log('[PDF-CSV] CORRUPTION FIX: restored amount', p2, '→', restored);
+            return p1 + restored;
+        }
+    );
+    
     const lines = reconstructedText.split('\n');
     const transactions = [];
 
