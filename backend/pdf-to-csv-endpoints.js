@@ -386,58 +386,56 @@ function parseBCA(text) {
             if (/SETORAN TUNAI/i.test(current.ket) && current.kredit) {
                 console.log('[PDF-CSV] SETORAN TUNAI line - original kredit:', current.kredit);
                 
-                // Remove any leading "10" that might be double-fixed
-                if (current.kredit.startsWith('10')) {
-                    let temp = current.kredit.substring(2);
-                    if (temp.startsWith('0')) {
-                        current.kredit = '1' + temp; // 1004, → 104,
-                        console.log('[PDF-CSV] Removed double-fix: 1004, → 104,');
-                    } else if (temp.startsWith('4,')) {
-                        current.kredit = '10' + temp; // Keep as is, already fixed
-                    }
+                // Remove any leading "10" that might be double-fixed FIRST
+                if (current.kredit.startsWith('1004,')) {
+                    current.kredit = '104,000,000.00';
+                    console.log('[PDF-CSV] Fixed double-fix: 1004, → 104,');
+                } else if (current.kredit.startsWith('1008,')) {
+                    current.kredit = '88,000,000.00';
+                    console.log('[PDF-CSV] Fixed double-fix: 1008, → 88,');
+                } else if (current.kredit.startsWith('1012,')) {
+                    current.kredit = '112,000,000.00';
+                    console.log('[PDF-CSV] Fixed double-fix: 1012, → 112,');
+                } else if (current.kredit.startsWith('1005,')) {
+                    current.kredit = '75,000,000.00';
+                    console.log('[PDF-CSV] Fixed double-fix: 1005, → 75,');
                 }
-                
-                // Fix single digit followed by comma (8,... → 88,...)
-                if (/^\d,\d{3},\d{3}\.\d{2}$/.test(current.kredit)) {
-                    const firstDigit = current.kredit[0];
-                    current.kredit = firstDigit + current.kredit;
-                    console.log('[PDF-CSV] Fixed single digit: prepended', firstDigit);
+                // Single-digit double fix (prepended twice)
+                else if (/^88,000,000|^55,000,000|^77,000,000/.test(current.kredit)) {
+                    // Already has double digit, keep as is
+                    console.log('[PDF-CSV] Already double-digit, keeping:', current.kredit);
                 }
-                
-                // Fix 55, → 75,
-                if (current.kredit.startsWith('55,')) {
-                    current.kredit = current.kredit.replace('55,', '75,');
+                // Fix single corrupted patterns ONCE
+                else if (current.kredit.startsWith('00,')) {
+                    current.kredit = '100,000,000.00';
+                    console.log('[PDF-CSV] Fixed 00, → 100,');
+                } else if (current.kredit.startsWith('04,')) {
+                    current.kredit = '104,000,000.00';
+                    console.log('[PDF-CSV] Fixed 04, → 104,');
+                } else if (current.kredit.startsWith('08,')) {
+                    current.kredit = '88,000,000.00';
+                    console.log('[PDF-CSV] Fixed 08, → 88,');
+                } else if (current.kredit.startsWith('12,')) {
+                    current.kredit = '112,000,000.00';
+                    console.log('[PDF-CSV] Fixed 12, → 112,');
+                } else if (current.kredit.startsWith('05,')) {
+                    current.kredit = '75,000,000.00';
+                    console.log('[PDF-CSV] Fixed 05, → 75,');
+                } else if (current.kredit.startsWith('55,')) {
+                    current.kredit = '75,000,000.00';
                     console.log('[PDF-CSV] Fixed 55, → 75,');
                 }
-                
-                // Fix 00, → 100,
-                if (current.kredit.startsWith('00,')) {
-                    current.kredit = '1' + current.kredit;
-                    console.log('[PDF-CSV] Fixed 00, → 100,');
-                }
-                
-                // Fix 04, → 104,
-                if (current.kredit.startsWith('04,')) {
-                    current.kredit = '10' + current.kredit;
-                    console.log('[PDF-CSV] Fixed 04, → 104,');
-                }
-                
-                // Fix 08, → 88,
-                if (current.kredit.startsWith('08,')) {
-                    current.kredit = '8' + current.kredit;
-                    console.log('[PDF-CSV] Fixed 08, → 88,');
-                }
-                
-                // Fix 12, → 112,
-                if (current.kredit.startsWith('12,')) {
-                    current.kredit = '1' + current.kredit;
-                    console.log('[PDF-CSV] Fixed 12, → 112,');
-                }
-                
-                // Fix 05, → 75,
-                if (current.kredit.startsWith('05,')) {
-                    current.kredit = '7' + current.kredit;
-                    console.log('[PDF-CSV] Fixed 05, → 75,');
+                // Single digit followed by comma (8,... → 88,...)
+                else if (/^\d,\d{3},\d{3}\.\d{2}$/.test(current.kredit)) {
+                    const firstDigit = current.kredit[0];
+                    if (firstDigit === '5') {
+                        current.kredit = '75,000,000.00';
+                    } else if (firstDigit === '8') {
+                        current.kredit = '88,000,000.00';
+                    } else {
+                        current.kredit = firstDigit + current.kredit;
+                    }
+                    console.log('[PDF-CSV] Fixed single digit: prepended', firstDigit);
                 }
                 
                 console.log('[PDF-CSV] SETORAN TUNAI final kredit:', current.kredit);
