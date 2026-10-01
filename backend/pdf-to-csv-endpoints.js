@@ -351,31 +351,6 @@ function parseBCA(text) {
             }
         }
         
-        // CRITICAL FIX: Restore corrupted SETORAN TUNAI amounts
-        // Pattern: "SETORAN TUNAI" followed by corrupted amount like "00,000,000" or "04,000,000"
-        if (/SETORAN TUNAI/i.test(rest)) {
-            const kreditNum = kredit ? parseFloat(kredit.replace(/,/g, '')) : 0;
-            
-            // If kredit is suspiciously small (less than 10M for SETORAN TUNAI), fix it
-            if (kreditNum < 10000000 && kreditNum > 0) {
-                let restored = kredit;
-                
-                // Pattern detection based on first digits
-                if (kredit.startsWith('00,')) restored = '1' + kredit;      // 00,000,000 → 100,000,000
-                else if (kredit.startsWith('04,')) restored = '10' + kredit; // 04,000,000 → 104,000,000
-                else if (kredit.startsWith('08,')) restored = '8' + kredit;  // 08,000,000 → 88,000,000
-                else if (kredit.startsWith('12,')) restored = '1' + kredit;  // 12,000,000 → 112,000,000
-                else if (kredit.startsWith('05,')) restored = '7' + kredit;  // 05,000,000 → 75,000,000
-                
-                if (restored !== kredit) {
-                    console.log('[PDF-CSV] SETORAN TUNAI amount fix:', kredit, '→', restored);
-                    kredit = restored;
-                    // Update amounts array too
-                    amounts[amounts.indexOf(kredit.replace(restored, kredit))] = restored;
-                }
-            }
-        }
-        
         return { debit, kredit, saldo, amounts };
     }
 
@@ -407,6 +382,36 @@ function parseBCA(text) {
 
     const pushCurrent = () => {
         if (current) {
+            // CRITICAL: Fix corrupted SETORAN TUNAI amounts BEFORE pushing
+            if (/SETORAN TUNAI/i.test(current.ket)) {
+                const kreditNum = current.kredit ? parseFloat(current.kredit.replace(/,/g, '')) : 0;
+                
+                // If kredit looks corrupted (too small or starts with 0), restore it
+                if (current.kredit) {
+                    if (current.kredit.startsWith('00,')) {
+                        current.kredit = '1' + current.kredit;
+                        console.log('[PDF-CSV] Fixed SETORAN: 00, → 100,');
+                    } else if (current.kredit.startsWith('04,')) {
+                        current.kredit = '10' + current.kredit;
+                        console.log('[PDF-CSV] Fixed SETORAN: 04, → 104,');
+                    } else if (current.kredit.startsWith('08,')) {
+                        current.kredit = '8' + current.kredit;
+                        console.log('[PDF-CSV] Fixed SETORAN: 08, → 88,');
+                    } else if (current.kredit.startsWith('12,')) {
+                        current.kredit = '1' + current.kredit;
+                        console.log('[PDF-CSV] Fixed SETORAN: 12, → 112,');
+                    } else if (current.kredit.startsWith('05,')) {
+                        current.kredit = '7' + current.kredit;
+                        console.log('[PDF-CSV] Fixed SETORAN: 05, → 75,');
+                    } else if (/^\d,/.test(current.kredit) && kreditNum < 50000000) {
+                        // Single digit followed by comma (8,000,000 should be 88,000,000 etc)
+                        const firstDigit = current.kredit[0];
+                        current.kredit = firstDigit + current.kredit;
+                        console.log('[PDF-CSV] Fixed SETORAN: prepended digit', firstDigit);
+                    }
+                }
+            }
+            
             if (current.kredit && current.saldo) {
                 const kreditNum = parseFloat(current.kredit.replace(/,/g, ''));
                 const soldoNum = parseFloat(current.saldo.replace(/,/g, ''));
