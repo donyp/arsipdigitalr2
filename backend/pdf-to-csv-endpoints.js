@@ -87,9 +87,62 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] PARSER_VERSION=v11-DEBUG-DETAILED-LOGGING');
-    console.log('[PDF-CSV] ★ DETAILED LOGGING TO TRACE KREDIT CONTAMINATION SOURCE');
+    console.log('[PDF-CSV] PARSER_VERSION=v12-SMART-LINE-RECONSTRUCTION');
+    console.log('[PDF-CSV] ★ SMART LINE RECONSTRUCTION - FIXING MERGED LINES FROM PDF EXTRACTION');
+    
+    // CRITICAL: pdf-parse sometimes merges consecutive lines without newlines
+    // Example: "SETORAN TUNAI751075,000,000.00" is actually TWO lines merged:
+    //   1. "SETORAN TUNAI 7510 75,000,000.00" (line 16/06)
+    //   2. "SETORAN TUNAI 75 7,363,884.00 8,243,931.00" (line 22/06)
+    // They get merged as: "SETORAN TUNAI751075,000,000.00SETORAN TUNAI75..." 
+    // 
+    // We need to reconstruct lines by:
+    // 1. Finding money patterns (X,XXX,XXX.00)
+    // 2. If 2+ consecutive monies with same date-less start, split them
+    
     const lines = text.split('\n');
+    const reconstructedLines = [];
+    
+    for (let line of lines) {
+        line = line.trim();
+        if (!line) {
+            reconstructedLines.push(line);
+            continue;
+        }
+        
+        // Find ALL money patterns in this line
+        const moneyPattern = /\d{1,3}(?:,\d{3})*\.\d{2}/g;
+        const matches = [];
+        let match;
+        while ((match = moneyPattern.exec(line)) !== null) {
+            matches.push({ val: match[0], idx: match.index });
+        }
+        
+        // If 2+ monies AND line doesn't start with DD/MM (i.e., not a date header),
+        // and they're close together (< 50 chars apart), suspect a merge
+        if (matches.length >= 2 && !/^\d{2}\/\d{2}/.test(line)) {
+            const dist = matches[1].idx - (matches[0].idx + matches[0].val.length);
+            if (dist < 30 && dist >= 0) {
+                // Likely merged! Try to split
+                // Insert newline before second money
+                const splitIdx = matches[1].idx;
+                const part1 = line.substring(0, splitIdx);
+                const part2 = line.substring(splitIdx);
+                
+                // Only split if both parts are valid (not just numbers)
+                if (part1.match(/[A-Z]/i) && part2.match(/[A-Z]/i)) {
+                    console.log('[PDF-CSV] MERGED LINE DETECTED: splitting into 2 lines');
+                    reconstructedLines.push(part1);
+                    reconstructedLines.push(part2);
+                    continue;
+                }
+            }
+        }
+        
+        reconstructedLines.push(line);
+    }
+    
+    const reconstructedText = reconstructedLines.join('\n');
     const transactions = [];
 
     const skipPatterns = [
@@ -110,35 +163,9 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // Core insight from raw BCA text:
-    // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505123,625,000.00DB"
-    //                                           ^^^^^^^^^^^^^^^^^
-    // "WS95051" + "23,625,000.00" are glued together as "WS9505123,625,000.00"
-    // 
-    // Key observation: the money value in BCA always ends at the END of the line
-    // (optionally followed by "DB" or "DB+saldo").
-    // 
-    // The money value itself ALWAYS starts with a digit that begins a valid
-    // comma-group pattern. The boundary between ref-code digits and money is:
-    //   ref digits: continuous digits with NO comma
-    //   money: digit(s) + comma + 3 digits (the first comma-group)
-    //
-    // Algorithm:
-    // 1. Strip trailing "DB[saldo]" → know it's a debit
-    // 2. Find the money value at end: scan backwards from end to find
-    //    the leftmost digit that is part of the rightmost money value
-    //    = find first ",\d{3}" group and expand left to grab leading digits
-    //    BUT only 1-3 leading digits (the comma-group start rule)
+    // ... rest of function continues with reconstructedText.split('\n') ...
 
-    // Extract the last valid money from end of string s
-    // Handles glued ref codes like "WS9505123,625,000.00" → extract "23,625,000.00"
-    // 
-    // Strategy:
-    // 1. Find rightmost .dd, walk LEFT collecting valid money digits+commas
-    // 2. If letter before collected: use modulo formula (firstCommaPos+1) % 3 || 3
-    //    (letter marks end of ref code, so all leading digits follow money rules)
-    // 3. If no letter: try all 1-3 leading digit counts, pick LARGEST valid (no leading zero)
-    function extractTrailingMoney(s) {
+    for (const raw of reconstructedText.split('\n')) {
         // Trim input to remove any trailing/leading whitespace that might affect detection
         s = s.trim();
         
@@ -358,7 +385,7 @@ function parseBCA(text) {
         current = null;
     };
 
-    for (const raw of lines) {
+    for (const raw of reconstructedText.split('\n')) {
         const line = raw.trim();
         if (!line) continue;
         if (skipPatterns.some(p => p.test(line))) continue;
