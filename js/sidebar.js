@@ -470,28 +470,23 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 0.7rem;
-                        padding: 0.75rem 1rem;
-                        background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
-                        color: white;
-                        border: 1px solid rgba(255, 255, 255, 0.2);
-                        border-radius: 0.6rem;
-                        font-size: 0.8rem;
-                        font-weight: 600;
+                        padding: 0.75rem;
+                        background: transparent;
+                        color: #60a5fa;
+                        border: 1px solid #60a5fa;
+                        border-radius: 0.5rem;
+                        font-size: 0.9rem;
+                        font-weight: 500;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         white-space: nowrap;
-                        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-                        position: relative;
-                        overflow: hidden;
                     "
-                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(59, 130, 246, 0.3)'; this.style.background='linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.15)'; this.style.background='linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)'"
+                    onmouseover="this.style.background='#60a5fa'; this.style.color='white'; this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.background='transparent'; this.style.color='#60a5fa'; this.style.transform='translateY(0)'"
                     title="Edit headline banner text">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; transition: transform 0.3s">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    <span>Edit</span>
                 </button>
                 
                 <!-- Dark Mode Toggle -->
@@ -500,26 +495,21 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 0.7rem;
-                        padding: 0.75rem 1rem;
-                        background: linear-gradient(135deg, ${isDarkMode ? '#64748b 0%, #475569 100%' : '#f3f4f6 0%, #e5e7eb 100%'});
-                        color: ${isDarkMode ? '#e2e8f0' : '#4b5563'};
-                        border: 1px solid ${isDarkMode ? 'rgba(148, 163, 184, 0.2)' : 'rgba(107, 114, 128, 0.2)'};
-                        border-radius: 0.6rem;
-                        font-size: 0.8rem;
-                        font-weight: 600;
+                        padding: 0.75rem;
+                        background: transparent;
+                        color: ${isDarkMode ? '#fbbf24' : '#6b7280'};
+                        border: 1px solid ${isDarkMode ? '#fbbf24' : '#6b7280'};
+                        border-radius: 0.5rem;
+                        font-size: 0.9rem;
+                        font-weight: 500;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         white-space: nowrap;
-                        box-shadow: 0 2px 8px ${isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.08)'};
-                        position: relative;
-                        overflow: hidden;
                     "
-                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px ${isDarkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.15)'}'; this.style.background='linear-gradient(135deg, ${isDarkMode ? '#475569 0%, #334155 100%' : '#e5e7eb 0%, #d1d5db 100%'})';"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px ${isDarkMode ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.08)'}'; this.style.background='linear-gradient(135deg, ${isDarkMode ? '#64748b 0%, #475569 100%' : '#f3f4f6 0%, #e5e7eb 100%'})';"
+                    onmouseover="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background = isDark ? '#fbbf24' : '#6b7280'; this.style.color='white'; this.style.transform='translateY(-1px)'"
+                    onmouseout="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background='transparent'; this.style.color = isDark ? '#fbbf24' : '#6b7280'; this.style.transform='translateY(0)'"
                     title="Toggle dark/light mode">
-                    <span id="dark-mode-icon-sidebar" style="font-size: 18px; transition: transform 0.3s">${isDarkMode ? '☀️' : '🌙'}</span>
-                    <span id="dark-mode-label-sidebar">${isDarkMode ? 'Light' : 'Dark'}</span>
+                    <span id="dark-mode-icon-sidebar" style="font-size: 18px;">${isDarkMode ? '☀️' : '🌙'}</span>
                 </button>
                 
                 <!-- Logout Button -->
@@ -528,28 +518,23 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 0.7rem;
-                        padding: 0.75rem 1rem;
-                        background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
-                        color: white;
-                        border: 1px solid rgba(255, 255, 255, 0.2);
-                        border-radius: 0.6rem;
-                        font-size: 0.8rem;
-                        font-weight: 600;
+                        padding: 0.75rem;
+                        background: transparent;
+                        color: #ef4444;
+                        border: 1px solid #ef4444;
+                        border-radius: 0.5rem;
+                        font-size: 0.9rem;
+                        font-weight: 500;
                         cursor: pointer;
                         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         white-space: nowrap;
-                        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
-                        position: relative;
-                        overflow: hidden;
                     "
-                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(239, 68, 68, 0.3)'; this.style.background='linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'"
-                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.15)'; this.style.background='linear-gradient(135deg, #f87171 0%, #ef4444 100%)'"
+                    onmouseover="this.style.background='#ef4444'; this.style.color='white'; this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.background='transparent'; this.style.color='#ef4444'; this.style.transform='translateY(0)'"
                     title="Logout from system">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 16px; height: 16px; transition: transform 0.3s">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
+                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    <span>Logout</span>
                 </button>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
