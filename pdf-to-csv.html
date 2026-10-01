@@ -161,6 +161,87 @@
         #fileInput {
             display: none;
         }
+
+        .page-disabled-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .page-disabled-notice {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 450px;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        html[data-dark-mode="true"] .page-disabled-notice {
+            background: #1e293b;
+            color: #f1f5f9;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .page-disabled-notice-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+            display: block;
+        }
+
+        .page-disabled-notice-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #ef4444;
+        }
+
+        .page-disabled-notice-text {
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        html[data-dark-mode="true"] .page-disabled-notice-text {
+            color: #cbd5e1;
+        }
+
+        .page-disabled-notice-footer {
+            font-size: 12px;
+            color: #9ca3af;
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        html[data-dark-mode="true"] .page-disabled-notice-footer {
+            border-top-color: #334155;
+            color: #94a3b8;
+        }
+
+        #main-content.page-disabled {
+            pointer-events: none;
+            filter: blur(4px);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -175,8 +256,22 @@
         <!-- Sidebar -->
         <div id="sidebar"></div>
 
+        <!-- Page Disabled Overlay -->
+        <div class="page-disabled-overlay" id="pageDisabledOverlay">
+            <div class="page-disabled-notice">
+                <span class="page-disabled-notice-icon">⚙️</span>
+                <div class="page-disabled-notice-title">Sedang Dalam Perbaikan</div>
+                <p class="page-disabled-notice-text">
+                    Fitur PDF to CSV Converter sedang dalam tahap perbaikan untuk memastikan akurasi data yang lebih baik.
+                </p>
+                <div class="page-disabled-notice-footer">
+                    <i class="fas fa-clock"></i> Estimasi selesai: Segera
+                </div>
+            </div>
+        </div>
+
         <!-- Main Content -->
-        <div id="main-content" style="margin-left: 16rem; width: calc(100% - 16rem); transition: all 300ms ease;">
+        <div id="main-content" class="page-disabled" style="margin-left: 16rem; width: calc(100% - 16rem); transition: all 300ms ease;">
             <!-- Header -->
             <div class="gradient-header sticky top-0 z-30">
                 <div class="px-6 py-5">
