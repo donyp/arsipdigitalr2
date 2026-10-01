@@ -87,8 +87,8 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] PARSER_VERSION=v14-AGGRESSIVE-7510-REMOVAL');
-    console.log('[PDF-CSV] ★ FOCUS: REMOVE 7510 AND 75 FROM KETERANGAN');
+    console.log('[PDF-CSV] PARSER_VERSION=v18-FINAL-AGGRESSIVE-2026-10-01-T15-00');
+    console.log('[PDF-CSV] ★★★ FORCE REBUILD - NO CACHE ★★★');
     
     // CRITICAL DISCOVERY: pdf-parse corrupts amount strings
     // Pattern detected: "00,000,000.00" instead of "100,000,000.00"
