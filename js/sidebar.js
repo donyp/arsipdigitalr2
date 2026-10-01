@@ -376,7 +376,7 @@
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
         // Use smaller width for upload file pages, normal width for others
-        const sidebarWidth = isUploadFilePage ? '14rem' : '20rem';
+        const sidebarWidth = isUploadFilePage ? '13rem' : '16rem';
 
         // Use min-height: 148vh for ideal full page coverage
         const sidebarHeight = `min-height: 148vh;`;
@@ -572,7 +572,7 @@
         const sidebar = document.getElementById('sidebar');
         if (sidebar) {
             const currentWidth = sidebar.style.width;
-            const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
+            const expectedWidth = isUploadFilePage ? '13rem' : '16rem';
             
             // If width doesn't match, we need to re-inject
             if (currentWidth !== expectedWidth) {

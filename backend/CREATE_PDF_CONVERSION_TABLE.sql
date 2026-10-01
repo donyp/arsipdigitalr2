@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS pdf_conversions (
     user_agent TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    -- Foreign key to auth.users table (Supabase auth)
-    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+    -- Foreign key to users table (custom JWT auth)
+    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Index for faster queries
