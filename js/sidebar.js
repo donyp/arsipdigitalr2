@@ -131,6 +131,7 @@
         
         if (isExpanded) {
             // Collapse animation
+            container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
             container.style.maxHeight = container.scrollHeight + 'px';
             // Force reflow
             void container.offsetHeight;
@@ -157,6 +158,7 @@
                     
                     if (otherContainer) {
                         // Close animation
+                        otherContainer.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
                         otherContainer.style.maxHeight = otherContainer.scrollHeight + 'px';
                         void otherContainer.offsetHeight;
                         otherContainer.style.maxHeight = '0px';
@@ -176,6 +178,9 @@
             // Expand animation for current dropdown
             container.style.display = 'block';
             container.style.overflow = 'hidden';
+            
+            // Ensure transition is set
+            container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
             
             // Get the full height of content
             const fullHeight = container.scrollHeight;
