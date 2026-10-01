@@ -316,12 +316,14 @@ function parseBCA(text) {
 
         rest = rest.trim();
 
+        // Case 1: Line ends with "DB" (optionally + saldo)
+        // Example: "TRSF E-BANKING DB 0806/FTSCY/WS95051 23,625,000.00 DB"
         const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (dbSuffix) {
             saldo = dbSuffix[1] || '';
             if (saldo) amounts.push(saldo);
             
-            const beforeDB = rest.slice(0, rest.length - dbSuffix[0].length);
+            const beforeDB = rest.slice(0, rest.length - dbSuffix[0].length).trim();
             const m = findLastMoney(beforeDB);
             if (m) {
                 debit = m.val;
@@ -330,6 +332,8 @@ function parseBCA(text) {
             return { debit, kredit, saldo, amounts };
         }
 
+        // Case 2: Line has 2 amounts (kredit + saldo)
+        // Example: "SETORAN TUNAI SETOR TUNAI 100,000,000.00 109,161,912.00"
         const last = findLastMoney(rest);
         if (!last) return { debit, kredit, saldo, amounts };
 
@@ -341,6 +345,7 @@ function parseBCA(text) {
             saldo  = last.val;
             amounts.push(kredit, saldo);
         } else {
+            // Only one amount - check if it's saldo or kredit
             const beforeVal = rest.slice(0, last.start).toUpperCase();
             if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) {
                 saldo = last.val;
@@ -357,8 +362,10 @@ function parseBCA(text) {
     function stripAmounts(rest, amountsToRemove = []) {
         let s = rest;
         
+        // Remove DB markers
         s = s.replace(/\s*DB\s*/g, ' ');
         
+        // Remove ONLY the extracted amounts (kredit, debit, saldo)
         for (const amt of amountsToRemove) {
             s = s.replace(amt, ' ').replace(/\s+/g, ' ').trim();
             
@@ -368,9 +375,8 @@ function parseBCA(text) {
             }
         }
         
-        // ONLY remove BCA digit codes "75" and "7510" that are glued to text
-        // Do NOT remove ref codes like 1306, WS95051, SIMDR230302896
-        s = s.replace(/75\d*/g, ' ');  // Remove "75" and "75XX" only
+        // Remove ONLY the BCA digit code "75" pattern (which is CBG column, not keterangan)
+        s = s.replace(/\b75\d*\b/g, ' ');
         
         return s.replace(/\s+/g, ' ').trim();
     }
