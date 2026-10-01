@@ -302,13 +302,16 @@ function parseBCA(text) {
         
         // Remove the specific amounts that were extracted
         for (const amt of amountsToRemove) {
-            // Try removing formatted version
+            // Try removing formatted version first
+            const beforeFormatted = s;
             s = s.replace(amt, ' ').replace(/\s+/g, ' ').trim();
             
-            // Also try removing unformatted version
-            const unformatted = amt.replace(/,/g, '');
-            if (unformatted !== amt) {
-                s = s.replace(unformatted, ' ').replace(/\s+/g, ' ').trim();
+            // Only try unformatted if formatted wasn't found
+            if (beforeFormatted === s) {
+                const unformatted = amt.replace(/,/g, '');
+                if (unformatted !== amt) {
+                    s = s.replace(unformatted, ' ').replace(/\s+/g, ' ').trim();
+                }
             }
         }
 
