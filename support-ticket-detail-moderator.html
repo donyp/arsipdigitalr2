@@ -635,6 +635,48 @@
         html[data-dark-mode="true"] select:focus {
             box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
         }
+
+        .message-delete-btn {
+            background: transparent;
+            border: none;
+            color: var(--color-text-tertiary);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            margin-left: auto;
+            font-size: 12px;
+        }
+
+        .message-delete-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        html[data-dark-mode="true"] .message-delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        #replyStatus {
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        #replyStatus.loading::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid currentColor;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -789,23 +831,35 @@
                 console.log('[Ticket-Detail-Moderator] Loading ticket:', ticketId);
                 
                 const token = localStorage.getItem('jwt_token');
-                const response = await fetch(`/api/support/tickets/${ticketId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                
+                // Load ticket dan zonas secara parallel
+                const [ticketResponse, zonaResponse] = await Promise.all([
+                    fetch(`/api/support/tickets/${ticketId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/zonas', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                if (!ticketResponse.ok) {
+                    throw new Error(`HTTP ${ticketResponse.status}`);
                 }
 
-                const data = await response.json();
+                const data = await ticketResponse.json();
                 ticketData = data.ticket;
                 
                 console.log('[Ticket-Detail-Moderator] Ticket loaded:', ticketData);
-                console.log('[Ticket-Detail-Moderator] created_by_username:', ticketData.created_by_username);
-                console.log('[Ticket-Detail-Moderator] created_at:', ticketData.created_at);
                 
-                // Load zona name
-                await loadZonaName();
+                // Process zona data jika tersedia
+                if (zonaResponse.ok) {
+                    const zonaData = await zonaResponse.json();
+                    const zonas = zonaData.zonas || zonaData.data || [];
+                    const zona = zonas.find(z => z.id === ticketData.zona_id);
+                    if (zona) {
+                        ticketData.zona_name = zona.nama;
+                    }
+                }
                 
                 renderTicketDetail();
             } catch (error) {
@@ -821,28 +875,6 @@
             }
         }
 
-        async function loadZonaName() {
-            try {
-                const token = localStorage.getItem('jwt_token');
-                const response = await fetch('/api/zonas', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const zonas = data.zonas || data.data || [];
-                    
-                    // Find zona by ID
-                    const zona = zonas.find(z => z.id === ticketData.zona_id);
-                    if (zona) {
-                        ticketData.zona_name = zona.nama;
-                        console.log('[Ticket-Detail-Moderator] Zona name:', zona.nama);
-                    }
-                }
-            } catch (error) {
-                console.warn('[Ticket-Detail-Moderator] Error loading zona:', error);
-            }
-        }
 
         function renderTicketDetail() {
             // Set header
@@ -924,6 +956,7 @@
                                     <span class="message-author">${isSupport ? 'Tim Support' : 'Toko'}</span>
                                     <span class="message-role">${isSupport ? 'SUPPORT' : 'TOKO'}</span>
                                     <span class="message-time">${formatDateTimeWIB(msg.created_at)}</span>
+                                    ${isSupport ? `<button class="message-delete-btn" onclick="deleteMessage('${msg.id}')" title="Hapus pesan"><i class="fas fa-trash-alt"></i></button>` : ''}
                                 </div>
                                 <div class="message-body">${escapeHtml(msg.message)}</div>
                                 ${msg.attachments && msg.attachments.length > 0 ? `
@@ -1034,6 +1067,26 @@
             }
         }
 
+        async function deleteMessage(messageId) {
+            if (!confirm('Yakin ingin menghapus pesan ini?')) return;
+            
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch(`/api/support/tickets/${ticketId}/messages/${messageId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Gagal menghapus pesan');
+                
+                alert('Pesan berhasil dihapus');
+                await loadTicketDetail();
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
         async function sendReply() {
             try {
                 const message = document.getElementById('replyMessage').value.trim();
@@ -1050,6 +1103,7 @@
                 statusDiv.style.display = 'block';
                 statusDiv.textContent = 'Mengirim...';
                 statusDiv.style.color = '#6b7280';
+                statusDiv.classList.add('loading');
 
                 const token = localStorage.getItem('jwt_token');
                 const response = await fetch(`/api/support/tickets/${ticketId}/messages`, {
@@ -1068,6 +1122,7 @@
 
                 statusDiv.textContent = 'Balasan terkirim!';
                 statusDiv.style.color = '#10b981';
+                statusDiv.classList.remove('loading');
                 document.getElementById('replyMessage').value = '';
 
                 // Reload ticket after 1 second
@@ -1082,6 +1137,7 @@
                 statusDiv.textContent = 'Error: ' + error.message;
                 statusDiv.style.color = '#ef4444';
                 statusDiv.style.display = 'block';
+                statusDiv.classList.remove('loading');
                 document.getElementById('btnSendReply').disabled = false;
             }
         }
