@@ -303,18 +303,15 @@ function parseBCA(text) {
         // Remove ALL occurrences of DB marker (leading, trailing, or embedded)
         s = s.replace(/\s*DB\s*/g, ' ');
         
-        // Remove the specific amounts that were extracted
+        // Remove the specific amounts that were extracted (both formatted and unformatted versions)
         for (const amt of amountsToRemove) {
-            // Try removing formatted version first
-            const beforeFormatted = s;
+            // Always try to remove the formatted version
             s = s.replace(amt, ' ').replace(/\s+/g, ' ').trim();
             
-            // Only try unformatted if formatted wasn't found
-            if (beforeFormatted === s) {
-                const unformatted = amt.replace(/,/g, '');
-                if (unformatted !== amt) {
-                    s = s.replace(unformatted, ' ').replace(/\s+/g, ' ').trim();
-                }
+            // Also try to remove unformatted version
+            const unformatted = amt.replace(/,/g, '');
+            if (unformatted !== amt) {
+                s = s.replace(unformatted, ' ').replace(/\s+/g, ' ').trim();
             }
         }
         
