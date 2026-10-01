@@ -131,13 +131,21 @@
         
         if (isExpanded) {
             // Collapse animation
+            // Step 1: Set transition first
             container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            // Step 2: Set current height explicitly
             container.style.maxHeight = container.scrollHeight + 'px';
-            // Force reflow
+            
+            // Step 3: Force reflow
             void container.offsetHeight;
-            // Animate to closed
-            container.style.maxHeight = '0px';
-            container.style.opacity = '0';
+            
+            // Step 4: Animate to closed
+            requestAnimationFrame(() => {
+                container.style.maxHeight = '0px';
+                container.style.opacity = '0';
+            });
+            
             btn.setAttribute('data-expanded', 'false');
             if (icon) icon.style.transform = 'rotate(0deg)';
             
@@ -158,11 +166,21 @@
                     
                     if (otherContainer) {
                         // Close animation
+                        // Step 1: Set transition first
                         otherContainer.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+                        
+                        // Step 2: Set current height
                         otherContainer.style.maxHeight = otherContainer.scrollHeight + 'px';
+                        
+                        // Step 3: Force reflow
                         void otherContainer.offsetHeight;
-                        otherContainer.style.maxHeight = '0px';
-                        otherContainer.style.opacity = '0';
+                        
+                        // Step 4: Animate to closed
+                        requestAnimationFrame(() => {
+                            otherContainer.style.maxHeight = '0px';
+                            otherContainer.style.opacity = '0';
+                        });
+                        
                         otherBtn.setAttribute('data-expanded', 'false');
                         if (otherIcon) otherIcon.style.transform = 'rotate(0deg)';
                         
@@ -176,25 +194,27 @@
             });
 
             // Expand animation for current dropdown
+            // Step 1: Show container but keep it hidden
             container.style.display = 'block';
             container.style.overflow = 'hidden';
-            
-            // Ensure transition is set
-            container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
-            
-            // Get the full height of content
-            const fullHeight = container.scrollHeight;
-            
-            // Start from 0
             container.style.maxHeight = '0px';
             container.style.opacity = '0';
             
-            // Force reflow to apply initial state
+            // Step 2: Force browser to apply the initial state
             void container.offsetHeight;
             
-            // Animate to full height
-            container.style.maxHeight = fullHeight + 'px';
-            container.style.opacity = '1';
+            // Step 3: Set transition AFTER initial state is applied
+            container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            // Step 4: Use requestAnimationFrame to ensure transition is ready
+            requestAnimationFrame(() => {
+                // Get the full height of content
+                const fullHeight = container.scrollHeight;
+                
+                // Animate to full height
+                container.style.maxHeight = fullHeight + 'px';
+                container.style.opacity = '1';
+            });
             
             btn.setAttribute('data-expanded', 'true');
             if (icon) icon.style.transform = 'rotate(180deg)';
