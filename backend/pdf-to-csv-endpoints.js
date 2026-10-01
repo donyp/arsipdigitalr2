@@ -90,14 +90,13 @@ function parseBCA(text) {
     const lines = text.split('\n');
     const transactions = [];
 
-    // Lines to skip entirely (headers, footers, page info)
     const skipPatterns = [
         /^TANGGALKETERANGANCBGMUTASISALDO/,
         /^SALDO AWAL:/,
         /^MUTASI (CR|DB):/,
         /^SALDO AKHIR:/,
         /^Bersambung ke Halaman/,
-        /^\d+\/\d+$/,            // page number "1/2"
+        /^\d+\/\d+$/,
         /^KCP\s/,
         /^REKENING GIRO/,
         /^GARUDA GEMILANG|^JATIBENING|^GEDUNG|^JL\s|^BEKASI|^INDONESIA$/i,
@@ -109,22 +108,17 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // Skip indented raw-number continuation lines (BCA duplicate like "       23625000.00")
-    const isIndentedNum = raw => /^\s{3,}[\d.]+\s*$/.test(raw);
-
-    // Money pattern: comma-formatted like "100,000,000.00" or "801,912.00"
+    // Money: comma-formatted thousands + 2 decimal places
+    // e.g. "23,625,000.00" or "801,912.00" — NOT "23625000.00" (no commas)
     const MONEY_RE = /\d{1,3}(?:,\d{3})+\.\d{2}/g;
 
     let current = null;
 
     const pushCurrent = () => {
         if (current) {
-            // Clean up keterangan: remove raw numbers (without comma separator), 
-            // but keep formatted ref like "0806/FTSCY/WS95051", "GG2303033", etc.
-            current.ket = current.ket.replace(/\s+/g, ' ').trim();
             transactions.push({
                 'Tanggal':    current.tgl,
-                'Keterangan': current.ket,
+                'Keterangan': current.ket.replace(/\s{2,}/g, ' ').trim(),
                 'Debit':      current.debit,
                 'Kredit':     current.kredit,
                 'Saldo':      current.saldo
@@ -137,53 +131,61 @@ function parseBCA(text) {
         const line = raw.trim();
         if (!line) continue;
         if (skipPatterns.some(p => p.test(line))) continue;
-        if (isIndentedNum(raw)) continue; // skip "       23625000.00" duplicates
 
-        // New transaction line starts with DD/MM
+        // Skip indented raw-number lines (BCA duplicate without commas e.g. "       23625000.00")
+        // These have no commas and are just visual duplicates — ignore them
+        if (/^\s+\d[\d.]*\s*$/.test(raw)) continue;
+
+        // New transaction: starts with DD/MM
         const dateMatch = line.match(/^(\d{2}\/\d{2})(.*)/);
         if (dateMatch) {
-            pushCurrent(); // save previous
+            pushCurrent();
 
             const [, tgl, rest] = dateMatch;
 
-            // Find all properly-formatted money values
+            // Find comma-formatted money values only
             const moneys = [...rest.matchAll(MONEY_RE)].map(m => m[0]);
 
-            // DB flag?
-            const hasDB = /\bDB\b/.test(rest);
+            // DB flag — must be standalone word AFTER the money number
+            // e.g. "23,625,000.00DB" or "23,625,000.00 DB"
+            const hasDB = /[\d.]\s*DB\b/.test(rest) || /\bDB\b/.test(rest);
 
-            // Extract keterangan: strip money numbers, DB/CR flags, 4-digit CBG, extra spaces
-            // But keep ref codes like "0806/FTSCY/WS95051", "GG2303033", "NATURAL INSULATION"
+            // Build keterangan:
+            // Remove money numbers, remove standalone "DB"/"CR" flags,
+            // remove 4-digit CBG codes, keep everything else (ref codes, names, etc.)
             let ket = rest
-                .replace(MONEY_RE, '')           // remove "100,000,000.00" etc
-                .replace(/\bDB\b|\bCR\b/g, '')   // remove DB/CR flags
-                .replace(/\b\d{4}\b/g, '')        // remove standalone 4-digit CBG (7510)
+                .replace(MONEY_RE, '')               // remove money
+                .replace(/(?<=[\d\s])DB\b|(?<=[\d\s])CR\b|\bDB(?=\s|$)|\bCR(?=\s|$)/g, '') // remove standalone DB/CR
+                .replace(/\b\d{4}\b/g, '')            // remove 4-digit CBG
                 .replace(/\s{2,}/g, ' ')
                 .trim();
 
-            // Assign debit/kredit/saldo
+            // Assign columns based on count of money values + DB flag:
+            //
+            // PDF mutasi column rules (from screenshot):
+            //   - "100,000,000.00"      → 1 money, no DB → KREDIT, saldo shown separately
+            //   - "23,625,000.00 DB"    → 1 money + DB  → DEBIT, no saldo
+            //   - "11,125,000.00 DB"    → 1 money + DB + next number → DEBIT + saldo
+            //
+            // How many numbers appear on the line:
+            //   1 money, no DB  → saldo only (SALDO AWAL case)
+            //   1 money + DB    → debit only, saldo empty
+            //   2 moneys, no DB → kredit(0) + saldo(1)
+            //   2 moneys + DB   → debit(0) + saldo(1)
+
             let debit = '', kredit = '', saldo = '';
 
             if (moneys.length === 0) {
-                // no numbers — just a desc line, skip
                 continue;
             } else if (moneys.length === 1) {
                 if (!hasDB) {
-                    saldo = moneys[0];  // SALDO AWAL — only saldo
+                    saldo = moneys[0];   // SALDO AWAL — only saldo, no mutasi
                 } else {
-                    debit = moneys[0];  // debit without saldo
+                    debit = moneys[0];   // DB with no saldo on this line
                 }
-            } else if (moneys.length === 2) {
-                // mutasi + saldo
-                if (hasDB) {
-                    debit  = moneys[0];
-                } else {
-                    kredit = moneys[0]; // SETORAN TUNAI, no DB = kredit
-                }
-                saldo = moneys[1];
             } else {
-                // 3+ numbers: last = saldo, second-to-last = mutasi
-                const mutasi = moneys[moneys.length - 2];
+                // 2 or more: first = mutasi, last = saldo
+                const mutasi = moneys[0];
                 saldo = moneys[moneys.length - 1];
                 if (hasDB) debit = mutasi;
                 else kredit = mutasi;
@@ -193,7 +195,7 @@ function parseBCA(text) {
 
         } else if (current) {
             // Continuation line — append to keterangan
-            // Skip pure-number lines (unformatted duplicate like "23625000.00")
+            // Skip pure unformatted numbers (no commas) — they are visual duplicates
             if (/^\d[\d.]+$/.test(line)) continue;
             current.ket += ' ' + line;
         }
