@@ -5,6 +5,27 @@ const pdf = require('pdf-parse');
 const { parse } = require('json2csv');
 const path = require('path');
 
+// Middleware to verify JWT and get user
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'Access token required' });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Invalid or expired token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
 // Configure multer for file upload (memory storage)
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -212,20 +233,43 @@ function parseMuamalat(text) {
 }
 
 // Main conversion endpoint
-router.post('/convert', upload.single('pdf'), async (req, res) => {
+router.post('/convert', authenticateToken, upload.single('pdf'), async (req, res) => {
+    const startTime = Date.now();
+    const supabase = req.app.get('supabase');
+    
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No PDF file uploaded' });
         }
 
         const bank = req.body.bank || 'bca';
-        console.log('[PDF-to-CSV] Converting PDF for bank:', bank);
+        const userId = req.user.id;
+        const userEmail = req.user.email;
+        
+        console.log('[PDF-to-CSV] Converting PDF for bank:', bank, 'user:', userEmail);
 
         // Parse PDF
         const pdfData = await pdf(req.file.buffer);
         const text = pdfData.text;
+        const pageCount = pdfData.numpages;
 
         if (!text || text.length < 100) {
+            // Log failed conversion
+            await supabase.from('pdf_conversions').insert({
+                user_id: userId,
+                user_email: userEmail,
+                bank: bank,
+                original_filename: req.file.originalname,
+                file_size: req.file.size,
+                page_count: pageCount,
+                csv_filename: '',
+                status: 'failed',
+                error_message: 'PDF kosong atau tidak dapat dibaca',
+                processing_time_ms: Date.now() - startTime,
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
+            });
+            
             return res.status(400).json({ error: 'PDF kosong atau tidak dapat dibaca' });
         }
 
@@ -255,6 +299,22 @@ router.post('/convert', upload.single('pdf'), async (req, res) => {
         }
 
         if (transactions.length === 0) {
+            // Log failed conversion
+            await supabase.from('pdf_conversions').insert({
+                user_id: userId,
+                user_email: userEmail,
+                bank: bank,
+                original_filename: req.file.originalname,
+                file_size: req.file.size,
+                page_count: pageCount,
+                csv_filename: '',
+                status: 'failed',
+                error_message: 'Tidak ada transaksi ditemukan dalam PDF',
+                processing_time_ms: Date.now() - startTime,
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
+            });
+            
             return res.status(400).json({ error: 'Tidak ada transaksi ditemukan dalam PDF' });
         }
 
@@ -266,6 +326,29 @@ router.post('/convert', upload.single('pdf'), async (req, res) => {
         // Generate filename
         const date = new Date().toISOString().split('T')[0];
         const filename = `MUTASI_${bankName}_${date}.csv`;
+        
+        const processingTime = Date.now() - startTime;
+
+        // Save conversion history to database
+        const { error: dbError } = await supabase.from('pdf_conversions').insert({
+            user_id: userId,
+            user_email: userEmail,
+            bank: bank,
+            original_filename: req.file.originalname,
+            file_size: req.file.size,
+            page_count: pageCount,
+            transaction_count: transactions.length,
+            csv_filename: filename,
+            status: 'success',
+            processing_time_ms: processingTime,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+        });
+
+        if (dbError) {
+            console.error('[PDF-to-CSV] Database error:', dbError);
+            // Don't fail the conversion if DB save fails
+        }
 
         // Send CSV file
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -274,6 +357,26 @@ router.post('/convert', upload.single('pdf'), async (req, res) => {
 
     } catch (error) {
         console.error('[PDF-to-CSV] Error:', error);
+        
+        // Try to log error to database
+        try {
+            await supabase.from('pdf_conversions').insert({
+                user_id: req.user.id,
+                user_email: req.user.email,
+                bank: req.body.bank || 'unknown',
+                original_filename: req.file ? req.file.originalname : 'unknown',
+                file_size: req.file ? req.file.size : 0,
+                csv_filename: '',
+                status: 'failed',
+                error_message: error.message,
+                processing_time_ms: Date.now() - startTime,
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
+            });
+        } catch (dbErr) {
+            console.error('[PDF-to-CSV] Failed to log error to DB:', dbErr);
+        }
+        
         res.status(500).json({ 
             error: 'Gagal mengkonversi PDF',
             message: error.message 
@@ -284,6 +387,88 @@ router.post('/convert', upload.single('pdf'), async (req, res) => {
 // Health check
 router.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'pdf-to-csv' });
+});
+
+// Get user's conversion history
+router.get('/history', authenticateToken, async (req, res) => {
+    const supabase = req.app.get('supabase');
+    const userId = req.user.id;
+    
+    try {
+        const { data, error } = await supabase
+            .from('pdf_conversions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        if (error) {
+            console.error('[PDF-to-CSV] History error:', error);
+            return res.status(500).json({ error: 'Failed to fetch history' });
+        }
+
+        res.json({
+            success: true,
+            history: data || []
+        });
+    } catch (error) {
+        console.error('[PDF-to-CSV] History error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get conversion statistics (admin only)
+router.get('/stats', authenticateToken, async (req, res) => {
+    const supabase = req.app.get('supabase');
+    
+    // Check if user is admin
+    if (req.user.role !== 'super_admin' && req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    try {
+        const { data, error } = await supabase
+            .from('pdf_conversion_stats')
+            .select('*')
+            .order('conversion_date', { ascending: false })
+            .limit(30);
+
+        if (error) {
+            console.error('[PDF-to-CSV] Stats error:', error);
+            return res.status(500).json({ error: 'Failed to fetch stats' });
+        }
+
+        // Get overall totals
+        const { data: totals, error: totalsError } = await supabase
+            .from('pdf_conversions')
+            .select('id, status, bank', { count: 'exact' });
+
+        if (totalsError) {
+            console.error('[PDF-to-CSV] Totals error:', totalsError);
+        }
+
+        const stats = {
+            daily: data || [],
+            totals: {
+                total_conversions: totals?.length || 0,
+                successful: totals?.filter(t => t.status === 'success').length || 0,
+                failed: totals?.filter(t => t.status === 'failed').length || 0,
+                by_bank: {
+                    bca: totals?.filter(t => t.bank === 'bca').length || 0,
+                    bsi: totals?.filter(t => t.bank === 'bsi').length || 0,
+                    muamalat: totals?.filter(t => t.bank === 'muamalat').length || 0
+                }
+            }
+        };
+
+        res.json({
+            success: true,
+            stats
+        });
+    } catch (error) {
+        console.error('[PDF-to-CSV] Stats error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 module.exports = router;

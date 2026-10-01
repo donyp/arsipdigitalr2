@@ -280,6 +280,25 @@
                         <li>Buka file CSV dengan Excel, Google Sheets, atau aplikasi spreadsheet lainnya</li>
                     </ol>
                 </div>
+
+                <!-- Conversion History -->
+                <div class="tool-card mt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-lg flex items-center gap-2">
+                            <i class="fas fa-history text-red-500"></i> Riwayat Konversi
+                        </h3>
+                        <button onclick="loadHistory()" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <div id="historyContainer">
+                        <div class="text-center py-8" style="color: var(--color-text-secondary)">
+                            <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+                            <p>Memuat riwayat...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -301,6 +320,7 @@
                 return;
             }
             await loadSidebar('pdf-to-csv.html');
+            await loadHistory();
         });
 
         // Drop Zone Events
@@ -430,6 +450,9 @@
                     showConfirmButton: false
                 });
 
+                // Reload history
+                await loadHistory();
+
                 setTimeout(() => {
                     clearFile();
                     document.getElementById('progressContainer').style.display = 'none';
@@ -450,6 +473,98 @@
                 convertBtn.disabled = false;
             }
         });
+
+        // Load conversion history
+        async function loadHistory() {
+            const token = localStorage.getItem('jwt_token');
+            
+            try {
+                const response = await fetch('/api/pdf-to-csv/history', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load history');
+                }
+
+                const data = await response.json();
+                renderHistory(data.history || []);
+            } catch (error) {
+                console.error('Error loading history:', error);
+                document.getElementById('historyContainer').innerHTML = `
+                    <div class="text-center py-8" style="color: var(--color-text-secondary)">
+                        <i class="fas fa-exclamation-circle text-3xl mb-3"></i>
+                        <p>Gagal memuat riwayat konversi</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderHistory(history) {
+            const container = document.getElementById('historyContainer');
+            
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8" style="color: var(--color-text-secondary)">
+                        <i class="fas fa-inbox text-3xl mb-3"></i>
+                        <p>Belum ada riwayat konversi</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const table = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--color-border)">
+                                <th class="text-left p-3 font-bold">Tanggal</th>
+                                <th class="text-left p-3 font-bold">File PDF</th>
+                                <th class="text-left p-3 font-bold">Bank</th>
+                                <th class="text-right p-3 font-bold">Transaksi</th>
+                                <th class="text-center p-3 font-bold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${history.map(item => {
+                                const date = new Date(item.created_at).toLocaleString('id-ID');
+                                const bankName = item.bank.toUpperCase();
+                                const statusColor = item.status === 'success' ? '#10b981' : '#ef4444';
+                                const statusText = item.status === 'success' ? 'Berhasil' : 'Gagal';
+                                const statusIcon = item.status === 'success' ? 'check-circle' : 'times-circle';
+                                
+                                return `
+                                    <tr style="border-bottom: 1px solid var(--color-border)">
+                                        <td class="p-3">${date}</td>
+                                        <td class="p-3">
+                                            <div class="font-semibold">${item.original_filename}</div>
+                                            <div class="text-xs" style="color: var(--color-text-secondary)">
+                                                ${(item.file_size / 1024).toFixed(0)} KB • ${item.page_count || 0} halaman
+                                            </div>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-1 rounded text-xs font-bold" style="background: var(--color-bg-tertiary)">
+                                                ${bankName}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-right font-semibold">${item.transaction_count || 0}</td>
+                                        <td class="p-3 text-center">
+                                            <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-bold" style="color: ${statusColor}">
+                                                <i class="fas fa-${statusIcon}"></i> ${statusText}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = table;
+        }
     </script>
 </body>
 </html>
