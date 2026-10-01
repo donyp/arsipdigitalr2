@@ -90,13 +90,14 @@ function parseBCA(text) {
     const lines = text.split('\n');
     const transactions = [];
 
+    // Lines to skip entirely (headers, footers, page info)
     const skipPatterns = [
         /^TANGGALKETERANGANCBGMUTASISALDO/,
         /^SALDO AWAL:/,
         /^MUTASI (CR|DB):/,
         /^SALDO AKHIR:/,
         /^Bersambung ke Halaman/,
-        /^\d+\/\d+$/,
+        /^\d+\/\d+$/,            // page number "1/2"
         /^KCP\s/,
         /^REKENING GIRO/,
         /^GARUDA GEMILANG|^JATIBENING|^GEDUNG|^JL\s|^BEKASI|^INDONESIA$/i,
@@ -108,92 +109,96 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // BCA raw format (all columns merged without spaces):
-    // "01/06SALDO AWAL9,161,912.00"
-    // "08/06SETORAN TUNAI7510100,000,000.00109,161,912.00"
-    // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505123,625,000.00DB"
-    // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505111,125,000.00DB801,912.00"
-    // "30/06BIAYA ADM30,000.00DB8,213,931.00"
-    //
-    // Output columns: Tanggal | Keterangan | CBG | Mutasi | DB | Saldo
+    // Skip indented raw-number continuation lines (BCA duplicate like "       23625000.00")
+    const isIndentedNum = raw => /^\s{3,}[\d.]+\s*$/.test(raw);
 
-    // Regex to extract all properly-formatted currency numbers (with comma thousands separator)
+    // Money pattern: comma-formatted like "100,000,000.00" or "801,912.00"
     const MONEY_RE = /\d{1,3}(?:,\d{3})+\.\d{2}/g;
+
+    let current = null;
+
+    const pushCurrent = () => {
+        if (current) {
+            // Clean up keterangan: remove raw numbers (without comma separator), 
+            // but keep formatted ref like "0806/FTSCY/WS95051", "GG2303033", etc.
+            current.ket = current.ket.replace(/\s+/g, ' ').trim();
+            transactions.push({
+                'Tanggal':    current.tgl,
+                'Keterangan': current.ket,
+                'Debit':      current.debit,
+                'Kredit':     current.kredit,
+                'Saldo':      current.saldo
+            });
+        }
+        current = null;
+    };
 
     for (const raw of lines) {
         const line = raw.trim();
         if (!line) continue;
         if (skipPatterns.some(p => p.test(line))) continue;
+        if (isIndentedNum(raw)) continue; // skip "       23625000.00" duplicates
 
-        // Must start with DD/MM
+        // New transaction line starts with DD/MM
         const dateMatch = line.match(/^(\d{2}\/\d{2})(.*)/);
-        if (!dateMatch) continue;
+        if (dateMatch) {
+            pushCurrent(); // save previous
 
-        const [, tgl, rest] = dateMatch;
+            const [, tgl, rest] = dateMatch;
 
-        // Find all currency numbers
-        const moneyMatches = [...rest.matchAll(MONEY_RE)];
-        const moneys = moneyMatches.map(m => m[0]);
+            // Find all properly-formatted money values
+            const moneys = [...rest.matchAll(MONEY_RE)].map(m => m[0]);
 
-        // DB flag is present?
-        const hasDB = /\bDB\b/.test(rest);
+            // DB flag?
+            const hasDB = /\bDB\b/.test(rest);
 
-        // Extract CBG: 4-digit number that appears right after the description text
-        // CBG is like "7510" in "SETORAN TUNAI7510100,000,000.00"
-        // It sits between description and first money number
-        let cbg = '';
-        if (moneys.length > 0) {
-            const firstMoneyIdx = rest.indexOf(moneys[0]);
-            const beforeMoney = rest.substring(0, firstMoneyIdx);
-            // CBG is a 4-digit standalone number at the end of beforeMoney (before numbers)
-            const cbgMatch = beforeMoney.match(/\b(\d{4})\s*$/);
-            if (cbgMatch) cbg = cbgMatch[1];
-        }
+            // Extract keterangan: strip money numbers, DB/CR flags, 4-digit CBG, extra spaces
+            // But keep ref codes like "0806/FTSCY/WS95051", "GG2303033", "NATURAL INSULATION"
+            let ket = rest
+                .replace(MONEY_RE, '')           // remove "100,000,000.00" etc
+                .replace(/\bDB\b|\bCR\b/g, '')   // remove DB/CR flags
+                .replace(/\b\d{4}\b/g, '')        // remove standalone 4-digit CBG (7510)
+                .replace(/\s{2,}/g, ' ')
+                .trim();
 
-        // Extract keterangan: strip CBG, ref codes (xx/FTSCY/WS...), money, DB/CR
-        let ket = rest
-            .replace(MONEY_RE, '')                        // remove money
-            .replace(/\bDB\b|\bCR\b/g, '')               // remove DB/CR flags
-            .replace(/\b\d{4}\/[A-Z]+\/[A-Z0-9]+\b/g, '') // remove ref like 0806/FTSCY/WS95051
-            .replace(/\b\d{4}\b/g, '')                    // remove standalone 4-digit CBG
-            .replace(/\s{2,}/g, ' ')
-            .trim();
+            // Assign debit/kredit/saldo
+            let debit = '', kredit = '', saldo = '';
 
-        // Map money columns:
-        // - 1 money, no flag  → Saldo only (SALDO AWAL)
-        // - 1 money, DB/CR   → Mutasi only (no saldo shown)
-        // - 2 moneys          → Mutasi + Saldo
-        let mutasi = '', dbcr = '', saldo = '';
-
-        if (moneys.length === 0) {
-            continue;
-        } else if (moneys.length === 1) {
-            if (!hasDB) {
-                saldo = moneys[0];  // SALDO AWAL
+            if (moneys.length === 0) {
+                // no numbers — just a desc line, skip
+                continue;
+            } else if (moneys.length === 1) {
+                if (!hasDB) {
+                    saldo = moneys[0];  // SALDO AWAL — only saldo
+                } else {
+                    debit = moneys[0];  // debit without saldo
+                }
+            } else if (moneys.length === 2) {
+                // mutasi + saldo
+                if (hasDB) {
+                    debit  = moneys[0];
+                } else {
+                    kredit = moneys[0]; // SETORAN TUNAI, no DB = kredit
+                }
+                saldo = moneys[1];
             } else {
-                mutasi = moneys[0];
-                dbcr = 'DB';
+                // 3+ numbers: last = saldo, second-to-last = mutasi
+                const mutasi = moneys[moneys.length - 2];
+                saldo = moneys[moneys.length - 1];
+                if (hasDB) debit = mutasi;
+                else kredit = mutasi;
             }
-        } else if (moneys.length === 2) {
-            mutasi = moneys[0];
-            saldo  = moneys[1];
-            dbcr   = hasDB ? 'DB' : '';
-        } else {
-            // 3+ money: last = saldo, second-to-last = mutasi
-            mutasi = moneys[moneys.length - 2];
-            saldo  = moneys[moneys.length - 1];
-            dbcr   = hasDB ? 'DB' : '';
-        }
 
-        transactions.push({
-            'Tanggal':    tgl,
-            'Keterangan': ket,
-            'CBG':        cbg,
-            'Mutasi':     mutasi,
-            'DB':         dbcr,
-            'Saldo':      saldo
-        });
+            current = { tgl, ket, debit, kredit, saldo };
+
+        } else if (current) {
+            // Continuation line — append to keterangan
+            // Skip pure-number lines (unformatted duplicate like "23625000.00")
+            if (/^\d[\d.]+$/.test(line)) continue;
+            current.ket += ' ' + line;
+        }
     }
+    pushCurrent();
 
     return transactions;
 }
