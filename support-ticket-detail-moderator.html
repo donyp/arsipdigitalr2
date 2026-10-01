@@ -956,7 +956,7 @@
                                     <span class="message-author">${isSupport ? 'Tim Support' : 'Toko'}</span>
                                     <span class="message-role">${isSupport ? 'SUPPORT' : 'TOKO'}</span>
                                     <span class="message-time">${formatDateTimeWIB(msg.created_at)}</span>
-                                    ${isSupport ? `<button class="message-delete-btn" onclick="deleteMessage('${msg.id}')" title="Hapus pesan"><i class="fas fa-trash-alt"></i></button>` : ''}
+                                    <button class="message-delete-btn" onclick="deleteMessage('${msg.id}')" title="Hapus pesan"><i class="fas fa-trash-alt"></i></button>
                                 </div>
                                 <div class="message-body">${escapeHtml(msg.message)}</div>
                                 ${msg.attachments && msg.attachments.length > 0 ? `

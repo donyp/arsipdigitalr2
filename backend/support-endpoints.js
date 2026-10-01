@@ -564,6 +564,51 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
     });
 
     // ============================================
+    // DELETE /api/support/tickets/:id/messages/:messageId - Delete message (moderator only)
+    // ============================================
+    app.delete('/api/support/tickets/:id/messages/:messageId', authenticateToken, authorizeRole('moderator', 'super_admin'), async (req, res) => {
+        try {
+            const { id: ticketId, messageId } = req.params;
+
+            // Get message to verify it exists
+            const { data: message, error: msgError } = await supabase
+                .from('support_messages')
+                .select('id, ticket_id')
+                .eq('id', messageId)
+                .eq('ticket_id', ticketId)
+                .single();
+
+            if (msgError || !message) {
+                return res.status(404).json({ error: 'Message not found' });
+            }
+
+            // Delete message
+            const { error: deleteError } = await supabase
+                .from('support_messages')
+                .delete()
+                .eq('id', messageId);
+
+            if (deleteError) throw deleteError;
+
+            // Log activity
+            await supabase.from('support_ticket_activity').insert({
+                ticket_id: ticketId,
+                user_id: req.user.userId,
+                action: 'message_deleted',
+                description: `Message deleted by ${req.user.role}`
+            });
+
+            res.json({
+                success: true,
+                message: 'Message deleted successfully'
+            });
+        } catch (error) {
+            console.error('[Support] Error deleting message:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // ============================================
     // DELETE /api/support/tickets/cleanup-old-closed - Delete closed tickets older than 7 days (admin only)
     // ============================================
     app.delete('/api/support/tickets/cleanup-old-closed', authenticateToken, authorizeRole('super_admin'), async (req, res) => {
