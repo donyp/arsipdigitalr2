@@ -188,6 +188,8 @@ function parseBCA(text) {
     ];
 
     // Extract the last valid money from end of string s
+    // CRITICAL FIX: Handle cases like "SETORAN TUNAI7510 00,000,000.00" where
+    // leading digit (1 from 7510) is separated from amount by space
     function extractTrailingMoney(s) {
         s = s.trim();
         
@@ -203,6 +205,7 @@ function parseBCA(text) {
         if (!/^\.\d{2}\s*$/.test(afterDot)) return null;
         afterDot = afterDot.trim();
 
+        // Walk LEFT from decimal collecting money digits
         while (i >= 0) {
             const ch = s[i];
             if (/\d/.test(ch)) {
@@ -228,6 +231,22 @@ function parseBCA(text) {
 
         const firstCommaPos = collected.indexOf(',');
         if (firstCommaPos < 0) return null;
+
+        // CRITICAL: Check if there's a digit BEFORE amount that should be prepended
+        // Pattern: "TUNAI7510 00,000,000" → digit "1" should prepend to "00,000,000"
+        let leadingDigitFromBefore = '';
+        if (i >= 0 && /\s/.test(s[i])) {
+            // There's a space before collected amount
+            // Look back for orphan digit (result of stripped 75XX code)
+            let j = i - 1;
+            while (j >= 0 && /\s/.test(s[j])) j--;
+            
+            if (j >= 0 && /\d/.test(s[j])) {
+                // Found a digit before space - this is orphan digit from stripped code
+                leadingDigitFromBefore = s[j];
+                console.log('[PDF-CSV] Found orphan leading digit:', leadingDigitFromBefore, 'for amount starting with:', collected.substring(0, 5));
+            }
+        }
 
         let isRefCodePattern = false;
         if (i >= 2) {
@@ -268,11 +287,21 @@ function parseBCA(text) {
         const startIdx = firstCommaPos - leadingDigits;
         if (startIdx < 0) return null;
 
-        const bestMoney = collected.slice(startIdx) + afterDot;
+        let bestMoney = collected.slice(startIdx) + afterDot;
+        
+        // PREPEND orphan digit if found
+        if (leadingDigitFromBefore) {
+            bestMoney = leadingDigitFromBefore + bestMoney;
+            console.log('[PDF-CSV] Prepended orphan digit:', leadingDigitFromBefore, '→', bestMoney);
+        }
+
         if (!/^\d{1,3}(,\d{3})*\.\d{2}$/.test(bestMoney)) return null;
 
         const moneyStart = s.lastIndexOf(bestMoney);
-        if (moneyStart < 0) return null;
+        if (moneyStart < 0) {
+            // If lastIndexOf fails (because we prepended digit), reconstruct start position
+            return { val: bestMoney, start: i - leadingDigits + 1 };
+        }
 
         return { val: bestMoney, start: moneyStart };
     }
@@ -338,11 +367,10 @@ function parseBCA(text) {
             }
         }
         
-        // AGGRESSIVE: Remove "7510" and "75" explicitly
-        s = s.replace(/7510/g, ' ');
-        s = s.replace(/\b75\b/g, ' ');
+        // Remove "75" and following digits only (BCA code pattern)
+        s = s.replace(/75\d*/g, ' ');
         
-        // Remove other standalone digit codes (2-6 digits)
+        // Remove other standalone digit codes  
         s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
         s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
         
