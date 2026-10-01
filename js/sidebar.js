@@ -240,14 +240,9 @@
             return;
         }
 
-        // Check if sidebar was already injected in this navigation
-        if (sidebar.hasAttribute('data-injected')) {
-            console.log('[Sidebar] Sidebar already injected, skipping re-render');
-            return;
-        }
-
-        // Mark sidebar as injected
-        sidebar.setAttribute('data-injected', 'true');
+        // Always re-inject untuk update colors saat dark mode toggle
+        // Clear injected attribute agar bisa di-re-render
+        sidebar.removeAttribute('data-injected');
 
         // Check if current page is an Upload File menu item
         const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur'];
@@ -558,6 +553,9 @@
             mainContent.style.transition = 'all 0.4s ease';
         }
 
+        // Mark sidebar as injected
+        sidebar.setAttribute('data-injected', 'true');
+
         console.log('[Sidebar] v5.4 Smooth UX complete');
     }
 
@@ -711,7 +709,7 @@ function toggleDarkMode() {
         html.removeAttribute('data-dark-mode');
     }
     
-    // Reload sidebar with new colors
+    // Re-inject sidebar dengan color theme baru
     if (window.loadSidebar) {
         window.loadSidebar();
     }
