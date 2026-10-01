@@ -189,6 +189,23 @@ function parseMuamalat(text) {
 
 module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
 
+    // POST /api/pdf-to-csv/debug - Dump raw PDF text (dev use)
+    app.post('/api/pdf-to-csv/debug', authenticateToken, upload.single('pdf'), async (req, res) => {
+        try {
+            if (!req.file) return res.status(400).json({ error: 'No file' });
+            const pdfData = await pdf(req.file.buffer);
+            const lines = pdfData.text.split('\n').map((l, i) => `${i}: ${JSON.stringify(l)}`);
+            res.json({
+                pageCount: pdfData.numpages,
+                totalChars: pdfData.text.length,
+                detectedBank: detectBank(pdfData.text),
+                lines: lines.slice(0, 120)   // first 120 lines
+            });
+        } catch (e) {
+            res.status(500).json({ error: e.message });
+        }
+    });
+
     // POST /api/pdf-to-csv/detect - Detect bank without converting
     app.post('/api/pdf-to-csv/detect', authenticateToken, upload.single('pdf'), async (req, res) => {
         try {
