@@ -108,55 +108,53 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // Parse one BCA data line. All columns are merged without spaces.
-    // Strategy: work from the END of the string.
-    //
-    // Step 1: Check if line ends with DB (= debit marker)
-    //   "...23,625,000.00DB"              → hasDB=true,  1 money → debit, saldo=''
-    //   "...11,125,000.00DB801,912.00"    → hasDB=true,  after removing saldo → debit, saldo='801,912.00'
-    //   "...100,000,000.00109,161,912.00" → hasDB=false, 2 moneys → kredit + saldo
-    //   "...9,161,912.00"                 → hasDB=false, 1 money, no keterangan mutation = saldo only
-    //
-    // A valid money value always uses comma thousands: "23,625,000.00"
-    // The LAST money on the line (reading right to left) is always clearly delimited
-    // because it either:
-    //   a) ends just before "DB"
-    //   b) is at the very end of the line
-    //   c) is followed by another money (saldo case)
-
     function parseLine(rest) {
-        // Detect DB flag: line ends with "...number DB" or "...numberDB number"
-        // Pattern: money followed by optional spaces then DB then optional money
-        // We use a specific right-anchored regex
         let debit = '', kredit = '', saldo = '';
 
-        // Case A: ends with DB + optional saldo
-        // e.g. "...23,625,000.00DB" or "...11,125,000.00DB801,912.00"
-        const caseA = rest.match(/([\d,]+\.\d{2})DB(\d[\d,]*\.\d{2})?$/);
+        // Case A: Debit — line ends with money+DB optionally followed by saldo
+        // e.g. "...23,625,000.00DB"  or  "...11,125,000.00DB801,912.00"
+        const caseA = rest.match(/([\d,]+\.\d{2})DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (caseA) {
             debit = caseA[1];
-            saldo = caseA[2] ? caseA[2].replace(/(?<!\d),/g, ',') : '';
-            // saldo from caseA[2] may lack commas — keep as-is, it came from PDF
+            saldo = caseA[2] || '';
             return { debit, kredit, saldo };
         }
 
-        // Case B: ends with two comma-formatted moneys (kredit + saldo)
+        // Case B: Kredit+Saldo — ends with exactly two comma-formatted numbers
         // e.g. "...100,000,000.00109,161,912.00"
-        const caseB = rest.match(/((?:\d{1,3},)+\d{3}\.\d{2})((?:\d{1,3},)+\d{3}\.\d{2})$/);
+        const caseB = rest.match(/(\d{1,3}(?:,\d{3})+\.\d{2})(\d{1,3}(?:,\d{3})+\.\d{2})$/);
         if (caseB) {
             kredit = caseB[1];
             saldo  = caseB[2];
             return { debit, kredit, saldo };
         }
 
-        // Case C: ends with one comma-formatted money (saldo only — SALDO AWAL)
-        const caseC = rest.match(/((?:\d{1,3},)+\d{3}\.\d{2})$/);
+        // Case C: one comma-formatted number at end
+        const caseC = rest.match(/(\d{1,3}(?:,\d{3})+\.\d{2})$/);
         if (caseC) {
-            saldo = caseC[1];
+            const val = caseC[1];
+            const beforeVal = rest.slice(0, rest.lastIndexOf(val)).toUpperCase();
+            // If description contains SALDO AWAL/AKHIR → it's a saldo-only row
+            if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) {
+                saldo = val;
+            } else {
+                // Single money, no DB → kredit (SETORAN TUNAI without a paired saldo line)
+                kredit = val;
+            }
             return { debit, kredit, saldo };
         }
 
         return { debit, kredit, saldo };
+    }
+
+    // Strip only the trailing amount+DB portion from the line to get keterangan
+    function stripAmounts(rest) {
+        let s = rest;
+        // Remove trailing: money+DB+saldo  or  money+DB  or  two-moneys  or  one-money
+        s = s.replace(/([\d,]+\.\d{2})DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/, '');
+        s = s.replace(/(\d{1,3}(?:,\d{3})+\.\d{2})(\d{1,3}(?:,\d{3})+\.\d{2})$/, '');
+        s = s.replace(/(\d{1,3}(?:,\d{3})+\.\d{2})$/, '');
+        return s;
     }
 
     let current = null;
@@ -191,13 +189,8 @@ function parseBCA(text) {
             const [, tgl, rest] = dateMatch;
             const { debit, kredit, saldo } = parseLine(rest);
 
-            // Keterangan: strip only the trailing money+DB portion, keep everything else
-            // Remove trailing: money+DB+money  OR  money+DB  OR  two-moneys  OR  one-money
-            let ket = rest
-                .replace(/([\d,]+\.\d{2})DB(\d[\d,]*\.\d{2})?$/, '')   // strip debit suffix
-                .replace(/((?:\d{1,3},)+\d{3}\.\d{2})((?:\d{1,3},)+\d{3}\.\d{2})$/, '') // strip kredit+saldo
-                .replace(/((?:\d{1,3},)+\d{3}\.\d{2})$/, '')            // strip saldo-only
-                .replace(/\b\d{4}\b/g, '')   // remove 4-digit CBG
+            // Keterangan: strip trailing amounts, keep everything else including CBG codes
+            const ket = stripAmounts(rest)
                 .replace(/\s{2,}/g, ' ')
                 .trim();
 
