@@ -108,55 +108,55 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // Parse a BCA transaction line from the RIGHT side
-    // BCA lines end with: [money1][DB][money2]  or  [money1][DB]  or  [money1]
-    // where money = comma-formatted like "23,625,000.00"
-    // The trick: parse suffix of the line working backwards
-    function parseAmounts(rest) {
-        // Pattern for a valid money value: groups of 1-3 digits separated by commas, ending in .dd
-        // e.g. "23,625,000.00" or "9,161,912.00"
-        // We extract from SUFFIX of the string to avoid merging with preceding digits
+    // Parse one BCA data line. All columns are merged without spaces.
+    // Strategy: work from the END of the string.
+    //
+    // Step 1: Check if line ends with DB (= debit marker)
+    //   "...23,625,000.00DB"              → hasDB=true,  1 money → debit, saldo=''
+    //   "...11,125,000.00DB801,912.00"    → hasDB=true,  after removing saldo → debit, saldo='801,912.00'
+    //   "...100,000,000.00109,161,912.00" → hasDB=false, 2 moneys → kredit + saldo
+    //   "...9,161,912.00"                 → hasDB=false, 1 money, no keterangan mutation = saldo only
+    //
+    // A valid money value always uses comma thousands: "23,625,000.00"
+    // The LAST money on the line (reading right to left) is always clearly delimited
+    // because it either:
+    //   a) ends just before "DB"
+    //   b) is at the very end of the line
+    //   c) is followed by another money (saldo case)
 
-        let s = rest;
-        const hasDB = /\d\.?\d*\s*DB\s*$/.test(s) || /\d\.?\d*\s*DB\s+\d/.test(s);
+    function parseLine(rest) {
+        // Detect DB flag: line ends with "...number DB" or "...numberDB number"
+        // Pattern: money followed by optional spaces then DB then optional money
+        // We use a specific right-anchored regex
+        let debit = '', kredit = '', saldo = '';
 
-        // Remove trailing DB flag first
-        s = s.replace(/\s*DB\s*$/, '').trimEnd();
-
-        // Extract trailing money values (working from right)
-        // Match pattern at end: optional saldo, then optional mutasi
-        // Both are comma-formatted
-
-        // Try to find last 1 or 2 money values at the END of the string
-        // A valid money starts at a position where the preceding char is NOT a digit
-        const MONEY = /(?<![0-9])\d{1,3}(?:,\d{3})+\.\d{2}$/;
-
-        let saldo = '', mutasi = '';
-
-        // Extract last money (saldo or single mutasi)
-        let m1 = s.match(MONEY);
-        if (m1) {
-            const val1 = m1[0];
-            s = s.slice(0, m1.index).trimEnd();
-
-            // Try to find another money before it (mutasi)
-            // But only if the preceding char before this money was not a letter/slash (i.e. not part of a ref code)
-            const m2 = s.match(MONEY);
-            if (m2) {
-                mutasi = m2[0];
-                saldo = val1;
-                s = s.slice(0, m2.index).trimEnd();
-            } else {
-                // Only one money found
-                if (hasDB) {
-                    mutasi = val1;  // single money + DB = mutasi only
-                } else {
-                    saldo = val1;   // single money no DB = saldo only (SALDO AWAL)
-                }
-            }
+        // Case A: ends with DB + optional saldo
+        // e.g. "...23,625,000.00DB" or "...11,125,000.00DB801,912.00"
+        const caseA = rest.match(/([\d,]+\.\d{2})DB(\d[\d,]*\.\d{2})?$/);
+        if (caseA) {
+            debit = caseA[1];
+            saldo = caseA[2] ? caseA[2].replace(/(?<!\d),/g, ',') : '';
+            // saldo from caseA[2] may lack commas — keep as-is, it came from PDF
+            return { debit, kredit, saldo };
         }
 
-        return { mutasi, saldo, hasDB, descRest: s };
+        // Case B: ends with two comma-formatted moneys (kredit + saldo)
+        // e.g. "...100,000,000.00109,161,912.00"
+        const caseB = rest.match(/((?:\d{1,3},)+\d{3}\.\d{2})((?:\d{1,3},)+\d{3}\.\d{2})$/);
+        if (caseB) {
+            kredit = caseB[1];
+            saldo  = caseB[2];
+            return { debit, kredit, saldo };
+        }
+
+        // Case C: ends with one comma-formatted money (saldo only — SALDO AWAL)
+        const caseC = rest.match(/((?:\d{1,3},)+\d{3}\.\d{2})$/);
+        if (caseC) {
+            saldo = caseC[1];
+            return { debit, kredit, saldo };
+        }
+
+        return { debit, kredit, saldo };
     }
 
     let current = null;
@@ -179,7 +179,8 @@ function parseBCA(text) {
         if (!line) continue;
         if (skipPatterns.some(p => p.test(line))) continue;
 
-        // Skip indented raw-number lines (BCA unformatted duplicates e.g. "       23625000.00")
+        // Skip indented raw-number continuation lines (no commas, just digits+dot)
+        // e.g. "       23625000.00"
         if (/^\s+[\d.]+\s*$/.test(raw)) continue;
 
         // New transaction: starts with DD/MM
@@ -188,26 +189,23 @@ function parseBCA(text) {
             pushCurrent();
 
             const [, tgl, rest] = dateMatch;
-            const { mutasi, saldo, hasDB, descRest } = parseAmounts(rest);
+            const { debit, kredit, saldo } = parseLine(rest);
 
-            // Build keterangan from descRest: keep all text, just clean up
-            const ket = descRest
-                .replace(/\bDB\b|\bCR\b/g, '')
+            // Keterangan: strip only the trailing money+DB portion, keep everything else
+            // Remove trailing: money+DB+money  OR  money+DB  OR  two-moneys  OR  one-money
+            let ket = rest
+                .replace(/([\d,]+\.\d{2})DB(\d[\d,]*\.\d{2})?$/, '')   // strip debit suffix
+                .replace(/((?:\d{1,3},)+\d{3}\.\d{2})((?:\d{1,3},)+\d{3}\.\d{2})$/, '') // strip kredit+saldo
+                .replace(/((?:\d{1,3},)+\d{3}\.\d{2})$/, '')            // strip saldo-only
                 .replace(/\b\d{4}\b/g, '')   // remove 4-digit CBG
                 .replace(/\s{2,}/g, ' ')
                 .trim();
 
-            let debit = '', kredit = '';
-            if (mutasi) {
-                if (hasDB) debit = mutasi;
-                else kredit = mutasi;
-            }
-
             current = { tgl, ket, debit, kredit, saldo };
 
         } else if (current) {
-            // Continuation line — append to keterangan
-            // Skip pure unformatted numbers (visual duplicates without commas)
+            // Continuation line: append to keterangan
+            // Skip pure unformatted numbers (visual duplicate like "23625000.00")
             if (/^\d[\d.]+$/.test(line)) continue;
             current.ket += ' ' + line;
         }
