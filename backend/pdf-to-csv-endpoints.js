@@ -87,8 +87,8 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] PARSER_VERSION=v10-FIXED-2024-10-01-KREDIT-VALIDATION');
-    console.log('[PDF-CSV] ★ THIS IS THE VALIDATED FIX - KREDIT CONTAMINATION DETECTOR ACTIVE');
+    console.log('[PDF-CSV] PARSER_VERSION=v11-DEBUG-DETAILED-LOGGING');
+    console.log('[PDF-CSV] ★ DETAILED LOGGING TO TRACE KREDIT CONTAMINATION SOURCE');
     const lines = text.split('\n');
     const transactions = [];
 
@@ -285,14 +285,17 @@ function parseBCA(text) {
             kredit = second.val;
             saldo  = last.val;
             amounts.push(kredit, saldo);
+            console.log('[PDF-CSV] parseLine: found 2 monies - kredit=', kredit, 'saldo=', saldo, 'input=', rest.substring(0, 60) + '...');
         } else {
             const beforeVal = rest.slice(0, last.start).toUpperCase();
             if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) {
                 saldo = last.val;
                 amounts.push(saldo);
+                console.log('[PDF-CSV] parseLine: SALDO line - saldo=', saldo);
             } else {
                 kredit = last.val;
                 amounts.push(kredit);
+                console.log('[PDF-CSV] parseLine: single money (kredit) - kredit=', kredit, 'input=', rest.substring(0, 60) + '...');
             }
         }
         return { debit, kredit, saldo, amounts };
