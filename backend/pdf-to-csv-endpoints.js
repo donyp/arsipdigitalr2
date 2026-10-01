@@ -90,30 +90,75 @@ function parseBCA(text) {
     const transactions = [];
     let current = null;
 
-    const skip = ['REKENING KORAN', 'BANK CENTRAL ASIA', 'Tanggal', 'Keterangan', 'CBG', 'MUTASI', 'SALDO', 'Page'];
+    // Headers/skip patterns
+    const skipPatterns = [
+        /^REKENING (GIRO|KORAN)/i,
+        /^BANK CENTRAL ASIA/i,
+        /^TANGGAL\s+KETERANGAN/i,
+        /^CBG\s+MUTASI/i,
+        /^KCP\s+/i,
+        /^HALAMAN\s*:/i,
+        /^NO\.\s*REKENING/i,
+        /^PERIODE\s*:/i,
+        /^MATA UANG\s*:/i,
+        /^CATATAN/i,
+        /^BCA berhak/i,
+        /^Apabila nasabah/i,
+        /^GARUDA|^JATIBENING|^JL\s/i,
+        /^GEDUNG/i,
+        /^BEKASI/i,
+    ];
 
     for (let line of lines) {
         line = line.trim();
-        if (!line || skip.some(s => line.includes(s))) continue;
+        if (!line) continue;
+        if (skipPatterns.some(p => p.test(line))) continue;
 
-        // BCA pattern: DD/MM  amount  [DB/CR]  description
-        const match = line.match(/^(\d{2}\/\d{2})\s+([\d,.]+)\s+(DB|CR)?\s*(.*)/);
-        if (match) {
+        // BCA format: "01/06   SALDO AWAL                             9,161,912.00"
+        // or:         "08/06   SETORAN TUNAI         7510   100,000,000.00   DB   109,161,912.00"
+        const matchFull = line.match(/^(\d{2}\/\d{2})\s{2,}(.+?)\s{2,}([\d,.]+(?:\.\d{2})?)\s*(DB|CR)?\s*([\d,.]+(?:\.\d{2}))?$/);
+        if (matchFull) {
             if (current) transactions.push(current);
-            const [, date, amount, type, desc] = match;
+            const [, date, desc, mutasi, type, saldo] = matchFull;
             current = {
                 'Tanggal': date,
-                'Keterangan': desc.trim(),
-                'Debit': type === 'DB' ? cleanNumber(amount) : '',
-                'Kredit': type === 'CR' ? cleanNumber(amount) : '',
-                'Saldo': ''
+                'Keterangan': desc.trim().replace(/\s{2,}/g, ' '),
+                'Debit':   type === 'DB' ? cleanNumber(mutasi) : '',
+                'Kredit':  type === 'CR' ? cleanNumber(mutasi) : (type ? '' : cleanNumber(mutasi)),
+                'Saldo':   saldo ? cleanNumber(saldo) : ''
             };
-        } else if (current) {
-            current['Keterangan'] += ' ' + line.trim();
+            continue;
+        }
+
+        // Simpler: just date + text continuation
+        const matchSimple = line.match(/^(\d{2}\/\d{2})\s+(.*)/);
+        if (matchSimple) {
+            if (current) transactions.push(current);
+            const [, date, rest] = matchSimple;
+            // Try to pull trailing numbers off the rest
+            const numMatch = rest.match(/^(.*?)\s+([\d,.]{4,}(?:\.\d{2})?)\s*(DB|CR)?\s*([\d,.]+(?:\.\d{2})?)?$/);
+            if (numMatch) {
+                const [, desc, mutasi, type, saldo] = numMatch;
+                current = {
+                    'Tanggal': date,
+                    'Keterangan': desc.trim().replace(/\s{2,}/g, ' '),
+                    'Debit':  type === 'DB' ? cleanNumber(mutasi) : '',
+                    'Kredit': type === 'CR' ? cleanNumber(mutasi) : (type ? '' : cleanNumber(mutasi)),
+                    'Saldo':  saldo ? cleanNumber(saldo) : ''
+                };
+            } else {
+                current = { 'Tanggal': date, 'Keterangan': rest.trim(), 'Debit': '', 'Kredit': '', 'Saldo': '' };
+            }
+            continue;
+        }
+
+        // Continuation line - append to keterangan, but not pure number lines
+        if (current && !line.match(/^[\d,. ]+$/)) {
+            current['Keterangan'] += ' ' + line;
         }
     }
     if (current) transactions.push(current);
-    return transactions;
+    return transactions.filter(t => t['Tanggal']); // must have a date
 }
 
 function parseBSI(text) {
@@ -121,30 +166,84 @@ function parseBSI(text) {
     const transactions = [];
     let current = null;
 
-    const skip = ['BANK SYARIAH', 'Statement', 'Date', 'Description', 'Debit', 'Credit', 'Balance', 'Page'];
+    const skipPatterns = [
+        /^BSI|^BANK SYARIAH INDONESIA/i,
+        /^Account Statement/i,
+        /^PT\s+GARUDA/i,
+        /^Account\s*:/i,
+        /^Date\s*:/i,
+        /^Opening Balance/i,
+        /^Closing Balance/i,
+        /^Total (Debit|Credit)/i,
+        /^Branch\s*:/i,
+        /^Date\s+FT Number/i,
+        /^Currency\s+Amount/i,
+    ];
 
     for (let line of lines) {
         line = line.trim();
-        if (!line || skip.some(s => line.includes(s))) continue;
+        if (!line) continue;
+        if (skipPatterns.some(p => p.test(line))) continue;
 
-        // BSI pattern: DD-MMM-YYYY  description  debit  credit  balance
-        const match = line.match(/^(\d{2}-\w{3}-\d{4})\s+(.*?)\s+([\d,.]+\.\d{2})?\s+([\d,.]+\.\d{2})?\s+([\d,.]+\.\d{2})$/);
-        if (match) {
+        // BSI format from screenshot:
+        // "2026-06-01 10:18:30 FT2615220XMD BIFAST - TRF Dari - Bank BCA ... IDR 21,819,082.00 CR 194,664,677.83"
+        // pdf-parse typically collapses columns — try several patterns
+
+        // Pattern 1: YYYY-MM-DD HH:MM:SS  FTxxx  description  IDR  amount  CR/DB  balance
+        const m1 = line.match(/^(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+(\S+)\s+(.*?)\s+IDR\s+([\d,.]+(?:\.\d{2})?)\s+(CR|DB)\s+([\d,.]+(?:\.\d{2})?)$/i);
+        if (m1) {
             if (current) transactions.push(current);
-            const [, date, desc, debit, credit, balance] = match;
+            const [, date, ftNum, desc, amount, type, balance] = m1;
             current = {
                 'Tanggal': date,
+                'No. FT': ftNum,
                 'Keterangan': desc.trim(),
-                'Debit': debit ? cleanNumber(debit) : '',
-                'Kredit': credit ? cleanNumber(credit) : '',
-                'Saldo': balance ? cleanNumber(balance) : ''
+                'Debit':   type === 'DB' ? cleanNumber(amount) : '',
+                'Kredit':  type === 'CR' ? cleanNumber(amount) : '',
+                'Saldo':   cleanNumber(balance)
             };
-        } else if (current && !line.match(/^\d{2}-\w{3}-\d{4}/)) {
-            current['Keterangan'] += ' ' + line.trim();
+            continue;
+        }
+
+        // Pattern 2: YYYY-MM-DD HH:MM:SS  FTxxx  ... (balance at end, no CR/DB label)
+        const m2 = line.match(/^(\d{4}-\d{2}-\d{2})\s+\d{2}:\d{2}:\d{2}\s+(\S+)\s+(.*?)\s+([\d,.]+(?:\.\d{2})?)\s+([\d,.]+(?:\.\d{2})?)$/);
+        if (m2) {
+            if (current) transactions.push(current);
+            const [, date, ftNum, desc, amount, balance] = m2;
+            current = {
+                'Tanggal': date,
+                'No. FT': ftNum,
+                'Keterangan': desc.trim(),
+                'Debit':  '',
+                'Kredit': cleanNumber(amount),
+                'Saldo':  cleanNumber(balance)
+            };
+            continue;
+        }
+
+        // Pattern 3: date only (YYYY-MM-DD) without time
+        const m3 = line.match(/^(\d{4}-\d{2}-\d{2})\s+(\S+)\s+(.*?)\s+([\d,.]+(?:\.\d{2})?)\s+(CR|DB)\s+([\d,.]+(?:\.\d{2})?)$/i);
+        if (m3) {
+            if (current) transactions.push(current);
+            const [, date, ftNum, desc, amount, type, balance] = m3;
+            current = {
+                'Tanggal': date,
+                'No. FT': ftNum,
+                'Keterangan': desc.trim(),
+                'Debit':  type === 'DB' ? cleanNumber(amount) : '',
+                'Kredit': type === 'CR' ? cleanNumber(amount) : '',
+                'Saldo':  cleanNumber(balance)
+            };
+            continue;
+        }
+
+        // Continuation
+        if (current && !line.match(/^[\d,. ]+$/)) {
+            current['Keterangan'] += ' ' + line;
         }
     }
     if (current) transactions.push(current);
-    return transactions;
+    return transactions.filter(t => t['Tanggal']);
 }
 
 function parseMuamalat(text) {
@@ -152,35 +251,94 @@ function parseMuamalat(text) {
     const transactions = [];
     let current = null;
 
-    const skip = ['MUAMALAT', 'Account No', 'Period', 'Transaction Date', 'Effective Date', 'Reference Number', 'Description', 'Amount', 'Balance', 'Page'];
+    const skipPatterns = [
+        /^Muamalat|^BANK MUAMALAT/i,
+        /^ACCOUNT STATEMENT/i,
+        /^GARUDA GEMILANG/i,
+        /^JL\s/i,
+        /^Jakarta/i,
+        /^Account No\./i,
+        /^Account Type/i,
+        /^Currency\s*:/i,
+        /^Period\s*:/i,
+        /^Reference\s+Number/i,
+        /^Transaction\s+Date/i,
+        /^Effective\s+Date/i,
+        /^Debit\s+Credit/i,
+        /^Balance\s+Description/i,
+    ];
 
     for (let line of lines) {
         line = line.trim();
-        if (!line || skip.some(s => line.includes(s))) continue;
+        if (!line) continue;
+        if (skipPatterns.some(p => p.test(line))) continue;
 
-        // Muamalat pattern: REFNUM  eff-date  trx-date  amount  balance
-        const match = line.match(/^([0-9A-Z]{10,})\s+(\d{2}-\w{3}-\d{4})\s+(\d{2}-\w{3}-\d{4})\s+([\d,.]+\.\d{2})\s+([\d,.]+\.\d{2})/);
-        if (match) {
+        // Muamalat format from screenshot:
+        // "000DBJL261530652 02-Jun-2026 30-May-2026   2,000,000.00          120,108,077.00 6019233200024576 BMICMS01..."
+        // Columns: RefNum  TrxDate  EffDate  [Debit]  [Credit]  Balance  Description
+
+        // Pattern: refnum  dd-Mon-yyyy  dd-Mon-yyyy  number  number  rest
+        const m1 = line.match(/^([A-Z0-9]{8,})\s+(\d{2}-[A-Za-z]{3}-\d{4})\s+(\d{2}-[A-Za-z]{3}-\d{4})\s+([\d,.]+(?:\.\d{2})?)\s+([\d,.]+(?:\.\d{2})?)\s*(.*)/);
+        if (m1) {
             if (current) transactions.push(current);
-            const [, refNum, effDate, trxDate, amount, balance] = match;
-            const cleanAmt = cleanNumber(amount);
-            const cleanBal = cleanNumber(balance);
-            const isDebit = transactions.length > 0 && cleanBal < (transactions[transactions.length - 1]['Saldo'] || 0);
+            const [, refNum, trxDate, effDate, col1, col2, desc] = m1;
+            // Need to figure out debit vs credit: 
+            // If balance in col2 is bigger than prev balance → credit, else debit
+            const amt1 = cleanNumber(col1);
+            const amt2 = cleanNumber(col2);
+            const prevBalance = transactions.length > 0 ? (transactions[transactions.length-1]['Saldo'] || 0) : 0;
+            let debit = '', kredit = '', saldo = 0;
+            
+            // col2 is likely balance (larger number), col1 is transaction amount
+            if (amt2 > amt1) {
+                saldo = amt2;
+                if (saldo > prevBalance) { kredit = amt1; }
+                else { debit = amt1; }
+            } else {
+                // both similar — col1=amount, col2=balance
+                saldo = amt2;
+                debit = amt1;
+            }
+
             current = {
                 'Tanggal Transaksi': trxDate,
-                'Tanggal Efektif': effDate,
-                'Nomor Referensi': refNum,
-                'Keterangan': '',
-                'Debit': isDebit ? cleanAmt : '',
-                'Kredit': !isDebit ? cleanAmt : '',
-                'Saldo': cleanBal
+                'Tanggal Efektif':   effDate,
+                'Nomor Referensi':   refNum,
+                'Keterangan':        desc.trim(),
+                'Debit':             debit,
+                'Kredit':            kredit,
+                'Saldo':             saldo
             };
-        } else if (current && !line.match(/^[0-9A-Z]{10,}/)) {
-            current['Keterangan'] += ' ' + line.trim();
+            continue;
+        }
+
+        // Pattern 2: refnum + one date (pdf-parse collapsed columns)
+        const m2 = line.match(/^([A-Z0-9]{8,})\s+(\d{2}-[A-Za-z]{3}-\d{4})\s+(.*?)\s+([\d,.]+(?:\.\d{2})?)\s+([\d,.]+(?:\.\d{2})?)$/);
+        if (m2) {
+            if (current) transactions.push(current);
+            const [, refNum, date, desc, amt, bal] = m2;
+            const prevBalance = transactions.length > 0 ? (transactions[transactions.length-1]['Saldo'] || 0) : 0;
+            const saldo = cleanNumber(bal);
+            const amount = cleanNumber(amt);
+            current = {
+                'Tanggal Transaksi': date,
+                'Tanggal Efektif':   date,
+                'Nomor Referensi':   refNum,
+                'Keterangan':        desc.trim(),
+                'Debit':             saldo < prevBalance ? amount : '',
+                'Kredit':            saldo >= prevBalance ? amount : '',
+                'Saldo':             saldo
+            };
+            continue;
+        }
+
+        // Continuation
+        if (current && !line.match(/^[\d,. ]+$/)) {
+            current['Keterangan'] += ' ' + line;
         }
     }
     if (current) transactions.push(current);
-    return transactions;
+    return transactions.filter(t => t['Tanggal Transaksi']);
 }
 
 // ============================================================
