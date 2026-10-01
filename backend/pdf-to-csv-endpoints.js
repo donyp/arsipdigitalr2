@@ -87,7 +87,8 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] parseBCA called - LATEST FIX v8 (2024-10-01T22:30 UTC)');
+    console.log('[PDF-CSV] PARSER_VERSION=v8-FIXED-2024-10-01-FORCED-REBUILD');
+    console.log('[PDF-CSV] CRITICAL: Old parser detected. This endpoint is using LATEST FIX.');
     const lines = text.split('\n');
     const transactions = [];
 
