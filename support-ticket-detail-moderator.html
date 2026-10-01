@@ -984,15 +984,30 @@
             if (!dateString) return '-';
             
             try {
-                const date = new Date(dateString);
+                // Parse the input string. If it doesn't have timezone info, treat as UTC
+                let date;
+                
+                // Check if the string has timezone info
+                const hasTimezone = /[Z+\-]\d{2}:?\d{2}$/.test(dateString) || dateString.endsWith('Z');
+                
+                if (!hasTimezone) {
+                    // No timezone info - treat as UTC by adding Z
+                    const normalizedString = dateString.replace(' ', 'T');
+                    date = new Date(normalizedString + 'Z');
+                } else {
+                    // Has timezone info, parse as-is
+                    date = new Date(dateString);
+                }
                 
                 if (isNaN(date.getTime())) {
+                    console.warn('[DateFormat] Invalid date string:', dateString);
                     return '-';
                 }
                 
-                // Always calculate WIB (UTC+7) from UTC time
-                const utcTime = date.getTime();
-                const wibTime = new Date(utcTime + (7 * 60 * 60 * 1000));
+                console.log('[DateFormat] Input:', dateString, '→ UTC:', date.toISOString());
+                
+                // Calculate WIB (UTC+7)
+                const wibTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
                 
                 const year = wibTime.getUTCFullYear();
                 const month = String(wibTime.getUTCMonth() + 1).padStart(2, '0');
@@ -1002,6 +1017,7 @@
                 const seconds = String(wibTime.getUTCSeconds()).padStart(2, '0');
                 
                 const formatted = `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+                console.log('[DateFormat] Output (WIB):', formatted);
                 
                 return formatted;
             } catch (e) {
