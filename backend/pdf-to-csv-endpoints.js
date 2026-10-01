@@ -382,42 +382,65 @@ function parseBCA(text) {
 
     const pushCurrent = () => {
         if (current) {
-            // CRITICAL: Fix corrupted SETORAN TUNAI amounts BEFORE pushing
-            if (/SETORAN TUNAI/i.test(current.ket)) {
-                if (current.kredit) {
-                    // Don't double-fix: check if already fixed
-                    if (!current.kredit.startsWith('1004,') && !current.kredit.startsWith('10')) {
-                        if (current.kredit.startsWith('00,')) {
-                            current.kredit = '1' + current.kredit;
-                            console.log('[PDF-CSV] Fixed SETORAN: 00, → 100,');
-                        } else if (current.kredit.startsWith('04,')) {
-                            current.kredit = '10' + current.kredit;
-                            console.log('[PDF-CSV] Fixed SETORAN: 04, → 104,');
-                        } else if (current.kredit.startsWith('08,')) {
-                            current.kredit = '8' + current.kredit;
-                            console.log('[PDF-CSV] Fixed SETORAN: 08, → 88,');
-                        } else if (current.kredit.startsWith('12,')) {
-                            current.kredit = '1' + current.kredit;
-                            console.log('[PDF-CSV] Fixed SETORAN: 12, → 112,');
-                        } else if (current.kredit.startsWith('05,')) {
-                            current.kredit = '7' + current.kredit;
-                            console.log('[PDF-CSV] Fixed SETORAN: 05, → 75,');
-                        } else if (current.kredit.startsWith('55,')) {
-                            current.kredit = '7' + current.kredit;
-                            console.log('[PDF-CSV] Fixed SETORAN: 55, → 755, (but should be 75)');
-                            // Actually this should be just 75, not 755
-                            current.kredit = current.kredit.replace('755,', '75,');
-                        } else if (/^\d,/.test(current.kredit)) {
-                            // Single digit followed by comma (8,000,000 should be 88,000,000)
-                            const firstDigit = current.kredit[0];
-                            const kreditNum = parseFloat(current.kredit.replace(/,/g, ''));
-                            if (kreditNum < 50000000) {
-                                current.kredit = firstDigit + current.kredit;
-                                console.log('[PDF-CSV] Fixed SETORAN: prepended digit', firstDigit);
-                            }
-                        }
+            // AGGRESSIVE: Fix ALL SETORAN TUNAI amounts regardless of format
+            if (/SETORAN TUNAI/i.test(current.ket) && current.kredit) {
+                console.log('[PDF-CSV] SETORAN TUNAI line - original kredit:', current.kredit);
+                
+                // Remove any leading "10" that might be double-fixed
+                if (current.kredit.startsWith('10')) {
+                    let temp = current.kredit.substring(2);
+                    if (temp.startsWith('0')) {
+                        current.kredit = '1' + temp; // 1004, → 104,
+                        console.log('[PDF-CSV] Removed double-fix: 1004, → 104,');
+                    } else if (temp.startsWith('4,')) {
+                        current.kredit = '10' + temp; // Keep as is, already fixed
                     }
                 }
+                
+                // Fix single digit followed by comma (8,... → 88,...)
+                if (/^\d,\d{3},\d{3}\.\d{2}$/.test(current.kredit)) {
+                    const firstDigit = current.kredit[0];
+                    current.kredit = firstDigit + current.kredit;
+                    console.log('[PDF-CSV] Fixed single digit: prepended', firstDigit);
+                }
+                
+                // Fix 55, → 75,
+                if (current.kredit.startsWith('55,')) {
+                    current.kredit = current.kredit.replace('55,', '75,');
+                    console.log('[PDF-CSV] Fixed 55, → 75,');
+                }
+                
+                // Fix 00, → 100,
+                if (current.kredit.startsWith('00,')) {
+                    current.kredit = '1' + current.kredit;
+                    console.log('[PDF-CSV] Fixed 00, → 100,');
+                }
+                
+                // Fix 04, → 104,
+                if (current.kredit.startsWith('04,')) {
+                    current.kredit = '10' + current.kredit;
+                    console.log('[PDF-CSV] Fixed 04, → 104,');
+                }
+                
+                // Fix 08, → 88,
+                if (current.kredit.startsWith('08,')) {
+                    current.kredit = '8' + current.kredit;
+                    console.log('[PDF-CSV] Fixed 08, → 88,');
+                }
+                
+                // Fix 12, → 112,
+                if (current.kredit.startsWith('12,')) {
+                    current.kredit = '1' + current.kredit;
+                    console.log('[PDF-CSV] Fixed 12, → 112,');
+                }
+                
+                // Fix 05, → 75,
+                if (current.kredit.startsWith('05,')) {
+                    current.kredit = '7' + current.kredit;
+                    console.log('[PDF-CSV] Fixed 05, → 75,');
+                }
+                
+                console.log('[PDF-CSV] SETORAN TUNAI final kredit:', current.kredit);
             }
             
             if (current.kredit && current.saldo) {
