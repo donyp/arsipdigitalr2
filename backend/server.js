@@ -914,9 +914,11 @@ const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClear
 const { addFakturPajakRenameEndpoints } = require('./faktur-pajak-rename-endpoints');
 const renameFakturEndpoints = require('./rename-faktur-endpoints');
 const renameInvoiceHijauEndpoints = require('./rename-invoice-hijau-endpoints');
+const pdfToCsvEndpoints = require('./pdf-to-csv-endpoints');
 app.use('/api', sessionManagement);
 app.use('/api', faqEndpoints);
 app.use('/api', notificationEndpoints);
+app.use('/api/pdf-to-csv', pdfToCsvEndpoints);
 renameFakturEndpoints(app, supabase);
 renameInvoiceHijauEndpoints(app, supabase);
 console.log('[INIT] Phase 2 feature endpoints registered ✅');
