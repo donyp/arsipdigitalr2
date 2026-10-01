@@ -109,8 +109,9 @@ function parseBCA(text) {
     ];
 
     // Money: comma-formatted thousands + 2 decimal places
-    // e.g. "23,625,000.00" or "801,912.00" — NOT "23625000.00" (no commas)
-    const MONEY_RE = /\d{1,3}(?:,\d{3})+\.\d{2}/g;
+    // e.g. "23,625,000.00" or "801,912.00"
+    // Negative lookbehind: must NOT be preceded by a digit (avoids "WS95051" + "23,625,000.00" = "123,625,000.00")
+    const MONEY_RE = /(?<!\d)\d{1,3}(?:,\d{3})+\.\d{2}/g;
 
     let current = null;
 
@@ -141,7 +142,9 @@ function parseBCA(text) {
         if (dateMatch) {
             pushCurrent();
 
-            const [, tgl, rest] = dateMatch;
+            const [, tglRaw, rest] = dateMatch;
+            // Convert DD/MM → DD-MM to prevent Excel from auto-converting to date
+            const tgl = tglRaw.replace('/', '-');
 
             // Find comma-formatted money values only
             const moneys = [...rest.matchAll(MONEY_RE)].map(m => m[0]);
