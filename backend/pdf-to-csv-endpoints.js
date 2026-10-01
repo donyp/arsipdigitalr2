@@ -248,6 +248,9 @@ function parseBCA(text) {
         let debit = '', kredit = '', saldo = '';
         let amounts = []; // track amounts for stripAmounts
 
+        // Trim rest to remove trailing/leading whitespace
+        rest = rest.trim();
+
         // Case A: ends with DB (optionally + saldo)
         const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (dbSuffix) {
@@ -267,7 +270,7 @@ function parseBCA(text) {
         const last = findLastMoney(rest);
         if (!last) return { debit, kredit, saldo, amounts };
 
-        const beforeLast = rest.slice(0, last.start);
+        const beforeLast = rest.slice(0, last.start).trim();
         const second = findLastMoney(beforeLast);
 
         if (second) {
