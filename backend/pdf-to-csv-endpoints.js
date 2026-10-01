@@ -87,8 +87,8 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] PARSER_VERSION=v8-FIXED-2024-10-01-FORCED-REBUILD');
-    console.log('[PDF-CSV] CRITICAL: Old parser detected. This endpoint is using LATEST FIX.');
+    console.log('[PDF-CSV] PARSER_VERSION=v9-FIXED-2024-10-01-DIGIT-CODES-REMOVED');
+    console.log('[PDF-CSV] CRITICAL: Old parser detected. This endpoint is using LATEST FIX with digit code removal.');
     const lines = text.split('\n');
     const transactions = [];
 
@@ -316,10 +316,14 @@ function parseBCA(text) {
             }
         }
         
-        // Remove 4-6 digit codes (CBG, bank ref codes) that are standalone
-        // But preserve those part of ref codes like "0806/" or "WS95051"
-        s = s.replace(/\b(\d{4,6})\b(?![\d\/])/g, ' ');
-
+        // CRITICAL FIX: Remove ALL standalone digit codes (2+ digits)
+        // This removes: "75", "7510", "5051", garbage digits from glued ref codes, etc.
+        // Match word-bounded sequences of 2-6 digits NOT followed by / or more digits
+        // Do this MULTIPLE TIMES to handle patterns like "7510 SETORAN" → "SETORAN"
+        s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
+        s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' '); // Second pass for nested patterns
+        
+        // Clean up multiple spaces
         return s.replace(/\s+/g, ' ').trim();
     }
 
