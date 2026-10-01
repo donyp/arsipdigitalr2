@@ -464,6 +464,22 @@
                 gap: 0.6rem;
                 transition: border-color 0.4s ease;
             ">
+                <div style="
+                    font-size: 0.7rem;
+                    color: ${tertiaryText};
+                    text-align: center;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                    transition: color 0.4s ease;
+                    margin-bottom: 0.2rem;
+                ">Quick Actions</div>
+                <div style="
+                    display: flex;
+                    flex-direction: row;
+                    gap: 0.5rem;
+                    justify-content: center;
+                ">
                 <!-- Edit Button -->
                 <button onclick="openEditHeadlineModal()"
                     style="
@@ -536,10 +552,7 @@
                         <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                 </button>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Logout
-                </button>
+                </div>
             </div>
         `;
 
