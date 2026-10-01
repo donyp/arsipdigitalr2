@@ -34,15 +34,54 @@ function cleanNumber(str) {
 }
 
 function detectBank(text) {
-    const t = text.toUpperCase().replace(/\s/g, '');
-    if (t.includes('BANKCENTRALASIA') || t.includes('REKENINGKORAN')) return 'bca';
-    if (t.includes('BANKSYARIAHINDONESIA') || t.includes('STATEMENTOFACCOUNT')) return 'bsi';
-    if (t.includes('MUAMALAT') || t.includes('REFERENCENUMBER')) return 'muamalat';
-    // Loose fallback
-    const orig = text.toUpperCase();
-    if (orig.includes('BCA') && orig.includes('MUTASI')) return 'bca';
-    if (orig.includes('BSI') && orig.includes('ACCOUNT')) return 'bsi';
-    if (orig.includes('MUAMALAT')) return 'muamalat';
+    const textUpper = text.toUpperCase();
+    const textCompact = textUpper.replace(/\s+/g, '');
+    
+    // BSI Detection - Check for unique BSI identifiers
+    if (textCompact.includes('BSIBANKSYARIAHINDONESIA') || 
+        textUpper.includes('BSI BANK SYARIAH INDONESIA') ||
+        (textUpper.includes('BANK SYARIAH INDONESIA') && textUpper.includes('ACCOUNT STATEMENT')) ||
+        textCompact.includes('7143455356') // Example BSI account pattern
+    ) {
+        console.log('[PDF-to-CSV] Detected: Bank Syariah Indonesia (BSI)');
+        return 'bsi';
+    }
+    
+    // Bank Muamalat Detection
+    if (textUpper.includes('MUAMALAT TOWER') || 
+        textUpper.includes('BANK MUAMALAT') ||
+        (textUpper.includes('ACCOUNT TYPE') && textUpper.includes('GIRO IB')) ||
+        (textUpper.includes('REFERENCE NUMBER') && textUpper.includes('TRANSACTION DATE') && textUpper.includes('EFFECTIVE DATE'))
+    ) {
+        console.log('[PDF-to-CSV] Detected: Bank Muamalat');
+        return 'muamalat';
+    }
+    
+    // BCA Detection - Most common patterns
+    if (textUpper.includes('REKENING GIRO') || 
+        textUpper.includes('BANK CENTRAL ASIA') ||
+        (textUpper.includes('BCA') && (textUpper.includes('KCP') || textUpper.includes('MUTASI'))) ||
+        (textUpper.includes('TANGGAL') && textUpper.includes('KETERANGAN') && textUpper.includes('CBG') && textUpper.includes('SALDO'))
+    ) {
+        console.log('[PDF-to-CSV] Detected: Bank Central Asia (BCA)');
+        return 'bca';
+    }
+    
+    // Fallback with loose patterns
+    if (textUpper.includes('BSI')) {
+        console.log('[PDF-to-CSV] Detected (fallback): BSI');
+        return 'bsi';
+    }
+    if (textUpper.includes('MUAMALAT')) {
+        console.log('[PDF-to-CSV] Detected (fallback): Muamalat');
+        return 'muamalat';
+    }
+    if (textUpper.includes('BCA')) {
+        console.log('[PDF-to-CSV] Detected (fallback): BCA');
+        return 'bca';
+    }
+    
+    console.log('[PDF-to-CSV] Bank detection failed - unknown format');
     return 'unknown';
 }
 
@@ -159,11 +198,10 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
                 return res.status(400).json({ error: 'Tidak ada file PDF yang diupload' });
             }
 
-            const bank = (req.body.bank || 'bca').toLowerCase();
             const userId = req.user.userId;
             const userEmail = req.user.email;
 
-            console.log(`[PDF-to-CSV] Convert request: bank=${bank}, user=${userEmail}`);
+            console.log(`[PDF-to-CSV] Convert request: user=${userEmail}`);
 
             // Parse PDF
             const pdfData = await pdf(req.file.buffer);
@@ -172,7 +210,7 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
 
             if (!text || text.length < 50) {
                 await logConversion(supabase, {
-                    user_id: userId, user_email: userEmail, bank,
+                    user_id: userId, user_email: userEmail, bank: 'unknown',
                     original_filename: req.file.originalname,
                     file_size: req.file.size, page_count: pageCount,
                     csv_filename: '', status: 'failed',
@@ -181,6 +219,32 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
                     ip_address: req.ip, user_agent: req.headers['user-agent']
                 });
                 return res.status(400).json({ error: 'PDF kosong atau tidak dapat dibaca' });
+            }
+
+            // Auto-detect bank or use provided bank
+            let bank = req.body.bank ? req.body.bank.toLowerCase() : null;
+            
+            if (!bank || bank === 'auto') {
+                bank = detectBank(text);
+                console.log(`[PDF-to-CSV] Auto-detected bank: ${bank}`);
+            } else {
+                console.log(`[PDF-to-CSV] Using user-specified bank: ${bank}`);
+            }
+
+            if (bank === 'unknown') {
+                await logConversion(supabase, {
+                    user_id: userId, user_email: userEmail, bank: 'unknown',
+                    original_filename: req.file.originalname,
+                    file_size: req.file.size, page_count: pageCount,
+                    csv_filename: '', status: 'failed',
+                    error_message: 'Tidak dapat mendeteksi format bank. Bank tidak dikenali.',
+                    processing_time_ms: Date.now() - startTime,
+                    ip_address: req.ip, user_agent: req.headers['user-agent']
+                });
+                return res.status(400).json({ 
+                    error: 'Format PDF tidak dikenali', 
+                    message: 'Sistem tidak dapat mendeteksi bank dari PDF. Pastikan PDF adalah mutasi bank dari BCA, BSI, atau Muamalat.' 
+                });
             }
 
             // Parse transactions
@@ -217,7 +281,7 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
                 return res.status(400).json({ error: 'Tidak ada transaksi ditemukan. Pastikan bank yang dipilih sesuai.' });
             }
 
-            console.log(`[PDF-to-CSV] Found ${transactions.length} transactions`);
+            console.log(`[PDF-to-CSV] Found ${transactions.length} transactions from ${bankName}`);
 
             // Convert to CSV with BOM for Excel
             const csv = parse(transactions);
