@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS pdf_conversions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
+    user_id UUID NOT NULL,
     user_email TEXT NOT NULL,
     bank TEXT NOT NULL CHECK (bank IN ('bca', 'bsi', 'muamalat')),
     original_filename TEXT NOT NULL,
@@ -18,8 +18,8 @@ CREATE TABLE IF NOT EXISTS pdf_conversions (
     user_agent TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
-    -- Foreign key to users table
-    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    -- Foreign key to auth.users table (Supabase auth)
+    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
 -- Index for faster queries
