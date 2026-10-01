@@ -368,12 +368,9 @@ function parseBCA(text) {
             }
         }
         
-        // Remove "75" and following digits only (BCA code pattern)
-        s = s.replace(/75\d*/g, ' ');
-        
-        // Remove other standalone digit codes  
-        s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
-        s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
+        // ONLY remove BCA digit codes "75" and "7510" that are glued to text
+        // Do NOT remove ref codes like 1306, WS95051, SIMDR230302896
+        s = s.replace(/75\d*/g, ' ');  // Remove "75" and "75XX" only
         
         return s.replace(/\s+/g, ' ').trim();
     }
