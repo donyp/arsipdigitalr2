@@ -189,6 +189,60 @@ function parseMuamalat(text) {
 
 module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
 
+    // POST /api/pdf-to-csv/detect - Detect bank without converting
+    app.post('/api/pdf-to-csv/detect', authenticateToken, upload.single('pdf'), async (req, res) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: 'Tidak ada file PDF yang diupload' });
+            }
+
+            console.log(`[PDF-to-CSV] Detect request for: ${req.file.originalname}`);
+
+            // Parse PDF
+            const pdfData = await pdf(req.file.buffer);
+            const text = pdfData.text;
+            const pageCount = pdfData.numpages;
+
+            if (!text || text.length < 50) {
+                return res.status(400).json({ 
+                    error: 'PDF kosong atau tidak dapat dibaca',
+                    detected: false
+                });
+            }
+
+            // Detect bank
+            const bank = detectBank(text);
+            
+            const bankNames = {
+                'bca': 'Bank Central Asia (BCA)',
+                'bsi': 'Bank Syariah Indonesia (BSI)',
+                'muamalat': 'Bank Muamalat',
+                'unknown': 'Tidak Dikenali'
+            };
+
+            const response = {
+                success: true,
+                detected: bank !== 'unknown',
+                bank: bank,
+                bankName: bankNames[bank] || 'Tidak Dikenali',
+                pageCount: pageCount,
+                fileSize: req.file.size,
+                fileName: req.file.originalname
+            };
+
+            console.log(`[PDF-to-CSV] Detection result: ${bankNames[bank]}`);
+            res.json(response);
+
+        } catch (error) {
+            console.error('[PDF-to-CSV] Detect error:', error);
+            res.status(500).json({ 
+                error: 'Gagal mendeteksi bank', 
+                message: error.message,
+                detected: false
+            });
+        }
+    });
+
     // POST /api/pdf-to-csv/convert
     app.post('/api/pdf-to-csv/convert', authenticateToken, upload.single('pdf'), async (req, res) => {
         const startTime = Date.now();
@@ -390,6 +444,7 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
     });
 
     console.log('[INIT] PDF to CSV endpoints registered ✅');
+    console.log('  ✓ POST /api/pdf-to-csv/detect');
     console.log('  ✓ POST /api/pdf-to-csv/convert');
     console.log('  ✓ GET  /api/pdf-to-csv/history');
     console.log('  ✓ GET  /api/pdf-to-csv/stats');
