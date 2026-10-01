@@ -88,77 +88,106 @@ function detectBank(text) {
 function parseBCA(text) {
     const lines = text.split('\n');
     const transactions = [];
-    let current = null;
 
-    // Headers/skip patterns
+    // Lines to skip entirely
     const skipPatterns = [
-        /^REKENING (GIRO|KORAN)/i,
-        /^BANK CENTRAL ASIA/i,
-        /^TANGGAL\s+KETERANGAN/i,
-        /^CBG\s+MUTASI/i,
-        /^KCP\s+/i,
-        /^HALAMAN\s*:/i,
-        /^NO\.\s*REKENING/i,
-        /^PERIODE\s*:/i,
-        /^MATA UANG\s*:/i,
-        /^CATATAN/i,
-        /^BCA berhak/i,
-        /^Apabila nasabah/i,
-        /^GARUDA|^JATIBENING|^JL\s/i,
-        /^GEDUNG/i,
-        /^BEKASI/i,
+        /^TANGGALKETERANGANCBGMUTASISALDO/,
+        /^SALDO AWAL:/,
+        /^MUTASI (CR|DB):/,
+        /^SALDO AKHIR:/,
+        /^Bersambung ke Halaman/,
+        /^\d+\/\d+$/,                           // page numbers like "1/2"
+        /^KCP\s/,
+        /^REKENING GIRO/,
+        /^GARUDA GEMILANG|^JATIBENING|^GEDUNG|^JL\s|^BEKASI|^INDONESIA$/i,
+        /^NO\. REKENING:|^HALAMAN:|^PERIODE:|^MATA UANG:/,
+        /^CATATAN:/,
+        /^Apabila nasabah|^dengan akhir bulan|^tercantum pada/,
+        /^BCA berhak|^Rekening\.$/,
+        /^\s*•\s*$/,
+        /^\s*$/,
     ];
 
-    for (let line of lines) {
-        line = line.trim();
+    for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i];
+        const line = raw.trim();
         if (!line) continue;
         if (skipPatterns.some(p => p.test(line))) continue;
 
-        // BCA format: "01/06   SALDO AWAL                             9,161,912.00"
-        // or:         "08/06   SETORAN TUNAI         7510   100,000,000.00   DB   109,161,912.00"
-        const matchFull = line.match(/^(\d{2}\/\d{2})\s{2,}(.+?)\s{2,}([\d,.]+(?:\.\d{2})?)\s*(DB|CR)?\s*([\d,.]+(?:\.\d{2}))?$/);
-        if (matchFull) {
-            if (current) transactions.push(current);
-            const [, date, desc, mutasi, type, saldo] = matchFull;
-            current = {
-                'Tanggal': date,
-                'Keterangan': desc.trim().replace(/\s{2,}/g, ' '),
-                'Debit':   type === 'DB' ? cleanNumber(mutasi) : '',
-                'Kredit':  type === 'CR' ? cleanNumber(mutasi) : (type ? '' : cleanNumber(mutasi)),
-                'Saldo':   saldo ? cleanNumber(saldo) : ''
-            };
-            continue;
+        // BCA format: semua kolom menyatu tanpa spasi
+        // Pattern: DD/MM + keterangan + [CBG] + mutasi + [DB|CR] + [saldo]
+        // 
+        // Examples:
+        // "01/06SALDO AWAL9,161,912.00"
+        // "08/06SETORAN TUNAI7510100,000,000.00109,161,912.00"
+        // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505123,625,000.00DB"
+        // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505111,125,000.00DB801,912.00"
+        // "30/06BIAYA ADM30,000.00DB8,213,931.00"
+
+        const dateMatch = line.match(/^(\d{2}\/\d{2})(.*)/);
+        if (!dateMatch) continue;
+
+        const [, tgl, rest] = dateMatch;
+
+        // Extract all numbers from the rest (commas as thousands, dot as decimal)
+        const numbers = [];
+        const numReg = /[\d,]+\.\d{2}/g;
+        let m;
+        while ((m = numReg.exec(rest)) !== null) {
+            numbers.push({ val: cleanNumber(m[0]), idx: m.index });
         }
 
-        // Simpler: just date + text continuation
-        const matchSimple = line.match(/^(\d{2}\/\d{2})\s+(.*)/);
-        if (matchSimple) {
-            if (current) transactions.push(current);
-            const [, date, rest] = matchSimple;
-            // Try to pull trailing numbers off the rest
-            const numMatch = rest.match(/^(.*?)\s+([\d,.]{4,}(?:\.\d{2})?)\s*(DB|CR)?\s*([\d,.]+(?:\.\d{2})?)?$/);
-            if (numMatch) {
-                const [, desc, mutasi, type, saldo] = numMatch;
-                current = {
-                    'Tanggal': date,
-                    'Keterangan': desc.trim().replace(/\s{2,}/g, ' '),
-                    'Debit':  type === 'DB' ? cleanNumber(mutasi) : '',
-                    'Kredit': type === 'CR' ? cleanNumber(mutasi) : (type ? '' : cleanNumber(mutasi)),
-                    'Saldo':  saldo ? cleanNumber(saldo) : ''
-                };
+        // Detect DB/CR flag
+        const isDB = /\bDB\b/.test(rest);
+        const isCR = /\bCR\b/.test(rest);
+
+        // Extract description: strip numbers, DB/CR, CBG codes, extra spaces
+        let desc = rest
+            .replace(/[\d,]+\.\d{2}/g, '')    // remove numbers like 1,234.56
+            .replace(/\bDB\b|\bCR\b/g, '')     // remove DB/CR
+            .replace(/\b\d{4}\b/g, '')          // remove 4-digit CBG
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+
+        let mutasi = 0, saldo = 0, debit = '', kredit = '';
+
+        if (numbers.length === 0) {
+            // No numbers — skip or continuation
+            continue;
+        } else if (numbers.length === 1) {
+            // Only saldo (SALDO AWAL) or only mutasi
+            if (!isDB && !isCR) {
+                saldo = numbers[0].val;
             } else {
-                current = { 'Tanggal': date, 'Keterangan': rest.trim(), 'Debit': '', 'Kredit': '', 'Saldo': '' };
+                mutasi = numbers[0].val;
+                if (isDB) debit = mutasi;
+                else kredit = mutasi;
             }
-            continue;
+        } else if (numbers.length === 2) {
+            // mutasi + saldo
+            mutasi = numbers[0].val;
+            saldo  = numbers[1].val;
+            if (isDB) debit = mutasi;
+            else if (isCR) kredit = mutasi;
+            else kredit = mutasi; // credit if no flag (setoran)
+        } else {
+            // 3+ numbers: last is saldo, second-last is mutasi, rest part of CBG/ref
+            mutasi = numbers[numbers.length - 2].val;
+            saldo  = numbers[numbers.length - 1].val;
+            if (isDB) debit = mutasi;
+            else kredit = mutasi;
         }
 
-        // Continuation line - append to keterangan, but not pure number lines
-        if (current && !line.match(/^[\d,. ]+$/)) {
-            current['Keterangan'] += ' ' + line;
-        }
+        transactions.push({
+            'Tanggal': tgl,
+            'Keterangan': desc || rest.trim(),
+            'Debit':   debit,
+            'Kredit':  kredit,
+            'Saldo':   saldo
+        });
     }
-    if (current) transactions.push(current);
-    return transactions.filter(t => t['Tanggal']); // must have a date
+
+    return transactions;
 }
 
 function parseBSI(text) {
