@@ -501,14 +501,28 @@ function formatTicketDate(dateString) {
 
 function formatDate(dateString) {
     if (!dateString) return '-';
-    const date = new Date(dateString);
+    
+    // Ensure date is parsed as UTC if no timezone info
+    let date;
+    const hasTimezone = /[Z+\-]\d{2}:?\d{2}$/.test(dateString) || dateString.endsWith('Z');
+    
+    if (!hasTimezone) {
+        const normalizedString = dateString.replace(' ', 'T');
+        date = new Date(normalizedString + 'Z');
+    } else {
+        date = new Date(dateString);
+    }
+    
     const now = new Date();
     const diffMs = now - date;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = diffMs / (1000 * 60 * 60);
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
 
-    if (diffHours < 1) {
+    if (diffMinutes < 1) {
         return 'Baru saja';
+    } else if (diffMinutes < 60) {
+        return `${diffMinutes} menit yang lalu`;
     } else if (diffHours < 24) {
         return `${Math.floor(diffHours)}h lalu`;
     } else if (diffDays < 7) {
