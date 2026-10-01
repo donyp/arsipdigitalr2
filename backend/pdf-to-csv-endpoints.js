@@ -181,22 +181,33 @@ function parseBCA(text) {
         const charBeforeCollected = i >= 0 ? s[i] : '';
         const hasLetterBefore = /[A-Za-z]/.test(charBeforeCollected);
 
-        let leadingDigits;
-        if (hasLetterBefore) {
-            // Letter ends ref code
-            // All leading digits before first comma are money leading
-            // But must be valid (1-3 digits)
-            if (firstCommaPos > 3) {
-                // Use modulo to find best split
-                const mod = (firstCommaPos + 1) % 3 || 3;
-                leadingDigits = mod;
-            } else {
-                // Already valid, take all
-                leadingDigits = firstCommaPos;
+        // Check if it's a ref code pattern: 2 uppercase letters at word boundary
+        let isRefCodePattern = false;
+        if (i >= 2) {
+            const before3 = s[i-2];
+            const before2 = s[i-1];
+            const before1 = s[i];
+            if (/[A-Z]/.test(before2) && /[A-Z]/.test(before1) && !/[A-Za-z]/.test(before3)) {
+                isRefCodePattern = true;
             }
+        } else if (i === 1) {
+            // At start of string with 2 uppercase letters
+            const before2 = s[0];
+            const before1 = s[1];
+            if (/[A-Z]/.test(before2) && /[A-Z]/.test(before1)) {
+                isRefCodePattern = true;
+            }
+        }
+
+        let leadingDigits;
+        if (isRefCodePattern && firstCommaPos > 3) {
+            // BCA ref code: use modulo formula to split ref code from money
+            // Examples: 7 → (8 % 3) = 2 ✓, 5 → (6 % 3) = 0 → 3 ✓
+            const mod = (firstCommaPos + 1) % 3 || 3;
+            leadingDigits = mod;
         } else {
-            // No letter: try 1, 2, 3 leading digits
-            // Pick LARGEST that produces valid money (no leading zero)
+            // Not a ref code, or firstCommaPos <= 3: use standard logic
+            // Try 1-3 leading digits, pick LARGEST valid (no leading zero)
             leadingDigits = null;
             const maxTry = Math.min(3, firstCommaPos);
 
@@ -205,7 +216,6 @@ function parseBCA(text) {
                 if (idx < 0) continue;
 
                 const candidate = collected.slice(idx);
-                // Valid if: d{1,3}(,ddd)* AND no leading zero
                 if (/^\d{1,3}(,\d{3})*$/.test(candidate) && !/^0/.test(candidate)) {
                     leadingDigits = ld;
                     break;
@@ -319,8 +329,25 @@ function parseBCA(text) {
         // e.g. "       23625000.00"
         if (/^\s+[\d.]+\s*$/.test(raw)) continue;
 
-        // New transaction: starts with DD/MM
-        const dateMatch = line.match(/^(\d{2}\/\d{2})(.*)/);
+        // New transaction: starts with DD/MM or D-Mon or DD-Mon format
+        let dateMatch = line.match(/^(\d{2}\/\d{2})(.*)/);
+        
+        // Also support D-Mon or DD-Mon format (e.g., "6-Jan", "13-Aug")
+        if (!dateMatch) {
+            const monthTextMatch = line.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.*)$/i);
+            if (monthTextMatch) {
+                const day = monthTextMatch[1].padStart(2, '0');
+                const monthText = monthTextMatch[2].toLowerCase();
+                const monthMap = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+                const month = monthMap[monthText];
+                if (month) {
+                    const tgl = `${day}/${String(month).padStart(2, '0')}`;
+                    const rest = monthTextMatch[3];
+                    dateMatch = [null, tgl, rest]; // synthetic match
+                }
+            }
+        }
+        
         if (dateMatch) {
             pushCurrent();
 
