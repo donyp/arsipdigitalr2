@@ -757,8 +757,6 @@ function updateDarkModeUI() {
         sidebarToggle.style.background = isDark ? '#475569' : '#f3f4f6';
         sidebarToggle.style.color = isDark ? '#cbd5e1' : '#6b7280';
     }
-}rderColor = isDark ? '#475569' : '#e5e7eb';
-    }
 }
 
 if (document.readyState === 'loading') {
