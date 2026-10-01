@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const pdf = require('pdf-parse');
@@ -30,7 +30,7 @@ const upload = multer({
 
 function cleanNumber(str) {
     if (!str) return '';
-    // Keep original format from PDF (e.g. "100,000,000.00") — just trim whitespace
+    // Keep original format from PDF (e.g. "100,000,000.00") â€” just trim whitespace
     return str.toString().trim();
 }
 
@@ -104,58 +104,157 @@ function parseBCA(text) {
         /^CATATAN:/,
         /^Apabila nasabah|^dengan akhir bulan|^tercantum pada/,
         /^BCA berhak|^Rekening\.$/,
-        /^\s*•\s*$/,
+        /^\s*â€¢\s*$/,
         /^\s*$/,
     ];
 
-    // BCA ref code pattern: "0806/FTSCY/WS95051" — sits between keterangan and money
-    // We need to isolate this so its trailing digits don't bleed into the money value
-    const BCA_REF_RE = /\d{4}\/[A-Z]+\/[A-Z]{2}\d+/g;
+    // Core insight from raw BCA text:
+    // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505123,625,000.00DB"
+    //                                           ^^^^^^^^^^^^^^^^^
+    // "WS95051" + "23,625,000.00" are glued together as "WS9505123,625,000.00"
+    // 
+    // Key observation: the money value in BCA always ends at the END of the line
+    // (optionally followed by "DB" or "DB+saldo").
+    // 
+    // The money value itself ALWAYS starts with a digit that begins a valid
+    // comma-group pattern. The boundary between ref-code digits and money is:
+    //   ref digits: continuous digits with NO comma
+    //   money: digit(s) + comma + 3 digits (the first comma-group)
+    //
+    // Algorithm:
+    // 1. Strip trailing "DB[saldo]" → know it's a debit
+    // 2. Find the money value at end: scan backwards from end to find
+    //    the leftmost digit that is part of the rightmost money value
+    //    = find first ",\d{3}" group and expand left to grab leading digits
+    //    BUT only 1-3 leading digits (the comma-group start rule)
 
-    // Find last comma-formatted money anchored to end of string
-    function findLastMoney(s) {
-        const m = s.match(/([1-9]\d{0,2}(?:,\d{3})+\.\d{2})$/);
-        if (!m) return null;
-        return { val: m[1], start: s.length - m[1].length };
+    // Extract the last valid money from end of string s
+    // Handles glued ref codes like "WS9505123,625,000.00" → extract "23,625,000.00"
+    // 
+    // Strategy:
+    // 1. Find rightmost .dd, walk LEFT collecting valid money digits+commas
+    // 2. If letter before collected: use modulo formula (firstCommaPos+1) % 3 || 3
+    //    (letter marks end of ref code, so all leading digits follow money rules)
+    // 3. If no letter: try all 1-3 leading digit counts, pick LARGEST valid (no leading zero)
+    function extractTrailingMoney(s) {
+        const dotIdx = s.lastIndexOf('.');
+        if (dotIdx < 0) return null;
+
+        // Walk LEFT from decimal: collect digits and valid commas
+        let i = dotIdx - 1;
+        let collected = '';
+        let digitsSinceComma = 0;
+        let validCommaGroups = 0;
+
+        let afterDot = s.slice(dotIdx);
+        if (!/^\.\d{2}$/.test(afterDot)) return null; // Must be .dd
+
+        // Walk left from before decimal point
+        while (i >= 0) {
+            const ch = s[i];
+            if (/\d/.test(ch)) {
+                collected = ch + collected;
+                digitsSinceComma++;
+                i--;
+            } else if (ch === ',') {
+                // Comma is valid only if followed by exactly 3 digits
+                if (digitsSinceComma === 3) {
+                    collected = ch + collected;
+                    validCommaGroups++;
+                    digitsSinceComma = 0;
+                    i--;
+                } else {
+                    break; // Invalid comma-group, stop
+                }
+            } else {
+                break; // Non-digit/comma, stop
+            }
+        }
+
+        if (validCommaGroups === 0) return null; // No valid comma-groups
+        if (!collected) return null;
+
+        const firstCommaPos = collected.indexOf(',');
+        if (firstCommaPos < 0) return null;
+
+        // Check what's BEFORE collected in original string
+        const charBeforeCollected = i >= 0 ? s[i] : '';
+        const hasLetterBefore = /[A-Za-z]/.test(charBeforeCollected);
+
+        let leadingDigits;
+        if (hasLetterBefore) {
+            // Letter ends ref code, so all leading digits before first comma are money
+            // Use modulo formula: ((firstCommaPos + 1) % 3) || 3
+            // Examples: 7 → (8 % 3) = 2 ✓, 5 → (6 % 3) = 0 → 3 ✓
+            leadingDigits = (firstCommaPos + 1) % 3 || 3;
+        } else {
+            // No letter: try 1, 2, 3 leading digits
+            // Pick LARGEST that produces valid money (no leading zero)
+            leadingDigits = null;
+            const maxTry = Math.min(3, firstCommaPos);
+
+            for (let ld = maxTry; ld >= 1; ld--) {
+                const idx = firstCommaPos - ld;
+                if (idx < 0) continue;
+
+                const candidate = collected.slice(idx);
+                // Valid if: d{1,3}(,ddd)* AND no leading zero
+                if (/^\d{1,3}(,\d{3})*$/.test(candidate) && !/^0/.test(candidate)) {
+                    leadingDigits = ld;
+                    break;
+                }
+            }
+            if (leadingDigits === null) return null;
+        }
+
+        // Extract money
+        const startIdx = firstCommaPos - leadingDigits;
+        if (startIdx < 0) return null;
+
+        const bestMoney = collected.slice(startIdx) + afterDot;
+        if (!/^\d{1,3}(,\d{3})*\.\d{2}$/.test(bestMoney)) return null;
+
+        const moneyStart = s.lastIndexOf(bestMoney);
+        if (moneyStart < 0) return null;
+
+        return { val: bestMoney, start: moneyStart };
     }
 
-    // Tokenize the rest of a BCA line:
-    // Replace ref codes with a fixed-length placeholder so money parsing is clean
-    function tokenize(rest) {
-        const refs = [];
-        const masked = rest.replace(BCA_REF_RE, (match) => {
-            refs.push(match);
-            return `\x00REF${refs.length - 1}\x00`; // unique placeholder
-        });
-        return { masked, refs };
+    // Find last money anchored to end of string
+    function findLastMoney(s) {
+        // Try right-anchored match first (clean case)
+        const clean = s.match(/([1-9]\d{0,2}(?:,\d{3})+\.\d{2})$/);
+        if (clean) return { val: clean[1], start: s.length - clean[1].length };
+
+        // Fallback: use extractTrailingMoney for glued case
+        return extractTrailingMoney(s);
     }
 
     function parseLine(rest) {
         let debit = '', kredit = '', saldo = '';
-        const { masked } = tokenize(rest);
 
-        // Case A: ends with DB (optionally followed by saldo)
-        const dbSuffix = masked.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        // Case A: ends with DB (optionally + saldo)
+        const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (dbSuffix) {
             saldo = dbSuffix[1] || '';
-            const beforeDB = masked.slice(0, masked.length - dbSuffix[0].length);
-            const debitMoney = findLastMoney(beforeDB);
-            if (debitMoney) debit = debitMoney.val;
+            const beforeDB = rest.slice(0, rest.length - dbSuffix[0].length);
+            const m = findLastMoney(beforeDB);
+            if (m) debit = m.val;
             return { debit, kredit, saldo };
         }
 
-        // No DB
-        const last = findLastMoney(masked);
+        // No DB: find last and second-to-last money
+        const last = findLastMoney(rest);
         if (!last) return { debit, kredit, saldo };
 
-        const beforeLast = masked.slice(0, last.start);
+        const beforeLast = rest.slice(0, last.start);
         const second = findLastMoney(beforeLast);
 
         if (second) {
             kredit = second.val;
             saldo  = last.val;
         } else {
-            const beforeVal = masked.slice(0, last.start).toUpperCase();
+            const beforeVal = rest.slice(0, last.start).toUpperCase();
             if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) saldo = last.val;
             else kredit = last.val;
         }
@@ -163,28 +262,24 @@ function parseBCA(text) {
     }
 
     function stripAmounts(rest) {
-        const { masked, refs } = tokenize(rest);
-
-        let s = masked;
-        const dbSuffix = s.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        let s;
         if (dbSuffix) {
-            s = s.slice(0, s.length - dbSuffix[0].length);
-            const debitMoney = findLastMoney(s);
-            if (debitMoney) s = s.slice(0, debitMoney.start);
+            s = rest.slice(0, rest.length - dbSuffix[0].length);
+            const m = findLastMoney(s);
+            if (m) s = s.slice(0, m.start);
         } else {
-            const last = findLastMoney(s);
-            if (last) {
-                const beforeLast = s.slice(0, last.start);
-                const second = findLastMoney(beforeLast);
-                s = second ? s.slice(0, second.start) : s.slice(0, last.start);
-            }
+            const last = findLastMoney(rest);
+            if (!last) return rest;
+            const beforeLast = rest.slice(0, last.start);
+            const second = findLastMoney(beforeLast);
+            s = second ? rest.slice(0, second.start) : rest.slice(0, last.start);
         }
 
-        // Restore ref codes from placeholders
-        refs.forEach((ref, i) => { s = s.replace(`\x00REF${i}\x00`, ref); });
-
-        // Remove 4-digit standalone CBG (e.g. "7510") — only when standalone
-        s = s.replace(/(?<![/\w])\b\d{4}\b(?![/\w])/g, '');
+        // Remove standalone 4-digit CBG (not part of ref codes like 0806/... or WS95051)
+        // CBG appears as digits directly after text with no preceding slash
+        // e.g. "SETORAN TUNAI7510" -> remove "7510"
+        s = s.replace(/(?<![\/\d])(\d{4})(?!\d|\/)/g, '');
 
         return s;
     }
@@ -667,11 +762,11 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
         res.json({ status: 'ok', service: 'pdf-to-csv' });
     });
 
-    console.log('[INIT] PDF to CSV endpoints registered ✅');
-    console.log('  ✓ POST /api/pdf-to-csv/detect');
-    console.log('  ✓ POST /api/pdf-to-csv/convert');
-    console.log('  ✓ GET  /api/pdf-to-csv/history');
-    console.log('  ✓ GET  /api/pdf-to-csv/stats');
+    console.log('[INIT] PDF to CSV endpoints registered âœ…');
+    console.log('  âœ“ POST /api/pdf-to-csv/detect');
+    console.log('  âœ“ POST /api/pdf-to-csv/convert');
+    console.log('  âœ“ GET  /api/pdf-to-csv/history');
+    console.log('  âœ“ GET  /api/pdf-to-csv/stats');
 };
 
 // Helper: save conversion log to DB
