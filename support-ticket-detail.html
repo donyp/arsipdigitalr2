@@ -497,6 +497,29 @@
             display: flex;
             gap: 12px;
         }
+        
+        .message-delete-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #9ca3af;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+
+        .message-delete-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        html[data-dark-mode="true"] .message-delete-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
 
         .btn-send {
             display: flex;
@@ -646,6 +669,7 @@
     </div>
 
     <script src="/js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/auth.js"></script>
     <script>
@@ -864,15 +888,7 @@
                 html += messages.map(msg => {
                     const isSupport = msg.user_id !== ticketData.user_id;
                     const roleClass = !isSupport ? 'anda' : '';
-                    
-                    // Clean zona name for replies too
-                    let cleanZonaName = zonaName;
-                    if (zonaName && zonaName !== 'N/A') {
-                        const match = zonaName.match(/(\d+)/);
-                        if (match) {
-                            cleanZonaName = match[1].replace(/^0+/, '') || '0';
-                        }
-                    }
+                    const authorName = isSupport ? 'Tim Support' : (msg.user_name || 'Zona');
                     
                     return `
                         <div class="message-item">
@@ -881,9 +897,10 @@
                             </div>
                             <div class="message-content">
                                 <div class="message-header-row">
-                                    <span class="message-author">${isSupport ? 'Tim Support' : 'Zona ' + cleanZonaName}</span>
+                                    <span class="message-author">${authorName}</span>
                                     <span class="message-role ${roleClass}">${!isSupport ? 'ANDA' : 'Support'}</span>
                                     <span class="message-time">${formatDateTimeWIB(msg.created_at)}</span>
+                                    <button class="message-delete-btn" onclick="deleteMessage('${msg.id}')" title="Hapus pesan"><i class="fas fa-trash-alt"></i></button>
                                 </div>
                                 <div class="message-body">${escapeHtml(msg.message)}</div>
                                 ${msg.attachments && msg.attachments.length > 0 ? `
@@ -1035,6 +1052,50 @@
                 "'": '&#039;'
             };
             return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        async function deleteMessage(messageId) {
+            const result = await Swal.fire({
+                title: 'Hapus Pesan?',
+                text: 'Pesan yang dihapus tidak dapat dikembalikan',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280'
+            });
+            
+            if (!result.isConfirmed) return;
+            
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch(`/api/support/tickets/${ticketId}/messages/${messageId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) throw new Error('Gagal menghapus pesan');
+                
+                await Swal.fire({
+                    title: 'Berhasil!',
+                    text: 'Pesan berhasil dihapus',
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#10b981'
+                });
+                
+                await loadTicketDetail();
+            } catch (error) {
+                console.error('Error deleting message:', error);
+                await Swal.fire({
+                    title: 'Error',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ef4444'
+                });
+            }
         }
 
         async function sendReply() {

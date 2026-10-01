@@ -788,6 +788,7 @@
     </div>
 
     <script src="js/config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/sidebar.js"></script>
@@ -945,6 +946,7 @@
             } else {
                 html += messages.map(msg => {
                     const isSupport = msg.user_id !== ticketData.user_id;
+                    const authorName = isSupport ? 'Tim Support' : (msg.user_name || 'Toko');
                     
                     return `
                         <div class="message-item">
@@ -953,7 +955,7 @@
                             </div>
                             <div class="message-content">
                                 <div class="message-header-row">
-                                    <span class="message-author">${isSupport ? 'Tim Support' : 'Toko'}</span>
+                                    <span class="message-author">${authorName}</span>
                                     <span class="message-role">${isSupport ? 'SUPPORT' : 'TOKO'}</span>
                                     <span class="message-time">${formatDateTimeWIB(msg.created_at)}</span>
                                     <button class="message-delete-btn" onclick="deleteMessage('${msg.id}')" title="Hapus pesan"><i class="fas fa-trash-alt"></i></button>
@@ -1092,7 +1094,18 @@
         }
 
         async function deleteMessage(messageId) {
-            if (!confirm('Yakin ingin menghapus pesan ini?')) return;
+            const result = await Swal.fire({
+                title: 'Hapus Pesan?',
+                text: 'Pesan yang dihapus tidak dapat dikembalikan',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280'
+            });
+            
+            if (!result.isConfirmed) return;
             
             try {
                 const token = localStorage.getItem('jwt_token');
@@ -1103,11 +1116,24 @@
                 
                 if (!response.ok) throw new Error('Gagal menghapus pesan');
                 
-                alert('Pesan berhasil dihapus');
+                await Swal.fire({
+                    title: 'Berhasil!',
+                    text: 'Pesan berhasil dihapus',
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#10b981'
+                });
+                
                 await loadTicketDetail();
             } catch (error) {
                 console.error('Error deleting message:', error);
-                alert('Error: ' + error.message);
+                await Swal.fire({
+                    title: 'Error',
+                    text: error.message,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         }
 

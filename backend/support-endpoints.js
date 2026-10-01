@@ -201,10 +201,32 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
 
             if (attachmentsError) throw attachmentsError;
 
-            // Enrich messages with attachments
-            const enrichedMessages = messages?.map(msg => ({
-                ...msg,
-                attachments: attachments?.filter(a => a.message_id === msg.id) || []
+            // Enrich messages with attachments AND user info
+            const enrichedMessages = await Promise.all((messages || []).map(async (msg) => {
+                let user_name = 'N/A';
+                let user_role = 'N/A';
+                
+                try {
+                    const { data: user, error: userError } = await supabase
+                        .from('users')
+                        .select('name, role')
+                        .eq('id', msg.user_id)
+                        .single();
+                    
+                    if (user) {
+                        user_name = user.name || 'N/A';
+                        user_role = user.role || 'N/A';
+                    }
+                } catch (e) {
+                    console.warn('[Support] Could not fetch user info for user_id:', msg.user_id);
+                }
+                
+                return {
+                    ...msg,
+                    user_name,
+                    user_role,
+                    attachments: attachments?.filter(a => a.message_id === msg.id) || []
+                };
             })) || [];
 
             // Get creator username (from users.name, not username column)
