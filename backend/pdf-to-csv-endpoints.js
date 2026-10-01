@@ -108,53 +108,60 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
+    // Find valid money values: must start at a non-digit boundary
+    // "WS9505123,625,000.00" -> "23,625,000.00" is preceded by "1" (digit) -> SKIP
+    // So we require the match to start where char before is NOT a digit.
+    // Pattern: number starts with 1-3 digits, then comma-groups.
+    // The key: use (?<![0-9]) lookbehind AND require first digit group is 1-3 digits only.
+    function findAllMoney(s) {
+        const results = [];
+        const re = /(?<![0-9])([1-9]\d{0,2}(?:,\d{3})+\.\d{2})/g;
+        let m;
+        while ((m = re.exec(s)) !== null) {
+            results.push({ val: m[1], start: m.index, end: m.index + m[1].length });
+        }
+        return results;
+    }
+
     function parseLine(rest) {
         let debit = '', kredit = '', saldo = '';
-
-        // Case A: Debit — line ends with money+DB optionally followed by saldo
-        // e.g. "...23,625,000.00DB"  or  "...11,125,000.00DB801,912.00"
-        const caseA = rest.match(/([\d,]+\.\d{2})DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
-        if (caseA) {
-            debit = caseA[1];
-            saldo = caseA[2] || '';
+        // Case A: ends with DB (optionally followed by saldo without comma e.g. "801,912.00")
+        const dbMatch = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        if (dbMatch) {
+            saldo = dbMatch[1] || '';
+            const beforeDB = rest.slice(0, rest.length - dbMatch[0].length);
+            const moneys = findAllMoney(beforeDB);
+            if (moneys.length > 0) debit = moneys[moneys.length - 1].val;
             return { debit, kredit, saldo };
         }
-
-        // Case B: Kredit+Saldo — ends with exactly two comma-formatted numbers
-        // e.g. "...100,000,000.00109,161,912.00"
-        const caseB = rest.match(/(\d{1,3}(?:,\d{3})+\.\d{2})(\d{1,3}(?:,\d{3})+\.\d{2})$/);
-        if (caseB) {
-            kredit = caseB[1];
-            saldo  = caseB[2];
-            return { debit, kredit, saldo };
+        // No DB: find valid moneys
+        const moneys = findAllMoney(rest);
+        if (moneys.length === 0) return { debit, kredit, saldo };
+        if (moneys.length === 1) {
+            const beforeVal = rest.slice(0, moneys[0].start).toUpperCase();
+            if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) saldo = moneys[0].val;
+            else kredit = moneys[0].val;
+        } else {
+            kredit = moneys[moneys.length - 2].val;
+            saldo  = moneys[moneys.length - 1].val;
         }
-
-        // Case C: one comma-formatted number at end
-        const caseC = rest.match(/(\d{1,3}(?:,\d{3})+\.\d{2})$/);
-        if (caseC) {
-            const val = caseC[1];
-            const beforeVal = rest.slice(0, rest.lastIndexOf(val)).toUpperCase();
-            // If description contains SALDO AWAL/AKHIR → it's a saldo-only row
-            if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) {
-                saldo = val;
-            } else {
-                // Single money, no DB → kredit (SETORAN TUNAI without a paired saldo line)
-                kredit = val;
-            }
-            return { debit, kredit, saldo };
-        }
-
         return { debit, kredit, saldo };
     }
 
-    // Strip only the trailing amount+DB portion from the line to get keterangan
     function stripAmounts(rest) {
-        let s = rest;
-        // Remove trailing: money+DB+saldo  or  money+DB  or  two-moneys  or  one-money
-        s = s.replace(/([\d,]+\.\d{2})DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/, '');
-        s = s.replace(/(\d{1,3}(?:,\d{3})+\.\d{2})(\d{1,3}(?:,\d{3})+\.\d{2})$/, '');
-        s = s.replace(/(\d{1,3}(?:,\d{3})+\.\d{2})$/, '');
-        return s;
+        // Remove DB block + preceding debit money
+        const dbMatch = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        if (dbMatch) {
+            let s = rest.slice(0, rest.length - dbMatch[0].length);
+            const moneys = findAllMoney(s);
+            if (moneys.length > 0) s = s.slice(0, moneys[moneys.length - 1].start);
+            return s;
+        }
+        // Remove trailing moneys (kredit + saldo, or just saldo)
+        const moneys = findAllMoney(rest);
+        if (moneys.length === 0) return rest;
+        const removeFrom = moneys.length >= 2 ? moneys[moneys.length - 2].start : moneys[0].start;
+        return rest.slice(0, removeFrom);
     }
 
     let current = null;
@@ -189,8 +196,9 @@ function parseBCA(text) {
             const [, tgl, rest] = dateMatch;
             const { debit, kredit, saldo } = parseLine(rest);
 
-            // Keterangan: strip trailing amounts, keep everything else including CBG codes
+            // Keterangan: strip trailing amounts, remove 4-digit standalone CBG, keep rest
             const ket = stripAmounts(rest)
+                .replace(/\b\d{4}\b/g, '')   // remove 4-digit CBG like "7510"
                 .replace(/\s{2,}/g, ' ')
                 .trim();
 
