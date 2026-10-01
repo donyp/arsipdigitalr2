@@ -862,7 +862,7 @@
                 `;
             } else {
                 html += messages.map(msg => {
-                    const isSupport = msg.user_id !== currentUser.userId;
+                    const isSupport = msg.user_id !== ticketData.user_id;
                     const roleClass = !isSupport ? 'anda' : '';
                     
                     // Clean zona name for replies too
@@ -935,6 +935,14 @@
             return formatRelativeTime(lastMessage.created_at);
         }
 
+        function getIndonesianMonth(monthIndex) {
+            const months = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            return months[monthIndex] || '';
+        }
+
         function formatDateTimeWIB(dateString) {
             if (!dateString) return '-';
             
@@ -965,13 +973,13 @@
                 const wibTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
                 
                 const year = wibTime.getUTCFullYear();
-                const month = String(wibTime.getUTCMonth() + 1).padStart(2, '0');
-                const day = String(wibTime.getUTCDate()).padStart(2, '0');
+                const month = getIndonesianMonth(wibTime.getUTCMonth());
+                const day = wibTime.getUTCDate();
                 const hours = String(wibTime.getUTCHours()).padStart(2, '0');
                 const minutes = String(wibTime.getUTCMinutes()).padStart(2, '0');
                 const seconds = String(wibTime.getUTCSeconds()).padStart(2, '0');
                 
-                const formatted = `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+                const formatted = `${day} ${month} ${year}, ${hours}:${minutes}:${seconds}`;
                 console.log('[DateFormat] Output (WIB):', formatted);
                 
                 return formatted;
@@ -1010,7 +1018,11 @@
             } else if (diffDays < 7) {
                 return `${Math.floor(diffDays)}d lalu`;
             } else {
-                return '-';
+                // For older dates, show in format: "13 Agustus 2026"
+                const year = date.getUTCFullYear();
+                const month = getIndonesianMonth(date.getUTCMonth());
+                const day = date.getUTCDate();
+                return `${day} ${month} ${year}`;
             }
         }
 
@@ -1043,6 +1055,8 @@
                 statusDiv.textContent = 'Mengirim...';
 
                 const token = localStorage.getItem('jwt_token');
+                console.log('[Support-Customer] Sending reply to ticket:', ticketId);
+                
                 const response = await fetch(`/api/support/tickets/${ticketId}/messages`, {
                     method: 'POST',
                     headers: {
@@ -1052,7 +1066,16 @@
                     body: JSON.stringify({ message })
                 });
 
-                if (!response.ok) throw new Error('Gagal mengirim pesan');
+                console.log('[Support-Customer] Reply response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('[Support-Customer] Reply error:', errorData);
+                    throw new Error(errorData.error || 'Gagal mengirim pesan');
+                }
+
+                const data = await response.json();
+                console.log('[Support-Customer] Reply success:', data);
 
                 statusDiv.textContent = '✓ Pesan terkirim!';
                 statusDiv.style.color = '#10b981';
@@ -1061,6 +1084,7 @@
 
                 // Reload ticket after 1 second
                 setTimeout(async () => {
+                    console.log('[Support-Customer] Reloading ticket after reply...');
                     await loadTicketDetail();
                 }, 1000);
 
