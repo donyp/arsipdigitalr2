@@ -108,55 +108,54 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // Find valid money values: number must start with 1-3 digits then comma-groups.
-    // This finds ALL occurrences including ones preceded by digits.
-    function findAllMoney(s) {
-        const results = [];
-        const re = /([1-9]\d{0,2}(?:,\d{3})+\.\d{2})/g;
-        let m;
-        while ((m = re.exec(s)) !== null) {
-            results.push({ val: m[1], start: m.index, end: m.index + m[1].length });
-        }
-        return results;
-    }
+    // BCA ref code pattern: "0806/FTSCY/WS95051" — sits between keterangan and money
+    // We need to isolate this so its trailing digits don't bleed into the money value
+    const BCA_REF_RE = /\d{4}\/[A-Z]+\/[A-Z]{2}\d+/g;
 
-    // Find the LAST money value that ends at the very end of the string (right-anchored)
-    // This is the clean way: money at the end is always valid
+    // Find last comma-formatted money anchored to end of string
     function findLastMoney(s) {
-        // Match comma-formatted money anchored to end
         const m = s.match(/([1-9]\d{0,2}(?:,\d{3})+\.\d{2})$/);
         if (!m) return null;
-        return { val: m[1], start: s.length - m[1].length, end: s.length };
+        return { val: m[1], start: s.length - m[1].length };
+    }
+
+    // Tokenize the rest of a BCA line:
+    // Replace ref codes with a fixed-length placeholder so money parsing is clean
+    function tokenize(rest) {
+        const refs = [];
+        const masked = rest.replace(BCA_REF_RE, (match) => {
+            refs.push(match);
+            return `\x00REF${refs.length - 1}\x00`; // unique placeholder
+        });
+        return { masked, refs };
     }
 
     function parseLine(rest) {
         let debit = '', kredit = '', saldo = '';
+        const { masked } = tokenize(rest);
 
-        // Case A: ends with "DB" or "DB[saldo]"
-        // e.g. "...23,625,000.00DB"  or  "...11,125,000.00DB801,912.00"
-        const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        // Case A: ends with DB (optionally followed by saldo)
+        const dbSuffix = masked.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (dbSuffix) {
             saldo = dbSuffix[1] || '';
-            // The debit money is whatever comma-formatted number is right before "DB..."
-            const beforeDB = rest.slice(0, rest.length - dbSuffix[0].length);
+            const beforeDB = masked.slice(0, masked.length - dbSuffix[0].length);
             const debitMoney = findLastMoney(beforeDB);
             if (debitMoney) debit = debitMoney.val;
             return { debit, kredit, saldo };
         }
 
-        // No DB: find last money = saldo or kredit
-        const last = findLastMoney(rest);
+        // No DB
+        const last = findLastMoney(masked);
         if (!last) return { debit, kredit, saldo };
 
-        // Check if there's a second money before it
-        const beforeLast = rest.slice(0, last.start);
+        const beforeLast = masked.slice(0, last.start);
         const second = findLastMoney(beforeLast);
 
         if (second) {
             kredit = second.val;
             saldo  = last.val;
         } else {
-            const beforeVal = rest.slice(0, last.start).toUpperCase();
+            const beforeVal = masked.slice(0, last.start).toUpperCase();
             if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) saldo = last.val;
             else kredit = last.val;
         }
@@ -164,21 +163,30 @@ function parseBCA(text) {
     }
 
     function stripAmounts(rest) {
-        // Remove DB suffix + preceding debit money
-        const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        const { masked, refs } = tokenize(rest);
+
+        let s = masked;
+        const dbSuffix = s.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (dbSuffix) {
-            let s = rest.slice(0, rest.length - dbSuffix[0].length);
+            s = s.slice(0, s.length - dbSuffix[0].length);
             const debitMoney = findLastMoney(s);
             if (debitMoney) s = s.slice(0, debitMoney.start);
-            return s;
+        } else {
+            const last = findLastMoney(s);
+            if (last) {
+                const beforeLast = s.slice(0, last.start);
+                const second = findLastMoney(beforeLast);
+                s = second ? s.slice(0, second.start) : s.slice(0, last.start);
+            }
         }
-        // Remove trailing moneys
-        const last = findLastMoney(rest);
-        if (!last) return rest;
-        const beforeLast = rest.slice(0, last.start);
-        const second = findLastMoney(beforeLast);
-        if (second) return rest.slice(0, second.start);
-        return rest.slice(0, last.start);
+
+        // Restore ref codes from placeholders
+        refs.forEach((ref, i) => { s = s.replace(`\x00REF${i}\x00`, ref); });
+
+        // Remove 4-digit standalone CBG (e.g. "7510") — only when standalone
+        s = s.replace(/(?<![/\w])\b\d{4}\b(?![/\w])/g, '');
+
+        return s;
     }
 
     let current = null;
