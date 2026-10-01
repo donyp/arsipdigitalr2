@@ -87,8 +87,8 @@ function detectBank(text) {
 }
 
 function parseBCA(text) {
-    console.log('[PDF-CSV] PARSER_VERSION=v13-PDF-TEXT-CORRUPTION-RECOVERY');
-    console.log('[PDF-CSV] ★ RECOVERING FROM PDF-PARSE TEXT CORRUPTION');
+    console.log('[PDF-CSV] PARSER_VERSION=v14-AGGRESSIVE-7510-REMOVAL');
+    console.log('[PDF-CSV] ★ FOCUS: REMOVE 7510 AND 75 FROM KETERANGAN');
     
     // CRITICAL DISCOVERY: pdf-parse corrupts amount strings
     // Pattern detected: "00,000,000.00" instead of "100,000,000.00"
@@ -338,6 +338,11 @@ function parseBCA(text) {
             }
         }
         
+        // AGGRESSIVE: Remove "7510" and "75" explicitly
+        s = s.replace(/7510/g, ' ');
+        s = s.replace(/\b75\b/g, ' ');
+        
+        // Remove other standalone digit codes (2-6 digits)
         s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
         s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
         
