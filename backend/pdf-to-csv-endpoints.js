@@ -30,7 +30,11 @@ const upload = multer({
 
 function cleanNumber(str) {
     if (!str) return '';
-    return parseFloat(str.replace(/,/g, '').trim()) || 0;
+    // Keep as string (remove thousand separators, keep decimal dot)
+    // This prevents scientific notation in CSV/Excel
+    const clean = str.toString().replace(/,/g, '').trim();
+    if (!clean || isNaN(clean)) return '';
+    return clean;  // return as string, not float
 }
 
 function detectBank(text) {
@@ -89,14 +93,13 @@ function parseBCA(text) {
     const lines = text.split('\n');
     const transactions = [];
 
-    // Lines to skip entirely
     const skipPatterns = [
         /^TANGGALKETERANGANCBGMUTASISALDO/,
         /^SALDO AWAL:/,
         /^MUTASI (CR|DB):/,
         /^SALDO AKHIR:/,
         /^Bersambung ke Halaman/,
-        /^\d+\/\d+$/,                           // page numbers like "1/2"
+        /^\d+\/\d+$/,
         /^KCP\s/,
         /^REKENING GIRO/,
         /^GARUDA GEMILANG|^JATIBENING|^GEDUNG|^JL\s|^BEKASI|^INDONESIA$/i,
@@ -108,82 +111,77 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
+    // Lines that are pure continuation (raw duplicate numbers from BCA PDF)
+    // e.g. "       23625000.00" — these are just visual duplicates, skip them
+    const isContinuationNum = line => /^\s+[\d]+\.?\d*\s*$/.test(line);
+
     for (let i = 0; i < lines.length; i++) {
         const raw = lines[i];
         const line = raw.trim();
         if (!line) continue;
         if (skipPatterns.some(p => p.test(line))) continue;
-
-        // BCA format: semua kolom menyatu tanpa spasi
-        // Pattern: DD/MM + keterangan + [CBG] + mutasi + [DB|CR] + [saldo]
-        // 
-        // Examples:
-        // "01/06SALDO AWAL9,161,912.00"
-        // "08/06SETORAN TUNAI7510100,000,000.00109,161,912.00"
-        // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505123,625,000.00DB"
-        // "08/06TRSF E-BANKING DB0806/FTSCY/WS9505111,125,000.00DB801,912.00"
-        // "30/06BIAYA ADM30,000.00DB8,213,931.00"
+        if (isContinuationNum(raw)) continue; // skip indented raw number lines
 
         const dateMatch = line.match(/^(\d{2}\/\d{2})(.*)/);
         if (!dateMatch) continue;
 
         const [, tgl, rest] = dateMatch;
 
-        // Extract all numbers from the rest (commas as thousands, dot as decimal)
-        const numbers = [];
-        const numReg = /[\d,]+\.\d{2}/g;
-        let m;
-        while ((m = numReg.exec(rest)) !== null) {
-            numbers.push({ val: cleanNumber(m[0]), idx: m.index });
-        }
-
-        // Detect DB/CR flag
+        // Detect DB/CR flag (whole word)
         const isDB = /\bDB\b/.test(rest);
         const isCR = /\bCR\b/.test(rest);
 
-        // Extract description: strip numbers, DB/CR, CBG codes, extra spaces
+        // Extract all properly formatted numbers: x,xxx.xx
+        // Must have comma-formatted thousands OR at least 4 digits before decimal
+        const numReg = /(?<![\/\d])((?:\d{1,3}(?:,\d{3})+|\d{4,})\.\d{2})(?!\d)/g;
+        const numbers = [];
+        let m;
+        while ((m = numReg.exec(rest)) !== null) {
+            numbers.push(m[1]);
+        }
+
+        // Build description: remove numbers, DB/CR flags, 4-digit CBG, ref codes
         let desc = rest
-            .replace(/[\d,]+\.\d{2}/g, '')    // remove numbers like 1,234.56
-            .replace(/\bDB\b|\bCR\b/g, '')     // remove DB/CR
-            .replace(/\b\d{4}\b/g, '')          // remove 4-digit CBG
+            .replace(numReg.source ? new RegExp(numReg.source, 'g') : /(?<![\/\d])((?:\d{1,3}(?:,\d{3})+|\d{4,})\.\d{2})(?!\d)/g, '')
+            .replace(/\bDB\b|\bCR\b/g, '')
+            .replace(/\b\d{4}\b/g, '')              // 4-digit CBG
+            .replace(/\b\d{4}\/[A-Z]+\/[A-Z0-9]+\b/g, '') // ref like 0806/FTSCY/WS95051
             .replace(/\s{2,}/g, ' ')
             .trim();
 
-        let mutasi = 0, saldo = 0, debit = '', kredit = '';
+        let debit = '', kredit = '', saldo = '';
 
         if (numbers.length === 0) {
-            // No numbers — skip or continuation
-            continue;
+            continue; // no usable data
         } else if (numbers.length === 1) {
-            // Only saldo (SALDO AWAL) or only mutasi
+            const val = cleanNumber(numbers[0]);
             if (!isDB && !isCR) {
-                saldo = numbers[0].val;
+                saldo = val; // SALDO AWAL type
+            } else if (isDB) {
+                debit = val;
             } else {
-                mutasi = numbers[0].val;
-                if (isDB) debit = mutasi;
-                else kredit = mutasi;
+                kredit = val;
             }
         } else if (numbers.length === 2) {
-            // mutasi + saldo
-            mutasi = numbers[0].val;
-            saldo  = numbers[1].val;
+            // First = mutasi, Second = saldo
+            const mutasi = cleanNumber(numbers[0]);
+            saldo = cleanNumber(numbers[1]);
             if (isDB) debit = mutasi;
-            else if (isCR) kredit = mutasi;
-            else kredit = mutasi; // credit if no flag (setoran)
+            else kredit = mutasi; // SETORAN TUNAI = credit
         } else {
-            // 3+ numbers: last is saldo, second-last is mutasi, rest part of CBG/ref
-            mutasi = numbers[numbers.length - 2].val;
-            saldo  = numbers[numbers.length - 1].val;
+            // 3+ numbers: last = saldo, second last = mutasi
+            const mutasi = cleanNumber(numbers[numbers.length - 2]);
+            saldo = cleanNumber(numbers[numbers.length - 1]);
             if (isDB) debit = mutasi;
             else kredit = mutasi;
         }
 
         transactions.push({
             'Tanggal': tgl,
-            'Keterangan': desc || rest.trim(),
-            'Debit':   debit,
-            'Kredit':  kredit,
-            'Saldo':   saldo
+            'Keterangan': desc || rest.replace(/\bDB\b|\bCR\b/g, '').trim(),
+            'Debit':  debit,
+            'Kredit': kredit,
+            'Saldo':  saldo
         });
     }
 
@@ -268,7 +266,7 @@ function parseMuamalat(text) {
 
     const pushCur = () => {
         if (!cur || !cur.amount) return;
-        const isDebit = cur.balance < prevBalance;
+        const isDebit = parseFloat(cur.balance) < parseFloat(prevBalance);
         transactions.push({
             'Tanggal Transaksi': cur.trxDate,
             'Tanggal Efektif':   cur.effDate,
