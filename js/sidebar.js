@@ -198,7 +198,8 @@
             setTimeout(() => {
                 if (btn.getAttribute('data-expanded') === 'true') {
                     container.style.maxHeight = 'none';
-                    container.style.overflow = 'visible';
+                    // Keep overflow hidden to prevent content from overflowing nav container
+                    // container.style.overflow = 'visible';
                 }
             }, 350);
         }
@@ -235,21 +236,21 @@
         const menuSizes = isUploadFilePage ? {
             buttonPadding: '0.5rem 0.6rem',
             buttonMargin: '0.15rem 0.3rem',
-            buttonFontSize: '0.85rem',
+            buttonFontSize: '0.8rem',
             childPadding: '0.4rem 0.6rem 0.4rem 2.2rem',
             childMargin: '0.1rem 0.2rem',
             childFontSize: '0.7rem',
             childIconSize: '0.8rem',
-            iconSize: '0.9rem'
+            iconSize: '0.85rem'
         } : {
-            buttonPadding: '1.2rem 1.2rem',
-            buttonMargin: '0.4rem 0.8rem',
-            buttonFontSize: '1.1rem',
-            childPadding: '0.9rem 1.2rem 0.9rem 4.5rem',
-            childMargin: '0.3rem 0.5rem',
-            childFontSize: '0.95rem',
-            childIconSize: '1.05rem',
-            iconSize: '1.3rem'
+            buttonPadding: '0.75rem 1rem',
+            buttonMargin: '0.2rem 0.6rem',
+            buttonFontSize: '0.9rem',
+            childPadding: '0.6rem 1rem 0.6rem 3rem',
+            childMargin: '0.15rem 0.4rem',
+            childFontSize: '0.82rem',
+            childIconSize: '0.88rem',
+            iconSize: '1rem'
         };
 
         // Recalculate colors based on current dark mode
@@ -336,7 +337,7 @@
                         background: transparent;
                         max-height: ${itemIsActive ? 'none' : '0px'};
                         opacity: ${itemIsActive ? '1' : '0'};
-                        overflow: ${itemIsActive ? 'visible' : 'hidden'};
+                        overflow: hidden;
                         transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
                         will-change: max-height, opacity;
                     ">
