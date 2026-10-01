@@ -138,6 +138,9 @@ function parseBCA(text) {
     //    (letter marks end of ref code, so all leading digits follow money rules)
     // 3. If no letter: try all 1-3 leading digit counts, pick LARGEST valid (no leading zero)
     function extractTrailingMoney(s) {
+        // Trim input to remove any trailing/leading whitespace that might affect detection
+        s = s.trim();
+        
         const dotIdx = s.lastIndexOf('.');
         if (dotIdx < 0) return null;
 
@@ -148,7 +151,10 @@ function parseBCA(text) {
         let validCommaGroups = 0;
 
         let afterDot = s.slice(dotIdx);
-        if (!/^\.\d{2}$/.test(afterDot)) return null; // Must be .dd
+        // Check format: must be .dd with optional trailing whitespace
+        if (!/^\.\d{2}\s*$/.test(afterDot)) return null;
+        // Extract just the .dd part for final money format check
+        afterDot = afterDot.trim();
 
         // Walk left from before decimal point
         while (i >= 0) {
