@@ -393,7 +393,23 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
                 });
             }
             
-            const pdfData = await pdf(buffer);
+            let pdfData;
+            try {
+                pdfData = await pdf(buffer);
+            } catch (pdfErr) {
+                // Return the actual pdf-parse error so we can diagnose
+                return res.status(422).json({
+                    error: 'pdf-parse failed',
+                    pdfError: pdfErr.message,
+                    pdfErrorType: pdfErr.constructor.name,
+                    tip: 'PDF may be password-protected, corrupted, or use an unsupported font/encoding',
+                    bufferSize: buffer.length,
+                    // Show first bytes as hex to check PDF header
+                    headerHex: buffer.slice(0, 16).toString('hex'),
+                    headerStr: buffer.slice(0, 8).toString('ascii')
+                });
+            }
+
             const rawText = pdfData.text;
             const lines = rawText.split('\n').map((l, i) => `${i}: ${JSON.stringify(l)}`);
             res.json({
@@ -404,7 +420,7 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
                 lines: lines.slice(0, 150)
             });
         } catch (e) {
-            res.status(500).json({ error: e.message });
+            res.status(500).json({ error: e.message, stack: e.stack?.split('\n').slice(0,5) });
         }
     });
 
