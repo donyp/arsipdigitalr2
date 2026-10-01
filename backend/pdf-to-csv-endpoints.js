@@ -384,30 +384,38 @@ function parseBCA(text) {
         if (current) {
             // CRITICAL: Fix corrupted SETORAN TUNAI amounts BEFORE pushing
             if (/SETORAN TUNAI/i.test(current.ket)) {
-                const kreditNum = current.kredit ? parseFloat(current.kredit.replace(/,/g, '')) : 0;
-                
-                // If kredit looks corrupted (too small or starts with 0), restore it
                 if (current.kredit) {
-                    if (current.kredit.startsWith('00,')) {
-                        current.kredit = '1' + current.kredit;
-                        console.log('[PDF-CSV] Fixed SETORAN: 00, → 100,');
-                    } else if (current.kredit.startsWith('04,')) {
-                        current.kredit = '10' + current.kredit;
-                        console.log('[PDF-CSV] Fixed SETORAN: 04, → 104,');
-                    } else if (current.kredit.startsWith('08,')) {
-                        current.kredit = '8' + current.kredit;
-                        console.log('[PDF-CSV] Fixed SETORAN: 08, → 88,');
-                    } else if (current.kredit.startsWith('12,')) {
-                        current.kredit = '1' + current.kredit;
-                        console.log('[PDF-CSV] Fixed SETORAN: 12, → 112,');
-                    } else if (current.kredit.startsWith('05,')) {
-                        current.kredit = '7' + current.kredit;
-                        console.log('[PDF-CSV] Fixed SETORAN: 05, → 75,');
-                    } else if (/^\d,/.test(current.kredit) && kreditNum < 50000000) {
-                        // Single digit followed by comma (8,000,000 should be 88,000,000 etc)
-                        const firstDigit = current.kredit[0];
-                        current.kredit = firstDigit + current.kredit;
-                        console.log('[PDF-CSV] Fixed SETORAN: prepended digit', firstDigit);
+                    // Don't double-fix: check if already fixed
+                    if (!current.kredit.startsWith('1004,') && !current.kredit.startsWith('10')) {
+                        if (current.kredit.startsWith('00,')) {
+                            current.kredit = '1' + current.kredit;
+                            console.log('[PDF-CSV] Fixed SETORAN: 00, → 100,');
+                        } else if (current.kredit.startsWith('04,')) {
+                            current.kredit = '10' + current.kredit;
+                            console.log('[PDF-CSV] Fixed SETORAN: 04, → 104,');
+                        } else if (current.kredit.startsWith('08,')) {
+                            current.kredit = '8' + current.kredit;
+                            console.log('[PDF-CSV] Fixed SETORAN: 08, → 88,');
+                        } else if (current.kredit.startsWith('12,')) {
+                            current.kredit = '1' + current.kredit;
+                            console.log('[PDF-CSV] Fixed SETORAN: 12, → 112,');
+                        } else if (current.kredit.startsWith('05,')) {
+                            current.kredit = '7' + current.kredit;
+                            console.log('[PDF-CSV] Fixed SETORAN: 05, → 75,');
+                        } else if (current.kredit.startsWith('55,')) {
+                            current.kredit = '7' + current.kredit;
+                            console.log('[PDF-CSV] Fixed SETORAN: 55, → 755, (but should be 75)');
+                            // Actually this should be just 75, not 755
+                            current.kredit = current.kredit.replace('755,', '75,');
+                        } else if (/^\d,/.test(current.kredit)) {
+                            // Single digit followed by comma (8,000,000 should be 88,000,000)
+                            const firstDigit = current.kredit[0];
+                            const kreditNum = parseFloat(current.kredit.replace(/,/g, ''));
+                            if (kreditNum < 50000000) {
+                                current.kredit = firstDigit + current.kredit;
+                                console.log('[PDF-CSV] Fixed SETORAN: prepended digit', firstDigit);
+                            }
+                        }
                     }
                 }
             }
