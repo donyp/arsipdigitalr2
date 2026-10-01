@@ -300,12 +300,8 @@ function parseBCA(text) {
     function stripAmounts(rest, amountsToRemove = []) {
         let s = rest;
         
-        // Add space after DB marker if not already there
-        // "DB0906" → "DB 0906"
-        s = s.replace(/DB(\S)/g, 'DB $1');
-        
-        // Remove trailing DB marker if present
-        s = s.replace(/DB\s*$/, '').trim();
+        // Remove ALL occurrences of DB marker (leading, trailing, or embedded)
+        s = s.replace(/\s*DB\s*/g, ' ');
         
         // Remove the specific amounts that were extracted
         for (const amt of amountsToRemove) {
@@ -321,9 +317,10 @@ function parseBCA(text) {
                 }
             }
         }
-
-        // Remove standalone 4-digit CBG (not part of ref codes like 0806/... or WS95051)
-        s = s.replace(/(?<![\/\d])(\d{4})(?!\d|\/)/g, '');
+        
+        // Remove 4-6 digit codes (CBG, bank ref codes) that are standalone
+        // But preserve those part of ref codes like "0806/" or "WS95051"
+        s = s.replace(/\b(\d{4,6})\b(?![\d\/])/g, ' ');
 
         return s.replace(/\s+/g, ' ').trim();
     }
