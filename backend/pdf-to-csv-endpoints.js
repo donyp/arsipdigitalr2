@@ -108,14 +108,11 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // Find valid money values: must start at a non-digit boundary
-    // "WS9505123,625,000.00" -> "23,625,000.00" is preceded by "1" (digit) -> SKIP
-    // So we require the match to start where char before is NOT a digit.
-    // Pattern: number starts with 1-3 digits, then comma-groups.
-    // The key: use (?<![0-9]) lookbehind AND require first digit group is 1-3 digits only.
+    // Find valid money values: number must start with 1-3 digits then comma-groups.
+    // This finds ALL occurrences including ones preceded by digits.
     function findAllMoney(s) {
         const results = [];
-        const re = /(?<![0-9])([1-9]\d{0,2}(?:,\d{3})+\.\d{2})/g;
+        const re = /([1-9]\d{0,2}(?:,\d{3})+\.\d{2})/g;
         let m;
         while ((m = re.exec(s)) !== null) {
             results.push({ val: m[1], start: m.index, end: m.index + m[1].length });
@@ -123,45 +120,65 @@ function parseBCA(text) {
         return results;
     }
 
+    // Find the LAST money value that ends at the very end of the string (right-anchored)
+    // This is the clean way: money at the end is always valid
+    function findLastMoney(s) {
+        // Match comma-formatted money anchored to end
+        const m = s.match(/([1-9]\d{0,2}(?:,\d{3})+\.\d{2})$/);
+        if (!m) return null;
+        return { val: m[1], start: s.length - m[1].length, end: s.length };
+    }
+
     function parseLine(rest) {
         let debit = '', kredit = '', saldo = '';
-        // Case A: ends with DB (optionally followed by saldo without comma e.g. "801,912.00")
-        const dbMatch = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
-        if (dbMatch) {
-            saldo = dbMatch[1] || '';
-            const beforeDB = rest.slice(0, rest.length - dbMatch[0].length);
-            const moneys = findAllMoney(beforeDB);
-            if (moneys.length > 0) debit = moneys[moneys.length - 1].val;
+
+        // Case A: ends with "DB" or "DB[saldo]"
+        // e.g. "...23,625,000.00DB"  or  "...11,125,000.00DB801,912.00"
+        const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        if (dbSuffix) {
+            saldo = dbSuffix[1] || '';
+            // The debit money is whatever comma-formatted number is right before "DB..."
+            const beforeDB = rest.slice(0, rest.length - dbSuffix[0].length);
+            const debitMoney = findLastMoney(beforeDB);
+            if (debitMoney) debit = debitMoney.val;
             return { debit, kredit, saldo };
         }
-        // No DB: find valid moneys
-        const moneys = findAllMoney(rest);
-        if (moneys.length === 0) return { debit, kredit, saldo };
-        if (moneys.length === 1) {
-            const beforeVal = rest.slice(0, moneys[0].start).toUpperCase();
-            if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) saldo = moneys[0].val;
-            else kredit = moneys[0].val;
+
+        // No DB: find last money = saldo or kredit
+        const last = findLastMoney(rest);
+        if (!last) return { debit, kredit, saldo };
+
+        // Check if there's a second money before it
+        const beforeLast = rest.slice(0, last.start);
+        const second = findLastMoney(beforeLast);
+
+        if (second) {
+            kredit = second.val;
+            saldo  = last.val;
         } else {
-            kredit = moneys[moneys.length - 2].val;
-            saldo  = moneys[moneys.length - 1].val;
+            const beforeVal = rest.slice(0, last.start).toUpperCase();
+            if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) saldo = last.val;
+            else kredit = last.val;
         }
         return { debit, kredit, saldo };
     }
 
     function stripAmounts(rest) {
-        // Remove DB block + preceding debit money
-        const dbMatch = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
-        if (dbMatch) {
-            let s = rest.slice(0, rest.length - dbMatch[0].length);
-            const moneys = findAllMoney(s);
-            if (moneys.length > 0) s = s.slice(0, moneys[moneys.length - 1].start);
+        // Remove DB suffix + preceding debit money
+        const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
+        if (dbSuffix) {
+            let s = rest.slice(0, rest.length - dbSuffix[0].length);
+            const debitMoney = findLastMoney(s);
+            if (debitMoney) s = s.slice(0, debitMoney.start);
             return s;
         }
-        // Remove trailing moneys (kredit + saldo, or just saldo)
-        const moneys = findAllMoney(rest);
-        if (moneys.length === 0) return rest;
-        const removeFrom = moneys.length >= 2 ? moneys[moneys.length - 2].start : moneys[0].start;
-        return rest.slice(0, removeFrom);
+        // Remove trailing moneys
+        const last = findLastMoney(rest);
+        if (!last) return rest;
+        const beforeLast = rest.slice(0, last.start);
+        const second = findLastMoney(beforeLast);
+        if (second) return rest.slice(0, second.start);
+        return rest.slice(0, last.start);
     }
 
     let current = null;
