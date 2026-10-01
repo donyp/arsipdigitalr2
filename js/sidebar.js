@@ -461,17 +461,93 @@
                 ${navHTML}
             </nav>
             <div style="
-                padding: 1rem 1.2rem;
+                padding: 1rem 0.8rem;
                 border-top: 1px solid ${borderColor};
                 flex-shrink: 0;
-                font-size: 0.6rem;
-                color: ${tertiaryText};
-                text-align: center;
-                font-weight: 700;
-                letter-spacing: 0.05em;
-                text-transform: uppercase;
-                transition: border-color 0.4s ease, color 0.4s ease;
-            ">v5.4</div>
+                display: flex;
+                flex-direction: column;
+                gap: 0.6rem;
+                transition: border-color 0.4s ease;
+            ">
+                <!-- Edit Button -->
+                <button onclick="openEditHeadlineModal()"
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        padding: 0.6rem 0.8rem;
+                        background: #60a5fa;
+                        color: white;
+                        border: none;
+                        border-radius: 0.4rem;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        white-space: nowrap;
+                    "
+                    onmouseover="this.style.background='#3b82f6'; this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.background='#60a5fa'; this.style.transform='translateY(0)'"
+                    title="Edit headline banner text">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 14px; height: 14px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                </button>
+                
+                <!-- Dark Mode Toggle -->
+                <button id="dark-mode-toggle-sidebar" onclick="toggleDarkMode()"
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        padding: 0.6rem 0.8rem;
+                        background: ${isDarkMode ? '#475569' : '#f3f4f6'};
+                        color: ${isDarkMode ? '#cbd5e1' : '#6b7280'};
+                        border: none;
+                        border-radius: 0.4rem;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        white-space: nowrap;
+                    "
+                    onmouseover="this.style.opacity='0.8'; this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.opacity='1'; this.style.transform='translateY(0)'"
+                    title="Toggle dark/light mode">
+                    <span id="dark-mode-icon-sidebar" style="font-size: 16px;">${isDarkMode ? '☀️' : '🌙'}</span>
+                    <span id="dark-mode-label-sidebar">${isDarkMode ? 'Light' : 'Dark'}</span>
+                </button>
+                
+                <!-- Logout Button -->
+                <button onclick="logout()"
+                    style="
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 0.5rem;
+                        padding: 0.6rem 0.8rem;
+                        background: #ef4444;
+                        color: white;
+                        border: none;
+                        border-radius: 0.4rem;
+                        font-size: 0.75rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                        white-space: nowrap;
+                    "
+                    onmouseover="this.style.background='#dc2626'; this.style.transform='translateY(-1px)'"
+                    onmouseout="this.style.background='#ef4444'; this.style.transform='translateY(0)'"
+                    title="Logout from system">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 14px; height: 14px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                </button>
+            </div>
         `;
 
         const mainContent = document.getElementById('main-content');
@@ -656,6 +732,8 @@ function toggleDarkMode() {
 
 function updateDarkModeUI() {
     const isDark = localStorage.getItem('dark_mode_enabled') === 'true';
+    
+    // Update header button
     const icon = document.getElementById('dark-mode-icon');
     const label = document.getElementById('dark-mode-label');
     const toggle = document.getElementById('dark-mode-toggle');
@@ -666,7 +744,20 @@ function updateDarkModeUI() {
         toggle.style.transition = 'background-color 1s ease, color 1s ease, border-color 1s ease';
         toggle.style.background = isDark ? '#334155' : '#f3f4f6';
         toggle.style.color = isDark ? '#cbd5e1' : '#6b7280';
-        toggle.style.borderColor = isDark ? '#475569' : '#e5e7eb';
+    }
+    
+    // Update sidebar button
+    const sidebarIcon = document.getElementById('dark-mode-icon-sidebar');
+    const sidebarLabel = document.getElementById('dark-mode-label-sidebar');
+    const sidebarToggle = document.getElementById('dark-mode-toggle-sidebar');
+    
+    if (sidebarIcon) sidebarIcon.textContent = isDark ? '☀️' : '🌙';
+    if (sidebarLabel) sidebarLabel.textContent = isDark ? 'Light' : 'Dark';
+    if (sidebarToggle) {
+        sidebarToggle.style.background = isDark ? '#475569' : '#f3f4f6';
+        sidebarToggle.style.color = isDark ? '#cbd5e1' : '#6b7280';
+    }
+}rderColor = isDark ? '#475569' : '#e5e7eb';
     }
 }
 
