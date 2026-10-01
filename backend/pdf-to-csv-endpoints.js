@@ -183,10 +183,17 @@ function parseBCA(text) {
 
         let leadingDigits;
         if (hasLetterBefore) {
-            // Letter ends ref code, so all leading digits before first comma are money
-            // Use modulo formula: ((firstCommaPos + 1) % 3) || 3
-            // Examples: 7 → (8 % 3) = 2 ✓, 5 → (6 % 3) = 0 → 3 ✓
-            leadingDigits = (firstCommaPos + 1) % 3 || 3;
+            // Letter ends ref code
+            // All leading digits before first comma are money leading
+            // But must be valid (1-3 digits)
+            if (firstCommaPos > 3) {
+                // Use modulo to find best split
+                const mod = (firstCommaPos + 1) % 3 || 3;
+                leadingDigits = mod;
+            } else {
+                // Already valid, take all
+                leadingDigits = firstCommaPos;
+            }
         } else {
             // No letter: try 1, 2, 3 leading digits
             // Pick LARGEST that produces valid money (no leading zero)
@@ -222,30 +229,33 @@ function parseBCA(text) {
 
     // Find last money anchored to end of string
     function findLastMoney(s) {
-        // Try right-anchored match first (clean case)
-        const clean = s.match(/([1-9]\d{0,2}(?:,\d{3})+\.\d{2})$/);
-        if (clean) return { val: clean[1], start: s.length - clean[1].length };
-
-        // Fallback: use extractTrailingMoney for glued case
+        // Always use extractTrailingMoney which handles both clean and glued cases properly
+        // The "clean" check in old code was too simplistic and matched invalid patterns
         return extractTrailingMoney(s);
     }
 
     function parseLine(rest) {
         let debit = '', kredit = '', saldo = '';
+        let amounts = []; // track amounts for stripAmounts
 
         // Case A: ends with DB (optionally + saldo)
         const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (dbSuffix) {
             saldo = dbSuffix[1] || '';
+            if (saldo) amounts.push(saldo);
+            
             const beforeDB = rest.slice(0, rest.length - dbSuffix[0].length);
             const m = findLastMoney(beforeDB);
-            if (m) debit = m.val;
-            return { debit, kredit, saldo };
+            if (m) {
+                debit = m.val;
+                amounts.push(debit);
+            }
+            return { debit, kredit, saldo, amounts };
         }
 
         // No DB: find last and second-to-last money
         const last = findLastMoney(rest);
-        if (!last) return { debit, kredit, saldo };
+        if (!last) return { debit, kredit, saldo, amounts };
 
         const beforeLast = rest.slice(0, last.start);
         const second = findLastMoney(beforeLast);
@@ -253,35 +263,36 @@ function parseBCA(text) {
         if (second) {
             kredit = second.val;
             saldo  = last.val;
+            amounts.push(kredit, saldo);
         } else {
             const beforeVal = rest.slice(0, last.start).toUpperCase();
-            if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) saldo = last.val;
-            else kredit = last.val;
+            if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) {
+                saldo = last.val;
+                amounts.push(saldo);
+            } else {
+                kredit = last.val;
+                amounts.push(kredit);
+            }
         }
-        return { debit, kredit, saldo };
+        return { debit, kredit, saldo, amounts };
     }
 
-    function stripAmounts(rest) {
-        const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
-        let s;
-        if (dbSuffix) {
-            s = rest.slice(0, rest.length - dbSuffix[0].length);
-            const m = findLastMoney(s);
-            if (m) s = s.slice(0, m.start);
-        } else {
-            const last = findLastMoney(rest);
-            if (!last) return rest;
-            const beforeLast = rest.slice(0, last.start);
-            const second = findLastMoney(beforeLast);
-            s = second ? rest.slice(0, second.start) : rest.slice(0, last.start);
+    function stripAmounts(rest, amountsToRemove = []) {
+        let s = rest;
+        
+        // Remove trailing DB marker if present
+        s = s.replace(/DB\s*$/, '').trim();
+        
+        // Remove the specific amounts that were extracted
+        for (const amt of amountsToRemove) {
+            // Replace first occurrence of this amount
+            s = s.replace(amt, ' ').replace(/\s+/g, ' ').trim();
         }
 
         // Remove standalone 4-digit CBG (not part of ref codes like 0806/... or WS95051)
-        // CBG appears as digits directly after text with no preceding slash
-        // e.g. "SETORAN TUNAI7510" -> remove "7510"
         s = s.replace(/(?<![\/\d])(\d{4})(?!\d|\/)/g, '');
 
-        return s;
+        return s.replace(/\s+/g, ' ').trim();
     }
 
     let current = null;
@@ -314,11 +325,10 @@ function parseBCA(text) {
             pushCurrent();
 
             const [, tgl, rest] = dateMatch;
-            const { debit, kredit, saldo } = parseLine(rest);
+            const { debit, kredit, saldo, amounts } = parseLine(rest);
 
-            // Keterangan: strip trailing amounts, remove 4-digit standalone CBG, keep rest
-            const ket = stripAmounts(rest)
-                .replace(/\b\d{4}\b/g, '')   // remove 4-digit CBG like "7510"
+            // Keterangan: remove the specific amounts that were extracted
+            const ket = stripAmounts(rest, amounts)
                 .replace(/\s{2,}/g, ' ')
                 .trim();
 
