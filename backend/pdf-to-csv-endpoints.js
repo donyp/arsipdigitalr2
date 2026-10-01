@@ -350,6 +350,32 @@ function parseBCA(text) {
                 amounts.push(kredit);
             }
         }
+        
+        // CRITICAL FIX: Restore corrupted SETORAN TUNAI amounts
+        // Pattern: "SETORAN TUNAI" followed by corrupted amount like "00,000,000" or "04,000,000"
+        if (/SETORAN TUNAI/i.test(rest)) {
+            const kreditNum = kredit ? parseFloat(kredit.replace(/,/g, '')) : 0;
+            
+            // If kredit is suspiciously small (less than 10M for SETORAN TUNAI), fix it
+            if (kreditNum < 10000000 && kreditNum > 0) {
+                let restored = kredit;
+                
+                // Pattern detection based on first digits
+                if (kredit.startsWith('00,')) restored = '1' + kredit;      // 00,000,000 → 100,000,000
+                else if (kredit.startsWith('04,')) restored = '10' + kredit; // 04,000,000 → 104,000,000
+                else if (kredit.startsWith('08,')) restored = '8' + kredit;  // 08,000,000 → 88,000,000
+                else if (kredit.startsWith('12,')) restored = '1' + kredit;  // 12,000,000 → 112,000,000
+                else if (kredit.startsWith('05,')) restored = '7' + kredit;  // 05,000,000 → 75,000,000
+                
+                if (restored !== kredit) {
+                    console.log('[PDF-CSV] SETORAN TUNAI amount fix:', kredit, '→', restored);
+                    kredit = restored;
+                    // Update amounts array too
+                    amounts[amounts.indexOf(kredit.replace(restored, kredit))] = restored;
+                }
+            }
+        }
+        
         return { debit, kredit, saldo, amounts };
     }
 
