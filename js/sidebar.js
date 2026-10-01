@@ -66,6 +66,7 @@
             icon: '<i class="fas fa-tools"></i>',
             children: [
                 { href: '/rename-faktur', label: 'Rename Faktur', icon: '<i class="fas fa-file-invoice"></i>' },
+                { href: '/pdf-to-csv', label: 'PDF to CSV', icon: '<i class="fas fa-file-export"></i>' },
             ]
         },
 
