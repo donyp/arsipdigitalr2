@@ -290,13 +290,23 @@ function parseBCA(text) {
     function stripAmounts(rest, amountsToRemove = []) {
         let s = rest;
         
+        // Add space after DB marker if not already there
+        // "DB0906" → "DB 0906"
+        s = s.replace(/DB(\S)/g, 'DB $1');
+        
         // Remove trailing DB marker if present
         s = s.replace(/DB\s*$/, '').trim();
         
         // Remove the specific amounts that were extracted
         for (const amt of amountsToRemove) {
-            // Replace first occurrence of this amount
+            // Try removing formatted version
             s = s.replace(amt, ' ').replace(/\s+/g, ' ').trim();
+            
+            // Also try removing unformatted version
+            const unformatted = amt.replace(/,/g, '');
+            if (unformatted !== amt) {
+                s = s.replace(unformatted, ' ').replace(/\s+/g, ' ').trim();
+            }
         }
 
         // Remove standalone 4-digit CBG (not part of ref codes like 0806/... or WS95051)
