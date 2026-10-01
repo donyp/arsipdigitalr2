@@ -91,19 +91,12 @@ function parseBCA(text) {
     console.log('[PDF-CSV] ★ SMART LINE RECONSTRUCTION - FIXING MERGED LINES FROM PDF EXTRACTION');
     
     // CRITICAL: pdf-parse sometimes merges consecutive lines without newlines
-    // Example: "SETORAN TUNAI751075,000,000.00" is actually TWO lines merged:
-    //   1. "SETORAN TUNAI 7510 75,000,000.00" (line 16/06)
-    //   2. "SETORAN TUNAI 75 7,363,884.00 8,243,931.00" (line 22/06)
-    // They get merged as: "SETORAN TUNAI751075,000,000.00SETORAN TUNAI75..." 
-    // 
-    // We need to reconstruct lines by:
-    // 1. Finding money patterns (X,XXX,XXX.00)
-    // 2. If 2+ consecutive monies with same date-less start, split them
+    // Example: "SETORAN TUNAI751075,000,000.00" is actually TWO lines merged
     
-    const lines = text.split('\n');
+    const originalLines = text.split('\n');
     const reconstructedLines = [];
     
-    for (let line of lines) {
+    for (let line of originalLines) {
         line = line.trim();
         if (!line) {
             reconstructedLines.push(line);
@@ -118,20 +111,18 @@ function parseBCA(text) {
             matches.push({ val: match[0], idx: match.index });
         }
         
-        // If 2+ monies AND line doesn't start with DD/MM (i.e., not a date header),
-        // and they're close together (< 50 chars apart), suspect a merge
+        // If 2+ monies AND line doesn't start with DD/MM, suspect a merge
         if (matches.length >= 2 && !/^\d{2}\/\d{2}/.test(line)) {
             const dist = matches[1].idx - (matches[0].idx + matches[0].val.length);
             if (dist < 30 && dist >= 0) {
                 // Likely merged! Try to split
-                // Insert newline before second money
                 const splitIdx = matches[1].idx;
                 const part1 = line.substring(0, splitIdx);
                 const part2 = line.substring(splitIdx);
                 
-                // Only split if both parts are valid (not just numbers)
+                // Only split if both parts are valid
                 if (part1.match(/[A-Z]/i) && part2.match(/[A-Z]/i)) {
-                    console.log('[PDF-CSV] MERGED LINE DETECTED: splitting into 2 lines');
+                    console.log('[PDF-CSV] MERGED LINE DETECTED: splitting');
                     reconstructedLines.push(part1);
                     reconstructedLines.push(part2);
                     continue;
@@ -143,6 +134,7 @@ function parseBCA(text) {
     }
     
     const reconstructedText = reconstructedLines.join('\n');
+    const lines = reconstructedText.split('\n');
     const transactions = [];
 
     const skipPatterns = [
@@ -163,28 +155,22 @@ function parseBCA(text) {
         /^\s*$/,
     ];
 
-    // ... rest of function continues with reconstructedText.split('\n') ...
-
-    for (const raw of reconstructedText.split('\n')) {
-        // Trim input to remove any trailing/leading whitespace that might affect detection
+    // Extract the last valid money from end of string s
+    function extractTrailingMoney(s) {
         s = s.trim();
         
         const dotIdx = s.lastIndexOf('.');
         if (dotIdx < 0) return null;
 
-        // Walk LEFT from decimal: collect digits and valid commas
         let i = dotIdx - 1;
         let collected = '';
         let digitsSinceComma = 0;
         let validCommaGroups = 0;
 
         let afterDot = s.slice(dotIdx);
-        // Check format: must be .dd with optional trailing whitespace
         if (!/^\.\d{2}\s*$/.test(afterDot)) return null;
-        // Extract just the .dd part for final money format check
         afterDot = afterDot.trim();
 
-        // Walk left from before decimal point
         while (i >= 0) {
             const ch = s[i];
             if (/\d/.test(ch)) {
@@ -192,41 +178,33 @@ function parseBCA(text) {
                 digitsSinceComma++;
                 i--;
             } else if (ch === ',') {
-                // Comma is valid only if followed by exactly 3 digits
                 if (digitsSinceComma === 3) {
                     collected = ch + collected;
                     validCommaGroups++;
                     digitsSinceComma = 0;
                     i--;
                 } else {
-                    break; // Invalid comma-group, stop
+                    break;
                 }
             } else {
-                break; // Non-digit/comma, stop
+                break;
             }
         }
 
-        if (validCommaGroups === 0) return null; // No valid comma-groups
+        if (validCommaGroups === 0) return null;
         if (!collected) return null;
 
         const firstCommaPos = collected.indexOf(',');
         if (firstCommaPos < 0) return null;
 
-        // Check what's BEFORE collected in original string
-        const charBeforeCollected = i >= 0 ? s[i] : '';
-        const hasLetterBefore = /[A-Za-z]/.test(charBeforeCollected);
-
-        // Check if it's a ref code pattern: 2 uppercase letters at word boundary
         let isRefCodePattern = false;
         if (i >= 2) {
-            const before3 = s[i-2];
             const before2 = s[i-1];
             const before1 = s[i];
-            if (/[A-Z]/.test(before2) && /[A-Z]/.test(before1) && !/[A-Za-z]/.test(before3)) {
+            if (/[A-Z]/.test(before2) && /[A-Z]/.test(before1)) {
                 isRefCodePattern = true;
             }
         } else if (i === 1) {
-            // At start of string with 2 uppercase letters
             const before2 = s[0];
             const before1 = s[1];
             if (/[A-Z]/.test(before2) && /[A-Z]/.test(before1)) {
@@ -236,13 +214,9 @@ function parseBCA(text) {
 
         let leadingDigits;
         if (isRefCodePattern && firstCommaPos > 3) {
-            // BCA ref code: use modulo formula to split ref code from money
-            // Examples: 7 → (8 % 3) = 2 ✓, 5 → (6 % 3) = 0 → 3 ✓
             const mod = (firstCommaPos + 1) % 3 || 3;
             leadingDigits = mod;
         } else {
-            // Not a ref code, or firstCommaPos <= 3: use standard logic
-            // Try 1-3 leading digits, pick LARGEST valid (no leading zero)
             leadingDigits = null;
             const maxTry = Math.min(3, firstCommaPos);
 
@@ -259,7 +233,6 @@ function parseBCA(text) {
             if (leadingDigits === null) return null;
         }
 
-        // Extract money
         const startIdx = firstCommaPos - leadingDigits;
         if (startIdx < 0) return null;
 
@@ -272,21 +245,16 @@ function parseBCA(text) {
         return { val: bestMoney, start: moneyStart };
     }
 
-    // Find last money anchored to end of string
     function findLastMoney(s) {
-        // Always use extractTrailingMoney which handles both clean and glued cases properly
-        // The "clean" check in old code was too simplistic and matched invalid patterns
         return extractTrailingMoney(s);
     }
 
     function parseLine(rest) {
         let debit = '', kredit = '', saldo = '';
-        let amounts = []; // track amounts for stripAmounts
+        let amounts = [];
 
-        // Trim rest to remove trailing/leading whitespace
         rest = rest.trim();
 
-        // Case A: ends with DB (optionally + saldo)
         const dbSuffix = rest.match(/DB(\d{1,3}(?:,\d{3})*\.\d{2})?$/);
         if (dbSuffix) {
             saldo = dbSuffix[1] || '';
@@ -301,7 +269,6 @@ function parseBCA(text) {
             return { debit, kredit, saldo, amounts };
         }
 
-        // No DB: find last and second-to-last money
         const last = findLastMoney(rest);
         if (!last) return { debit, kredit, saldo, amounts };
 
@@ -312,17 +279,14 @@ function parseBCA(text) {
             kredit = second.val;
             saldo  = last.val;
             amounts.push(kredit, saldo);
-            console.log('[PDF-CSV] parseLine: found 2 monies - kredit=', kredit, 'saldo=', saldo, 'input=', rest.substring(0, 60) + '...');
         } else {
             const beforeVal = rest.slice(0, last.start).toUpperCase();
             if (/SALDO\s*(AWAL|AKHIR)/.test(beforeVal)) {
                 saldo = last.val;
                 amounts.push(saldo);
-                console.log('[PDF-CSV] parseLine: SALDO line - saldo=', saldo);
             } else {
                 kredit = last.val;
                 amounts.push(kredit);
-                console.log('[PDF-CSV] parseLine: single money (kredit) - kredit=', kredit, 'input=', rest.substring(0, 60) + '...');
             }
         }
         return { debit, kredit, saldo, amounts };
@@ -331,29 +295,20 @@ function parseBCA(text) {
     function stripAmounts(rest, amountsToRemove = []) {
         let s = rest;
         
-        // Remove ALL occurrences of DB marker (leading, trailing, or embedded)
         s = s.replace(/\s*DB\s*/g, ' ');
         
-        // Remove the specific amounts that were extracted (both formatted and unformatted versions)
         for (const amt of amountsToRemove) {
-            // Always try to remove the formatted version
             s = s.replace(amt, ' ').replace(/\s+/g, ' ').trim();
             
-            // Also try to remove unformatted version
             const unformatted = amt.replace(/,/g, '');
             if (unformatted !== amt) {
                 s = s.replace(unformatted, ' ').replace(/\s+/g, ' ').trim();
             }
         }
         
-        // CRITICAL FIX: Remove ALL standalone digit codes (2+ digits)
-        // This removes: "75", "7510", "5051", garbage digits from glued ref codes, etc.
-        // Match word-bounded sequences of 2-6 digits NOT followed by / or more digits
-        // Do this MULTIPLE TIMES to handle patterns like "7510 SETORAN" → "SETORAN"
         s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
-        s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' '); // Second pass for nested patterns
+        s = s.replace(/\b(\d{2,6})\b(?![\d\/])/g, ' ');
         
-        // Clean up multiple spaces
         return s.replace(/\s+/g, ' ').trim();
     }
 
@@ -361,15 +316,12 @@ function parseBCA(text) {
 
     const pushCurrent = () => {
         if (current) {
-            // VALIDATION: Ensure kredit and saldo are not contaminated
-            // If both kredit and saldo exist, kredit MUST be less than saldo (or equal for transfers)
             if (current.kredit && current.saldo) {
                 const kreditNum = parseFloat(current.kredit.replace(/,/g, ''));
                 const soldoNum = parseFloat(current.saldo.replace(/,/g, ''));
                 if (kreditNum > soldoNum * 1.5) {
-                    console.log('[PDF-CSV] ⚠️ WARNING: Kredit appears contaminated (too large):',
+                    console.log('[PDF-CSV] ⚠️ WARNING: Kredit contaminated:',
                         'kredit=', current.kredit, 'saldo=', current.saldo);
-                    // Force zero it out - this is a safety valve
                     current.kredit = '';
                 }
             }
@@ -385,19 +337,15 @@ function parseBCA(text) {
         current = null;
     };
 
-    for (const raw of reconstructedText.split('\n')) {
+    for (const raw of lines) {
         const line = raw.trim();
         if (!line) continue;
         if (skipPatterns.some(p => p.test(line))) continue;
 
-        // Skip indented raw-number continuation lines (no commas, just digits+dot)
-        // e.g. "       23625000.00"
         if (/^\s+[\d.]+\s*$/.test(raw)) continue;
 
-        // New transaction: starts with DD/MM or D-Mon or DD-Mon format
         let dateMatch = line.match(/^(\d{2}\/\d{2})(.*)/);
         
-        // Also support D-Mon or DD-Mon format (e.g., "6-Jan", "13-Aug")
         if (!dateMatch) {
             const monthTextMatch = line.match(/^(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(.*)$/i);
             if (monthTextMatch) {
@@ -408,7 +356,7 @@ function parseBCA(text) {
                 if (month) {
                     const tgl = `${day}/${String(month).padStart(2, '0')}`;
                     const rest = monthTextMatch[3];
-                    dateMatch = [null, tgl, rest]; // synthetic match
+                    dateMatch = [null, tgl, rest];
                 }
             }
         }
@@ -419,7 +367,6 @@ function parseBCA(text) {
             const [, tgl, rest] = dateMatch;
             const { debit, kredit, saldo, amounts } = parseLine(rest);
 
-            // Keterangan: remove the specific amounts that were extracted
             const ket = stripAmounts(rest, amounts)
                 .replace(/\s{2,}/g, ' ')
                 .trim();
@@ -427,8 +374,6 @@ function parseBCA(text) {
             current = { tgl, ket, debit, kredit, saldo };
 
         } else if (current) {
-            // Continuation line: append to keterangan
-            // Skip pure unformatted numbers (visual duplicate like "23625000.00")
             if (/^\d[\d.]+$/.test(line)) continue;
             current.ket += ' ' + line;
         }
@@ -437,6 +382,7 @@ function parseBCA(text) {
 
     return transactions;
 }
+
 
 function parseBSI(text) {
     const transactions = [];
