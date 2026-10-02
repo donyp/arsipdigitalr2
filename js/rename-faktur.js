@@ -69,10 +69,6 @@ function handleFiles(files) {
         return;
     }
 
-    console.log('[Rename Faktur] handleFiles called');
-    console.log('[Rename Faktur] selectedFiles before:', selectedFiles.map(f => f.name));
-    console.log('[Rename Faktur] new files:', fileArray.map(f => f.name));
-
     // Get existing file + size to check for duplicates
     const existingKeys = new Set(selectedFiles.map(f => `${f.name}|${f.size}`));
     
