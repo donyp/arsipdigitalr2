@@ -153,6 +153,9 @@ function handleFiles(files) {
     
     // Update selected file count
     document.getElementById('selectedFileCount').textContent = selectedFiles.length;
+    
+    // Show process button
+    processButtonContainer.classList.remove('hidden');
 }
 
 // ============================================
