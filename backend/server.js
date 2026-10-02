@@ -1143,6 +1143,30 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         if (error || !user) {
             console.log('[LOGIN] FAILED: User not found or error');
+            
+            // Log failed attempt
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: null,
+                userEmail: email.toLowerCase().trim(),
+                userRole: null,
+                zonaId: null,
+                action: 'Failed login attempt - user not found',
+                resourceType: 'user',
+                resourceId: null,
+                resourceName: email.toLowerCase().trim(),
+                operation: 'READ',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/auth/login',
+                requestMethod: 'POST',
+                statusCode: 401,
+                responseMessage: null,
+                errorMessage: 'User not found or inactive',
+                isSuspicious: true,
+                severity: 'warning'
+            });
+            
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
 
@@ -1154,6 +1178,30 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         
         if (!isMatch) {
             console.log('[LOGIN] FAILED: Password mismatch');
+            
+            // Log failed attempt
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: user.id,
+                userEmail: user.email,
+                userRole: user.role,
+                zonaId: user.zona_id,
+                action: 'Failed login attempt - wrong password',
+                resourceType: 'user',
+                resourceId: user.id,
+                resourceName: user.email,
+                operation: 'READ',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/auth/login',
+                requestMethod: 'POST',
+                statusCode: 401,
+                responseMessage: null,
+                errorMessage: 'Wrong password',
+                isSuspicious: true,
+                severity: 'warning'
+            });
+            
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
 
@@ -1216,14 +1264,27 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         // Audit with detailed info
         const userAgent = req.headers['user-agent'] || 'Unknown';
-        await supabase.from('audit_logs').insert({
-            user_id: user.id,
-            action: 'Login',
-            context: JSON.stringify({
-                ip: req.ip,
-                ua: userAgent,
-                status: 'Success'
-            })
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        
+        await auditLogger.log({
+            userId: user.id,
+            userEmail: user.email,
+            userRole: user.role,
+            zonaId: user.zona_id,
+            action: 'User login successful',
+            resourceType: 'user',
+            resourceId: user.id,
+            resourceName: user.email,
+            operation: 'READ',
+            ipAddress: ipAddress,
+            userAgent: userAgent,
+            requestPath: '/api/auth/login',
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: 'Login successful',
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
         });
 
         // --- MAINTENANCE MODE ENFORCEMENT ---
