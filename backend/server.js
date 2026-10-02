@@ -233,16 +233,16 @@ app.use((req, res, next) => {
 
     // Content Security Policy — cegah XSS & injection
     // 'unsafe-inline' diperlukan untuk styling inline di frontend yang ada
-    // Allow map files & analytics (development/debugging)
+    // Allow CDN untuk Tailwind CSS, SheetJS, dan analytics
     res.setHeader('Content-Security-Policy', [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com",
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://cdn.sheetjs.com https://static.cloudflareinsights.com",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:",
         "img-src 'self' data: blob: https://static.cloudflareinsights.com",
         "media-src 'self' blob:",
         "object-src 'self' blob:",
-        "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://static.cloudflareinsights.com",
+        "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://cdn.sheetjs.com https://static.cloudflareinsights.com",
         "frame-ancestors 'none'",
         "form-action 'self'",
         "base-uri 'self'",
