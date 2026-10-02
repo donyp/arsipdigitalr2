@@ -235,14 +235,14 @@ async function processFile(file) {
                                 'Authorization': `Bearer ${token}`
                             },
                             body: JSON.stringify({
-                                faktur: result.newName.split('-')[0] || 'unknown',
+                                faktur: result.referensi || result.newName.split('-')[0] || 'unknown',
                                 old_filename: file.name,
                                 new_filename: result.newName,
                                 old_path: '',
                                 new_path: '',
                                 reason: 'Manual rename via UI',
                                 zona_id: null,
-                                notes: `Toko: ${result.namaToko}, Harga: ${result.harga}`
+                                notes: `Toko: ${result.namaToko}, Harga: ${result.harga}${result.referensi ? ', Referensi: ' + result.referensi : ''}`
                             })
                         });
                     }
@@ -332,9 +332,8 @@ async function loadLatestHistory() {
         if (!token) {
             return;
         }
-        // Try to get history by recent updates using a wildcard approach
-        // Get recent renames - use a simple prefix "tax" which all renamed files have
-        const response = await fetch(`${CONFIG.API_URL}/api/faktur-pajak/rename-history/tax?limit=10`, {
+        // Get recent renames from last 24 hours
+        const response = await fetch(`${CONFIG.API_URL}/api/faktur-pajak/rename-history/recent?limit=10&hours=24`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
