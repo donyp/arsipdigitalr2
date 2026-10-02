@@ -693,7 +693,11 @@
             ticketId = params.get('id');
             
             if (!ticketId) {
-                document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: No ticket ID provided</div>';
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'padding: 20px; color: red;';
+                errorDiv.textContent = 'Error: No ticket ID provided';
+                document.body.innerHTML = '';
+                document.body.appendChild(errorDiv);
                 return;
             }
 
@@ -760,14 +764,23 @@
 
             } catch (error) {
                 console.error('[Ticket-Detail] Error:', error);
-                document.getElementById('messagesContainer').innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div>${error.message}</div>
-                    </div>
-                `;
+                // Clear and build error div safely
+                const container = document.getElementById('messagesContainer');
+                container.innerHTML = '';
+                
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'empty-state';
+                
+                const errorIcon = document.createElement('div');
+                errorIcon.className = 'empty-state-icon';
+                errorIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                
+                const errorMsg = document.createElement('div');
+                errorMsg.textContent = error.message;
+                
+                errorDiv.appendChild(errorIcon);
+                errorDiv.appendChild(errorMsg);
+                container.appendChild(errorDiv);
             }
         }
 
@@ -911,7 +924,7 @@
                                     <span class="message-time">${formatDateTimeWIB(msg.created_at)}</span>
                                     <button class="message-delete-btn" onclick="deleteMessage('${msg.id}')" title="Hapus pesan"><i class="fas fa-trash-alt"></i></button>
                                 </div>
-                                <div class="message-body">${escapeHtml(msg.message)}</div>
+                        <div class="message-body">${escapeHtml(msg.message)}</div>
                                 ${msg.attachments && msg.attachments.length > 0 ? `
                                     <div class="message-attachments">
                                         ${msg.attachments.map(att => `
@@ -940,16 +953,33 @@
             const container = document.getElementById('messagesContainer');
             const replySection = document.createElement('div');
             replySection.className = 'reply-section';
-            replySection.innerHTML = `
-                <h3>Tambah Balasan</h3>
-                <textarea id="replyMessage" placeholder="Ketik balasan anda di sini..."></textarea>
-                <div class="reply-buttons">
-                    <button class="btn-send" id="btnSendReply" onclick="sendReply()">
-                        <i class="fas fa-paper-plane"></i> Kirim Balasan
-                    </button>
-                </div>
-                <div id="replyStatus" style="margin-top: 8px; font-size: 12px; color: #6b7280; display: none;"></div>
-            `;
+            
+            // Build reply form safely using createElement
+            const title = document.createElement('h3');
+            title.textContent = 'Tambah Balasan';
+            replySection.appendChild(title);
+            
+            const textarea = document.createElement('textarea');
+            textarea.id = 'replyMessage';
+            textarea.placeholder = 'Ketik balasan anda di sini...';
+            replySection.appendChild(textarea);
+            
+            const buttonDiv = document.createElement('div');
+            buttonDiv.className = 'reply-buttons';
+            
+            const sendBtn = document.createElement('button');
+            sendBtn.className = 'btn-send';
+            sendBtn.id = 'btnSendReply';
+            sendBtn.onclick = sendReply;
+            sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Balasan';
+            buttonDiv.appendChild(sendBtn);
+            replySection.appendChild(buttonDiv);
+            
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'replyStatus';
+            statusDiv.style.cssText = 'margin-top: 8px; font-size: 12px; color: #6b7280; display: none;';
+            replySection.appendChild(statusDiv);
+            
             container.appendChild(replySection);
         }
 

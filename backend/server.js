@@ -56,6 +56,15 @@ const registerBackupEndpoints = require('./backup-endpoints');
 const registerLoggingEndpoints = require('./logging-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
 const { initializeAutoLogoutScheduler } = require('./scheduled-auto-logout');
+const {
+    sanitizeString,
+    validateZonaId,
+    validateDate,
+    validateCategory,
+    sanitizeFilename,
+    validateInvoiceListQuery,
+    validateUploadBody
+} = require('./input-validators');
 
 // Initialize LOG_LEVEL for debug logging control
 const LOG_LEVEL = (process.env.LOG_LEVEL || 'info').toLowerCase();
@@ -181,31 +190,66 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
+// SECURITY: HTTPS Enforcement (redirect HTTP → HTTPS)
+// ============================================================
+app.use((req, res, next) => {
+    if (process.env.NODE_ENV === 'production') {
+        // Railway/Cloudflare meneruskan proto asli lewat header ini
+        const proto = req.headers['x-forwarded-proto'];
+        if (proto && proto !== 'https') {
+            return res.redirect(301, `https://${req.headers.host}${req.url}`);
+        }
+    }
+    next();
+});
+
+// ============================================================
 // SECURITY: HTTP Security Headers Middleware
 // ============================================================
 app.use((req, res, next) => {
     // Prevent MIME type sniffing
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    
+
     // Prevent clickjacking
     res.setHeader('X-Frame-Options', 'DENY');
-    
+
     // Enable XSS protection in older browsers
     res.setHeader('X-XSS-Protection', '1; mode=block');
-    
-    // Enforce HTTPS in production
+
+    // HSTS — paksa HTTPS selama 1 tahun, termasuk subdomain
     if (process.env.NODE_ENV === 'production') {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
-    
+
     // Prevent referrer leaking
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    
-    // Disable caching for sensitive responses
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    
+
+    // Disable caching untuk response sensitif (API endpoints)
+    if (req.path.startsWith('/api/')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+    }
+
+    // Content Security Policy — cegah XSS & injection
+    // 'unsafe-inline' diperlukan untuk styling inline di frontend yang ada
+    res.setHeader('Content-Security-Policy', [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
+        "img-src 'self' data: blob:",
+        "media-src 'self' blob:",
+        "object-src 'self' blob:",
+        "connect-src 'self'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+        "base-uri 'self'"
+    ].join('; '));
+
+    // Remove fingerprinting header
+    res.removeHeader('X-Powered-By');
+
     next();
 });
 
@@ -614,6 +658,9 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
     fileFilter: (req, file, cb) => {
+        // Sanitasi nama file — cegah path traversal
+        file.originalname = sanitizeFilename(file.originalname);
+
         if (file.mimetype === 'application/pdf') {
             cb(null, true);
         } else {
@@ -676,8 +723,15 @@ if (ENABLE_CHUNKED_UPLOAD) {
     console.log('[ChunkedUpload] ??  Disabled (set ENABLE_CHUNKED_UPLOAD=true to enable)');
 }
 
-// JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || '12d3f1aa32abfc3ff4c19da3ad692a898bc7163bc38dbdeec715e24b295b00d5';const JWT_EXPIRES_IN = '8h';
+// JWT Secret — WAJIB diset via environment variable, tidak boleh ada fallback hardcoded
+if (!process.env.JWT_SECRET) {
+    console.error('[FATAL] JWT_SECRET environment variable tidak ditemukan!');
+    console.error('[FATAL] Set JWT_SECRET di Railway/environment sebelum deploy.');
+    console.error('[FATAL] Generate dengan: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
+    process.exit(1); // Hentikan server, jangan jalankan tanpa secret yang aman
+}
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '8h';
 
 // Maintenance Mode Helper (Persistent via Supabase + Fallback File)
 // Task 3.5: Improved async error handling with comprehensive logging
@@ -1000,6 +1054,44 @@ app.use((err, req, res, next) => {
     }
     next(err);
 });
+
+// ============================================================
+// SECURITY: CSRF Protection Middleware
+// ============================================================
+// Karena sistem pakai JWT di Authorization header (bukan cookie),
+// CSRF klasik tidak berlaku untuk API calls dari JS fetch/axios.
+// Tapi kita tetap blokir request yang berasal dari origin asing
+// untuk mencegah form-based CSRF attacks.
+const csrfProtection = (req, res, next) => {
+    // Hanya terapkan ke state-changing methods
+    if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) return next();
+
+    // Skip untuk endpoint publik yang memang boleh diakses dari mana saja
+    const publicPaths = ['/api/auth/login', '/api/auth/refresh', '/api/share/'];
+    if (publicPaths.some(p => req.path.startsWith(p))) return next();
+
+    const origin = req.headers['origin'];
+    const referer = req.headers['referer'];
+    const allowedOrigins = getAllowedOrigins();
+
+    // Jika ada origin/referer, pastikan berasal dari domain yang diizinkan
+    if (origin) {
+        if (!allowedOrigins.includes(origin)) {
+            console.warn(`[CSRF] Blocked request from origin: ${origin} to ${req.path}`);
+            return res.status(403).json({ error: 'Request ditolak: origin tidak diizinkan.' });
+        }
+    } else if (referer) {
+        const refererOrigin = new URL(referer).origin;
+        if (!allowedOrigins.includes(refererOrigin)) {
+            console.warn(`[CSRF] Blocked request from referer: ${referer} to ${req.path}`);
+            return res.status(403).json({ error: 'Request ditolak: referer tidak diizinkan.' });
+        }
+    }
+    // Jika tidak ada origin/referer (misal dari server-to-server atau mobile app),
+    // tetap lolos — JWT Authorization header tetap wajib dicek oleh authenticateToken
+    next();
+};
+app.use('/api/', csrfProtection);
 
 // ============================================================
 // AUTH ENDPOINTS
@@ -2355,8 +2447,45 @@ function normalizeDocumentDate(value) {
     return null;
 }
 
+// ============================================================
+// SECURITY: Magic Bytes Validator Middleware
+// Cek isi file sebenarnya (bukan hanya MIME yang dikirim browser)
+// ============================================================
+const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]); // %PDF
+const EXCEL_XLSX_MAGIC = Buffer.from([0x50, 0x4B, 0x03, 0x04]); // PK (ZIP-based: .xlsx)
+const EXCEL_XLS_MAGIC = Buffer.from([0xD0, 0xCF, 0x11, 0xE0]); // OLE2 (.xls)
+
+function validateMagicBytes(buffer, allowedTypes) {
+    if (!buffer || buffer.length < 4) return false;
+    const header = buffer.slice(0, 4);
+    if (allowedTypes.includes('pdf') && header.equals(PDF_MAGIC)) return true;
+    if (allowedTypes.includes('xlsx') && header.equals(EXCEL_XLSX_MAGIC)) return true;
+    if (allowedTypes.includes('xls') && header.equals(EXCEL_XLS_MAGIC)) return true;
+    return false;
+}
+
+// Middleware: validasi PDF berdasarkan magic bytes
+function requirePdfMagic(req, res, next) {
+    if (!req.file || !req.file.buffer) return next();
+    if (!validateMagicBytes(req.file.buffer, ['pdf'])) {
+        console.warn(`[Security] Magic bytes mismatch - file ${req.file.originalname} bukan PDF valid`);
+        return res.status(400).json({ error: 'File tidak valid: konten file bukan PDF.' });
+    }
+    next();
+}
+
+// Middleware: validasi Excel berdasarkan magic bytes
+function requireExcelMagic(req, res, next) {
+    if (!req.file || !req.file.buffer) return next();
+    if (!validateMagicBytes(req.file.buffer, ['xlsx', 'xls'])) {
+        console.warn(`[Security] Magic bytes mismatch - file ${req.file.originalname} bukan Excel valid`);
+        return res.status(400).json({ error: 'File tidak valid: konten file bukan Excel.' });
+    }
+    next();
+}
+
 // POST /api/files/upload
-app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload.single('file'), async (req, res) => {
+app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload.single('file'), requirePdfMagic, validateUploadBody, async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Tidak ada file yang diupload.' });
@@ -2721,7 +2850,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload
 // ============================================================
 // POST /api/files/upload-piutang — Upload PIUTANG files
 // ============================================================
-app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission, upload.single('file'), async (req, res) => {
+app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission, upload.single('file'), requirePdfMagic, validateUploadBody, async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Tidak ada file yang diupload.' });
@@ -5411,8 +5540,9 @@ app.post('/api/ads-media/upload', authenticateToken, requirePermission('manage_m
 // GET /api/ads-media/:id/view â€” view/stream media file (inline)
 app.get('/api/ads-media/:id/view', async (req, res) => {
     try {
-        // We allow viewing without token if token is in query (for <img> tags)
-        const token = req.query.token || req.headers.authorization?.split(' ')[1];
+        // SECURITY: Prioritaskan Authorization header, fallback ke query param (untuk <img>/<object> tags)
+        // Token query param masih aman karena dicek signature + expiry JWT penuh
+        const token = req.headers.authorization?.split(' ')[1] || req.query.token;
         if (!token) return res.status(401).json({ error: 'Auth token required' });
 
         const decoded = jwt.verify(token, JWT_SECRET);

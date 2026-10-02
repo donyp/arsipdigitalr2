@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // Invoice System API Endpoints
 // Handles Excel upload, invoice list, PDF upload, and matching
 // ============================================================
@@ -46,7 +46,7 @@ try {
         }
     });
 } catch (err) {
-    console.error('[Invoice Endpoints] âŒ Missing dependencies:', err.message);
+    console.error('[Invoice Endpoints] ❌ Missing dependencies:', err.message);
     console.error('[Invoice Endpoints] Required: multer, uuid, xlsx');
     console.error('[Invoice Endpoints] Run: npm install multer uuid xlsx');
     multer = null;
@@ -114,7 +114,7 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
                 const exists = await R2Storage.checkFileExistsNoCache(path);
                 if (exists) {
                     invoiceCount = 1;
-                    console.log(`[UpdateCount] ✓ Found invoice: ${path}`);
+                    console.log(`[UpdateCount] ? Found invoice: ${path}`);
                     break;
                 }
             } catch (err) {
@@ -132,7 +132,7 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
                 const exists = await R2Storage.checkFileExistsNoCache(path);
                 if (exists) {
                     buktiCount = 1;
-                    console.log(`[UpdateCount] ✓ Found bukti bayar: ${path}`);
+                    console.log(`[UpdateCount] ? Found bukti bayar: ${path}`);
                     break;
                 }
             } catch (err) {
@@ -147,7 +147,7 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
                 const exists = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
                 if (exists) {
                     fakturCount = 1;
-                    console.log(`[UpdateCount] ✓ Found faktur pajak (from DB path): ${invoice.faktur_pajak_path}`);
+                    console.log(`[UpdateCount] ? Found faktur pajak (from DB path): ${invoice.faktur_pajak_path}`);
                 }
             } catch (err) {
                 console.log(`[UpdateCount] Faktur pajak path check failed, trying folder scan...`);
@@ -179,7 +179,7 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
                             const exists = await R2Storage.checkFileExistsNoCache(testPath);
                             if (exists) {
                                 fakturCount = 1;
-                                console.log(`[UpdateCount] ✓ Found faktur pajak: ${testPath}`);
+                                console.log(`[UpdateCount] ? Found faktur pajak: ${testPath}`);
                                 break;
                             }
                         } catch (e) {
@@ -198,7 +198,7 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
         const requiredCount = isPPN ? 3 : 2;
         
-        console.log(`[UpdateCount] ✅ R2 scan complete: ${uploadedCount}/${requiredCount}`);
+        console.log(`[UpdateCount] ? R2 scan complete: ${uploadedCount}/${requiredCount}`);
         console.log(`[UpdateCount] Files - Invoice: ${invoiceCount}, Bukti: ${buktiCount}, Faktur Pajak: ${fakturCount}`);
         
         // Return the count immediately - this is the source of truth
@@ -212,10 +212,32 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
 }
 
 function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
+
+    // ============================================================
+    // SECURITY: Authorization ownership check helper
+    // Memastikan admin_zona hanya akses data zona miliknya
+    // ============================================================
+    function enforceZoneOwnership(req, res, zonaIdRequested) {
+        // super_admin dan moderator boleh akses semua zona
+        if (['super_admin', 'moderator'].includes(req.user.role)) return true;
+
+        // admin_zona & user hanya boleh akses zona mereka sendiri
+        if (zonaIdRequested !== undefined && zonaIdRequested !== null) {
+            const requested = parseInt(zonaIdRequested, 10);
+            const userZona = parseInt(req.user.zona_id, 10);
+            if (!isNaN(requested) && !isNaN(userZona) && requested !== userZona) {
+                res.status(403).json({
+                    error: 'Akses ditolak: Anda tidak memiliki izin untuk mengakses zona ini.'
+                });
+                return false;
+            }
+        }
+        return true;
+    }
     
     // Check if dependencies are loaded
     if (!multer || !uuid || !parseExcel) {
-        console.error('[Invoice Endpoints] âš ï¸  Dependencies not loaded. Invoice endpoints will NOT be registered.');
+        console.error('[Invoice Endpoints] ⚠️  Dependencies not loaded. Invoice endpoints will NOT be registered.');
         console.error('[Invoice Endpoints] Required modules: uuid, xlsx, multer');
         console.error('[Invoice Endpoints] Please run: npm install');
         return;
@@ -339,7 +361,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 }
             }
             
-            console.log(`[Invoice API] ✅ Zona ID population complete: ${updated} updated, ${failed} failed`);
+            console.log(`[Invoice API] ? Zona ID population complete: ${updated} updated, ${failed} failed`);
             
             res.json({
                 success: true,
@@ -409,7 +431,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Invoice API] Sample fakturs:`, fakturs.slice(0, 5));
                 
                 if (fakturs.length === 0) {
-                    console.warn('[Invoice API] ⚠️ WARNING: No fakturs found in data!');
+                    console.warn('[Invoice API] ?? WARNING: No fakturs found in data!');
                 }
                 
                 const { data: existingInvoices } = await supabase
@@ -455,9 +477,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             
                             if (match && match.zona_id) {
                                 zona_id = match.zona_id;
-                                console.log(`[Invoice API] ✅ Matched konsumen "${item.konsumen}" to zona_id ${zona_id}`);
+                                console.log(`[Invoice API] ? Matched konsumen "${item.konsumen}" to zona_id ${zona_id}`);
                             } else {
-                                console.warn(`[Invoice API] ⚠️  No exact match for konsumen: "${item.konsumen}" (zona_id will be NULL)`);
+                                console.warn(`[Invoice API] ??  No exact match for konsumen: "${item.konsumen}" (zona_id will be NULL)`);
                             }
                         }
                     }
@@ -481,7 +503,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     
                     // Log toko value for debugging
                     if (!item.toko || item.toko === '' || item.toko === '-') {
-                        console.warn(`[Invoice API] ⚠️  Faktur ${item.faktur}: toko is EMPTY or INVALID: "${item.toko}"`);
+                        console.warn(`[Invoice API] ??  Faktur ${item.faktur}: toko is EMPTY or INVALID: "${item.toko}"`);
                     }
                     
                     return invoiceRecord;
@@ -503,7 +525,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     
                     if (insertError) {
                         // There IS an error
-                        console.error('[Invoice API] ❌ INSERT ERROR DETAILS:');
+                        console.error('[Invoice API] ? INSERT ERROR DETAILS:');
                         console.error('  Code:', insertError.code);
                         console.error('  Message:', insertError.message);
                         console.error('  Details:', insertError.details);
@@ -513,7 +535,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             // Duplicate key constraint - expected on re-upload
                             processedCount = 0;
                             duplicateCount = invoicesToInsert.length;
-                            console.log('[Invoice API] ℹ️ All rows were duplicates (expected on re-upload)');
+                            console.log('[Invoice API] ?? All rows were duplicates (expected on re-upload)');
                         } else {
                             // Real error - something went wrong
                             failedCount = invoicesToInsert.length;
@@ -525,7 +547,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         processedCount = invoicesToInsert.length;
                         duplicateCount = 0;
                         failedCount = 0;
-                        console.log(`[Invoice API] ✅ Successfully inserted ${processedCount} invoices`);
+                        console.log(`[Invoice API] ? Successfully inserted ${processedCount} invoices`);
                     }
                 } else {
                     console.warn('[Invoice API] No invoices to insert');
@@ -851,6 +873,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // ============================================
     app.get('/api/invoice/list', createAuth(), async (req, res) => {
         try {
+            // SECURITY: Cek zona ownership jika ada zona_id di query
+            if (req.query.zona_id) {
+                if (!enforceZoneOwnership(req, res, req.query.zona_id)) return;
+            }
+
             const { 
                 status, 
                 toko, 
@@ -1032,7 +1059,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             // Debug: Show sample data if admin_zona returns 0 results
             if (req.user && req.user.role === 'admin_zona' && count === 0) {
-                console.warn(`[Invoice List] ⚠️ Admin_zona ${req.user.userId} (zona_id: ${req.user.zona_id}) returned 0 invoices!`);
+                console.warn(`[Invoice List] ?? Admin_zona ${req.user.userId} (zona_id: ${req.user.zona_id}) returned 0 invoices!`);
                 // Check if invoices exist at all for this zona
                 const { data: checkData, error: checkErr } = await supabase
                     .from('invoice_file_list')
@@ -1065,6 +1092,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     app.get('/api/invoice/zona/:zonaId/summary', createAuth(), async (req, res) => {
         try {
             const zonaId = parseInt(req.params.zonaId) || req.params.zonaId;
+
+            // SECURITY: Cek zona ownership
+            if (!enforceZoneOwnership(req, res, zonaId)) return;
             
             // Fetch invoices for this zona
             const { data: invoices, error } = await supabase
@@ -1236,7 +1266,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     try {
                         console.log(`[Invoice API] Deleting ${file.name}: ${file.path}`);
                         await R2Storage.deleteFile(file.path);
-                        console.log(`[Invoice API] ✅ Deleted ${file.name}`);
+                        console.log(`[Invoice API] ? Deleted ${file.name}`);
                     } catch (deleteErr) {
                         console.warn(`[Invoice API] Warning: Failed to delete ${file.name}:`, deleteErr.message);
                         // Continue deleting other files even if one fails
@@ -1254,7 +1284,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(500).json({ error: 'Failed to delete invoice from database' });
                 }
                 
-                console.log(`[Invoice API] ✅ Invoice ${faktur} deleted successfully`);
+                console.log(`[Invoice API] ? Invoice ${faktur} deleted successfully`);
                 
                 // Log to audit
                 await supabase.from('audit_logs').insert({
@@ -1439,9 +1469,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // 
     // SIMPLIFIED STRATEGY 1 ONLY: Database-driven approach
     // 1. Check if database has file path (invoice_pdf_path, bukti_bayar_path, faktur_pajak_path)
-    // 2. If path exists → verify file really exists via R2Storage.checkFileExists()
-    // 3. If file exists → return exists: true
-    // 4. If database path is NULL → return exists: false with message about uploading via Moderator Dashboard
+    // 2. If path exists ? verify file really exists via R2Storage.checkFileExists()
+    // 3. If file exists ? return exists: true
+    // 4. If database path is NULL ? return exists: false with message about uploading via Moderator Dashboard
     // 
     // Users MUST upload files through Moderator Dashboard to populate paths
     // Then admin_zona sees them in their dashboard
@@ -1491,9 +1521,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     
                     if (!oldError && oldData) {
                         invoice = oldData;
-                        console.log(`[Check File] ✓ OLD schema query succeeded`);
+                        console.log(`[Check File] ? OLD schema query succeeded`);
                     } else {
-                        console.log(`[Check File] ✗ OLD schema query failed:`, oldError?.message);
+                        console.log(`[Check File] ? OLD schema query failed:`, oldError?.message);
                         queryError = oldError;
                     }
                 } else {
@@ -1522,7 +1552,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     if (!fileError && fileRecord) {
                         dbFilePath = fileRecord.file_path;
                         fileExistsInNewTable = true;
-                        console.log(`[Check File] ✓ Found in invoice_files table: ${fileType}`);
+                        console.log(`[Check File] ? Found in invoice_files table: ${fileType}`);
                     }
                 } catch (tableErr) {
                     console.log(`[Check File] invoice_files table not available`);
@@ -1547,7 +1577,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         const exists = await R2Storage.checkFileExistsNoCache(dbFilePath);
                         if (exists) {
                             fileExists = true;
-                            console.log(`[Check File] ✓ Found ${fileType} via DB path: ${dbFilePath}`);
+                            console.log(`[Check File] ? Found ${fileType} via DB path: ${dbFilePath}`);
                         }
                     } catch (err) {
                         console.log(`[Check File] DB path check failed, will try folder scan`);
@@ -1602,7 +1632,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 if (exists) {
                                     fileExists = true;
                                     dbFilePath = path;
-                                    console.log(`[Check File] ✓ Found ${fileType}: ${path}`);
+                                    console.log(`[Check File] ? Found ${fileType}: ${path}`);
                                     break;
                                 }
                             } catch (err) {
@@ -1714,7 +1744,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // If mismatch, correct it
                 let correctedCount = actualCount;
                 if (isMismatch) {
-                    console.log(`[Verify Count] Correcting ${faktur}: ${dbCount} → ${actualCount}`);
+                    console.log(`[Verify Count] Correcting ${faktur}: ${dbCount} ? ${actualCount}`);
                     const corrected = await updateFilesUploadedCount(supabase, faktur, R2Storage);
                     correctedCount = corrected || actualCount;
                 }
@@ -1975,7 +2005,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             
                             if (!updateError) {
                                 invoice.zona_id = tokoData.zona_id;
-                                console.log(`[Invoice PDF] ✅ Auto-populated zona_id: ${tokoData.zona_id}`);
+                                console.log(`[Invoice PDF] ? Auto-populated zona_id: ${tokoData.zona_id}`);
                             } else {
                                 console.warn(`[Invoice PDF] Failed to auto-populate zona_id:`, updateError);
                             }
@@ -2013,7 +2043,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // LOCATION: BEKASI or PEMALANG (extracted from TOKO column)
                 // CATEGORY: PPN or NON (based on keterangan)
                 console.log(`[Invoice PDF] Path components - Location: ${location}, Year: ${year}, Month: ${monthName}, Day: ${day}, Category: ${category}`);
-                console.log(`[Invoice PDF] Invoice keterangan: "${invoice.keterangan}" → Category: "${category}"`);
+                console.log(`[Invoice PDF] Invoice keterangan: "${invoice.keterangan}" ? Category: "${category}"`);
                 
                 // Build expected new path with location
                 const expectedNewPath = `ARSIP/${location}/${category}/${year}/${monthName}/${day}/${filename}`;
@@ -2023,7 +2053,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // Check if this is a re-upload of same file (path already matches new structure)
                 const isReuploadWithNewPath = invoice.invoice_pdf_path === expectedNewPath;
                 if (isReuploadWithNewPath) {
-                    console.log(`[Invoice PDF] ℹ️  File already uploaded with new location-based path, allowing re-upload`);
+                    console.log(`[Invoice PDF] ??  File already uploaded with new location-based path, allowing re-upload`);
                 } else {
                     // QUICK CHECK: If existing file in DB, verify file truly exists before rejecting
                     // Only reject if file ACTUALLY exists in R2 (true duplicate)
@@ -2076,7 +2106,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             
                             // Set remotePath on successful upload!
                             remotePath = uploadResult.storagePath;
-                            console.log(`[Invoice PDF BG] ✅ File uploaded to R2: ${remotePath}`);
+                            console.log(`[Invoice PDF BG] ? File uploaded to R2: ${remotePath}`);
                         } catch (uploadErr) {
                             console.error(`[Invoice PDF BG] Upload error:`, uploadErr.message);
                             remotePath = uploadResult?.storagePath || uploadResult?.path || null;
@@ -2109,7 +2139,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             });
                             
                             if (insertResponse.ok) {
-                                console.log(`[Invoice PDF BG] ✅ Inserted into invoice_files table (REST API)`);
+                                console.log(`[Invoice PDF BG] ? Inserted into invoice_files table (REST API)`);
                                 updateSuccess = true;
                             } else {
                                 const errText = await insertResponse.text();
@@ -2133,7 +2163,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     });
                                 
                                 if (!upsertErr) {
-                                    console.log(`[Invoice PDF BG] ✅ Upserted into invoice_files table`);
+                                    console.log(`[Invoice PDF BG] ? Upserted into invoice_files table`);
                                     updateSuccess = true;
                                 } else {
                                     console.log(`[Invoice PDF BG] Upsert failed:`, upsertErr.message?.substring(0, 50));
@@ -2165,7 +2195,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 });
 
                                 if (updateResponse.ok) {
-                                    console.log(`[Invoice PDF BG] ✅ Updated uploaded_file_path (OLD method)`);
+                                    console.log(`[Invoice PDF BG] ? Updated uploaded_file_path (OLD method)`);
                                     updateSuccess = true;
                                 } else {
                                     const errorText = await updateResponse.text();
@@ -2185,7 +2215,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         if (updateSuccess) {
-                            console.log(`[Invoice PDF BG] ✅ Database updated for faktur: ${faktur}`);
+                            console.log(`[Invoice PDF BG] ? Database updated for faktur: ${faktur}`);
                             console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
                             
                             // Update files_uploaded_count (includes internal delay for consistency)
@@ -2199,7 +2229,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 await updateFileCountDirectly(faktur, uploadedCount, requiredCount);
                             }
                         } else {
-                            console.error(`[Invoice PDF BG] ✗ All database update methods failed!`);
+                            console.error(`[Invoice PDF BG] ? All database update methods failed!`);
                         }
                     } catch (bgErr) {
                         console.error(`[Invoice PDF BG] Background upload error (non-blocking):`, bgErr.message);
@@ -2319,7 +2349,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Check if this is a re-upload of same file (path already matches new structure)
                     const isReuploadWithNewPath = invoice?.faktur_pajak_path === expectedNewPath;
                     if (isReuploadWithNewPath) {
-                        console.log(`[Invoice Document] ℹ️  Faktur Pajak already uploaded with new location-based path, allowing re-upload`);
+                        console.log(`[Invoice Document] ??  Faktur Pajak already uploaded with new location-based path, allowing re-upload`);
                     } else {
                         // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
                         if (invoice && invoice.faktur_pajak_path) {
@@ -2372,7 +2402,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 throw new Error(uploadResult?.error || 'Upload failed');
                             }
 
-                            console.log(`[Invoice Document BG] ✅ Faktur Pajak uploaded: ${uploadResult.storagePath}`);
+                            console.log(`[Invoice Document BG] ? Faktur Pajak uploaded: ${uploadResult.storagePath}`);
                             
                             // Update database - try NEW invoice_files table first using REST API
                             let updateSuccess = false;
@@ -2398,7 +2428,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 });
                                 
                                 if (insertResponse.ok) {
-                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table (REST API)`);
+                                    console.log(`[Invoice Document BG] ? Inserted into invoice_files table (REST API)`);
                                     updateSuccess = true;
                                 } else {
                                     const errText = await insertResponse.text();
@@ -2423,7 +2453,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         });
                                     
                                     if (!upsertErr) {
-                                        console.log(`[Invoice Document BG] ✅ Upserted into invoice_files table`);
+                                        console.log(`[Invoice Document BG] ? Upserted into invoice_files table`);
                                         updateSuccess = true;
                                     } else {
                                         console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message);
@@ -2449,7 +2479,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         .eq('faktur', fakturNumber);
                                     
                                     if (!updateError) {
-                                        console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path (OLD method)`);
+                                        console.log(`[Invoice Document BG] ? Updated uploaded_file_path (OLD method)`);
                                         updateSuccess = true;
                                     } else {
                                         console.log(`[Invoice Document BG] OLD method failed:`, updateError.message);
@@ -2545,7 +2575,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Check if this is a re-upload of same file (path already matches new structure)
                     const isReuploadWithNewPath = invoice?.bukti_bayar_path === expectedNewPath;
                     if (isReuploadWithNewPath) {
-                        console.log(`[Invoice Document] ℹ️  Bukti Bayar already uploaded with new location-based path, allowing re-upload`);
+                        console.log(`[Invoice Document] ??  Bukti Bayar already uploaded with new location-based path, allowing re-upload`);
                     } else {
                         // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
                         if (invoice && invoice.bukti_bayar_path) {
@@ -2598,7 +2628,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 throw new Error(uploadResult?.error || 'Upload failed');
                             }
 
-                            console.log(`[Invoice Document BG] ✅ Bukti Bayar uploaded: ${uploadResult.storagePath}`);
+                            console.log(`[Invoice Document BG] ? Bukti Bayar uploaded: ${uploadResult.storagePath}`);
                             
                             // Update database - try NEW invoice_files table first using REST API
                             let updateSuccess = false;
@@ -2624,7 +2654,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 });
                                 
                                 if (insertResponse.ok) {
-                                    console.log(`[Invoice Document BG] ✅ Inserted into invoice_files table (REST API)`);
+                                    console.log(`[Invoice Document BG] ? Inserted into invoice_files table (REST API)`);
                                     updateSuccess = true;
                                 } else {
                                     const errText = await insertResponse.text();
@@ -2649,7 +2679,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         });
                                     
                                     if (!upsertErr) {
-                                        console.log(`[Invoice Document BG] ✅ Upserted into invoice_files table`);
+                                        console.log(`[Invoice Document BG] ? Upserted into invoice_files table`);
                                         updateSuccess = true;
                                     } else {
                                         console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message);
@@ -2674,7 +2704,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         .eq('faktur', nomorFaktur);
 
                                     if (!updateError) {
-                                        console.log(`[Invoice Document BG] ✅ Updated uploaded_file_path (OLD method)`);
+                                        console.log(`[Invoice Document BG] ? Updated uploaded_file_path (OLD method)`);
                                         updateSuccess = true;
                                     } else {
                                         console.log(`[Invoice Document BG] OLD method failed:`, updateError.message);
@@ -2796,9 +2826,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             const fileExists = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
                             
                             if (fileExists) {
-                                console.log(`[Invoice Faktur Pajak BG] ✓ File still exists on Google Drive`);
+                                console.log(`[Invoice Faktur Pajak BG] ? File still exists on Google Drive`);
                             } else {
-                                console.log(`[Invoice Faktur Pajak BG] ✓ File was deleted from Google Drive`);
+                                console.log(`[Invoice Faktur Pajak BG] ? File was deleted from Google Drive`);
                             }
                         } catch (verifyErr) {
                             console.warn(`[Invoice Faktur Pajak BG] Error verifying file on Google Drive:`, verifyErr.message);
@@ -2810,9 +2840,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     try {
                         const fileExists = await R2Storage.checkFileExistsNoCache(fakturUploadPath);
                         if (fileExists && !isReuploadWithNewPath) {
-                            console.log(`[Invoice Faktur Pajak BG] ✓ Duplicate file detected at: ${fakturUploadPath}`);
+                            console.log(`[Invoice Faktur Pajak BG] ? Duplicate file detected at: ${fakturUploadPath}`);
                         } else {
-                            console.log(`[Invoice Faktur Pajak BG] ✓ No duplicate found`);
+                            console.log(`[Invoice Faktur Pajak BG] ? No duplicate found`);
                         }
                     } catch (checkErr) {
                         console.warn(`[Invoice Faktur Pajak BG] Error checking duplicate: ${checkErr.message}`);
@@ -2892,7 +2922,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             throw new Error(uploadResult.error || 'Upload failed');
                         }
 
-                        console.log(`[Invoice Faktur Pajak BG] ✅ File uploaded: ${uploadResult.path}`);
+                        console.log(`[Invoice Faktur Pajak BG] ? File uploaded: ${uploadResult.path}`);
                         
                         // Update database - track faktur pajak path
                         if (fakturNumber) {
@@ -2910,7 +2940,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                 if (updateError) {
                                     console.error('[Invoice Faktur Pajak BG] Update error:', updateError);
                                 } else {
-                                    console.log(`[Invoice Faktur Pajak BG] ✅ Database updated for faktur: ${fakturNumber}`);
+                                    console.log(`[Invoice Faktur Pajak BG] ? Database updated for faktur: ${fakturNumber}`);
                                 }
                                 
                                 // Always update count regardless of database success
@@ -2975,7 +3005,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const { faktur, fileType } = req.params;
                 const startTime = Date.now();
                 
-                console.log(`[Invoice Download] ⏱️  Request for ${fileType} of faktur: ${faktur}`);
+                console.log(`[Invoice Download] Request for ${fileType} of faktur: ${faktur}`);
                 
                 // Validate fileType
                 const validTypes = ['invoice', 'bukti_bayar', 'faktur_pajak'];
@@ -3000,6 +3030,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 if (queryError || !invoice) {
                     return res.status(404).json({ error: `Invoice not found: ${faktur}` });
                 }
+
+                // SECURITY: Verifikasi user boleh akses invoice ini berdasarkan zona_id
+                if (!enforceZoneOwnership(req, res, invoice.zona_id)) return;
                 
                 // Get file path based on type
                 let filePath = null;
@@ -3050,7 +3083,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             if (Date.now() - stats.mtimeMs < 24 * 60 * 60 * 1000) {
                                 fileBuffer = fs.readFileSync(cachedFilePath);
                                 fromCache = true;
-                                console.log(`[Invoice Download] ✅ Cache HIT: ${filePath.split('/').pop()} (${fileBuffer.length} bytes)`);
+                                console.log(`[Invoice Download] ? Cache HIT: ${filePath.split('/').pop()} (${fileBuffer.length} bytes)`);
                             } else {
                                 // Cache expired, delete it
                                 fs.unlinkSync(cachedFilePath);
@@ -3073,7 +3106,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         // Save to cache for future requests
                         try {
                             fs.writeFileSync(cachedFilePath, fileBuffer);
-                            console.log(`[Invoice Download] ✅ Cached for future requests`);
+                            console.log(`[Invoice Download] ? Cached for future requests`);
                         } catch (cacheWriteErr) {
                             console.warn(`[Invoice Download] Cache write failed (non-blocking):`, cacheWriteErr.message);
                         }
@@ -3093,7 +3126,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     
                     const totalTime = Date.now() - startTime;
                     const source = fromCache ? 'CACHE' : 'RCLONE';
-                    console.log(`[Invoice Download] ✅ Complete in ${totalTime}ms (${source})`);
+                    console.log(`[Invoice Download] ? Complete in ${totalTime}ms (${source})`);
                     
                 } catch (downloadErr) {
                     console.error(`[Invoice Download] Download error:`, downloadErr.message);
@@ -3130,7 +3163,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const { faktur } = req.params;
                 const startTime = Date.now();
                 
-                console.log(`[Invoice Combine] ⏱️  Request for faktur: ${faktur}`);
+                console.log(`[Invoice Combine] ??  Request for faktur: ${faktur}`);
                 
                 // Get invoice data
                 const { data: invoice, error: queryError } = await supabase
@@ -3189,7 +3222,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         if (Date.now() - stats.mtimeMs < 24 * 60 * 60 * 1000) {
                             mergedBuffer = fs.readFileSync(cachedFilePath);
                             fromCache = true;
-                            console.log(`[Invoice Combine] ✅ Cache HIT: Combined PDF (${mergedBuffer.length} bytes)`);
+                            console.log(`[Invoice Combine] ? Cache HIT: Combined PDF (${mergedBuffer.length} bytes)`);
                         } else {
                             // Cache expired
                             fs.unlinkSync(cachedFilePath);
@@ -3268,12 +3301,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         mergedBuffer = Buffer.from(mergedPdfBytes);
                         
                         const mergeTime = Date.now() - mergeStartTime;
-                        console.log(`[Invoice Combine] ✅ Merged in ${mergeTime}ms: ${mergedBuffer.length} bytes`);
+                        console.log(`[Invoice Combine] ? Merged in ${mergeTime}ms: ${mergedBuffer.length} bytes`);
                         
                         // Save to cache for future requests
                         try {
                             fs.writeFileSync(cachedFilePath, mergedBuffer);
-                            console.log(`[Invoice Combine] ✅ Cached for future requests`);
+                            console.log(`[Invoice Combine] ? Cached for future requests`);
                         } catch (cacheWriteErr) {
                             console.warn(`[Invoice Combine] Cache write failed (non-blocking):`, cacheWriteErr.message);
                         }
@@ -3298,7 +3331,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 const totalTime = Date.now() - startTime;
                 const source = fromCache ? 'CACHE' : 'MERGE';
-                console.log(`[Invoice Combine] ✅ Complete in ${totalTime}ms (${source})`);
+                console.log(`[Invoice Combine] ? Complete in ${totalTime}ms (${source})`);
                 
             } catch (error) {
                 console.error('[Invoice Combine] Error:', error);
@@ -3467,7 +3500,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(500).json({ error: 'Failed to update paths', details: error.message });
                 }
                 
-                console.log(`[Invoice Update] ✅ Updated paths for faktur: ${faktur}`, updateData);
+                console.log(`[Invoice Update] ? Updated paths for faktur: ${faktur}`, updateData);
                 
                 res.json({
                     success: true,
@@ -3580,7 +3613,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     }
                 }
                 
-                console.log(`[Invoice Scan] ✅ Scanned ${invoices?.length || 0} invoices, found ${scanResults.length} with files`);
+                console.log(`[Invoice Scan] ? Scanned ${invoices?.length || 0} invoices, found ${scanResults.length} with files`);
                 
                 res.json({
                     success: true,
@@ -3692,7 +3725,7 @@ function addClearFileEndpoint(app, supabase, createAuth) {
                     console.warn(`[ClearFile] Failed to update count:`, countErr);
                 }
                 
-                console.log(`[ClearFile] ✅ Cleared ${fileType} for faktur ${faktur}. New count: ${uploadedCount}`);
+                console.log(`[ClearFile] ? Cleared ${fileType} for faktur ${faktur}. New count: ${uploadedCount}`);
                 
                 res.json({
                     success: true,
@@ -3833,7 +3866,7 @@ function addFileExistenceVerificationEndpoint(app, supabase, createAuth, R2Stora
                     }
                     
                     corrected = true;
-                    console.log(`[FileExist Verify] ✅ Corrected ${faktur}: ${dbCount} → ${actualFilesExist}`);
+                    console.log(`[FileExist Verify] ? Corrected ${faktur}: ${dbCount} ? ${actualFilesExist}`);
                 }
                 
                 res.json({
@@ -3878,7 +3911,7 @@ function addManualSyncEndpoint(app, supabase, createAuth, fileCountSyncJob) {
                 console.log('[ManualSync] Waiting for sync to complete...');
                 const result = await fileCountSyncJob.runSync();
                 
-                console.log('[ManualSync] ✅ Sync completed:', result);
+                console.log('[ManualSync] ? Sync completed:', result);
                 
                 // Return with actual sync results
                 res.json({

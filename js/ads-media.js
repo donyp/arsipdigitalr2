@@ -466,12 +466,12 @@ function renderGrid() {
                 </span>
                 <!-- Hover Actions -->
                 <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                    <a href="${CONFIG.API_URL}/api/ads-media/${m.id}/download?token=${localStorage.getItem('jwt_token')}"
-                        class="p-2.5 rounded-xl bg-white/10 text-white hover:bg-indigo-500 transition-colors" title="Download" target="_blank">
+                    <button onclick="downloadMedia(${m.id}, '${escapeHtml(m.nama_file)}')"
+                        class="p-2.5 rounded-xl bg-white/10 text-white hover:bg-indigo-500 transition-colors" title="Download">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                         </svg>
-                    </a>
+                    </button>
                     <button onclick="deleteMedia(${m.id}, '${escapeHtml(m.nama_file)}')"
                         class="p-2.5 rounded-xl bg-white/10 text-white hover:bg-red-500 transition-colors" title="Hapus">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -611,8 +611,8 @@ async function deleteSelected() {
 function getPreview(media) {
     const ext = media.nama_file.split('.').pop().toLowerCase();
     const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
-    const token = localStorage.getItem('jwt_token');
-    const viewUrl = `${CONFIG.API_URL}/api/ads-media/${media.id}/view?token=${token}&cb=${Date.now()}`;
+    // SECURITY FIX: Token tidak di-expose di URL, gunakan object URL dari fetch dengan Authorization header
+    const viewUrl = `${CONFIG.API_URL}/api/ads-media/${media.id}/view?cb=${Date.now()}`;
     console.log(`[Preview] ${media.nama_file}: ${viewUrl}`);
 
     if (imageExts.includes(ext)) {
@@ -686,6 +686,30 @@ function handleSearch(value) {
 }
 
 // ============================================================
+// DOWNLOAD (secure - token via Authorization header, bukan URL)
+// ============================================================
+async function downloadMedia(id, filename) {
+    try {
+        const token = localStorage.getItem('jwt_token') || localStorage.getItem('authToken');
+        const response = await fetch(`${CONFIG.API_URL}/api/ads-media/${id}/download`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Download gagal');
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error('[Download] Error:', err);
+        alert('Gagal mengunduh file. Silakan coba lagi.');
+    }
+}
+
 // DELETE
 // ============================================================
 async function deleteMedia(id, name) {
