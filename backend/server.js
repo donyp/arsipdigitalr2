@@ -140,15 +140,31 @@ console.log('[CONFIG] Environment configuration loaded.\n');
 // SECURITY: CORS Configuration (Non-Breaking)
 // ============================================================
 // Development: Accept localhost and any origin in ALLOWED_ORIGINS
-// Production: Only accept origins specified in ALLOWED_ORIGINS
+// Production: Only accept HTTPS origins for security
+// --- SECURITY FIX #15: Enforce HTTPS-only origins in production ---
 const getAllowedOrigins = () => {
     const isDev = process.env.NODE_ENV !== 'production';
-    const envOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
+    let envOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
     
-    // Always allow localhost for development
-    const localHostOrigins = ['http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:5000'];
+    // In production: validate all origins are HTTPS (except localhost for testing)
+    if (!isDev) {
+        const httpsOnlyOrigins = envOrigins.filter(origin => {
+            const isHttps = origin.startsWith('https://') || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1');
+            if (!isHttps) {
+                logWarning('[SECURITY]', 'HTTP origin detected in production - REJECTED', {
+                    origin: origin,
+                    message: 'Only HTTPS origins allowed in production'
+                });
+            }
+            return isHttps;
+        });
+        envOrigins = httpsOnlyOrigins;
+    }
     
-    // In production, only allow specified origins; in dev, also allow localhost
+    // Always allow localhost for development only
+    const localHostOrigins = isDev ? ['http://localhost:3000', 'http://localhost:5000', 'http://127.0.0.1:3000', 'http://127.0.0.1:5000'] : [];
+    
+    // In production, only allow specified HTTPS origins; in dev, also allow localhost
     const allowedOrigins = isDev ? [...localHostOrigins, ...envOrigins] : envOrigins;
     
     return allowedOrigins.length > 0 ? allowedOrigins : (isDev ? localHostOrigins : []);
@@ -348,10 +364,10 @@ const loginLimiter = rateLimit({
         return getClientIp(req);
     },
     handler: (req, res) => {
-        // Custom error response
-        console.warn('[RATE_LIMIT] Login brute force attempt detected:', {
+        // Custom error response with security logging
+        logSecurityEvent('[RATE_LIMIT]', 'Login brute force attempt detected', {
             ip: getClientIp(req),
-            email: req.body?.email,
+            email: req.body?.email?.substring(0, 5) + '***', // Mask email
             timestamp: new Date().toISOString()
         });
         res.status(429).json({
@@ -378,13 +394,109 @@ const shareLimiter = rateLimit({
         return getClientIp(req);
     },
     handler: (req, res) => {
-        console.warn('[RATE_LIMIT] Share token brute force attempt detected:', {
+        logSecurityEvent('[RATE_LIMIT]', 'Share token enumeration attempt detected', {
             ip: getClientIp(req),
-            token: req.params?.token?.substring(0, 8),
+            token: req.params?.token?.substring(0, 8) + '***',
             timestamp: new Date().toISOString()
         });
         res.status(429).json({
             error: 'Terlalu banyak percobaan akses share. Silakan coba lagi dalam 1 menit.'
+        });
+    }
+});
+
+// --- SECURITY FIX #11: Comprehensive rate limiting for all authenticated endpoints ---
+// General API rate limit: 100 requests per 15 minutes per IP for authenticated users
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // max 100 requests per windowMs
+    message: {
+        error: 'Terlalu banyak request. Silakan coba lagi nanti.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        // Skip rate limit for localhost
+        return req.ip === '127.0.0.1' || req.ip === '::1';
+    },
+    keyGenerator: (req) => {
+        // For authenticated users, use user ID; otherwise use IP
+        if (req.user && req.user.userId) {
+            return `user-${req.user.userId}`;
+        }
+        return getClientIp(req);
+    },
+    handler: (req, res) => {
+        logWarning('[RATE_LIMIT]', 'API rate limit exceeded', {
+            userId: req.user?.userId,
+            path: req.path,
+            method: req.method,
+            ip: getClientIp(req)
+        });
+        res.status(429).json({
+            error: 'Terlalu banyak request. Silakan coba lagi nanti.'
+        });
+    }
+});
+
+// Stricter rate limit for file operations (upload/download): 20 per 15 minutes
+const fileOpsLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // max 20 file operations per user
+    message: {
+        error: 'Terlalu banyak operasi file. Silakan coba lagi nanti.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        return req.ip === '127.0.0.1' || req.ip === '::1';
+    },
+    keyGenerator: (req) => {
+        if (req.user && req.user.userId) {
+            return `file-${req.user.userId}`;
+        }
+        return getClientIp(req);
+    },
+    handler: (req, res) => {
+        logSecurityEvent('[RATE_LIMIT]', 'File operation rate limit exceeded', {
+            userId: req.user?.userId,
+            operation: req.method,
+            path: req.path,
+            ip: getClientIp(req)
+        });
+        res.status(429).json({
+            error: 'Terlalu banyak operasi file. Silakan coba lagi nanti.'
+        });
+    }
+});
+
+// Strict rate limit for sensitive operations (delete, user management): 10 per hour
+const sensitiveOpsLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10, // max 10 sensitive ops per hour
+    message: {
+        error: 'Terlalu banyak operasi sensitif. Silakan coba lagi nanti.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        return req.ip === '127.0.0.1' || req.ip === '::1';
+    },
+    keyGenerator: (req) => {
+        if (req.user && req.user.userId) {
+            return `sensitive-${req.user.userId}`;
+        }
+        return getClientIp(req);
+    },
+    handler: (req, res) => {
+        logSecurityEvent('[RATE_LIMIT]', 'Sensitive operation rate limit exceeded', {
+            userId: req.user?.userId,
+            path: req.path,
+            method: req.method,
+            ip: getClientIp(req)
+        });
+        res.status(429).json({
+            error: 'Terlalu banyak operasi sensitif. Silakan coba lagi nanti.'
         });
     }
 });
@@ -1233,6 +1345,11 @@ const csrfProtection = (req, res, next) => {
     next();
 };
 app.use('/api/', csrfProtection);
+
+// --- SECURITY FIX #11: Apply comprehensive rate limiting ---
+// Apply general API rate limiter to all API endpoints (after auth)
+// Note: auth-required endpoints will use user ID; public endpoints will use IP
+app.use('/api/', apiLimiter);
 
 // ============================================================
 // AUTH ENDPOINTS
@@ -2811,7 +2928,7 @@ function requireExcelMagic(req, res, next) {
 }
 
 // POST /api/files/upload
-app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload.single('file'), requirePdfMagic, validateUploadBody, async (req, res) => {
+app.post('/api/files/upload', authenticateToken, requireUploadPermission, fileOpsLimiter, upload.single('file'), requirePdfMagic, validateUploadBody, async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Tidak ada file yang diupload.' });
@@ -3181,7 +3298,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload
 // ============================================================
 // POST /api/files/upload-piutang — Upload PIUTANG files
 // ============================================================
-app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission, upload.single('file'), requirePdfMagic, validateUploadBody, async (req, res) => {
+app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission, fileOpsLimiter, upload.single('file'), requirePdfMagic, validateUploadBody, async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'Tidak ada file yang diupload.' });
@@ -3790,7 +3907,7 @@ app.delete('/api/update-history-items/:id', authenticateToken, authorizeRole('su
 });
 
 // DELETE /api/files/:id
-app.delete('/api/files/:id', authenticateToken, async (req, res) => {
+app.delete('/api/files/:id', authenticateToken, sensitiveOpsLimiter, async (req, res) => {
     try {
         const id = req.params.id;
         const isHardDelete = req.query.hard === 'true';
@@ -4248,7 +4365,7 @@ app.get('/api/users/names', authenticateToken, async (req, res) => {
 });
 
 // POST /api/users â€” create user
-app.post('/api/users', authenticateToken, async (req, res) => {
+app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) => {
     // Permission check: allow super_admin and moderator only
     if (req.user.role !== 'super_admin' && req.user.role !== 'moderator') {
         return res.status(403).json({ error: 'Akses ditolak' });
