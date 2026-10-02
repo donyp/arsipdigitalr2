@@ -97,19 +97,18 @@ function addFakturPajakRenameEndpoints(app, supabase, createAuth) {
     
     // =====================================================================
     // GET /api/faktur-pajak/rename-history/recent
-    // Get recent renames (last 24 hours)
+    // Get recent renames (last 24 hours) - only top 10, auto-delete older ones
     // NOTE: Must be BEFORE /:faktur route to match correctly
     // =====================================================================
     app.get('/api/faktur-pajak/rename-history/recent', createAuth(['super_admin', 'moderator', 'admin_zona']), async (req, res) => {
         try {
-            const { limit = 100, offset = 0, hours = 24 } = req.query;
+            const { limit = 10, offset = 0, hours = 24, auto_cleanup } = req.query;
+            const limitNum = Math.min(parseInt(limit), 10); // Cap at 10 max
             
-            console.log(`[FakturPajak] Getting recent renames (last ${hours} hours)`);
-            console.log(`[FakturPajak] Cutoff: ${hours} hours, Limit: ${limit}`);
+            console.log(`[FakturPajak] Getting recent renames (last ${hours} hours, limit: ${limitNum})`);
             
             // Calculate cutoff time
             const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-            console.log(`[FakturPajak] Cutoff time: ${cutoffTime}`);
             
             // Get rename history
             const { data, error, count } = await supabase
@@ -117,7 +116,7 @@ function addFakturPajakRenameEndpoints(app, supabase, createAuth) {
                 .select('*', { count: 'exact' })
                 .gte('renamed_at', cutoffTime)
                 .order('renamed_at', { ascending: false })
-                .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+                .range(parseInt(offset), parseInt(offset) + limitNum - 1);
             
             if (error) {
                 console.error('[FakturPajak] Error fetching recent history:', error);
@@ -127,8 +126,36 @@ function addFakturPajakRenameEndpoints(app, supabase, createAuth) {
                 });
             }
             
-            console.log(`[FakturPajak] ✅ Found ${data?.length || 0} recent rename records (total: ${count})`);
-            console.log(`[FakturPajak] Sample data:`, data && data.length > 0 ? data[0] : 'none');
+            // Auto-cleanup: Delete records beyond top 10 (only if requested)
+            if (auto_cleanup === 'true' && count > 10) {
+                console.log(`[FakturPajak] Auto-cleanup triggered: ${count} total records, keeping top 10...`);
+                
+                // Get all records beyond the top 10
+                const { data: oldRecords, error: fetchOldError } = await supabase
+                    .from('faktur_pajak_rename_history')
+                    .select('id')
+                    .gte('renamed_at', cutoffTime)
+                    .order('renamed_at', { ascending: false })
+                    .range(10, 9999);  // Skip top 10, get the rest
+                
+                if (!fetchOldError && oldRecords && oldRecords.length > 0) {
+                    const oldIds = oldRecords.map(r => r.id);
+                    
+                    // Delete old records
+                    const { error: deleteError } = await supabase
+                        .from('faktur_pajak_rename_history')
+                        .delete()
+                        .in('id', oldIds);
+                    
+                    if (deleteError) {
+                        console.warn('[FakturPajak] Error during cleanup:', deleteError.message);
+                    } else {
+                        console.log(`[FakturPajak] ✅ Auto-cleanup deleted ${oldIds.length} old records`);
+                    }
+                }
+            }
+            
+            console.log(`[FakturPajak] ✅ Found ${data?.length || 0} recent rename records`);
             
             res.json({
                 success: true,
@@ -136,8 +163,9 @@ function addFakturPajakRenameEndpoints(app, supabase, createAuth) {
                 cutoff_time: cutoffTime,
                 history: data || [],
                 total_records: count || 0,
-                limit: parseInt(limit),
-                offset: parseInt(offset)
+                limit: limitNum,
+                offset: parseInt(offset),
+                cleaned_up: auto_cleanup === 'true' && count > 10
             });
             
         } catch (error) {

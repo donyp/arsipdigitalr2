@@ -332,8 +332,8 @@ async function loadLatestHistory() {
         if (!token) {
             return;
         }
-        // Get recent renames from last 24 hours
-        const response = await fetch(`${CONFIG.API_URL}/api/faktur-pajak/rename-history/recent?limit=10&hours=24`, {
+        // Get 10 most recent renames from last 24 hours
+        const response = await fetch(`${CONFIG.API_URL}/api/faktur-pajak/rename-history/recent?limit=10&hours=24&auto_cleanup=true`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -343,12 +343,11 @@ async function loadLatestHistory() {
         if (response.ok) {
             const data = await response.json();
             
-            if (data.history && data.history.length > 0) {
-                displayHistorySection(data.history);
-            } else {
+            // Handle both formats: data.history and data.data
+            const historyData = data.history || data.data || [];
+            if (historyData && historyData.length > 0) {
+                displayHistorySection(historyData);
             }
-        } else {
-            const errData = await response.json().catch(() => ({}));
         }
     } catch (err) {
     }
