@@ -206,7 +206,63 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-// SECURITY: HTTP Security Headers Middleware
+// SECURITY: Password Change Requirement Middleware
+// ============================================================
+app.use((req, res, next) => {
+    // Skip password change requirement for:
+    // 1. Login endpoint (where tempToken is generated)
+    // 2. Password change endpoint
+    // 3. Logout endpoint
+    // 4. Public endpoints
+    const skipPaths = ['/api/auth/login', '/api/auth/change-password', '/api/auth/logout', '/health'];
+    const isSkipped = skipPaths.some(path => req.path === path);
+    
+    if (isSkipped) {
+        return next();
+    }
+    
+    // Check if token has requirePasswordChange flag
+    if (req.user && req.user.requirePasswordChange) {
+        console.log('[SECURITY] User must change password before accessing other endpoints');
+        return res.status(403).json({
+            error: 'Password change required',
+            requirePasswordChange: true,
+            message: 'You must change your password on first login'
+        });
+    }
+    
+    next();
+});
+
+// ============================================================
+// SECURITY: Output Encoding Middleware (prevent information disclosure)
+// ============================================================
+app.use((req, res, next) => {
+    // Override res.json to sanitize error messages
+    const originalJson = res.json.bind(res);
+    
+    res.json = function(data) {
+        // In production, don't expose internal error details
+        if (process.env.NODE_ENV === 'production' && data && data.error) {
+            // Log actual error server-side
+            if (data.error && data.error.message) {
+                console.error('[ERROR]', data.error.message);
+            }
+            
+            // Return generic error to client
+            if (!data.error.startsWith('Akses ditolak') && 
+                !data.error.startsWith('Token') &&
+                !data.error.startsWith('Email') &&
+                !data.error.startsWith('Password')) {
+                data.error = 'An error occurred. Please try again.';
+            }
+        }
+        
+        return originalJson(data);
+    };
+    
+    next();
+});
 // ============================================================
 app.use((req, res, next) => {
     // Prevent MIME type sniffing
@@ -1206,6 +1262,62 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         }
 
         console.log('[LOGIN] SUCCESS: Password matched, generating token...');
+
+        // SECURITY FIX #2: Check if user must change password on first login
+        if (user.force_password_change) {
+            console.log('[LOGIN] User must change password on first login');
+            
+            // Log audit entry
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: user.id,
+                userEmail: user.email,
+                userRole: user.role,
+                zonaId: user.zona_id,
+                action: 'First login - password change required',
+                resourceType: 'user',
+                resourceId: user.id,
+                resourceName: user.email,
+                operation: 'UPDATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/auth/login',
+                requestMethod: 'POST',
+                statusCode: 200,
+                responseMessage: 'First login - must change password',
+                errorMessage: null,
+                isSuspicious: false,
+                severity: 'info'
+            });
+            
+            // Generate temporary JWT valid only for password change endpoint
+            const tempPayload = {
+                userId: user.id,
+                email: user.email,
+                role: user.role,
+                zona_id: user.zona_id,
+                name: user.name,
+                permissions: user.permissions || [],
+                requirePasswordChange: true
+            };
+            
+            const tempToken = jwt.sign(tempPayload, JWT_SECRET, { expiresIn: '15m' });
+            
+            // Return response with requirePasswordChange flag
+            return res.json({
+                requirePasswordChange: true,
+                message: 'Password change required on first login',
+                tempToken: tempToken,
+                tempTokenExpiresIn: '15m',
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                    zona_id: user.zona_id
+                }
+            });
+        }
 
         // Check Session Limit for Admin Zona - only count VALID active sessions
         const { data: activeSessions, error: sessionError } = await supabase
@@ -4206,13 +4318,18 @@ app.post('/api/admin/recreate-admin-zona-users', authenticateToken, authorizeRol
         if (deleteError) throw deleteError;
         console.log('[ADMIN] Deleted all existing admin_zona users');
         
-        // Step 3: Create new admin_zona users for each zona
-        const defaultPassword = 'admin123456'; // Default password - user should change on first login
-        const salt = await bcrypt.genSalt(12);
-        const password_hash = await bcrypt.hash(defaultPassword, salt);
+        // Step 3: Create new admin_zona users for each zona with SECURE random passwords
+        const crypto = require('crypto');
         
         const newUsers = [];
         for (const zona of zonas) {
+            // SECURITY FIX #1: Generate cryptographically secure random password
+            // Format: 16 bytes hex = 32 characters, mixed case + numbers
+            const randomPassword = crypto.randomBytes(16).toString('hex').toUpperCase();
+            
+            const salt = await bcrypt.genSalt(12);
+            const password_hash = await bcrypt.hash(randomPassword, salt);
+            
             const email = `admin_zona_${zona.id}`;
             const name = `Admin ${zona.nama}`;
             
@@ -4225,30 +4342,40 @@ app.post('/api/admin/recreate-admin-zona-users', authenticateToken, authorizeRol
                     role: 'admin_zona',
                     zona_id: zona.id,
                     is_active: true,
-                    permissions: []
+                    permissions: [],
+                    force_password_change: true  // SECURITY FIX: Require password change on first login
                 })
-                .select()
+                .select('id, email, name, role, zona_id')  // Only return safe fields
                 .single();
             
             if (insertError) {
                 console.error(`[ADMIN] Failed to create user for zona ${zona.id}:`, insertError);
             } else {
-                console.log(`[ADMIN] Created user: ${email} for zona_id: ${zona.id}`);
+                console.log(`[ADMIN] Created user: ${email} for zona_id: ${zona.id} with force_password_change=true`);
+                
+                // SECURITY FIX: DO NOT return password in response
+                // Instead, log it to server console ONLY (admin must save it separately)
+                console.log(`[ADMIN] INITIAL PASSWORD FOR ${email}: ${randomPassword}`);
+                console.warn(`[ADMIN] ⚠️  SAVE THIS PASSWORD SECURELY: User must be given password through SECURE CHANNEL (email, SMS, in-person), NOT via API response`);
+                
                 newUsers.push({
+                    id: user.id,
                     email,
                     name,
                     zona_id: zona.id,
                     zona_nama: zona.nama,
-                    default_password: defaultPassword
+                    force_password_change: true
+                    // NOTE: Password is NOT included in response
                 });
             }
         }
         
         res.json({
             success: true,
-            message: `Created ${newUsers.length} admin_zona users`,
+            message: `Created ${newUsers.length} admin_zona users. Check server logs for initial passwords. Users must change password on first login.`,
             count: newUsers.length,
-            users: newUsers
+            users: newUsers,
+            warning: 'Initial passwords are logged to server console. Provide passwords to users through secure out-of-band channels only.'
         });
     } catch (err) {
         console.error('[ADMIN] Recreate admin_zona users error:', err);
@@ -7121,3 +7248,112 @@ app.get('/api/auth/check-logout-time', authenticateToken, async (req, res) => {
 // Append: Database Backup endpoints registration (added for backup system)
 // This is registered after Phase 2 endpoints, before INVOICE SYSTEM endpoints
 // The actual registration happens in the code flow above
+
+
+// ============================================================
+// SECURITY FIX #1: POST /api/auth/change-password
+// Change password (required on first login)
+// ============================================================
+app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
+    try {
+        const { newPassword, confirmPassword } = req.body;
+        const userId = req.user.userId;
+        
+        // Input validation
+        if (!newPassword || !confirmPassword) {
+            return res.status(400).json({ 
+                error: 'Password baru dan konfirmasi wajib diisi' 
+            });
+        }
+        
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({ 
+                error: 'Password tidak cocok' 
+            });
+        }
+        
+        // Password complexity check (OWASP)
+        // Minimal 12 karakter, harus punya uppercase, lowercase, number, special char
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+        
+        if (!passwordRegex.test(newPassword)) {
+            return res.status(400).json({
+                error: 'Password harus minimal 12 karakter dengan kombinasi huruf besar, kecil, angka, dan simbol (@$!%*?&)',
+                requirements: {
+                    minLength: 12,
+                    hasUpperCase: /[A-Z]/.test(newPassword),
+                    hasLowerCase: /[a-z]/.test(newPassword),
+                    hasNumber: /\d/.test(newPassword),
+                    hasSpecialChar: /[@$!%*?&]/.test(newPassword)
+                }
+            });
+        }
+        
+        // Hash new password
+        const salt = await bcrypt.genSalt(12);
+        const password_hash = await bcrypt.hash(newPassword, salt);
+        
+        // Update password and remove force_password_change flag
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                password_hash,
+                force_password_change: false,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+        
+        if (updateError) throw updateError;
+        
+        // Audit log
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id,
+            action: 'Password changed on first login',
+            resourceType: 'user',
+            resourceId: userId,
+            resourceName: req.user.email,
+            operation: 'UPDATE',
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: '/api/auth/change-password',
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: 'Password changed successfully',
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        });
+        
+        // Generate new JWT without requirePasswordChange flag
+        const newPayload = {
+            userId: userId,
+            email: req.user.email,
+            role: req.user.role,
+            zona_id: req.user.zona_id,
+            name: req.user.name,
+            permissions: req.user.permissions || []
+        };
+        
+        const newToken = jwt.sign(newPayload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+        
+        res.json({
+            success: true,
+            message: 'Password changed successfully',
+            token: newToken,
+            user: {
+                id: userId,
+                email: req.user.email,
+                name: req.user.name,
+                role: req.user.role,
+                zona_id: req.user.zona_id
+            }
+        });
+    } catch (err) {
+        console.error('[PASSWORD CHANGE] Error:', err);
+        res.status(500).json({ error: 'Gagal mengubah password' });
+    }
+});

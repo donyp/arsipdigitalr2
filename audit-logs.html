@@ -1247,8 +1247,8 @@
                         <div class="text-xs text-gray-500">${escapeHtml(log.resource_name || '')}</div>
                     </td>
                     <td class="px-6 py-4">
-                        <span class="operation-badge op-${log.operation.toLowerCase()}">
-                            ${log.operation}
+                        <span class="operation-badge op-${escapeHtml(log.operation.toLowerCase())}">
+                            ${escapeHtml(log.operation)}
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm font-mono font-semibold">
@@ -1263,12 +1263,23 @@
                         </span>
                     </td>
                     <td class="px-6 py-4">
-                        <button onclick="showDetailModal('${log.id}')" class="btn-view-detail">
+                        <button class="btn-view-detail" data-log-id="${escapeHtml(String(log.id))}">
                             View →
                         </button>
                     </td>
                 </tr>
             `).join('');
+            
+            // SECURITY FIX #2: Add event listeners instead of inline onclick
+            document.querySelectorAll('[data-log-id]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const logId = button.getAttribute('data-log-id');
+                    if (logId) {
+                        showDetailModal(logId);
+                    }
+                });
+            });
 
             document.getElementById('showingCount').textContent = state.logs.length;
             document.getElementById('totalCount').textContent = state.totalCount;
@@ -1332,6 +1343,10 @@
                 const suspiciousIcon = log.is_suspicious ? '🚨' : '✅';
                 const suspiciousText = log.is_suspicious ? 'Suspicious' : 'Clean';
                 
+                // SECURITY FIX #2: Use textContent for safe attribute rendering
+                // Instead of: onclick="showDetailModal('${log.id}')"
+                // We render safely without dynamic onclick
+                
                 let html = `
                     <!-- Header Summary -->
                     <div class="info-grid">
@@ -1339,7 +1354,7 @@
                             <div class="info-label">
                                 🆔 Log ID
                             </div>
-                            <div class="info-value mono">${log.id}</div>
+                            <div class="info-value mono" data-value="id">${escapeHtml(String(log.id))}</div>
                         </div>
                         <div class="info-card">
                             <div class="info-label">
@@ -1362,14 +1377,14 @@
                             <div class="info-label">🏷️ Role</div>
                             <div class="info-value">
                                 <span class="badge badge-${log.user_role === 'admin' ? 'critical' : 'info'}">
-                                    ${log.user_role || 'N/A'}
+                                    ${escapeHtml(log.user_role || 'N/A')}
                                 </span>
                             </div>
                         </div>
                         ${log.ip_address ? `
                         <div class="info-card">
                             <div class="info-label">🌐 IP Address</div>
-                            <div class="info-value mono">${log.ip_address}</div>
+                            <div class="info-value mono">${escapeHtml(String(log.ip_address))}</div>
                         </div>
                         ` : ''}
                     </div>
@@ -1386,14 +1401,14 @@
                         <div class="info-card">
                             <div class="info-label">📦 Resource Type</div>
                             <div class="info-value">
-                                <span class="badge badge-info">${log.resource_type}</span>
+                                <span class="badge badge-info">${escapeHtml(log.resource_type)}</span>
                             </div>
                         </div>
                         <div class="info-card">
                             <div class="info-label">🔄 Operation</div>
                             <div class="info-value">
-                                <span class="operation-badge op-${log.operation.toLowerCase()}">
-                                    ${log.operation}
+                                <span class="operation-badge op-${escapeHtml(log.operation.toLowerCase())}">
+                                    ${escapeHtml(log.operation)}
                                 </span>
                             </div>
                         </div>
@@ -1412,15 +1427,15 @@
                             <div class="info-label">📊 HTTP Status</div>
                             <div class="info-value">
                                 <span style="font-weight: 700; font-size: 1.125rem;" class="text-${log.status_code < 300 ? 'green' : 'red'}-600">
-                                    ${log.status_code || 'N/A'}
+                                    ${escapeHtml(String(log.status_code || 'N/A'))}
                                 </span>
                             </div>
                         </div>
                         <div class="info-card">
                             <div class="info-label">⚠️ Severity Level</div>
                             <div class="info-value">
-                                <span class="badge badge-${log.severity}">
-                                    ${log.severity.toUpperCase()}
+                                <span class="badge badge-${escapeHtml(log.severity)}">
+                                    ${escapeHtml(log.severity.toUpperCase())}
                                 </span>
                             </div>
                         </div>
@@ -1428,7 +1443,7 @@
                             <div class="info-label">🛡️ Suspicious Activity</div>
                             <div class="info-value">
                                 <span style="font-size: 1rem;">${suspiciousIcon}</span>
-                                <span style="font-weight: 600;">${suspiciousText}</span>
+                                <span style="font-weight: 600;">${escapeHtml(suspiciousText)}</span>
                             </div>
                         </div>
                     </div>
@@ -1445,14 +1460,14 @@
                         <div class="info-card">
                             <div class="info-label">📤 Method</div>
                             <div class="info-value mono" style="font-weight: 700; color: #667eea;">
-                                ${log.request_method}
+                                ${escapeHtml(log.request_method)}
                             </div>
                         </div>
                         ` : ''}
                         ${log.request_path ? `
                         <div class="info-card">
                             <div class="info-label">🔗 Path</div>
-                            <div class="info-value mono">${log.request_path}</div>
+                            <div class="info-value mono">${escapeHtml(log.request_path)}</div>
                         </div>
                         ` : ''}
                     </div>
@@ -1486,7 +1501,7 @@
                     }
                 }
                 
-                // State Changes
+                // State Changes - SECURITY FIX: formatJson already escapes, but wrap safely
                 if (log.old_values || log.new_values) {
                     html += `
                     <div class="section-divider"></div>
@@ -1499,11 +1514,11 @@
                         <div class="comparison-grid">
                             <div class="state-box">
                                 <div class="state-header">📋 Previous State</div>
-                                <div class="state-content">${formatJson(log.old_values)}</div>
+                                <div class="state-content">${escapeHtml(formatJson(log.old_values))}</div>
                             </div>
                             <div class="state-box">
                                 <div class="state-header" style="background: linear-gradient(90deg, #dcfce7, #bbf7d0);">✨ New State</div>
-                                <div class="state-content">${formatJson(log.new_values)}</div>
+                                <div class="state-content">${escapeHtml(formatJson(log.new_values))}</div>
                             </div>
                         </div>
                         `;
@@ -1511,14 +1526,14 @@
                         html += `
                         <div class="state-box">
                             <div class="state-header">📋 Previous State</div>
-                            <div class="state-content">${formatJson(log.old_values)}</div>
+                            <div class="state-content">${escapeHtml(formatJson(log.old_values))}</div>
                         </div>
                         `;
                     } else if (log.new_values) {
                         html += `
                         <div class="state-box">
                             <div class="state-header" style="background: linear-gradient(90deg, #dcfce7, #bbf7d0);">✨ New State</div>
-                            <div class="state-content">${formatJson(log.new_values)}</div>
+                            <div class="state-content">${escapeHtml(formatJson(log.new_values))}</div>
                         </div>
                         `;
                     }

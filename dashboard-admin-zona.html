@@ -2644,8 +2644,9 @@
                 // Download invoice button if exists
                 if (invoice.invoice_pdf_path) {
                     hasFiles = true;
+                    // SECURITY FIX #2: Use data attributes instead of inline onclick with unescaped variables
                     menuHTML += `
-                    <button onclick="downloadAdminZonaFile('${faktur}', 'invoice')" 
+                    <button class="admin-zona-download-btn" data-faktur="${faktur}" data-type="invoice"
                             style="
                                 width: 100%; 
                                 padding: 12px 14px; 
@@ -2674,7 +2675,7 @@
                 if (invoice.bukti_bayar_path) {
                     hasFiles = true;
                     menuHTML += `
-                    <button onclick="downloadAdminZonaFile('${faktur}', 'bukti_bayar')" 
+                    <button class="admin-zona-download-btn" data-faktur="${faktur}" data-type="bukti_bayar"
                             style="
                                 width: 100%; 
                                 padding: 12px 14px; 
@@ -2703,7 +2704,7 @@
                 if (invoice.faktur_pajak_path) {
                     hasFiles = true;
                     menuHTML += `
-                    <button onclick="downloadAdminZonaFile('${faktur}', 'faktur_pajak')" 
+                    <button class="admin-zona-download-btn" data-faktur="${faktur}" data-type="faktur_pajak" 
                             style="
                                 width: 100%; 
                                 padding: 12px 14px; 
@@ -2735,8 +2736,9 @@
                 
                 if (filesUploaded >= filesRequired) {
                     hasFiles = true;
+                    // SECURITY FIX #2: Use data attribute instead of inline onclick
                     menuHTML += `
-                    <button onclick="combinePDFAdminZona('${faktur}')" 
+                    <button class="admin-zona-combine-btn" data-faktur="${faktur}"
                             style="
                                 width: 100%; 
                                 padding: 12px 14px; 
@@ -2921,6 +2923,29 @@
                                         }
                                     });
                                 }
+                                
+                                // SECURITY FIX #2: Add event listeners for safe button handling
+                                // Instead of: onclick="downloadAdminZonaFile('${faktur}', 'invoice')"
+                                document.querySelectorAll('.admin-zona-download-btn').forEach(btn => {
+                                    btn.addEventListener('click', (e) => {
+                                        e.preventDefault();
+                                        const faktur = btn.getAttribute('data-faktur');
+                                        const fileType = btn.getAttribute('data-type');
+                                        if (faktur && fileType) {
+                                            downloadAdminZonaFile(faktur, fileType);
+                                        }
+                                    });
+                                });
+                                
+                                document.querySelectorAll('.admin-zona-combine-btn').forEach(btn => {
+                                    btn.addEventListener('click', (e) => {
+                                        e.preventDefault();
+                                        const faktur = btn.getAttribute('data-faktur');
+                                        if (faktur) {
+                                            combinePDFAdminZona(faktur);
+                                        }
+                                    });
+                                });
                             }, 50);
                         }
                     }
