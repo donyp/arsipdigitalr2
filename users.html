@@ -438,6 +438,8 @@
                 const data = { email, name, role, is_active };
                 if (password) data.password = password;
 
+                console.log('[saveUser] Sending request:', id ? 'UPDATE' : 'CREATE', data);
+
                 if (id) {
                     await API.put(`/api/users/${id}`, data);
                 } else {
@@ -450,7 +452,9 @@
 
                 closeUserModal();
                 await loadUsers();
+                alert(id ? 'User berhasil diupdate!' : 'User berhasil ditambahkan!');
             } catch (err) {
+                console.error('[saveUser] Error:', err);
                 alert('Error: ' + err.message);
             }
         }
