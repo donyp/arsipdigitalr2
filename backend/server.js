@@ -380,8 +380,8 @@ app.get('/support-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));
 });
 
-// Audit Logs Dashboard Route
-app.get('/audit-logs', authenticateToken, authorizeRole('moderator', 'super_admin'), (req, res) => {
+// Audit Logs Dashboard Route (public - auth handled in HTML)
+app.get('/audit-logs', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'audit-logs.html'));
 });
 
