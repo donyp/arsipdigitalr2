@@ -12,32 +12,46 @@
     <style>
         :root {
             --primary: #3b82f6;
+            --primary-dark: #1e40af;
             --danger: #ef4444;
             --warning: #f59e0b;
             --success: #10b981;
             --info: #06b6d4;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        * {
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
         
         /* Light mode (default) */
         body {
-            background-color: #f3f4f6;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
             color: #111827;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
         }
         
         /* Dark mode */
-        html[data-dark-mode="true"] {
-            background-color: #0f172a;
+        html[data-dark-mode="true"] body {
+            background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
             color: #f0f4f8;
         }
         
-        html[data-dark-mode="true"] body {
-            background-color: #0f172a;
-            color: #f0f4f8;
+        /* Navbar Enhancement */
+        nav {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
         
         html[data-dark-mode="true"] nav {
-            background-color: #1e293b !important;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
             border-color: #334155 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         html[data-dark-mode="true"] .bg-white {
@@ -45,34 +59,114 @@
             color: #f0f4f8 !important;
         }
         
-        html[data-dark-mode="true"] .text-gray-900 {
-            color: #f0f4f8 !important;
+        /* Stats Cards - Modern Design */
+        .stats-card {
+            background: white;
+            border-radius: 0.875rem;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
         }
         
-        html[data-dark-mode="true"] .text-gray-600 {
-            color: #cbd5e1 !important;
+        .stats-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
         }
         
-        html[data-dark-mode="true"] .text-gray-500 {
-            color: #94a3b8 !important;
+        .stats-card:hover {
+            transform: translateY(-4px);
+            border-color: #d1d5db;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
         }
         
-        html[data-dark-mode="true"] .border-gray-200 {
-            border-color: #334155 !important;
+        .stats-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-top: 0.5rem;
         }
         
-        html[data-dark-mode="true"] .bg-gray-50 {
-            background-color: #0f172a !important;
-            color: #f0f4f8 !important;
+        .stats-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
         }
         
-        html[data-dark-mode="true"] .bg-gray-200 {
-            background-color: #334155 !important;
+        html[data-dark-mode="true"] .stats-card {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-color: #334155;
+        }
+        
+        html[data-dark-mode="true"] .stats-card:hover {
+            border-color: #475569;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+        }
+        
+        html[data-dark-mode="true"] .stats-label {
+            color: #cbd5e1;
+        }
+        
+        
+        /* Filter Section - Modern Design */
+        .filter-section {
+            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+            border-radius: 0.875rem;
+            border: 1px solid #e5e7eb;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
         }
         
         html[data-dark-mode="true"] .filter-section {
-            background-color: #1e293b !important;
+            background: linear-gradient(135deg, #1e293b, #0f172a) !important;
             border-color: #334155 !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .filter-section h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: #1f2937;
+        }
+        
+        html[data-dark-mode="true"] .filter-section h3 {
+            color: #f0f4f8 !important;
+        }
+        
+        /* Input/Select Enhancement */
+        input, select {
+            border-radius: 0.625rem;
+            border: 1px solid #d1d5db;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            background-color: white;
+            color: #111827;
+            transition: all 0.2s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
         html[data-dark-mode="true"] input,
@@ -82,83 +176,320 @@
             border-color: #334155 !important;
         }
         
-        html[data-dark-mode="true"] .sticky-header {
-            background-color: #1e293b !important;
+        html[data-dark-mode="true"] input:focus,
+        html[data-dark-mode="true"] select:focus {
+            border-color: #818cf8 !important;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1) !important;
         }
         
-        html[data-dark-mode="true"] .modal {
-            background-color: rgba(0, 0, 0, 0.8) !important;
+        /* Button Enhancement */
+        button {
+            border-radius: 0.625rem;
+            padding: 0.625rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         
-        html[data-dark-mode="true"] .modal-content {
-            background-color: #1e293b !important;
-            color: #f0f4f8 !important;
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
         
-        html[data-dark-mode="true"] .table-row-suspicious {
-            background-color: #3f1f1f !important;
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
         
-        html[data-dark-mode="true"] button {
-            color: #f0f4f8 !important;
+        #applyFilters {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
         }
         
-        html[data-dark-mode="true"] .hover\:bg-gray-50:hover {
+        #clearFilters {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+        }
+        
+        #exportCsv {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        #autoRefreshToggle {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+        
+        #refreshNow {
+            background: #6b7280;
+            color: white;
+        }
+        
+        html[data-dark-mode="true"] #clearFilters {
+            background: #334155;
+            color: #f0f4f8;
+            border-color: #475569;
+        }
+        
+        /* Table Enhancement - Modern Design */
+        .table-container {
+            background: white;
+            border-radius: 0.875rem;
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+        }
+        
+        html[data-dark-mode="true"] .table-container {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-color: #334155;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        html[data-dark-mode="true"] thead {
+            background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+            border-color: #334155 !important;
+        }
+        
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+        
+        html[data-dark-mode="true"] th {
+            color: #cbd5e1 !important;
+        }
+        
+        tbody tr {
+            border-bottom: 1px solid #f3f4f6;
+            transition: all 0.2s ease;
+        }
+        
+        html[data-dark-mode="true"] tbody tr {
+            border-color: #334155 !important;
+        }
+        
+        tbody tr:hover {
+            background-color: #f9fafb;
+        }
+        
+        html[data-dark-mode="true"] tbody tr:hover {
             background-color: #334155 !important;
         }
         
-        html[data-dark-mode="true"] .hover\:bg-gray-300:hover {
-            background-color: #475569 !important;
+        td {
+            padding: 1rem;
+            color: #374151;
         }
         
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            font-weight: 600;
+        html[data-dark-mode="true"] td {
+            color: #e2e8f0 !important;
         }
-        
-        .badge-info { background: #dbeafe; color: #1e40af; }
-        .badge-warning { background: #fef3c7; color: #92400e; }
-        .badge-critical { background: #fee2e2; color: #991b1b; }
-        .badge-success { background: #dcfce7; color: #166534; }
-        
-        html[data-dark-mode="true"] .badge-info { background: #1e3a8a; color: #93c5fd; }
-        html[data-dark-mode="true"] .badge-warning { background: #78350f; color: #fcd34d; }
-        html[data-dark-mode="true"] .badge-critical { background: #7f1d1d; color: #fca5a5; }
-        html[data-dark-mode="true"] .badge-success { background: #064e3b; color: #86efac; }
-        
-        .operation-badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.25rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-        }
-        
-        .op-create { background: #dcfce7; color: #166534; }
-        .op-read { background: #dbeafe; color: #1e40af; }
-        .op-update { background: #fef3c7; color: #92400e; }
-        .op-delete { background: #fee2e2; color: #991b1b; }
-        .op-download { background: #f3e8ff; color: #6b21a8; }
-        
-        html[data-dark-mode="true"] .op-create { background: #064e3b; color: #86efac; }
-        html[data-dark-mode="true"] .op-read { background: #1e3a8a; color: #93c5fd; }
-        html[data-dark-mode="true"] .op-update { background: #78350f; color: #fcd34d; }
-        html[data-dark-mode="true"] .op-delete { background: #7f1d1d; color: #fca5a5; }
-        html[data-dark-mode="true"] .op-download { background: #5b21b6; color: #e9d5ff; }
         
         .table-row-suspicious {
-            background-color: #fef2f2 !important;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.05), transparent);
             border-left: 4px solid #ef4444;
         }
         
+        html[data-dark-mode="true"] .table-row-suspicious {
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent);
+            border-color: #ef4444;
+        }
+        
+        
+        .badge {
+            display: inline-block;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+        
+        .badge:hover {
+            transform: scale(1.05);
+        }
+        
+        .badge-info { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+        .badge-warning { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+        .badge-critical { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }
+        .badge-success { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; }
+        
+        html[data-dark-mode="true"] .badge-info { background: linear-gradient(135deg, #1e3a8a, #1e40af); color: #93c5fd; }
+        html[data-dark-mode="true"] .badge-warning { background: linear-gradient(135deg, #78350f, #92400e); color: #fcd34d; }
+        html[data-dark-mode="true"] .badge-critical { background: linear-gradient(135deg, #7f1d1d, #991b1b); color: #fca5a5; }
+        html[data-dark-mode="true"] .badge-success { background: linear-gradient(135deg, #064e3b, #166534); color: #86efac; }
+        
+        .operation-badge {
+            display: inline-block;
+            padding: 0.375rem 0.625rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+        
+        .operation-badge:hover {
+            transform: scale(1.08) rotate(1deg);
+        }
+        
+        .op-create { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; }
+        .op-read { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+        .op-update { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+        .op-delete { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }
+        .op-download { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #6b21a8; }
+        
+        html[data-dark-mode="true"] .op-create { background: linear-gradient(135deg, #064e3b, #166534); color: #86efac; }
+        html[data-dark-mode="true"] .op-read { background: linear-gradient(135deg, #1e3a8a, #1e40af); color: #93c5fd; }
+        html[data-dark-mode="true"] .op-update { background: linear-gradient(135deg, #78350f, #92400e); color: #fcd34d; }
+        html[data-dark-mode="true"] .op-delete { background: linear-gradient(135deg, #7f1d1d, #991b1b); color: #fca5a5; }
+        html[data-dark-mode="true"] .op-download { background: linear-gradient(135deg, #5b21b6, #6b21a8); color: #e9d5ff; }
+        
+        /* Pagination Enhancement */
+        .pagination-footer {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border-top: 1px solid #e5e7eb;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        html[data-dark-mode="true"] .pagination-footer {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-color: #334155;
+        }
+        
+        .pagination-info {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+        }
+        
+        html[data-dark-mode="true"] .pagination-info {
+            color: #cbd5e1;
+        }
+        
+        #prevPage, #nextPage {
+            background: white;
+            border: 1px solid #d1d5db;
+            color: #374151;
+            padding: 0.625rem 1.25rem;
+        }
+        
+        #prevPage:hover:not(:disabled), #nextPage:hover:not(:disabled) {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        
+        html[data-dark-mode="true"] #prevPage,
+        html[data-dark-mode="true"] #nextPage {
+            background: #334155;
+            border-color: #475569;
+            color: #f0f4f8;
+        }
+        
+        html[data-dark-mode="true"] #prevPage:hover:not(:disabled),
+        html[data-dark-mode="true"] #nextPage:hover:not(:disabled) {
+            background: #475569;
+            border-color: #64748b;
+        }
+        
+        /* Empty State */
+        #emptyState {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: white;
+            border-radius: 0.875rem;
+            border: 2px dashed #e5e7eb;
+            margin-top: 2rem;
+        }
+        
+        html[data-dark-mode="true"] #emptyState {
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            border-color: #334155;
+        }
+        
+        #emptyState .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        #emptyState .empty-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #6b7280;
+            margin-top: 1rem;
+        }
+        
+        html[data-dark-mode="true"] #emptyState .empty-text {
+            color: #cbd5e1;
+        }
+        
+        /* Action Bar */
+        .action-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .action-bar button {
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        @media (max-width: 768px) {
+            .action-bar {
+                flex-direction: column;
+            }
+            
+            .action-bar button {
+                width: 100%;
+            }
+        }
+        
+        /* Skeleton Loader Animation */
         .skeleton {
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
             background-size: 200% 100%;
             animation: loading 2s infinite;
+            border-radius: 0.375rem;
+            height: 1.5rem;
         }
         
         html[data-dark-mode="true"] .skeleton {
@@ -170,20 +501,38 @@
             100% { background-position: -200% 0; }
         }
         
+        /* Sticky Header */
         .sticky-header {
             position: sticky;
             top: 0;
             z-index: 10;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
         }
         
-        .filter-section {
-            background: #f9fafb;
-            border-radius: 0.5rem;
-            border: 1px solid #e5e7eb;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
+        html[data-dark-mode="true"] .sticky-header {
+            background: linear-gradient(135deg, #1e293b, #0f172a) !important;
+        }
+        
+        /* Detail Button */
+        .btn-view-detail {
+            color: #667eea;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-view-detail:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: translateX(2px);
+        }
+        
+        html[data-dark-mode="true"] .btn-view-detail {
+            color: #818cf8;
+        }
+        
+        html[data-dark-mode="true"] .btn-view-detail:hover {
+            background: rgba(129, 140, 248, 0.1);
         }
         
         .modal {
@@ -479,15 +828,15 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <a href="javascript:history.back()" class="text-gray-600 hover:text-gray-900 transition">
+                    <a href="javascript:history.back()" class="text-gray-600 hover:text-gray-900 transition p-2 hover:bg-gray-100 rounded-lg">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
                     </a>
-                    <h1 class="text-2xl font-bold text-gray-900">📋 Audit Logs Dashboard</h1>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">📋 Audit Logs</h1>
                 </div>
-                <div class="text-sm text-gray-600">
-                    Updated: <span id="lastUpdate">just now</span>
+                <div class="text-sm font-medium text-gray-600">
+                    Updated: <span id="lastUpdate" class="font-mono">just now</span>
                 </div>
             </div>
         </div>
@@ -495,30 +844,22 @@
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="statsContainer">
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="text-sm text-gray-600">Total Logs</div>
-                <div class="text-2xl font-bold text-gray-900 mt-2">
-                    <span id="statTotal">0</span>
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="statsContainer">
+            <div class="stats-card">
+                <div class="stats-label">🔢 Total Logs</div>
+                <div class="stats-value"><span id="statTotal">0</span></div>
             </div>
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="text-sm text-gray-600">Critical Events</div>
-                <div class="text-2xl font-bold text-red-600 mt-2">
-                    <span id="statCritical">0</span>
-                </div>
+            <div class="stats-card">
+                <div class="stats-label">🚨 Critical Events</div>
+                <div class="stats-value" style="color: #ef4444;"><span id="statCritical">0</span></div>
             </div>
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="text-sm text-gray-600">Suspicious Activity</div>
-                <div class="text-2xl font-bold text-orange-600 mt-2">
-                    <span id="statSuspicious">0</span>
-                </div>
+            <div class="stats-card">
+                <div class="stats-label">⚠️ Suspicious Activity</div>
+                <div class="stats-value" style="color: #f59e0b;"><span id="statSuspicious">0</span></div>
             </div>
-            <div class="bg-white rounded-lg border border-gray-200 p-4">
-                <div class="text-sm text-gray-600">24h Activity</div>
-                <div class="text-2xl font-bold text-blue-600 mt-2">
-                    <span id="stat24h">0</span>
-                </div>
+            <div class="stats-card">
+                <div class="stats-label">📊 24h Activity</div>
+                <div class="stats-value" style="color: #06b6d4;"><span id="stat24h">0</span></div>
             </div>
         </div>
 
@@ -600,7 +941,7 @@
         </div>
 
         <!-- Action Bar -->
-        <div class="flex gap-2 mb-4 flex-wrap">
+        <div class="action-bar">
             <button id="exportCsv" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-2">
                 📥 Export CSV
             </button>
@@ -613,7 +954,7 @@
         </div>
 
         <!-- Table -->
-        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="table-container">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead class="sticky-header">
@@ -630,7 +971,7 @@
                     </thead>
                     <tbody id="logsTable">
                         <!-- Skeleton loaders -->
-                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        <tr class="border-b border-gray-200">
                             <td colspan="8" class="px-6 py-4">
                                 <div class="space-y-3">
                                     <div class="skeleton h-8"></div>
@@ -644,8 +985,8 @@
             </div>
 
             <!-- Pagination -->
-            <div class="border-t border-gray-200 px-6 py-4 flex justify-between items-center bg-gray-50">
-                <div class="text-sm text-gray-600">
+            <div class="pagination-footer">
+                <div class="pagination-info">
                     Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> logs
                 </div>
                 <div class="flex gap-2">
@@ -661,8 +1002,9 @@
 
         <!-- No Results Message -->
         <div id="emptyState" class="hidden text-center py-12">
-            <div class="text-gray-400 text-5xl mb-4">📭</div>
-            <div class="text-gray-600 text-lg">No audit logs found</div>
+            <div class="empty-icon">📭</div>
+            <div class="empty-text">No audit logs found matching your criteria</div>
+            <p class="text-gray-500 text-sm mt-2">Try adjusting your filters to see more results</p>
         </div>
     </main>
 
@@ -890,14 +1232,14 @@
 
             table.innerHTML = state.logs.map(log => `
                 <tr class="border-b border-gray-200 hover:bg-gray-50 transition ${log.is_suspicious ? 'table-row-suspicious' : ''}">
-                    <td class="px-6 py-4 text-xs whitespace-nowrap">
+                    <td class="px-6 py-4 text-xs whitespace-nowrap font-mono text-gray-500">
                         ${new Date(log.created_at).toLocaleString()}
                     </td>
                     <td class="px-6 py-4 text-sm">
                         <div class="font-medium">${escapeHtml(log.user_email || 'Unknown')}</div>
                         <div class="text-xs text-gray-500">${escapeHtml(log.user_role || '')}</div>
                     </td>
-                    <td class="px-6 py-4 text-sm">
+                    <td class="px-6 py-4 text-sm font-medium">
                         ${escapeHtml(log.action || '')}
                     </td>
                     <td class="px-6 py-4 text-sm">
@@ -909,19 +1251,19 @@
                             ${log.operation}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-sm">
-                        <span class="text-${log.status_code < 300 ? 'green' : 'red'}-600 font-medium">
+                    <td class="px-6 py-4 text-sm font-mono font-semibold">
+                        <span style="color: ${log.status_code < 300 ? '#10b981' : '#ef4444'};">
                             ${log.status_code || 'N/A'}
                         </span>
                     </td>
                     <td class="px-6 py-4">
                         <span class="badge badge-${log.severity}">
                             ${log.severity.toUpperCase()}
-                            ${log.is_suspicious ? ' ⚠️' : ''}
+                            ${log.is_suspicious ? ' 🚨' : ''}
                         </span>
                     </td>
                     <td class="px-6 py-4">
-                        <button onclick="showDetailModal('${log.id}')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                        <button onclick="showDetailModal('${log.id}')" class="btn-view-detail">
                             View →
                         </button>
                     </td>
