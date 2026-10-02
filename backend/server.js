@@ -1177,21 +1177,59 @@ const csrfProtection = (req, res, next) => {
     const referer = req.headers['referer'];
     const allowedOrigins = getAllowedOrigins();
 
-    // Jika ada origin/referer, pastikan berasal dari domain yang diizinkan
+    // --- SECURITY FIX #7: Enhanced CSRF Protection ---
+    // Check origin/referer against whitelist
+    // This prevents form-based CSRF attacks from external sites
+    
     if (origin) {
+        // Origin header present - verify it matches allowed origins
         if (!allowedOrigins.includes(origin)) {
-            console.warn(`[CSRF] Blocked request from origin: ${origin} to ${req.path}`);
+            logSecurityEvent('[CSRF]', 'Blocked state-changing request from unauthorized origin', {
+                origin: origin,
+                path: req.path,
+                method: req.method,
+                ip: getClientIp(req)
+            });
             return res.status(403).json({ error: 'Request ditolak: origin tidak diizinkan.' });
         }
     } else if (referer) {
-        const refererOrigin = new URL(referer).origin;
-        if (!allowedOrigins.includes(refererOrigin)) {
-            console.warn(`[CSRF] Blocked request from referer: ${referer} to ${req.path}`);
-            return res.status(403).json({ error: 'Request ditolak: referer tidak diizinkan.' });
+        // Check referer if origin not present
+        try {
+            const refererOrigin = new URL(referer).origin;
+            if (!allowedOrigins.includes(refererOrigin)) {
+                logSecurityEvent('[CSRF]', 'Blocked state-changing request from unauthorized referer', {
+                    referer: refererOrigin,
+                    path: req.path,
+                    method: req.method,
+                    ip: getClientIp(req)
+                });
+                return res.status(403).json({ error: 'Request ditolak: referer tidak diizinkan.' });
+            }
+        } catch (err) {
+            logSecurityEvent('[CSRF]', 'Invalid referer header in CSRF check', {
+                referer: referer,
+                error: err.message
+            });
+            return res.status(403).json({ error: 'Request ditolak: referer tidak valid.' });
         }
+    } else {
+        // No origin or referer - could be server-to-server or mobile app
+        // JWT Authorization header is required for these cases (checked by authenticateToken)
+        // If no JWT, reject the request
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) {
+            logWarning('[CSRF]', 'Blocked state-changing request without origin/referer/auth', {
+                path: req.path,
+                method: req.method,
+                ip: getClientIp(req)
+            });
+            return res.status(403).json({ 
+                error: 'Request ditolak: origin atau authorization header diperlukan.' 
+            });
+        }
+        // JWT present, allow to continue (JWT will be verified by authenticateToken)
     }
-    // Jika tidak ada origin/referer (misal dari server-to-server atau mobile app),
-    // tetap lolos — JWT Authorization header tetap wajib dicek oleh authenticateToken
+    
     next();
 };
 app.use('/api/', csrfProtection);
@@ -2674,12 +2712,75 @@ const PDF_MAGIC = Buffer.from([0x25, 0x50, 0x44, 0x46]); // %PDF
 const EXCEL_XLSX_MAGIC = Buffer.from([0x50, 0x4B, 0x03, 0x04]); // PK (ZIP-based: .xlsx)
 const EXCEL_XLS_MAGIC = Buffer.from([0xD0, 0xCF, 0x11, 0xE0]); // OLE2 (.xls)
 
+// --- SECURITY FIX #8: Enhanced file upload validation ---
 function validateMagicBytes(buffer, allowedTypes) {
     if (!buffer || buffer.length < 4) return false;
     const header = buffer.slice(0, 4);
-    if (allowedTypes.includes('pdf') && header.equals(PDF_MAGIC)) return true;
-    if (allowedTypes.includes('xlsx') && header.equals(EXCEL_XLSX_MAGIC)) return true;
-    if (allowedTypes.includes('xls') && header.equals(EXCEL_XLS_MAGIC)) return true;
+    
+    // Check magic bytes for allowed types
+    if (allowedTypes.includes('pdf') && header.equals(PDF_MAGIC)) {
+        // Additional PDF validation: check for XObject exploit (polyglot PDF attacks)
+        // Scan for embedded executable patterns
+        if (hasEmbeddedExecutable(buffer)) {
+            logSecurityEvent('[FILE_UPLOAD]', 'Blocked polyglot PDF with embedded executable', {
+                size: buffer.length,
+                reason: 'Detected embedded executable pattern in PDF'
+            });
+            return false;
+        }
+        return true;
+    }
+    
+    if (allowedTypes.includes('xlsx') && header.equals(EXCEL_XLSX_MAGIC)) {
+        // Additional XLSX validation: check file doesn't exceed reasonable size for spreadsheet
+        // XLSX > 50MB is suspicious (most real spreadsheets are < 10MB)
+        if (buffer.length > 52428800) { // 50MB
+            logWarning('[FILE_UPLOAD]', 'Blocked unusually large XLSX file', {
+                size: buffer.length,
+                reason: 'XLSX file exceeds 50MB - likely malicious'
+            });
+            return false;
+        }
+        return true;
+    }
+    
+    if (allowedTypes.includes('xls') && header.equals(EXCEL_XLS_MAGIC)) {
+        // Additional XLS validation: same size check
+        if (buffer.length > 52428800) { // 50MB
+            logWarning('[FILE_UPLOAD]', 'Blocked unusually large XLS file', {
+                size: buffer.length,
+                reason: 'XLS file exceeds 50MB - likely malicious'
+            });
+            return false;
+        }
+        return true;
+    }
+    
+    return false;
+}
+
+// Helper to detect embedded executables in files (prevent polyglot attacks)
+function hasEmbeddedExecutable(buffer) {
+    // Dangerous patterns to look for in PDF
+    const dangerousPatterns = [
+        /\/EmbeddedFile/i,      // Embedded files
+        /\/Launch/i,            // External launch
+        /\/SubmitForm/i,        // Form submission
+        /\/OpenAction/i,        // Automatic execution
+        /javascript:/i,         // JavaScript execution
+        /\x4D\x5A/,            // MZ header (Windows executable)
+        /\x7FELF/,             // ELF header (Linux executable)
+    ];
+    
+    // Convert buffer to string for pattern matching (safe for binary data)
+    const bufferStr = buffer.toString('binary');
+    
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(bufferStr)) {
+            return true;
+        }
+    }
+    
     return false;
 }
 
@@ -2687,7 +2788,10 @@ function validateMagicBytes(buffer, allowedTypes) {
 function requirePdfMagic(req, res, next) {
     if (!req.file || !req.file.buffer) return next();
     if (!validateMagicBytes(req.file.buffer, ['pdf'])) {
-        console.warn(`[Security] Magic bytes mismatch - file ${req.file.originalname} bukan PDF valid`);
+        logSecurityEvent('[FILE_UPLOAD]', 'Invalid PDF file rejected', {
+            fileName: req.file.originalname,
+            size: req.file.buffer.length
+        });
         return res.status(400).json({ error: 'File tidak valid: konten file bukan PDF.' });
     }
     next();
@@ -2697,7 +2801,10 @@ function requirePdfMagic(req, res, next) {
 function requireExcelMagic(req, res, next) {
     if (!req.file || !req.file.buffer) return next();
     if (!validateMagicBytes(req.file.buffer, ['xlsx', 'xls'])) {
-        console.warn(`[Security] Magic bytes mismatch - file ${req.file.originalname} bukan Excel valid`);
+        logSecurityEvent('[FILE_UPLOAD]', 'Invalid Excel file rejected', {
+            fileName: req.file.originalname,
+            size: req.file.buffer.length
+        });
         return res.status(400).json({ error: 'File tidak valid: konten file bukan Excel.' });
     }
     next();
