@@ -19,7 +19,6 @@ async function loadMappingData() {
         zonas = zData || [];
         tokos = tData || [];
     } catch (err) {
-        console.error('Failed to load mapping data:', err);
     }
 }
 
@@ -215,7 +214,6 @@ async function uploadAllReady() {
     
     // Refresh filter options after successful upload
     if (typeof loadFilterOptions === 'function') {
-        console.log('[Upload] Calling loadFilterOptions after successful upload');
         await loadFilterOptions();
     }
 }

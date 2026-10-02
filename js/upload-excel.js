@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // Upload Excel Flow
 // ============================================
 
@@ -53,26 +53,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function handleFileSelected(file) {
-    console.log('[Upload] File selected:', file.name);
-    
     // Strict validation: Extension check
     const ext = file.name.toLowerCase().split('.').pop();
     if (ext !== 'xlsx') {
-        Toast.error('Γ¥î Format file tidak valid', 'Hanya file Microsoft Excel Worksheet (.xlsx) yang diizinkan.\n\nFile lain seperti .xls, .csv, atau format lain tidak didukung.');
+        Toast.error('G�� Format file tidak valid', 'Hanya file Microsoft Excel Worksheet (.xlsx) yang diizinkan.\n\nFile lain seperti .xls, .csv, atau format lain tidak didukung.');
         return;
     }
 
     // MIME type check
     const validMimeTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
     if (!validMimeTypes.includes(file.type)) {
-        Toast.warning('ΓÜá∩╕Å MIME type tidak standard', `File type: ${file.type || 'unknown'}\n\nSistem masih akan mencoba memproses file ini.`);
+        Toast.warning('G��n+� MIME type tidak standard', `File type: ${file.type || 'unknown'}\n\nSistem masih akan mencoba memproses file ini.`);
         // Continue anyway - MIME type might not be set correctly on some systems
     }
 
     // Size check
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-        Toast.error('Γ¥î File terlalu besar', `Ukuran file: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\nMaksimal ukuran file: 10MB`);
+        Toast.error('G�� File terlalu besar', `Ukuran file: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\nMaksimal ukuran file: 10MB`);
         return;
     }
 
@@ -89,8 +87,6 @@ function handleFileSelected(file) {
 
 async function checkData() {
     if (!currentFile) return;
-
-    console.log('[Upload] Checking data...');
     document.getElementById('card1').style.display = 'none';
     document.getElementById('card2').style.display = 'block';
     document.getElementById('loadingValidation').style.display = 'block';
@@ -141,9 +137,6 @@ async function checkData() {
             // Normalize toko values
             let tokoRaw = (row['TOKO'] || row['toko'] || '').trim();
             let tokoValue = tokoRaw.toUpperCase();
-            
-            console.log('[Upload] Raw toko:', tokoRaw, '-> Uppercase:', tokoValue);
-            
             // Map all toko variations to their normalized names
             if (tokoValue.includes('PEMALANG')) {
                 tokoValue = 'ANKA PEMALANG';
@@ -151,15 +144,11 @@ async function checkData() {
                 tokoValue = 'ANKA BEKASI';
             } else if (tokoValue === '' || !tokoValue) {
                 // DEFAULT: If empty or invalid, default to ANKA BEKASI
-                console.warn('[Upload] Empty toko detected, defaulting to ANKA BEKASI');
                 tokoValue = 'ANKA BEKASI';
             } else {
                 // Any other value that doesn't contain ANKA/PEMALANG, keep as is
                 tokoValue = tokoRaw;
             }
-            
-            console.log('[Upload] Final toko:', tokoValue);
-            
             return {
                 tanggal: row['TANGGAL'] || row['tanggal'],
                 toko: tokoValue,
@@ -184,12 +173,9 @@ async function checkData() {
         });
 
         parsedData = Object.values(aggregated);
-        console.log('[Upload] Parsed:', parsedData.length, 'unique fakturs from', parsed.length, 'total rows');
-
         // ============================================
         // NEW: Check for duplicates BEFORE showing validation
         // ============================================
-        console.log('[Upload] Checking for duplicate fakturs...');
         const fakturs = parsedData.map(item => item.faktur).filter(Boolean);
         
         const token = API.getToken() || localStorage.getItem('jwt_token');
@@ -205,10 +191,7 @@ async function checkData() {
         });
 
         const dupResult = await checkDupResponse.json();
-        console.log('[Upload] Duplicate check result:', dupResult);
-
         if (!checkDupResponse.ok) {
-            console.error('[Upload] Duplicate check failed:', dupResult);
             throw new Error(dupResult.details || 'Gagal memeriksa duplikat');
         }
 
@@ -220,16 +203,11 @@ async function checkData() {
                 ? `${dupCount} fakturs sudah ada di database:\n${dupList}... dan ${dupCount - 10} lainnya`
                 : `${dupCount} fakturs sudah ada di database:\n${dupList}`;
             
-            Toast.error(message, `Γ¥î File Excel Sudah Pernah Diupload`);
-            console.log('[Upload] ΓÜá∩╕Å Validation rejected due to duplicates');
-            
+            Toast.error(message, `G�� File Excel Sudah Pernah Diupload`);
             // Reset to step 1
             resetUpload();
             return;
         }
-
-        console.log('[Upload] Γ£à No duplicates found - proceeding with validation');
-
         // Show validation results
         document.getElementById('totalRows').textContent = parsed.length;
         document.getElementById('uniqueFakturs').textContent = parsedData.length;
@@ -237,16 +215,13 @@ async function checkData() {
         document.getElementById('validationResult').style.display = 'block';
 
     } catch (error) {
-        console.error('[Upload] Error:', error);
-        Toast.error(error.message, 'Γ¥î Upload Error');
+        Toast.error(error.message, 'G�� Upload Error');
         resetUpload();
     }
 }
 
 function showPreview() {
     if (!parsedData) return;
-
-    console.log('[Upload] Showing preview...');
     document.getElementById('card2').style.display = 'none';
     document.getElementById('card3').style.display = 'block';
     updateStep(3);
@@ -286,8 +261,6 @@ async function uploadData() {
     btnUpload.innerHTML = '<span class="loading-spinner"></span><span class="loading-text">Uploading...</span>';
 
     try {
-        console.log('[Upload] Uploading', parsedData.length, 'invoices...');
-
         const token = API.getToken() || localStorage.getItem('jwt_token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) {
@@ -307,8 +280,6 @@ async function uploadData() {
         });
 
         const result = await response.json();
-        console.log('[Upload] Response:', result);
-
         if (response.ok && result.success) {
             const processed = result.summary?.processed || 0;
             document.getElementById('uploadedCount').textContent = processed;
@@ -318,17 +289,15 @@ async function uploadData() {
             updateStep(4);
 
             if (typeof Toast !== 'undefined') {
-                Toast.success(`Γ£à ${processed} file Excel berhasil diupload!`);
+                Toast.success(`G�� ${processed} file Excel berhasil diupload!`);
             }
-            console.log('[Upload] Γ£à Success!');
         } else {
-            Toast.error(result.error || 'Upload failed', 'Γ¥î Upload Error');
+            Toast.error(result.error || 'Upload failed', 'G�� Upload Error');
             btnUpload.disabled = false;
             btnUpload.textContent = originalText;
         }
     } catch (error) {
-        console.error('[Upload] Exception:', error);
-        Toast.error(error.message, 'Γ¥î Upload Error');
+        Toast.error(error.message, 'G�� Upload Error');
         btnUpload.disabled = false;
         btnUpload.textContent = originalText;
     }
@@ -388,8 +357,6 @@ let whatsappNotifications = [];
  */
 async function generateWhatsappMessages(invoices, batchId) {
     try {
-        console.log('[WhatsApp] Generating messages for', invoices.length, 'invoices, batch:', batchId);
-
         currentBatchId = batchId;
 
         const token = API.getToken() || localStorage.getItem('jwt_token');
@@ -409,18 +376,14 @@ async function generateWhatsappMessages(invoices, batchId) {
         });
 
         const result = await response.json();
-        console.log('[WhatsApp] Generate result:', result);
-
         if (response.ok && result.success) {
             whatsappNotifications = result.notifications;
             displayWhatsappNotifications();
             return true;
         } else {
-            console.error('[WhatsApp] Generation failed:', result);
             return false;
         }
     } catch (error) {
-        console.error('[WhatsApp] Error generating messages:', error);
         return false;
     }
 }
@@ -433,7 +396,6 @@ function displayWhatsappNotifications() {
     const container = document.getElementById('whatsappMessagesContainer');
 
     if (!panel || !container) {
-        console.warn('[WhatsApp] UI elements not found');
         return;
     }
 
@@ -463,7 +425,7 @@ function displayWhatsappNotifications() {
             margin-bottom: 8px;
             font-size: 13px;
         `;
-        zonaLabel.textContent = `≡ƒôì ${notif.zona_name} (${notif.invoice_count} invoice)`;
+        zonaLabel.textContent = `=��� ${notif.zona_name} (${notif.invoice_count} invoice)`;
 
         const messageText = document.createElement('div');
         messageText.style.cssText = `
@@ -495,7 +457,7 @@ function displayWhatsappNotifications() {
             font-size: 12px;
             transition: all 0.2s;
         `;
-        copyButton.textContent = '≡ƒôï Salin Pesan';
+        copyButton.textContent = '=��� Salin Pesan';
         copyButton.onmouseover = () => copyButton.style.background = '#1fa857';
         copyButton.onmouseout = () => copyButton.style.background = '#25d366';
         copyButton.onclick = () => copyToClipboard(notif.message, notif.zona_name, copyButton);
@@ -507,7 +469,6 @@ function displayWhatsappNotifications() {
     });
 
     panel.style.display = 'block';
-    console.log('[WhatsApp] Γ£à Displayed', whatsappNotifications.length, 'messages');
 }
 
 /**
@@ -519,22 +480,18 @@ async function copyToClipboard(message, zonaName, buttonElement) {
         
         // Show feedback
         const originalText = buttonElement.textContent;
-        buttonElement.textContent = 'Γ£à Sudah Disalin!';
+        buttonElement.textContent = 'G�� Sudah Disalin!';
         buttonElement.style.background = '#27ae60';
         
         setTimeout(() => {
             buttonElement.textContent = originalText;
             buttonElement.style.background = '#25d366';
         }, 2000);
-
-        console.log('[WhatsApp] Γ£à Copied to clipboard:', zonaName);
-        
         // Show toast
         if (typeof Toast !== 'undefined') {
             Toast.success(`Pesan untuk zona ${zonaName} sudah disalin!`);
         }
     } catch (error) {
-        console.error('[WhatsApp] Copy failed:', error);
         if (typeof Toast !== 'undefined') {
             Toast.error('Gagal menyalin pesan');
         }
@@ -546,8 +503,6 @@ async function copyToClipboard(message, zonaName, buttonElement) {
  */
 async function markAllWhatsappAsSent() {
     try {
-        console.log('[WhatsApp] Marking batch', currentBatchId, 'as sent');
-
         const token = API.getToken() || localStorage.getItem('jwt_token');
         const headers = { 
             'Content-Type': 'application/json',
@@ -563,24 +518,19 @@ async function markAllWhatsappAsSent() {
         });
 
         const result = await response.json();
-        console.log('[WhatsApp] Mark-sent result:', result);
-
         if (response.ok && result.success) {
             // Hide panel
             document.getElementById('whatsappPanel').style.display = 'none';
             
             if (typeof Toast !== 'undefined') {
-                Toast.success('Semua pesan sudah ditandai sebagai terkirim!', 'Γ£à Sukses');
+                Toast.success('Semua pesan sudah ditandai sebagai terkirim!', 'G�� Sukses');
             }
-
-            console.log('[WhatsApp] Γ£à All messages marked as sent');
         } else {
             if (typeof Toast !== 'undefined') {
                 Toast.error(result.error || 'Gagal menandai sebagai terkirim');
             }
         }
     } catch (error) {
-        console.error('[WhatsApp] Error marking as sent:', error);
         if (typeof Toast !== 'undefined') {
             Toast.error('Error: ' + error.message);
         }

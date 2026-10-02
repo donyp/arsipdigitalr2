@@ -23,9 +23,6 @@
         if (!isMobile()) {
             return; // Skip mobile features on desktop
         }
-
-        console.log('[Mobile] Initializing mobile features...');
-
         // Add mobile class to body
         document.body.classList.add('mobile-device');
         
@@ -280,7 +277,6 @@
     let deferredPrompt;
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('[PWA] Install prompt available');
         e.preventDefault();
         deferredPrompt = e;
         
@@ -335,8 +331,6 @@
             
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            console.log('[PWA] User choice:', outcome);
-            
             deferredPrompt = null;
             banner.remove();
         });
@@ -353,10 +347,8 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
                     .then((registration) => {
-                        console.log('[SW] Service Worker registered:', registration.scope);
                     })
                     .catch((error) => {
-                        console.error('[SW] Service Worker registration failed:', error);
                     });
             });
         }

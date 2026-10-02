@@ -137,7 +137,6 @@ function showConfirm(title, message, onConfirm, okText = 'Konfirmasi', cancelTex
                 okBtn.innerHTML = originalContent;
             }
         } catch (err) {
-            console.error('[showConfirm] Error in callback:', err);
             // okBtn.disabled = false; // Restore button on error?
             // Actually, stay open but restore button
             okBtn.disabled = false;
@@ -250,20 +249,15 @@ function formatCurrency(val) {
 async function initUpdateHistoryNotification() {
     // Only initialize once per page load
     if (window._updateHistoryNotificationInitialized) {
-        console.log('[Update Notify] Already initialized, skipping');
         return;
     }
     window._updateHistoryNotificationInitialized = true;
 
     try {
-        console.log('[Update Notify] Starting check...');
-        
         // Get latest update - wrapped in try-catch since table may not exist
         let updates = [];
         try {
             const response = await API.get('/api/update-history');
-            console.log('[Update Notify] API response:', response);
-            
             // Handle different response formats
             if (response && Array.isArray(response)) {
                 updates = response;
@@ -271,27 +265,19 @@ async function initUpdateHistoryNotification() {
                 updates = response.updates;
             }
         } catch (apiErr) {
-            console.log('[Update Notify] Update history endpoint not available (table may not exist):', apiErr.message);
             return;
         }
         
         if (!updates || updates.length === 0) {
-            console.log('[Update Notify] No updates found');
             return;
         }
         
         const latestUpdate = updates[0];
         if (!latestUpdate || !latestUpdate.id) {
-            console.log('[Update Notify] Latest update invalid:', latestUpdate);
             return;
         }
-        
-        console.log('[Update Notify] Latest update ID:', latestUpdate.id);
-        console.log('[Update Notify] Latest update created_at:', latestUpdate.created_at);
-        
+
         const lastSeenUpdateId = localStorage.getItem('lastSeenUpdateId');
-        console.log('[Update Notify] Last seen update ID:', lastSeenUpdateId);
-        
         // Check if update was just created (within last 5 minutes)
         // This works even across different user logins since we check the server timestamp
         const updateCreatedTime = new Date(latestUpdate.created_at).getTime();
@@ -299,19 +285,12 @@ async function initUpdateHistoryNotification() {
         const timeSincePublish = now - updateCreatedTime;
         const isRecentUpdate = timeSincePublish < (5 * 60 * 1000); // 5 minutes
         
-        console.log('[Update Notify] Time since publish:', timeSincePublish, 'ms (', (timeSincePublish/1000), 'seconds )');
-        console.log('[Update Notify] Is recent update:', isRecentUpdate);
-        
         // Show if:
         // 1. User hasn't seen this update yet (lastSeenUpdateId !== latestUpdate.id), OR
         // 2. It's a recent update (published within 5 minutes)
         if (lastSeenUpdateId === String(latestUpdate.id) && !isRecentUpdate) {
-            console.log('[Update Notify] User already saw this update and it\'s not recent - skipping');
             return;
         }
-        
-        console.log('[Update Notify] Should show popup!');
-        
         // Mark as seen
         localStorage.setItem('lastSeenUpdateId', String(latestUpdate.id));
         
@@ -327,7 +306,6 @@ async function initUpdateHistoryNotification() {
         });
         
         if (!itemsResp.ok) {
-            console.log('[Update Notify] Failed to load items');
             return;
         }
         const itemsData = await itemsResp.json();
@@ -422,7 +400,6 @@ async function initUpdateHistoryNotification() {
         // Check if user has already seen this update
         const seenUpdateKey = `seen_update_${latestUpdate.id}`;
         if (localStorage.getItem(seenUpdateKey)) {
-            console.log('[Update Notify] User already seen this update');
             return; // Don't show again
         }
         
@@ -462,8 +439,7 @@ async function initUpdateHistoryNotification() {
         });
         
     } catch (err) {
-        console.error('[Update Notify] Error:', err);
-        console.error('[Update Notify] Error message:', err.message);
-        console.error('[Update Notify] Stack:', err.stack);
+
+
     }
 }

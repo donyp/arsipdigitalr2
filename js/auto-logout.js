@@ -20,9 +20,6 @@ class AutoLogoutManager {
      */
     async initialize() {
         if (this.isInitialized) return;
-        
-        console.log('[AutoLogout] Initializing auto-logout system...');
-        
         try {
             // Initial check
             await this.checkLogoutTime();
@@ -33,9 +30,7 @@ class AutoLogoutManager {
             }, this.checkFrequencyMs);
             
             this.isInitialized = true;
-            console.log('[AutoLogout] Auto-logout system initialized. Checking every 5 minutes.');
         } catch (err) {
-            console.error('[AutoLogout] Failed to initialize:', err.message);
         }
     }
 
@@ -48,7 +43,6 @@ class AutoLogoutManager {
             this.checkInterval = null;
         }
         this.isInitialized = false;
-        console.log('[AutoLogout] Auto-logout system stopped.');
     }
 
     /**
@@ -74,18 +68,8 @@ class AutoLogoutManager {
             }
 
             const data = await response.json();
-            
-            console.log('[AutoLogout] Check result:', {
-                currentTime: data.currentTime,
-                logoutTime: data.logoutTime,
-                shouldLogout: data.shouldLogout,
-                isWarningTime: data.isWarningTime,
-                minutesUntilLogout: data.minutesUntilLogout
-            });
-
             // If logout time has passed, logout immediately
             if (data.shouldLogout) {
-                console.log('[AutoLogout] Logout time reached. Logging out...');
                 await this.performLogout('Automatic logout at configured time');
                 return;
             }
@@ -101,7 +85,6 @@ class AutoLogoutManager {
             }
 
         } catch (err) {
-            console.error('[AutoLogout] Error checking logout time:', err.message);
         }
     }
 
@@ -112,9 +95,6 @@ class AutoLogoutManager {
         this.warningShown = true;
         
         const message = `Sistem akan logout otomatis dalam ${minutesRemaining} menit. Silakan simpan pekerjaan Anda.`;
-        
-        console.log('[AutoLogout] Showing warning:', message);
-
         // Use SweetAlert for warning
         if (typeof Swal !== 'undefined') {
             Swal.fire({
@@ -152,7 +132,6 @@ class AutoLogoutManager {
                 body: JSON.stringify({ reason })
             });
         } catch (err) {
-            console.error('[AutoLogout] Error calling logout endpoint:', err.message);
         }
 
         // Clear local storage

@@ -28,7 +28,6 @@ async function loadRequests() {
         requests = res.requests || [];
         renderTable();
     } catch (err) {
-        console.error(err);
         Toast.error('Gagal memuat tiket permintaan: ' + err.message);
     } finally {
         isFetching = false;

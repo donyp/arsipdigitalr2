@@ -20,8 +20,6 @@ async function initAuth(requiredRole = null) {
             // Unhide page so user can see redirect message
             document.documentElement.style.opacity = '1';
             document.documentElement.classList.remove('auth-loading');
-            
-            console.warn('[Auth] No token found, redirecting to login...');
             setTimeout(() => window.location.href = '/index', 1000);
         }
         return null;
@@ -32,7 +30,6 @@ async function initAuth(requiredRole = null) {
         const { user } = await API.get('/api/auth/me');
 
         if (!user || !user.is_active) {
-            console.warn('[Auth] User inactive or not found');
             API.clearAuth();
             
             // Unhide page so user can see redirect message
@@ -53,7 +50,6 @@ async function initAuth(requiredRole = null) {
         updateUserUI();
 
     } catch (err) {
-        console.error('[Auth] Init Auth Error:', err.message);
         API.clearAuth();
         
         // Unhide page so user can see error/redirect message
@@ -114,7 +110,6 @@ async function loginWithCredentials(email, password) {
         });
         localStorage.setItem('sessionToken', sessionToken);
     } catch (err) {
-        console.warn('Failed to create session:', err);
         // Non-blocking - continue login even if session creation fails
     }
 
@@ -242,12 +237,6 @@ function updateUserUI() {
         
         // Debug logging for dashboard
         if (el.textContent.includes('Dashboard')) {
-            console.log('[Auth Guard] Dashboard check:', {
-                allowedRoles,
-                currentRole: currentUser.role,
-                isAllowed,
-                element: el.textContent
-            });
         }
         
         if (!isAllowed) {

@@ -4,8 +4,6 @@
 // ============================================================
 
 (function() {
-    console.log('[GlobalAnnouncement] Initializing...');
-
     function createBanner() {
         const banner = document.createElement('div');
         banner.id = 'global-announcement-banner';
@@ -149,8 +147,6 @@
         document.head.appendChild(style);
         document.body.insertBefore(banner, document.body.firstChild);
         document.body.classList.add('has-announcement');
-
-        console.log('[GlobalAnnouncement] Banner created and injected');
     }
 
     // Inject as soon as DOM is ready

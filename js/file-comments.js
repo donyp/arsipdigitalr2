@@ -17,7 +17,6 @@ class FileComments {
             this.comments = response.comments || [];
             this.render();
         } catch (err) {
-            console.error('Error loading comments:', err);
             Toast.error('Gagal memuat komentar');
         }
     }

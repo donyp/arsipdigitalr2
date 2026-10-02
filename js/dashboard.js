@@ -142,8 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${API.getToken()}` }
     }).then(r => r.json())
-      .then(d => console.log('[Dashboard] Sync triggered:', d.status))
-      .catch(e => console.warn('[Dashboard] Sync trigger failed (non-blocking):', e.message));
+      .catch(e => {});
     */
 
     try {
@@ -215,7 +214,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     } catch (err) {
-        console.error('[Dashboard] Error loading dashboard:', err);
         if (window.Toast) {
             Toast.error('Error loading dashboard. Please refresh.');
         }
@@ -497,7 +495,6 @@ async function loadArchives(append = false) {
         let endpoint = viewMode === 'deleted' && isSuperAdmin() ? '/api/files/trash' : '/api/files';
 
         const getVal = (id) => document.getElementById(id)?.value || '';
-        console.log('[loadArchives] Current filter values:', {
             category: getVal('filter-category'),
             zona_id: getVal('filter-zona'),
             toko_id: getVal('filter-toko'),
@@ -662,7 +659,6 @@ async function populateTokoFilter() {
             tokoSelect.value = '';
         }
     } catch (err) {
-        console.error('Failed to fill Toko dropdown', err);
     }
 }
 
@@ -719,7 +715,6 @@ async function scanMissingFiles() {
             Toast.error('Scan gagal: ' + (res.error || 'Unknown error'));
         }
     } catch (err) {
-        console.error('[Scan Missing] Error:', err);
         Toast.error('Gagal melakukan scan: ' + err.message);
     } finally {
         btn.disabled = false;
@@ -952,7 +947,6 @@ function renderTable() {
             tbody.id = 'archive-body';
             archiveTable.appendChild(tbody);
         } else {
-            console.error('[renderTable] archive-table element not found!');
             return;
         }
     }
@@ -994,7 +988,6 @@ function renderTable() {
             // Re-render after enrichment
             renderTableHTML(tbody, pageItems);
         }).catch(err => {
-            console.error('[renderTable] Error fetching toko data:', err);
             renderTableHTML(tbody, pageItems);
         });
         return; // Don't continue rendering until enrichment completes
@@ -1367,7 +1360,7 @@ function acknowledgeFile(fileId) {
                 filteredArchives[index].status = res.status;
                 renderTable();
             }
-        }).catch(err => console.error('Acknowledge Error:', err));
+        }).catch(err => {});
     }
 }
 
@@ -1669,7 +1662,6 @@ function openPreview(fileId, fileName) {
             }, 400);
         });
     } catch (err) {
-        console.error('[Preview Error]', err);
         Toast.error('Gagal membuka preview: ' + err.message);
     }
 }
@@ -2239,7 +2231,6 @@ async function bulkDownloadSelected() {
             clearSelection();
         }, 3000);
     } catch (err) {
-        console.error('Bulk Download Error:', err);
         Toast.error('Gagal mendownload berkas masal.');
     } finally {
         btn.disabled = false;
@@ -2791,7 +2782,6 @@ async function loadInvoicesInDashboard(page = 1) {
             
             // Use aggregatedStats from backend if available
             if (result.aggregatedStats) {
-                console.log('[LoadInvoices] Using aggregated stats from backend');
                 updateInvoiceStatsFromAggregated(result.aggregatedStats);
             } else {
                 // Fallback to old method
@@ -2807,14 +2797,12 @@ async function loadInvoicesInDashboard(page = 1) {
         }
         
     } catch (error) {
-        console.error('[LoadInvoices] Error:', error);
     }
 }
 
 async function renderInvoiceTable(invoices) {
     const tbody = document.getElementById('invoiceTableBody');
     if (!tbody) {
-        console.warn('[RenderTable] All tbody elements:', document.querySelectorAll('tbody').length);
         document.querySelectorAll('tbody').forEach((el, i) => {
         });
         return;
@@ -3265,7 +3253,6 @@ async function downloadInvoiceFile(btn, faktur, fileType) {
             showConfirmButton: false
         });
     } catch (error) {
-        console.error('Download error:', error);
         Swal.fire({
             icon: 'error',
             title: 'Gagal Mengunduh',
@@ -3446,7 +3433,6 @@ async function combinePDF(faktur) {
             showConfirmButton: false
         });
     } catch (error) {
-        console.error('Combine error:', error);
         Swal.fire({
             icon: 'error',
             title: 'Gagal Menggabungkan',
@@ -3559,10 +3545,8 @@ async function loadFilterOptions() {
         
         // DO NOT update stats here - stats should remain at 0 until user applies filter
         // updateInvoiceStatsFromData(invoices, invoiceTotalCount); // REMOVED
-        console.log('[Filter] ✅ Filter options loaded, stats remain at 0 (waiting for filter)');
         
     } catch (error) {
-        console.error('[Filter] Error loading options:', error);
     }
 }
 
@@ -3637,8 +3621,6 @@ function updateInvoiceStatsFromData(invoices, totalCount) {
 
 // Update stats from aggregated backend data (accurate stats from ALL invoices, not just current page)
 function updateInvoiceStatsFromAggregated(stats) {
-    console.log('[Dashboard] Updating stats from aggregated backend data:', stats);
-    
     const elements = {
         total: document.getElementById('statTotal'),
         uploaded: document.getElementById('statUploaded'),
@@ -3661,8 +3643,6 @@ function updateInvoiceStatsFromAggregated(stats) {
 
 // Reset stats to 0 (called on initial load before filtering)
 function resetInvoiceStatsToZero() {
-    console.log('[Dashboard] Resetting stats to 0...');
-    
     const elements = {
         total: document.getElementById('statTotal'),
         uploaded: document.getElementById('statUploaded'),
@@ -3681,8 +3661,6 @@ function resetInvoiceStatsToZero() {
     if (elements.totalAmount) elements.totalAmount.textContent = formatCurrency(0);
     if (elements.lunasAmount) elements.lunasAmount.textContent = formatCurrency(0);
     if (elements.pendingAmount) elements.pendingAmount.textContent = formatCurrency(0);
-    
-    console.log('[Dashboard] ✅ Stats reset to 0');
 }
 
 // Initialize dashboard stats and empty state (but DON'T auto-load data)
@@ -3710,7 +3688,6 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
             try {
                 fileStatus = JSON.parse(row.getAttribute('data-file-status'));
             } catch (e) {
-                console.error('[ActionMenu] Error parsing file status:', e);
             }
         }
         
@@ -3781,7 +3758,6 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
         });
         
     } catch (error) {
-        console.error('[ActionMenu] Error:', error);
         Swal.fire({
             icon: 'error',
             title: 'Error',
@@ -3933,7 +3909,6 @@ async function deleteInvoice(faktur, invoiceId) {
                 await loadFilterOptions();
                 
             } catch (error) {
-                console.error('[DeleteInvoice] Error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: '❌ Gagal Menghapus',
@@ -4126,10 +4101,8 @@ async function applyInvoiceFilters() {
             // IMPORTANT: Use aggregatedStats from backend if available (accurate stats from ALL data)
             // Stats are adjusted based on status filter above
             if (aggregatedStats) {
-                console.log('[Filter] Using aggregated stats from backend:', aggregatedStats);
                 updateInvoiceStatsFromAggregated(aggregatedStats);
             } else {
-                console.log('[Filter] No aggregated stats, calculating from current page data');
                 updateInvoiceStatsFromData(result.data || [], result.count);
             }
         }
@@ -4138,7 +4111,6 @@ async function applyInvoiceFilters() {
         updateTotalNominalDisplay(result.data || []);
         
     } catch (error) {
-        console.error('[Filter] Error:', error);
         Toast.error('Error applying filters: ' + error.message, '❌ Error');
     }
 }
@@ -4327,7 +4299,6 @@ async function applyAdminZonaFilters() {
         // Display results - for now just log
         Toast.info(`Found ${response.count || 0} invoices matching filters`, 'ℹ️ Result');
     } catch (err) {
-        console.error('[AdminZonaFilter] Error:', err);
         Toast.error('Gagal memuat data: ' + err.message, '❌ Error');
     }
 }
@@ -4435,11 +4406,8 @@ async function startInvoiceBackgroundScan() {
 async function initInvoiceSystem() {
     // Prevent multiple initializations in same session
     if (window.invoiceSystemInitialized) {
-        console.log('[Dashboard] Invoice system already initialized, skipping...');
         return;
     }
-    
-    console.log('[Dashboard] Initializing invoice system...');
     window.invoiceSystemInitialized = true;
     
     
@@ -4591,8 +4559,6 @@ function disableFiltersExceptMonth() {
             }
         }
     });
-    
-    console.log('[Filter] ✓ Disabled all filters except month - user must select month first');
 }
 
 // Enable all filter dropdowns after month is selected
@@ -4616,8 +4582,6 @@ function enableAllFilters() {
             }
         }
     });
-    
-    console.log('[Filter] ✓ Enabled all filters - month has been selected');
 }
 
 // Check if month is selected and enable/disable accordingly

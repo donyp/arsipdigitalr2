@@ -21,7 +21,6 @@ async function loadFleet() {
         updateStats();
         renderTable();
     } catch (err) {
-        console.error(err);
         Toast.error('Gagal memuat data armada: ' + err.message);
     } finally {
         document.getElementById('loading-state').classList.add('hidden');

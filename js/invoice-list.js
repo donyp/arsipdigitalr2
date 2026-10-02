@@ -1,4 +1,4 @@
-﻿// Invoice Excel Upload Modal
+// Invoice Excel Upload Modal
 let invoiceCurrentPage = 0;
 let allInvoices = [];  // Global array to store all invoices for popup access
 
@@ -21,26 +21,13 @@ window.closeUploadExcelModal = function() {
 };
 
 function setupExcelUploadModal() {
-    console.log('[Invoice-Setup] setupExcelUploadModal called');
-    
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('excelFileInput');
     const uploadBtn = document.getElementById('uploadBtn');
-    
-    console.log('[Invoice-Setup] Elements found:', {
-        dropZone: !!dropZone,
-        fileInput: !!fileInput,
-        uploadBtn: !!uploadBtn
-    });
-    
     if (!dropZone || !fileInput || !uploadBtn) {
-        console.log('[Invoice-Setup] Elements not ready, retrying in 100ms');
         setTimeout(setupExcelUploadModal, 100);
         return;
     }
-    
-    console.log('[Invoice-Setup] All elements found, setting up listeners');
-    
     // Drag over
     dropZone.addEventListener('dragover', function(e) {
         e.preventDefault();
@@ -59,7 +46,6 @@ function setupExcelUploadModal() {
     dropZone.addEventListener('drop', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        console.log('[Invoice-Setup] File dropped');
         if (e.dataTransfer.files.length > 0) {
             handleExcelFileSelected(e.dataTransfer.files[0]);
         }
@@ -67,7 +53,6 @@ function setupExcelUploadModal() {
 
     // File input change
     fileInput.addEventListener('change', function(e) {
-        console.log('[Invoice-Setup] File selected via input');
         if (e.target.files.length > 0) {
             handleExcelFileSelected(e.target.files[0]);
         }
@@ -79,79 +64,53 @@ function setupExcelUploadModal() {
     const btnCancel = document.getElementById('btnCancel');
     const btnClose = document.getElementById('modal-close-btn');
     const backdrop = document.getElementById('modal-backdrop');
-
-    console.log('[Invoice-Setup] Button elements:', {
-        btnUploadExcel: !!btnUploadExcel,
-        btnSelectFile: !!btnSelectFile,
-        btnCancel: !!btnCancel,
-        btnClose: !!btnClose,
-        backdrop: !!backdrop
-    });
-
     // Direct click handler for main upload button
     if (btnUploadExcel) {
         const clickHandler = function(e) {
-            console.log('[Invoice-Setup] btnUploadExcel clicked');
             e.preventDefault();
             e.stopPropagation();
             window.openUploadExcelModal();
         };
         btnUploadExcel.onclick = clickHandler;
         btnUploadExcel.addEventListener('click', clickHandler);
-        console.log('[Invoice-Setup] Bound: btnUploadExcel');
     }
     
     if (btnSelectFile) {
         btnSelectFile.addEventListener('click', function() {
-            console.log('[Invoice-Setup] btnSelectFile clicked');
             fileInput.click();
         });
-        console.log('[Invoice-Setup] Bound: btnSelectFile');
     }
     if (btnCancel) {
         btnCancel.addEventListener('click', function() {
-            console.log('[Invoice-Setup] btnCancel clicked');
             window.closeUploadExcelModal();
         });
-        console.log('[Invoice-Setup] Bound: btnCancel');
     }
     if (btnClose) {
         btnClose.addEventListener('click', function() {
-            console.log('[Invoice-Setup] btnClose clicked');
             window.closeUploadExcelModal();
         });
-        console.log('[Invoice-Setup] Bound: btnClose');
     }
     if (backdrop) {
         backdrop.addEventListener('click', function() {
-            console.log('[Invoice-Setup] backdrop clicked');
             window.closeUploadExcelModal();
         });
-        console.log('[Invoice-Setup] Bound: backdrop');
     }
     if (uploadBtn) {
         uploadBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('[Invoice-Setup] uploadBtn clicked - calling uploadExcelFile');
             window.uploadExcelFile();
         });
-        console.log('[Invoice-Setup] Bound: uploadBtn');
     }
-    
-    console.log('[Invoice-Setup] Setup complete');
 }
 
 window.handleExcelFileSelected = function(file) {
-    console.log('[File] Selected:', file.name, file.size, 'bytes');
-    
     // IMPORTANT: Set file to input element so uploadExcelFile can find it
     const fileInput = document.getElementById('excelFileInput');
     if (fileInput) {
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(file);
         fileInput.files = dataTransfer.files;
-        console.log('[File] Set to excelFileInput');
     }
     
     // Show file info
@@ -161,42 +120,29 @@ window.handleExcelFileSelected = function(file) {
         document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(2) + ' KB';
         document.getElementById('fileType').textContent = file.type || 'unknown';
         fileInfo.classList.remove('hidden');
-        console.log('[File] File info displayed');
     }
 };
 
 window.uploadExcelFile = async function() {
-    console.log('[Upload] uploadExcelFile called');
-    
     const fileInput = document.getElementById('excelFileInput');
     const uploadBtn = document.getElementById('uploadBtn');
     
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-        Toast.error('Pilih file terlebih dahulu', '❌ Error');
+        Toast.error('Pilih file terlebih dahulu', '? Error');
         return;
     }
 
     const file = fileInput.files[0];
-    console.log('[Upload] File selected:', file.name, file.size, 'bytes');
-    
     const originalText = uploadBtn.textContent;
     uploadBtn.disabled = true;
     uploadBtn.textContent = 'Parsing...';
 
     try {
         // Parse Excel in browser first
-        console.log('[Upload] Reading file...');
         const arrayBuffer = await file.arrayBuffer();
-        
-        console.log('[Upload] Parsing Excel with XLSX...');
         const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
-        
-        console.log('[Upload] Workbook loaded. Sheets:', workbook.SheetNames);
-        
         // Try to find "REKAP LABA" sheet, otherwise use first sheet
         let sheetName = workbook.SheetNames.find(name => name.includes('REKAP')) || workbook.SheetNames[0];
-        console.log('[Upload] Using sheet:', sheetName);
-        
         const worksheet = workbook.Sheets[sheetName];
         
         // Skip title rows - data starts at row 4 (after "REKAP LABA" title)
@@ -207,22 +153,18 @@ window.uploadExcelFile = async function() {
             header: 1  // Get as array first to debug
         });
         
-        console.log('[Upload] Raw data length:', rawData.length);
-        console.log('[Upload] First 5 rows:', rawData.slice(0, 5));
-        
         // Find header row (contains "TANGGAL")
         let headerRowIndex = -1;
         for (let i = 0; i < Math.min(10, rawData.length); i++) {
             const row = rawData[i];
             if (Array.isArray(row) && row.some(cell => cell && cell.toString().includes('TANGGAL'))) {
                 headerRowIndex = i;
-                console.log('[Upload] Found header at row', i, ':', row);
                 break;
             }
         }
         
         if (headerRowIndex === -1) {
-            Toast.error('File Excel kosong atau format tidak valid - Tidak dapat menemukan header row dengan kolom TANGGAL', '❌ Validation Error');
+            Toast.error('File Excel kosong atau format tidak valid - Tidak dapat menemukan header row dengan kolom TANGGAL', '? Validation Error');
             return;
         }
         
@@ -232,13 +174,10 @@ window.uploadExcelFile = async function() {
             blankrows: false,
             range: headerRowIndex  // Start from header row
         });
-        
-        console.log('[Upload] Parsed', parsedData.length, 'rows');
-        console.log('[Upload] First row sample:', parsedData[0]);
-        console.log('[Upload] First row keys:', parsedData[0] ? Object.keys(parsedData[0]) : 'NO DATA');
+
         
         if (parsedData.length === 0) {
-            Toast.error('File Excel kosong atau format tidak valid - Pastikan file memiliki header row dengan kolom: TANGGAL, TOKO, FAKTUR, METODE BAYAR, JENIS TRANSAKSI, KONSUMEN, JUMLAH JUAL, KET 2', '❌ Validation Error');
+            Toast.error('File Excel kosong atau format tidak valid - Pastikan file memiliki header row dengan kolom: TANGGAL, TOKO, FAKTUR, METODE BAYAR, JENIS TRANSAKSI, KONSUMEN, JUMLAH JUAL, KET 2', '? Validation Error');
             return;
         }
         
@@ -255,7 +194,6 @@ window.uploadExcelFile = async function() {
         })).filter(inv => inv.faktur); // Remove rows without faktur
         
         // AGGREGATION: Group by faktur and sum totals for duplicate fakturs
-        console.log('[Upload] Before aggregation:', invoices.length, 'total rows');
         const aggregated = {};
         invoices.forEach(inv => {
             if (aggregated[inv.faktur]) {
@@ -272,7 +210,6 @@ window.uploadExcelFile = async function() {
         });
         
         invoices = Object.values(aggregated);
-        console.log('[Upload] After aggregation:', invoices.length, 'unique fakturs (duplicates summed)');
         
         uploadBtn.textContent = 'Uploading...';
         
@@ -283,8 +220,6 @@ window.uploadExcelFile = async function() {
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-
-        console.log('[Upload] Posting JSON to /api/invoice/upload-excel-data');
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/upload-excel-data`, {
             method: 'POST',
             headers: headers,
@@ -293,28 +228,16 @@ window.uploadExcelFile = async function() {
                 data: invoices
             })
         });
-
-        console.log('[Upload] Response:', response.status, response.statusText);
-        
         const responseText = await response.text();
-        console.log('[Upload] Response text:', responseText);
-        
         let result;
         try {
             result = JSON.parse(responseText);
         } catch (parseErr) {
-            console.error('[Upload] JSON parse error:', parseErr.message);
-            console.error('[Upload] Raw response was:', responseText.substring(0, 500));
-            return Toast.error('Server returned invalid response: ' + responseText.substring(0, 200), '❌ Response Error');
+            return Toast.error('Server returned invalid response: ' + responseText.substring(0, 200), '? Response Error');
         }
-
-        console.log('[Upload] Parsed result:', result);
-
         if (response.ok && result.success) {
             const processed = result.summary?.processed || 0;
             const duplicates = result.summary?.duplicates || 0;
-            console.log('[Upload] SUCCESS');
-            
             // Show success popup
             showSuccessPopup(processed, duplicates);
             
@@ -323,18 +246,15 @@ window.uploadExcelFile = async function() {
             
             // Reload invoice table after 1 second
             setTimeout(() => {
-                console.log('[Upload] Reloading invoice table...');
                 currentPage = 1;
                 loadInvoices();
             }, 1000);
         } else {
             const errMsg = result.error || 'Upload failed';
-            console.log('[Upload] FAILED:', errMsg);
-            Toast.error(errMsg, '❌ Upload Failed');
+            Toast.error(errMsg, '? Upload Failed');
         }
     } catch (error) {
-        console.error('[Upload] Exception:', error);
-        Toast.error(error.message, '❌ Upload Exception');
+        Toast.error(error.message, '? Upload Exception');
     } finally {
         uploadBtn.disabled = false;
         uploadBtn.textContent = originalText;
@@ -349,8 +269,6 @@ const PAGE_SIZE = 20;
 
 async function loadInvoices(page = 1) {
     try {
-        console.log('[LoadInvoices] Loading page', page);
-        
         const token = API.getToken() || localStorage.getItem('jwt_token');
         const headers = {};
         if (token) {
@@ -368,14 +286,11 @@ async function loadInvoices(page = 1) {
         }
         
         const result = await response.json();
-        console.log('[LoadInvoices] Result:', result);
-        
         renderInvoiceTable(result.data || []);
         updateInvoiceStats(result);
         currentPage = page;
         
     } catch (error) {
-        console.error('[LoadInvoices] Error:', error);
     }
 }
 
@@ -385,7 +300,6 @@ function renderInvoiceTable(invoices = null) {
     
     const tbody = document.getElementById('invoiceTableBody');
     if (!tbody) {
-        console.warn('[RenderTable] invoiceTableBody not found');
         return;
     }
     
@@ -445,28 +359,28 @@ function renderInvoiceTable(invoices = null) {
         // Download buttons for uploaded files
         const downloadButtons = [];
         if (inv.invoice_pdf_path) {
-            downloadButtons.push(`<button class="btn-download-small" onclick="downloadInvoiceFile('${inv.faktur}', 'invoice')" title="Download Invoice">📄 INV</button>`);
+            downloadButtons.push(`<button class="btn-download-small" onclick="downloadInvoiceFile('${inv.faktur}', 'invoice')" title="Download Invoice">?? INV</button>`);
         }
         if (inv.bukti_bayar_path) {
-            downloadButtons.push(`<button class="btn-download-small" onclick="downloadInvoiceFile('${inv.faktur}', 'bukti_bayar')" title="Download Bukti Bayar">💰 BB</button>`);
+            downloadButtons.push(`<button class="btn-download-small" onclick="downloadInvoiceFile('${inv.faktur}', 'bukti_bayar')" title="Download Bukti Bayar">?? BB</button>`);
         }
         if (inv.faktur_pajak_path) {
-            downloadButtons.push(`<button class="btn-download-small" onclick="downloadInvoiceFile('${inv.faktur}', 'faktur_pajak')" title="Download Faktur Pajak">📋 FP</button>`);
+            downloadButtons.push(`<button class="btn-download-small" onclick="downloadInvoiceFile('${inv.faktur}', 'faktur_pajak')" title="Download Faktur Pajak">?? FP</button>`);
         }
         
         // Combine button if complete
         if (isComplete) {
             actionButtons = `
                 <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center;">
-                    ${downloadButtons.length > 0 ? `<button onclick="showInvoiceDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⋮</button>` : ''}
-                    <button class="btn-combine" onclick="combinePDF('${inv.faktur}')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#2563eb'" onmouseout="this.style.backgroundColor='#3b82f6'" title="Combine & Download All">📦 Combine</button>
+                    ${downloadButtons.length > 0 ? `<button onclick="showInvoiceDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">?</button>` : ''}
+                    <button class="btn-combine" onclick="combinePDF('${inv.faktur}')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#2563eb'" onmouseout="this.style.backgroundColor='#3b82f6'" title="Combine & Download All">?? Combine</button>
                 </div>
             `;
         } else if (downloadButtons.length > 0) {
             // Show three-dots menu for download buttons
             actionButtons = `
                 <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;">
-                    <button onclick="showInvoiceDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⋮</button>
+                    <button onclick="showInvoiceDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'; this.style.color='#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">?</button>
                 </div>
             `;
         } else {
@@ -541,7 +455,6 @@ function updateInvoiceStats(result) {
 }
 
 function viewInvoiceDetail(invoiceId) {
-    console.log('[ViewInvoice] ID:', invoiceId);
     alert('Detail invoice akan ditampilkan di modal (soon)');
 }
 
@@ -549,11 +462,8 @@ function viewInvoiceDetail(invoiceId) {
 // PDF Upload Modal Functions
 // ============================================
 function openPdfUploadModal(faktur) {
-    console.log('[PDF Upload] Opening modal for faktur:', faktur);
-    
     const modal = document.getElementById('pdfUploadModal');
     if (!modal) {
-        console.error('[PDF Upload] Modal not found!');
         return;
     }
     
@@ -575,11 +485,8 @@ function closePdfUploadModal() {
 }
 
 function openBuktiBayarUploadModal(faktur) {
-    console.log('[Bukti Bayar Upload] Opening modal for faktur:', faktur);
-    
     const modal = document.getElementById('buktiBayarUploadModal');
     if (!modal) {
-        console.error('[Bukti Bayar Upload] Modal not found!');
         return;
     }
     
@@ -611,8 +518,6 @@ async function uploadBuktiBayarFile() {
     }
     
     const file = fileInput.files[0];
-    console.log('[Bukti Bayar] Uploading:', file.name, 'for faktur:', faktur);
-    
     // Check file extension
     if (!file.name.toLowerCase().endsWith('.pdf')) {
         alert('Hanya file PDF yang diizinkan');
@@ -634,8 +539,6 @@ async function uploadBuktiBayarFile() {
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-        
-        console.log('[Bukti Bayar] Posting to /api/invoice/upload-pdf');
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/upload-pdf`, {
             method: 'POST',
             headers: headers,
@@ -643,27 +546,21 @@ async function uploadBuktiBayarFile() {
         });
         
         const result = await response.json();
-        console.log('[Bukti Bayar] Response:', result);
-        
         if (response.ok && result.success) {
-            console.log('[Bukti Bayar] SUCCESS');
-            alert('✅ Bukti Bayar Uploaded!\n\nFaktur: ' + faktur + '\nKonsumen: ' + result.konsumen);
+            alert('? Bukti Bayar Uploaded!\n\nFaktur: ' + faktur + '\nKonsumen: ' + result.konsumen);
             closeBuktiBayarUploadModal();
             
             // Reload table
             setTimeout(() => {
-                console.log('[Bukti Bayar] Reloading invoice table...');
                 currentPage = 1;
                 loadInvoices();
             }, 1000);
         } else {
             const errMsg = result.error || 'Upload failed';
-            console.log('[Bukti Bayar] FAILED:', errMsg);
-            alert('❌ Error: ' + errMsg);
+            alert('? Error: ' + errMsg);
         }
     } catch (error) {
-        console.error('[Bukti Bayar] Exception:', error);
-        alert('❌ Error: ' + error.message);
+        alert('? Error: ' + error.message);
     } finally {
         uploadBtn.disabled = false;
         uploadBtn.textContent = originalText;
@@ -681,8 +578,6 @@ async function uploadPdfFile() {
     }
     
     const file = fileInput.files[0];
-    console.log('[PDF] Uploading:', file.name, 'for faktur:', faktur);
-    
     // Check file extension
     if (!file.name.toLowerCase().endsWith('.pdf')) {
         alert('Hanya file PDF yang diizinkan');
@@ -702,8 +597,6 @@ async function uploadPdfFile() {
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-        
-        console.log('[PDF] Posting to /api/invoice/upload-pdf');
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/upload-pdf`, {
             method: 'POST',
             headers: headers,
@@ -711,27 +604,21 @@ async function uploadPdfFile() {
         });
         
         const result = await response.json();
-        console.log('[PDF] Response:', result);
-        
         if (response.ok && result.success) {
-            console.log('[PDF] SUCCESS');
-            alert('✅ PDF Uploaded!\n\nFaktur: ' + faktur + '\nKonsumen: ' + result.konsumen);
+            alert('? PDF Uploaded!\n\nFaktur: ' + faktur + '\nKonsumen: ' + result.konsumen);
             closePdfUploadModal();
             
             // Reload table
             setTimeout(() => {
-                console.log('[PDF] Reloading invoice table...');
                 currentPage = 1;
                 loadInvoices();
             }, 1000);
         } else {
             const errMsg = result.error || 'Upload failed';
-            console.log('[PDF] FAILED:', errMsg);
-            alert('❌ Error: ' + errMsg);
+            alert('? Error: ' + errMsg);
         }
     } catch (error) {
-        console.error('[PDF] Exception:', error);
-        alert('❌ Error: ' + error.message);
+        alert('? Error: ' + error.message);
     } finally {
         uploadBtn.disabled = false;
         uploadBtn.textContent = originalText;
@@ -741,12 +628,10 @@ async function uploadPdfFile() {
 // Load invoices on page load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', async () => {
-        console.log('[Invoice-Init] Loading initial invoice list');
         await initAuth();
         loadInvoices(1);
     });
 } else {
-    console.log('[Invoice-Init] Document ready, loading invoices now');
     (async () => {
         await initAuth();
         loadInvoices(1);
@@ -787,7 +672,7 @@ function showSuccessPopup(processed, duplicates) {
     
     // Add success icon
     const icon = document.createElement('div');
-    icon.innerHTML = '✅';
+    icon.innerHTML = '?';
     icon.style.cssText = `
         font-size: 64px;
         margin-bottom: 20px;
@@ -922,7 +807,7 @@ function showSuccessPopup(processed, duplicates) {
 // Clear Test Data Function
 // ============================================
 window.clearTestData = async function() {
-    if (!confirm('⚠️ PERINGATAN!\n\nIni akan menghapus SEMUA data test invoice.\nAksi tidak bisa diundo!\n\nLanjutkan?')) {
+    if (!confirm('?? PERINGATAN!\n\nIni akan menghapus SEMUA data test invoice.\nAksi tidak bisa diundo!\n\nLanjutkan?')) {
         return;
     }
     
@@ -932,9 +817,6 @@ window.clearTestData = async function() {
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
         }
-        
-        console.log('[ClearTest] Sending DELETE request to /api/invoice/clear-test-data');
-        
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/clear-test-data`, {
             method: 'DELETE',
             headers: headers
@@ -943,33 +825,29 @@ window.clearTestData = async function() {
         const result = await response.json();
         
         if (response.ok) {
-            alert('✅ Success!\n\n' + result.message + '\n\nHalaman akan di-reload...');
+            alert('? Success!\n\n' + result.message + '\n\nHalaman akan di-reload...');
             setTimeout(() => location.reload(), 1000);
         } else {
-            alert('❌ Error: ' + (result.error || 'Failed to clear data'));
+            alert('? Error: ' + (result.error || 'Failed to clear data'));
         }
     } catch (error) {
-        console.error('[ClearTest] Error:', error);
-        alert('❌ Error: ' + error.message);
+        alert('? Error: ' + error.message);
     }
 };
 
 // Setup event listener for clear button
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[Invoice-Init] DOMContentLoaded - setting up handlers');
     setupExcelUploadModal();
     
     const clearBtn = document.getElementById('btnClearTestData');
     if (clearBtn) {
         clearBtn.addEventListener('click', window.clearTestData);
         clearBtn.onclick = window.clearTestData;
-        console.log('[Invoice-Init] Clear test data button handler attached');
     }
 });
 
 // Also setup after short delay to be safe
 setTimeout(() => {
-    console.log('[Invoice-Init] Setting up handlers (delayed 200ms)');
     setupExcelUploadModal();
     
     const clearBtn = document.getElementById('btnClearTestData');
@@ -977,7 +855,6 @@ setTimeout(() => {
         clearBtn.addEventListener('click', window.clearTestData);
         clearBtn.onclick = window.clearTestData;
         clearBtn._setupDone = true;
-        console.log('[Invoice-Init] Clear test data button handler attached (delayed)');
     }
 }, 200);
 
@@ -1019,7 +896,6 @@ function formatRupiah(amount) {
 async function populateTokoDropdown() {
     const tokoSelect = document.getElementById('filterToko');
     if (!tokoSelect) {
-        console.warn('[Invoice-Filter] filterToko not found');
         return;
     }
     
@@ -1027,18 +903,8 @@ async function populateTokoDropdown() {
         // Get current user from auth module
         const user = getCurrentUser ? getCurrentUser() : null;
         const isAdminZona = user && user.role === 'admin_zona';
-        
-        console.log('[Invoice-Filter] Current user:', {
-            name: user?.name,
-            role: user?.role,
-            zona_id: user?.zona_id,
-            isAdminZona
-        });
-        
         if (isAdminZona && user.zona_id) {
             // For admin_zona: Show KONSUMEN (actual toko names from their zona)
-            console.log('[Invoice-Filter] Admin zona detected - fetching konsumen from their zona');
-            
             // Get distinct konsumen for their zona
             let { data, error } = await supabase
                 .from('invoice_file_list')
@@ -1047,7 +913,6 @@ async function populateTokoDropdown() {
                 .order('konsumen', { ascending: true });
             
             if (error) {
-                console.error('[Invoice-Filter] Error fetching zona konsumen:', error);
                 return;
             }
             
@@ -1068,21 +933,16 @@ async function populateTokoDropdown() {
                     option.textContent = konsumen;
                     tokoSelect.appendChild(option);
                 });
-                console.log('[Invoice-Filter] ✅ Konsumen dropdown populated with', uniqueKonsumen.length, 'stores from zone:', uniqueKonsumen);
-                
                 // Log any supplier names that slipped through (for debugging)
                 const invalidKonsumen = data
                     .map(row => row.konsumen)
                     .filter(k => k && supplierNames.includes(k.trim().toUpperCase()));
                 if (invalidKonsumen.length > 0) {
-                    console.warn('[Invoice-Filter] ⚠️ Found supplier names in konsumen column:', invalidKonsumen);
                 }
             } else {
-                console.warn('[Invoice-Filter] ⚠️ No invoices found for zona_id:', user.zona_id);
             }
         } else {
             // For super_admin/moderator: Show TOKO (supplier names)
-            console.log('[Invoice-Filter] Super admin/moderator - fetching suppliers (toko column)');
             
             let { data, error } = await supabase
                 .from('invoice_file_list')
@@ -1090,7 +950,6 @@ async function populateTokoDropdown() {
                 .order('toko', { ascending: true });
             
             if (error) {
-                console.error('[Invoice-Filter] Error fetching toko:', error);
                 return;
             }
             
@@ -1108,11 +967,9 @@ async function populateTokoDropdown() {
                     option.textContent = toko;
                     tokoSelect.appendChild(option);
                 });
-                console.log('[Invoice-Filter] ✅ Toko (supplier) dropdown populated with', uniqueToko.length, 'suppliers:', uniqueToko);
             }
         }
     } catch (err) {
-        console.error('[Invoice-Filter] Error in populateTokoDropdown:', err);
     }
 }
 
@@ -1122,7 +979,6 @@ async function populateTokoDropdown() {
 async function populateYearDropdown() {
     const yearSelect = document.getElementById('filterYear');
     if (!yearSelect) {
-        console.warn('[Invoice-Filter] filterYear not found');
         return;
     }
     
@@ -1133,7 +989,6 @@ async function populateYearDropdown() {
             .select('tanggal');
         
         if (error) {
-            console.error('[Invoice-Filter] Error fetching years:', error);
             // Fallback to static years
             const currentYear = new Date().getFullYear();
             const startYear = 2020;
@@ -1167,17 +1022,13 @@ async function populateYearDropdown() {
             option.textContent = year;
             yearSelect.appendChild(option);
         });
-        
-        console.log('[Invoice-Filter] ✅ Year dropdown populated with years:', sortedYears);
     } catch (err) {
-        console.error('[Invoice-Filter] Error in populateYearDropdown:', err);
     }
 }
 
 async function populateMonthDropdown() {
     const monthSelect = document.getElementById('filterMonth');
     if (!monthSelect) {
-        console.warn('[Invoice-Filter] filterMonth not found');
         return;
     }
     
@@ -1188,7 +1039,6 @@ async function populateMonthDropdown() {
             .select('tanggal');
         
         if (error) {
-            console.error('[Invoice-Filter] Error fetching months:', error);
             // Fallback to all 12 months
             const monthNames = [
                 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -1229,10 +1079,7 @@ async function populateMonthDropdown() {
             option.textContent = monthNames[parseInt(monthNum) - 1];
             monthSelect.appendChild(option);
         });
-        
-        console.log('[Invoice-Filter] ✅ Month dropdown populated with months:', sortedMonths);
     } catch (err) {
-        console.error('[Invoice-Filter] Error in populateMonthDropdown:', err);
     }
 }
 
@@ -1261,7 +1108,6 @@ async function updateFilterTotal() {
             totalElement.textContent = formatRupiah(total);
         }
     } catch (error) {
-        console.error('[FilterTotal] Error:', error);
     }
 }
 
@@ -1269,19 +1115,13 @@ async function updateFilterTotal() {
 // Setup Filter Event Listeners
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Invoice-Filter] Setting up filter handlers');
-    console.log('[Invoice-Filter] currentUser at DOMContentLoaded:', window.currentUser);
-    
+
     // Wait a bit for currentUser to be available
     let retries = 0;
     while (!window.currentUser && retries < 10) {
-        console.log('[Invoice-Filter] Waiting for currentUser... retry', retries);
         await new Promise(resolve => setTimeout(resolve, 100));
         retries++;
     }
-    
-    console.log('[Invoice-Filter] currentUser after wait:', window.currentUser);
-    
     // Populate all dropdowns
     await populateTokoDropdown();
     await populateYearDropdown();
@@ -1292,8 +1132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (btnApplyFilter) {
         btnApplyFilter.addEventListener('click', async () => {
-            console.log('[Invoice-Filter] Apply filter clicked');
-            
             // Get filter values
             const status = document.getElementById('filterStatus')?.value || '';
             const supplier = document.getElementById('filterSupplier')?.value || '';
@@ -1315,7 +1153,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Filter by zona if admin_zona
             if (isAdminZona && user.zona_id) {
                 query = query.eq('zona_id', user.zona_id);
-                console.log('[Invoice-Filter] Admin zona detected - filtering by zona_id:', user.zona_id);
             }
             
             if (status) query = query.eq('status', status);
@@ -1326,11 +1163,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (isAdminZona) {
                     // For admin_zona: filter by konsumen (actual toko name)
                     query = query.eq('konsumen', tokoFilter);
-                    console.log('[Invoice-Filter] Admin zona - filtering by konsumen:', tokoFilter);
                 } else {
                     // For super_admin/moderator: filter by toko (supplier name)
                     query = query.eq('toko', tokoFilter);
-                    console.log('[Invoice-Filter] Super admin - filtering by toko (supplier):', tokoFilter);
                 }
             }
             
@@ -1378,14 +1213,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { data, error } = await query;
             
             if (error) {
-                console.error('[Invoice-Filter] Error:', error);
                 alert('Error applying filter');
                 return;
             }
             
             // Check if toko was selected but no data found
             if (tokoFilter && (!data || data.length === 0)) {
-                console.warn('[Invoice-Filter] ⚠️ Toko selected but no data found:', tokoFilter);
                 Swal.fire({
                     icon: 'info',
                     title: 'Tidak Ada Data',
@@ -1418,8 +1251,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     if (btnResetFilter) {
         btnResetFilter.addEventListener('click', async () => {
-            console.log('[Invoice-Filter] Reset filter clicked');
-            
             // Clear all filters
             const filterStatus = document.getElementById('filterStatus');
             const filterSupplier = document.getElementById('filterSupplier');
@@ -1465,8 +1296,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Pagination with Fade Animation
 // ============================================
 window.goToNextPage = async function() {
-    console.log('[Invoice-Pagination] Next page clicked');
-    
     const maxPage = Math.ceil(allInvoices.length / ITEMS_PER_PAGE) - 1;
     if (invoiceCurrentPage < maxPage) {
         // Fade out
@@ -1491,8 +1320,6 @@ window.goToNextPage = async function() {
 };
 
 window.goToPrevPage = async function() {
-    console.log('[Invoice-Pagination] Previous page clicked');
-    
     if (invoiceCurrentPage > 0) {
         // Fade out
         const table = document.querySelector('.invoice-table');
@@ -1593,8 +1420,6 @@ window.renderInvoiceTable = function(...args) {
  */
 window.downloadInvoiceFile = async function(faktur, fileType) {
     try {
-        console.log(`[Download] Downloading ${fileType} for faktur: ${faktur}`);
-        
         const response = await fetch(`/api/invoice/download-file/${faktur}/${fileType}`, {
             method: 'GET',
             headers: {
@@ -1631,11 +1456,7 @@ window.downloadInvoiceFile = async function(faktur, fileType) {
         if (window.Toast) {
             Toast.success(`File ${filename} berhasil didownload`);
         }
-        
-        console.log(`[Download] ✅ Downloaded: ${filename}`);
-        
     } catch (error) {
-        console.error('[Download] Error:', error);
         if (window.Toast) {
             Toast.error(`Download failed: ${error.message}`);
         } else {
@@ -1649,8 +1470,6 @@ window.downloadInvoiceFile = async function(faktur, fileType) {
  */
 window.combinePDF = async function(faktur) {
     try {
-        console.log(`[Combine] Combining PDFs for faktur: ${faktur}`);
-        
         if (window.Toast) {
             Toast.info('Combining PDFs... Please wait...');
         }
@@ -1684,11 +1503,7 @@ window.combinePDF = async function(faktur) {
         if (window.Toast) {
             Toast.success(`Combined PDF ${filename} berhasil didownload`);
         }
-        
-        console.log(`[Combine] ✅ Combined and downloaded: ${filename}`);
-        
     } catch (error) {
-        console.error('[Combine] Error:', error);
         if (window.Toast) {
             Toast.error(`Combine failed: ${error.message}`);
         } else {
@@ -1731,21 +1546,21 @@ window.showInvoiceDownloadMenu = function(faktur, invoiceId) {
         // Show invoice download button if file exists
         if (invoice.invoice_pdf_path) {
             menuHTML += `<button onclick="downloadInvoiceFile('${faktur}', 'invoice'); if(window.Swal) Swal.close();" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#2980b9'" onmouseout="this.style.background='#3498db'">
-                📄 Download Invoice
+                ?? Download Invoice
             </button>`;
         }
         
         // Show bukti bayar download button if file exists
         if (invoice.bukti_bayar_path) {
             menuHTML += `<button onclick="downloadInvoiceFile('${faktur}', 'bukti_bayar'); if(window.Swal) Swal.close();" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
-                💰 Download Bukti Bayar
+                ?? Download Bukti Bayar
             </button>`;
         }
         
         // Show faktur pajak download button if file exists
         if (invoice.faktur_pajak_path) {
             menuHTML += `<button onclick="downloadInvoiceFile('${faktur}', 'faktur_pajak'); if(window.Swal) Swal.close();" style="width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
-                📋 Download Faktur Pajak
+                ?? Download Faktur Pajak
             </button>`;
         }
         
@@ -1756,7 +1571,7 @@ window.showInvoiceDownloadMenu = function(faktur, invoiceId) {
         
         if (filesUploaded >= filesRequired) {
             menuHTML += `<button onclick="combinePDF('${faktur}'); if(window.Swal) Swal.close();" style="width: 100%; padding: 12px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#d35400'" onmouseout="this.style.background='#e67e22'">
-                📦 Combine PDF (${filesUploaded}/${filesRequired})
+                ?? Combine PDF (${filesUploaded}/${filesRequired})
             </button>`;
         }
         
@@ -1764,7 +1579,7 @@ window.showInvoiceDownloadMenu = function(faktur, invoiceId) {
         if (isModerator) {
             menuHTML += `<div style="border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px;"></div>`;
             menuHTML += `<button onclick="deleteInvoice('${faktur}', '${invoiceId}'); if(window.Swal) Swal.close();" style="width: 100%; padding: 12px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#c0392b'" onmouseout="this.style.background='#e74c3c'">
-                🗑️ Hapus Invoice
+                ??? Hapus Invoice
             </button>`;
         }
         
@@ -1773,7 +1588,7 @@ window.showInvoiceDownloadMenu = function(faktur, invoiceId) {
         // Show SweetAlert2 popup if available
         if (window.Swal) {
             Swal.fire({
-                title: '📥 Download Files',
+                title: '?? Download Files',
                 html: menuHTML,
                 icon: 'info',
                 showConfirmButton: false,
@@ -1789,7 +1604,6 @@ window.showInvoiceDownloadMenu = function(faktur, invoiceId) {
         }
         
     } catch (error) {
-        console.error('[Menu] Error:', error);
         if (window.Swal) {
             Swal.fire({
                 icon: 'error',

@@ -3,8 +3,6 @@
 // ============================================================
 
 (function() {
-    console.log('[Sidebar] Initializing v5.6 - Persistent & Consistent...');
-    
     // Add scrollbar styling for sidebar - both light and dark mode
     const scrollbarStyle = document.createElement('style');
     scrollbarStyle.textContent = `
@@ -237,7 +235,6 @@
     function inject() {
         let sidebar = document.getElementById('sidebar');
         if (!sidebar) {
-            console.log('[Sidebar] No sidebar element found');
             return;
         }
 
@@ -567,8 +564,6 @@
 
         // Mark sidebar as injected
         sidebar.setAttribute('data-injected', 'true');
-
-        console.log('[Sidebar] v5.4 Smooth UX complete');
     }
 
     if (document.readyState === 'loading') {
@@ -736,8 +731,6 @@ function toggleDarkMode() {
         html.classList.remove('no-transition');
         html.classList.add('with-transitions');
     }, 10);
-    
-    console.log('[DarkMode] Toggled to:', newState ? 'Dark' : 'Light');
 }
 
 function updateDarkModeUI() {

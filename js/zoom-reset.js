@@ -19,8 +19,6 @@
             metaViewport.setAttribute('content', 
                 'width=device-width, initial-scale=1.0, user-scalable=yes');
         }
-        
-        console.log('[ZoomReset] Browser zoom reset to 100%');
     }
     
     // Reset on page load
@@ -60,6 +58,4 @@
             resetZoom();
         }
     });
-    
-    console.log('[ZoomReset] Module initialized - zoom will be kept at 100%');
 })();

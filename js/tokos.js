@@ -41,7 +41,6 @@ async function populateModalZonas() {
             }
         });
     } catch (err) {
-        console.warn('Failed to load zonas:', err);
     }
 }
 

@@ -147,6 +147,4 @@
             document.documentElement.classList.add('with-transitions');
         }, 50);
     }
-
-    console.log('[DarkModeInit] ✓ Dark mode smooth transitions initialized');
 })();

@@ -43,7 +43,6 @@ async function loadCategories() {
             selectCategory(first.nama, first.emoji, capitalize(first.nama), `bg-${first.warna}-500/15`);
         }
     } catch (err) {
-        console.error('Load Categories Error:', err);
     }
 }
 
@@ -422,7 +421,6 @@ async function loadMedia() {
         renderGrid();
         updateStats();
     } catch (err) {
-        console.error('Load Media Error:', err);
         Toast.error('Gagal memuat media.');
     } finally {
         showLoading(false);
@@ -596,7 +594,6 @@ async function deleteSelected() {
                 clearSelection();
                 loadMedia();
             } catch (err) {
-                console.error('Bulk Delete Error:', err);
                 Toast.error(err.message || 'Gagal menghapus media massal.');
             } finally {
                 btn.disabled = false;
@@ -613,8 +610,6 @@ function getPreview(media) {
     const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
     // SECURITY FIX: Token tidak di-expose di URL, gunakan object URL dari fetch dengan Authorization header
     const viewUrl = `${CONFIG.API_URL}/api/ads-media/${media.id}/view?cb=${Date.now()}`;
-    console.log(`[Preview] ${media.nama_file}: ${viewUrl}`);
-
     if (imageExts.includes(ext)) {
         return `
             <img src="${viewUrl}" 
@@ -705,7 +700,6 @@ async function downloadMedia(id, filename) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (err) {
-        console.error('[Download] Error:', err);
         alert('Gagal mengunduh file. Silakan coba lagi.');
     }
 }

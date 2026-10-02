@@ -10,8 +10,6 @@ let totalTickets = 0;
 let totalPages = 1;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Support-List] Initializing support dashboard...');
-    
     // Wait for auth to load
     await new Promise(resolve => {
         if (typeof currentUser !== 'undefined' && currentUser) {
@@ -83,10 +81,7 @@ async function loadStats() {
         document.getElementById('statOpen').textContent = stats.open;
         document.getElementById('statAnswered').textContent = stats.answered;
         document.getElementById('statClosed').textContent = stats.closed;
-
-        console.log('[Support-List] Stats loaded:', stats);
     } catch (error) {
-        console.error('[Support-List] Error loading stats:', error);
     }
 }
 
@@ -114,10 +109,7 @@ async function loadTickets() {
 
         renderTickets(tickets);
         updatePagination();
-
-        console.log('[Support-List] Tickets loaded:', tickets.length);
     } catch (error) {
-        console.error('[Support-List] Error loading tickets:', error);
         document.getElementById('ticketsContainer').innerHTML = `
             <div class="table-row cursor-default">
                 <div class="col-span-6 text-center text-red-500">
@@ -233,9 +225,6 @@ async function submitCreateTicket(e) {
 
         const data = await response.json();
         const ticketId = data.ticket.id;
-
-        console.log('[Support-List] Ticket created:', data.ticket.ticket_number);
-
         // Show success message
         showNotification(`✓ ${data.ticket.ticket_number} berhasil dibuat!`, 'success');
 
@@ -247,7 +236,6 @@ async function submitCreateTicket(e) {
         }, 500);
 
     } catch (error) {
-        console.error('[Support-List] Error creating ticket:', error);
         showNotification(`Error: ${error.message}`, 'error');
     }
 }

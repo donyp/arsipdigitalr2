@@ -60,7 +60,6 @@ async function createShareLink() {
         showShareResult(data);
 
     } catch (err) {
-        console.error('Create share error:', err);
         Toast.error(err.message || 'Gagal membuat link sharing');
     }
 }
@@ -121,7 +120,6 @@ async function loadFileShares() {
         displayShares(data.shares || []);
 
     } catch (err) {
-        console.error('Load shares error:', err);
     }
 }
 
@@ -215,7 +213,6 @@ async function revokeShare(shareId) {
         loadFileShares();
 
     } catch (err) {
-        console.error('Revoke share error:', err);
         Toast.error(err.message || 'Gagal mencabut sharing');
     }
 }

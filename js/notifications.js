@@ -29,7 +29,6 @@ const NotificationSystem = {
             this.updateBadge();
             this.renderList(notifications);
         } catch (error) {
-            console.error('Error fetching notifications:', error);
         }
     },
 
@@ -105,7 +104,6 @@ window.markAllAsRead = async () => {
         NotificationSystem.checkNotifications();
         if (typeof Toast !== 'undefined') Toast.success('Semua notifikasi ditandai sudah dibaca');
     } catch (error) {
-        console.error('Error marking read:', error);
     }
 };
 

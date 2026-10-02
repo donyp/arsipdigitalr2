@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Don't load recent uploads on page init to speed up loading
         // loadRecentUploads();
     } catch (error) {
-        console.error('[upload-piutang.js] Error during initialization:', error);
         document.documentElement.style.opacity = '1';
         document.documentElement.classList.remove('auth-loading');
     }
@@ -45,10 +44,7 @@ async function loadAllTokos() {
         const response = await API.get('/api/toko');
         const tokos = response.tokos || response || [];
         window._allTokos = Array.isArray(tokos) ? tokos : [];
-        console.log('[loadAllTokos] Loaded', window._allTokos.length, 'tokos');
-        console.log('[loadAllTokos] Toko names:', window._allTokos.map(t => t.nama || t.name).join(', '));
     } catch (error) {
-        console.error('[loadAllTokos] Error:', error);
         window._allTokos = [];
     }
 }
@@ -91,7 +87,6 @@ function setupDragDrop() {
     function handleDrop(e) {
         const dt = e.dataTransfer;
         const files = dt.files;
-        console.log('[handleDrop] Received', files.length, 'files via drag-drop');
         handleFileSelect(files);
     }
 }
@@ -100,14 +95,11 @@ function setupDragDrop() {
 function handleFileSelect(input) {
     // Handle both input element and FileList
     const files = input.files ? Array.from(input.files) : Array.from(input);
-    console.log('[handleFileSelect] Processing', files.length, 'files');
     addFiles(files);
 }
 
 // ---- Add Files to Queue ----
 function addFiles(files) {
-    console.log('[addFiles] Adding', files.length, 'files');
-    
     // Save existing form data before adding new files
     const formData = saveFormData();
     
@@ -133,7 +125,6 @@ function addFiles(files) {
             file: file,
             id: Math.random().toString(36).substr(2, 9)
         });
-        console.log('[addFiles] Added file:', file.name, '- Total files:', selectedFiles.length);
     });
 
     updateFileUI();
@@ -224,24 +215,15 @@ function filterTokos(index) {
         dropdown.classList.add('hidden');
         return;
     }
-
-    console.log(`[filterTokos] Index: ${index}, Query: "${query}", Total tokos: ${window._allTokos.length}`);
-
     // Filter tokos based on query
     const filtered = window._allTokos.filter(toko => {
         const tokoName = (toko.nama || toko.name || '').toLowerCase();
         const matches = tokoName.includes(query);
         if (matches) {
-            console.log(`[filterTokos] Match found: "${toko.nama || toko.name}"`);
         }
         return matches;
     });
-
-    console.log(`[filterTokos] Found ${filtered.length} matches`);
-
     if (filtered.length === 0) {
-        console.log(`[filterTokos] No matches found for query: "${query}"`);
-        console.log(`[filterTokos] Available tokos:`, window._allTokos.map(t => t.nama || t.name).join(', '));
         dropdown.classList.add('hidden');
         return;
     }
@@ -380,20 +362,15 @@ function updateFileUI() {
     const fileInfo = document.getElementById('file-info');
     const fileListDisplay = document.getElementById('file-list-display');
     const uploadBtnContainer = document.getElementById('upload-btn-container');
-
-    console.log('[updateFileUI] selectedFiles.length:', selectedFiles.length);
-
     if (selectedFiles.length === 0) {
         // No files - show intro text only
         dropZoneIntro.style.display = '';
         fileInfo.classList.add('hidden');
         uploadBtnContainer.classList.add('hidden');
-        console.log('[updateFileUI] No files - showing intro only');
         return;
     }
 
     // Files are selected - hide intro text, show file list
-    console.log('[updateFileUI] Files selected - hiding intro, showing file list');
     dropZoneIntro.style.display = 'none';
     fileInfo.classList.remove('hidden');
     uploadBtnContainer.classList.remove('hidden');
@@ -488,8 +465,6 @@ async function uploadAllFiles() {
         for (let i = 0; i < selectedFiles.length; i++) {
             allMetadata.push(getFileMetadata(i));
         }
-        console.log('[uploadAllFiles] Collected metadata for', allMetadata.length, 'files');
-
         let completed = 0;
         for (let i = 0; i < selectedFiles.length; i++) {
             const item = selectedFiles[i];
@@ -497,9 +472,6 @@ async function uploadAllFiles() {
             
             const formData = new FormData();
             formData.append('file', item.file);
-            
-            console.log('[uploadAllFiles] File', i + 1, ':', item.file.name, 'toko:', metadata.toko, 'tanggal:', metadata.tanggal);
-            
             // Convert toko name to toko_id
             if (metadata.toko) {
                 const selectedToko = window._allTokos.find(t => 
@@ -507,18 +479,14 @@ async function uploadAllFiles() {
                 );
                 if (selectedToko) {
                     formData.append('toko_id', String(selectedToko.id));
-                    console.log('[uploadAllFiles] Added toko_id:', selectedToko.id);
                 }
             }
 
             if (metadata.tanggal) {
                 formData.append('tanggal_dokumen', metadata.tanggal);
-                console.log('[uploadAllFiles] Added tanggal:', metadata.tanggal);
             }
 
             try {
-                console.log('[uploadAllFiles] Starting upload for file', i + 1);
-                
                 // Add timeout to prevent hanging
                 const uploadPromise = API.upload('/api/files/upload-piutang', formData);
                 const timeoutPromise = new Promise((_, reject) => 
@@ -530,9 +498,7 @@ async function uploadAllFiles() {
                 const progress = Math.round((completed / selectedFiles.length) * 100);
                 progressBar.style.width = progress + '%';
                 progressPct.textContent = progress + '%';
-                console.log('[uploadAllFiles] File', i + 1, 'uploaded successfully');
             } catch (error) {
-                console.error('[uploadAllFiles] Upload error for file', i + 1, ':', error);
                 if (window.Toast) {
                     Toast.error(`Gagal upload ${item.file.name}: ${error.message}`);
                 }
@@ -550,7 +516,6 @@ async function uploadAllFiles() {
             await loadRecentUploads();
         }
     } catch (error) {
-        console.error('Upload error:', error);
         if (window.Toast) {
             Toast.error('Terjadi kesalahan saat upload');
         }
@@ -600,7 +565,6 @@ async function loadRecentUploads() {
             </div>
         `).join('');
     } catch (error) {
-        console.error('Error loading recent uploads:', error);
         recentContainer.innerHTML = `
             <div class="flex flex-col items-center justify-center py-10 opacity-30">
                 <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

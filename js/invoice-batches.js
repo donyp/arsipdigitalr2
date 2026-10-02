@@ -51,7 +51,6 @@ async function loadBatches() {
         renderTable(result.data || []);
 
     } catch (error) {
-        console.error('Error loading batches:', error);
         if (typeof Toast !== 'undefined') {
             Toast.error('Gagal memuat riwayat upload', '❌ Error');
         } else {
@@ -168,7 +167,6 @@ async function deleteBatch(batchId, filename, invoiceCount) {
         await loadBatches();
 
     } catch (error) {
-        console.error('Delete error:', error);
         alert(`❌ Gagal menghapus batch: ${error.message}`);
     } finally {
         hideLoading();

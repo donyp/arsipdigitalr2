@@ -305,8 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function handleFilesSelected(files) {
-    console.log('[PDF Bulk] Files selected:', files.length);
-    
     // Strict PDF validation
     const pdfFiles = [];
     const rejectedFiles = [];
@@ -326,7 +324,6 @@ function handleFilesSelected(files) {
         
         // MIME type check (warning only, not blocking)
         if (!validMimeTypes.includes(f.type) && f.type !== '') {
-            console.warn(`[PDF Bulk] File ${f.name} has unexpected MIME type: ${f.type}`);
         }
         
         // Size check
@@ -357,8 +354,6 @@ function handleFilesSelected(files) {
     }
     
     selectedFiles = pdfFiles;
-    console.log(`[PDF Bulk] Valid PDF files: ${selectedFiles.length}`);
-
     // Start validation
     validateAllFiles();
 }
@@ -389,9 +384,6 @@ async function validateAllFiles() {
         for (let i = 0; i < selectedFiles.length; i++) {
             const file = selectedFiles[i];
             const faktur = file.name.replace(/\.pdf$/i, '').trim();
-            
-            console.log(`[PDF Bulk] Validating ${i+1}/${selectedFiles.length}: ${faktur}`);
-            
             try {
                 const response = await fetch(`${CONFIG.API_URL}/api/invoice/check-faktur/${faktur}`, {
                     method: 'GET',
@@ -405,14 +397,11 @@ async function validateAllFiles() {
                     if (result.data.invoice_pdf_path) {
                         // File path exists in database, but verify it still exists on Google Drive
                         try {
-                            console.log('[PDF Bulk Debug] Verifying file exists on Google Drive:', result.data.invoice_pdf_path);
                             const checkRes = await fetch(`${CONFIG.API_URL}/api/invoice/check-file/${faktur}/invoice`, {
                                 method: 'GET',
                                 headers: headers
                             });
                             const checkData = await checkRes.json();
-                            console.log('[PDF Bulk Debug] File check result:', checkData);
-                            
                             if (checkData.exists) {
                                 // File still exists on Google Drive - mark as duplicate
                                 validationResults.push({
@@ -422,7 +411,6 @@ async function validateAllFiles() {
                                     error: 'PDF sudah diupload sebelumnya (Duplicate)',
                                     invoice: result.data
                                 });
-                                console.log('[PDF Bulk] ✗ Invalid (Duplicate):', faktur, '- Already uploaded at:', result.data.invoice_pdf_path);
                             } else {
                                 // File was deleted from Google Drive - allow re-upload
                                 validationResults.push({
@@ -431,10 +419,8 @@ async function validateAllFiles() {
                                     valid: true,
                                     invoice: result.data
                                 });
-                                console.log('[PDF Bulk] ✅ File was deleted from Google Drive, allowing re-upload:', faktur);
                             }
                         } catch (verifyErr) {
-                            console.warn('[PDF Bulk] Error verifying file on Google Drive:', verifyErr);
                             // If verification fails, assume file is gone and allow re-upload
                             validationResults.push({
                                 file: file,
@@ -442,7 +428,6 @@ async function validateAllFiles() {
                                 valid: true,
                                 invoice: result.data
                             });
-                            console.log('[PDF Bulk] ✅ File verification failed, allowing re-upload:', faktur);
                         }
                     } else {
                         validationResults.push({
@@ -451,7 +436,6 @@ async function validateAllFiles() {
                             valid: true,
                             invoice: result.data
                         });
-                        console.log('[PDF Bulk] ✓ Valid:', faktur);
                     }
                 } else {
                     validationResults.push({
@@ -460,7 +444,6 @@ async function validateAllFiles() {
                         valid: false,
                         error: 'Faktur tidak ditemukan'
                     });
-                    console.log('[PDF Bulk] ✗ Invalid:', faktur);
                 }
             } catch (error) {
                 validationResults.push({
@@ -469,7 +452,6 @@ async function validateAllFiles() {
                     valid: false,
                     error: error.message
                 });
-                console.error('[PDF Bulk] Error validating:', faktur, error);
             }
 
             // Small delay to avoid overwhelming server
@@ -487,7 +469,6 @@ async function validateAllFiles() {
         filesList.classList.add('show');
 
     } catch (error) {
-        console.error('[PDF Bulk] Validation error:', error);
         showNotification(error.message, 'error');
         validating.style.display = 'none';
         dropZone.style.display = 'block';
@@ -596,7 +577,6 @@ async function uploadValidFiles() {
                 const formData = new FormData();
                 formData.append('pdf', fileResult.file);
                 
-                console.log(`[PDF Bulk] Uploading (${index + 1}/${validFiles.length}): ${fileResult.file.name}`);
                 
                 // Update loading overlay with progress
                 currentProgress = Math.round((successCount + failCount) / validFiles.length * 100);
@@ -615,21 +595,12 @@ async function uploadValidFiles() {
 
                 if (response.ok && result.success) {
                     successCount++;
-                    console.log('[PDF Bulk] ✓ Uploaded:', fileResult.faktur);
-                    console.log('[PDF Bulk] Upload result:', result);
+
                     showNotification(`✓ ${fileResult.faktur}`, 'success', 2000);
                     
                     // Generate WhatsApp message if we have zone data
-                    console.log('[PDF Bulk] Checking for WhatsApp data - zona_id:', result.zona_id, 'tipe:', result.tipe, 'konsumen:', result.konsumen, 'nominal:', result.nominal);
                     if (result.zona_id && result.tipe && result.konsumen && result.nominal) {
                         try {
-                            console.log('[PDF Bulk] Generating WhatsApp message for:', {
-                                zona_id: result.zona_id,
-                                tipe: result.tipe,
-                                konsumen: result.konsumen,
-                                nominal: result.nominal
-                            });
-                            
                             const waResponse = await fetch(`${CONFIG.API_URL}/api/whatsapp/generate-invoice-messages`, {
                                 method: 'POST',
                                 headers: {
@@ -649,24 +620,18 @@ async function uploadValidFiles() {
                             
                             const waResult = await waResponse.json();
                             if (waResponse.ok && waResult.success) {
-                                console.log('[PDF Bulk] ✓ WhatsApp message generated');
                                 // Messages will appear in Notify Zona dashboard, not on upload page
-                                console.log('[PDF Bulk] Messages saved - view in Notify Zona menu');
                             } else {
-                                console.warn('[PDF Bulk] WhatsApp generation failed:', waResult.error);
                             }
                         } catch (waError) {
-                            console.warn('[PDF Bulk] WhatsApp generation error:', waError);
                         }
                     }
                 } else {
                     failCount++;
-                    console.error('[PDF Bulk] ✗ Upload failed:', fileResult.faktur, result.error);
                     showNotification(`✗ ${fileResult.faktur}: ${result.error}`, 'error', 2000);
                 }
             } catch (error) {
                 failCount++;
-                console.error('[PDF Bulk] Upload error:', fileResult.faktur, error);
                 showNotification(`✗ ${fileResult.faktur}: ${error.message}`, 'error', 2000);
             }
         });
@@ -683,27 +648,19 @@ async function uploadValidFiles() {
         // Show final result message
         const message = `✅ ${successCount}/${validFiles.length} file berhasil diupload${failCount > 0 ? ` (${failCount} gagal)` : ''}`;
         showNotification(message, successCount > 0 ? 'success' : 'error', 5000);
-        
-        console.log('[PDF Bulk] Upload complete - all files processed');
-        
         // Note: WhatsApp notifications are now shown only in Notify Zona dashboard
 
         // Refresh invoice list to show updated status with file counts
         if (successCount > 0) {
-            console.log('[PDF Bulk] Refreshing invoice list after successful upload...');
             setTimeout(() => {
                 try {
                     if (typeof loadInvoicesInDashboard === 'function') {
-                        console.log('[PDF Bulk] Calling loadInvoicesInDashboard(1)');
                         loadInvoicesInDashboard(1);
                     } else if (typeof loadInvoices === 'function') {
-                        console.log('[PDF Bulk] Calling loadInvoices()');
                         loadInvoices();
                     } else {
-                        console.warn('[PDF Bulk] No refresh function found');
                     }
                 } catch (refreshErr) {
-                    console.error('[PDF Bulk] Error refreshing list:', refreshErr);
                 }
             }, 2000);
         }
@@ -716,7 +673,6 @@ async function uploadValidFiles() {
         }
 
     } catch (error) {
-        console.error('[PDF Bulk] Exception:', error);
         showNotification('Error: ' + error.message, 'error', 5000);
         window.hideLoadingOverlay();
     } finally {
@@ -727,8 +683,6 @@ async function uploadValidFiles() {
 }
 
 function removeInvalidFile(index) {
-    console.log('[PDF Bulk] Removing invalid file at index:', index);
-    
     // Remove from validationResults
     validationResults.splice(index, 1);
     
@@ -770,7 +724,6 @@ function displayInvoiceWhatsappNotifications() {
     const container = document.getElementById('whatsappMessagesContainer');
 
     if (!panel || !container) {
-        console.warn('[PDF] WhatsApp UI elements not found');
         return;
     }
 
@@ -844,7 +797,6 @@ function displayInvoiceWhatsappNotifications() {
                     Toast.success(`Pesan zona ${zonaName} sudah disalin!`);
                 }
             } catch (error) {
-                console.error('[PDF] Copy error:', error);
             }
         });
 
@@ -884,9 +836,6 @@ async function markAllInvoiceWhatsappAsSent() {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         };
-
-        console.log('[PDF] Marking invoice batch', window.currentInvoiceBatchId, 'as sent');
-
         const response = await fetch(`${CONFIG.API_URL}/api/whatsapp/mark-invoice-batch-sent`, {
             method: 'POST',
             headers: headers,
@@ -902,14 +851,12 @@ async function markAllInvoiceWhatsappAsSent() {
             if (typeof Toast !== 'undefined') {
                 Toast.success('✅ Semua pesan sudah ditandai terkirim!');
             }
-            console.log('[PDF] ✅ Invoice batch marked as sent');
         } else {
             if (typeof Toast !== 'undefined') {
                 Toast.error(result.error || 'Gagal menandai sebagai terkirim');
             }
         }
     } catch (error) {
-        console.error('[PDF] Error marking as sent:', error);
         if (typeof Toast !== 'undefined') {
             Toast.error('Error: ' + error.message);
         }

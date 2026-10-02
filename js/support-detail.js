@@ -6,8 +6,6 @@ let ticketId = null;
 let ticketData = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Support-Detail] Initializing ticket detail view...');
-
     // Wait for auth to load
     await new Promise(resolve => {
         if (typeof currentUser !== 'undefined' && currentUser) {
@@ -66,10 +64,7 @@ async function loadTicketDetail() {
         renderTicketDetail();
         renderMessages(ticketData.messages);
         updateActionButtons();
-
-        console.log('[Support-Detail] Ticket loaded:', ticketData);
     } catch (error) {
-        console.error('[Support-Detail] Error loading ticket:', error);
         document.getElementById('ticketTitle').textContent = 'Error Loading Ticket';
         document.getElementById('ticketStatus').textContent = error.message;
     }
@@ -248,12 +243,8 @@ async function submitReply(e) {
             });
 
             if (!uploadResponse.ok) {
-                console.warn('[Support-Detail] Warning: message posted but attachment upload failed');
             }
         }
-
-        console.log('[Support-Detail] Reply posted successfully');
-
         showNotification('✓ Balasan dikirim!', 'success');
 
         // Reset form and reload
@@ -263,7 +254,6 @@ async function submitReply(e) {
         }, 1000);
 
     } catch (error) {
-        console.error('[Support-Detail] Error posting reply:', error);
         showNotification(`Error: ${error.message}`, 'error');
     } finally {
         const btnSend = document.getElementById('btnSendReply');
@@ -291,7 +281,6 @@ async function resolveTicket() {
         showNotification('✓ Tiket ditandai sebagai Resolved', 'success');
         setTimeout(() => loadTicketDetail(), 1000);
     } catch (error) {
-        console.error('[Support-Detail] Error resolving ticket:', error);
         showNotification(`Error: ${error.message}`, 'error');
     }
 }
@@ -315,7 +304,6 @@ async function closeTicket() {
         showNotification('✓ Tiket ditutup', 'success');
         setTimeout(() => loadTicketDetail(), 1000);
     } catch (error) {
-        console.error('[Support-Detail] Error closing ticket:', error);
         showNotification(`Error: ${error.message}`, 'error');
     }
 }

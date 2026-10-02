@@ -27,7 +27,6 @@ const DriveAPI = {
         const searchData = await searchRes.json();
 
         if (searchData.files && searchData.files.length > 0) {
-            console.log(`[Drive] Folder found: "${name}" (ID: ${searchData.files[0].id})`);
             return searchData.files[0].id;
         }
 
@@ -48,7 +47,6 @@ const DriveAPI = {
         });
 
         const folder = await createRes.json();
-        console.log(`[Drive] Folder created: "${name}" (ID: ${folder.id})`);
         return folder.id;
     },
 
@@ -67,8 +65,6 @@ const DriveAPI = {
         const token = this.getToken();
 
         const folderId = await this.getOrCreateFolderPath(zona, toko, category);
-        console.log(`[Drive] Target folder determined: ${folderId}`);
-
         // Use resumable upload for progress tracking
         const metadata = {
             name: file.name,
@@ -109,8 +105,7 @@ const DriveAPI = {
                 if (xhr.status === 200 || xhr.status === 201) {
                     const result = JSON.parse(xhr.responseText);
                     // Set file to be accessible with link
-                    this.setFilePermission(result.id).catch(console.error);
-                    console.log(`[Drive] Upload Success! File ID: ${result.id}`);
+                    this.setFilePermission(result.id).catch(() => {});
                     resolve({
                         id: result.id,
                         name: result.name,
@@ -169,8 +164,6 @@ const DriveAPI = {
     // ---- Auto Sync Drive to Supabase ----
     async syncWithDatabase(supabaseClient, currentUserStrId) {
         const token = this.getToken();
-        console.log('[Drive Sync] Start Sync...');
-
         try {
             // 1. Get ARSIP_SISTEM folder
             const rootId = await this.findOrCreateFolder(CONFIG.GOOGLE_DRIVE_ROOT_FOLDER);
@@ -246,9 +239,6 @@ const DriveAPI = {
                     });
                 }
             });
-
-            console.log(`[Drive Sync] Found ${driveFiles.length} files in Drive's ARSIP_SISTEM.`);
-
             // 5. Fetch Supabase records
             const { data: dbRecords, error: dbErr } = await supabaseClient
                 .from('archives')
@@ -285,12 +275,9 @@ const DriveAPI = {
                     if (!error) removed++;
                 }
             }
-
-            console.log(`[Drive Sync] Finish. Added: ${added}, Removed/Synced: ${removed}`);
             return { added, removed, total: driveFiles.length };
 
         } catch (err) {
-            console.error('[Drive Sync] Sync failed:', err);
             throw err;
         }
     }

@@ -38,23 +38,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ---- Load Toko List (for dropdown selection) ----
 async function loadAllTokos() {
     try {
-        console.log('[loadAllTokos] Starting to fetch tokos from API...');
         const response = await API.get('/api/toko');
         // Handle both { tokos: [...] } and direct array response
         const toko = response.tokos || response || [];
         window._allTokos = Array.isArray(toko) ? toko : [];
-        console.log('[loadAllTokos] Loaded', window._allTokos.length, 'tokos');
-        
         // VALIDATION: Check if zona_id is present in all tokos
         const tokosWithoutZona = window._allTokos.filter(t => !t.zona_id);
         if (tokosWithoutZona.length > 0) {
-            console.warn('[loadAllTokos] ⚠️  WARNING: Found tokos without zona_id:', tokosWithoutZona.map(t => t.nama).join(', '));
-            console.warn('[loadAllTokos] This could cause files to upload to wrong folders!');
         }
         
         // If no tokos from API, use hardcoded defaults
         if (window._allTokos.length === 0) {
-            console.log('[loadAllTokos] WARNING: No tokos from API, using hardcoded defaults');
             window._allTokos = [
                 { id: 1, nama: 'Balaraja', zona_id: 1 },
                 { id: 2, nama: 'Cianjur', zona_id: 1 },
@@ -66,11 +60,8 @@ async function loadAllTokos() {
                 { id: 8, nama: 'Kutabumi', zona_id: 3 },
                 { id: 9, nama: 'Ciruas', zona_id: 2 }
             ];
-            console.log('[loadAllTokos] Using fallback tokos, count:', window._allTokos.length);
         }
-        console.log('[loadAllTokos] Complete. Final tokos loaded:', window._allTokos.length);
     } catch (err) {
-        console.error('[loadAllTokos] Error:', err);
         // Fallback to hardcoded tokos if API fails
         window._allTokos = [
             { id: 1, nama: 'Balaraja', zona_id: 1 },
@@ -83,7 +74,6 @@ async function loadAllTokos() {
             { id: 8, nama: 'Kutabumi', zona_id: 3 },
             { id: 9, nama: 'Ciruas', zona_id: 2 }
         ];
-        console.log('[loadAllTokos] API error, using fallback tokos:', err.message);
     }
 }
 
@@ -130,7 +120,6 @@ function addFiles(files) {
         // MIME type warning (not blocking)
         const validMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
         if (!validMimeTypes.includes(f.type) && f.type !== '') {
-            console.warn(`[Upload] File ${f.name} has unexpected MIME type: ${f.type}`);
         }
         
         // Size check
@@ -190,7 +179,6 @@ async function checkBackgroundDuplicate(filename, zonaId) {
             }
         }
     } catch (err) {
-        console.error('Duplicate check error:', err);
     }
 }
 
@@ -216,16 +204,12 @@ function scanFilename(name) {
     else if (/^NON/i.test(firstWord)) result.tipe = 'NON';
 
     // 2. Detect Toko (Match against window._allTokos)
-    console.log('[scanFilename] Input:', name);
-    console.log('[scanFilename] Tokos available:', window._allTokos ? window._allTokos.length : 0);
-    
+
     if (window._allTokos && window._allTokos.length > 0) {
         // ULTRA-NORMALIZATION: Remove ALL non-alphanumeric characters for matching
         const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
 
         const cleanToMatch = normalize(cleanName);
-        console.log('[scanFilename] Normalized filename:', cleanToMatch);
-        console.log('[scanFilename] Available tokos:', window._allTokos.map(t => ({ nama: t.nama, normalized: normalize(t.nama) })));
 
         // Sort tokos by length descending to catch specific multi-word matches first
         const sortedTokos = [...window._allTokos].sort((a, b) => b.nama.length - a.nama.length);
@@ -233,17 +217,14 @@ function scanFilename(name) {
         for (const t of sortedTokos) {
             const cleanTokoName = normalize(t.nama);
             if (cleanTokoName && cleanToMatch.includes(cleanTokoName)) {
-                console.log('[scanFilename] ✅ MATCH FOUND:', t.nama, 'in file:', name);
                 result.toko = t;
                 break;
             }
         }
         
         if (!result.toko) {
-            console.log('[scanFilename] ❌ No toko match found. Available:', window._allTokos.map(t => t.nama).join(', '));
         }
     } else {
-        console.log('[scanFilename] ⚠️  WARNING: No tokos loaded! window._allTokos =', window._allTokos);
     }
 
     // 3. Detect Nominal (Look for pattern X.XXX.XXX)
@@ -292,8 +273,6 @@ function scanFilename(name) {
             result.isDateDetected = true;
         }
     }
-
-    console.log('[scanFilename] Result:', { tipe: result.tipe, tokoName: result.toko?.nama, nominal: result.nominal, date: result.date });
     return result;
 }
 
@@ -521,7 +500,6 @@ function setupForm() {
                 if (progressPct) progressPct.textContent = `${pct}%`;
                 if (progressBar) progressBar.style.width = pct + '%';
             } catch (err) {
-                console.error('Upload error:', err);
                 Toast.error(`Gagal upload "${item.file.name}": ${err.message}`);
             }
         };

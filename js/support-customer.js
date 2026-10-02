@@ -15,24 +15,16 @@ const CACHE_TIMESTAMP = 'support_customer_cache_timestamp';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Support-Customer] Page loaded');
-    
     // Initialize auth
-    console.log('[Support-Customer] Initializing auth...');
     await initAuth();
     
     // Check if currentUser is loaded
     if (!currentUser) {
-        console.error('[Support-Customer] currentUser still not defined after initAuth');
         document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: Failed to authenticate</div>';
         return;
     }
-
-    console.log('[Support-Customer] User authenticated:', currentUser.email, 'Role:', currentUser.role);
-    
     // Check if user is admin_zona (customer)
     if (currentUser.role !== 'admin_zona' && currentUser.role !== 'super_admin') {
-        console.log('[Support-Customer] User is not admin_zona, redirecting to moderator dashboard');
         window.location.href = '/support-dashboard';
         return;
     }
@@ -42,27 +34,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cachedStats = getCache(CACHE_STATS);
     
     if (cachedTickets && cachedStats) {
-        console.log('[Support-Customer] Displaying cached data...');
         renderTickets(cachedTickets);
         updateCachedStats(cachedStats);
         updatePagination();
     }
     
     // Fetch fresh data in background
-    console.log('[Support-Customer] Fetching fresh data in background...');
     const startTime = performance.now();
     Promise.all([
         loadStats(),
         loadTickets()
     ]).then(() => {
         const loadTime = (performance.now() - startTime).toFixed(0);
-        console.log(`[Support-Customer] Fresh data loaded in ${loadTime}ms`);
     }).catch(err => {
-        console.error('[Support-Customer] Error loading fresh data:', err);
     });
-
-    console.log('[Support-Customer] Setting up event listeners...');
-    
     // Setup event listeners
     const searchInput = document.getElementById('searchInput');
     const filterStatus = document.getElementById('filterStatus');
@@ -82,8 +67,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadTickets();
         });
     }
-
-    console.log('[Support-Customer] Dashboard initialized with cached data');
 });
 
 // Cache management functions
@@ -95,9 +78,7 @@ function setCache(key, value, duration = CACHE_DURATION) {
             duration: duration
         };
         localStorage.setItem(key, JSON.stringify(data));
-        console.log(`[Cache] Set ${key}`);
     } catch (err) {
-        console.warn('[Cache] Failed to set cache:', err);
     }
 }
 
@@ -110,15 +91,11 @@ function getCache(key) {
         const isExpired = (Date.now() - data.timestamp) > data.duration;
         
         if (isExpired) {
-            console.log(`[Cache] ${key} expired, removing`);
             localStorage.removeItem(key);
             return null;
         }
-        
-        console.log(`[Cache] Retrieved ${key}`);
         return data.value;
     } catch (err) {
-        console.warn('[Cache] Failed to get cache:', err);
         return null;
     }
 }
@@ -126,9 +103,7 @@ function getCache(key) {
 function clearCache(key) {
     try {
         localStorage.removeItem(key);
-        console.log(`[Cache] Cleared ${key}`);
     } catch (err) {
-        console.warn('[Cache] Failed to clear cache:', err);
     }
 }
 
@@ -137,7 +112,6 @@ function updateCachedStats(stats) {
     document.getElementById('statOpen').textContent = stats.open || 0;
     document.getElementById('statAnswered').textContent = stats.answered || 0;
     document.getElementById('statClosed').textContent = stats.closed || 0;
-    console.log('[Support-Customer] Stats updated from cache');
 }
 
 function debounce(func, wait) {
@@ -154,29 +128,21 @@ function debounce(func, wait) {
 
 async function loadStats() {
     try {
-        console.log('[Support-Customer] Fetching stats...');
         const token = localStorage.getItem('jwt_token');
         
         if (!token) {
-            console.warn('[Support-Customer] No JWT token');
             return;
         }
 
         const response = await fetch(`${CONFIG.API_URL}/api/support/tickets/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        console.log('[Support-Customer] Stats response status:', response.status);
-
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            console.error('[Support-Customer] Stats error:', error);
             throw new Error(`HTTP ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('[Support-Customer] Stats data:', data);
-        
         const stats = data.stats || {};
 
         // Cache stats
@@ -184,27 +150,16 @@ async function loadStats() {
         
         // Update UI
         updateCachedStats(stats);
-
-        console.log('[Support-Customer] Stats updated and cached');
     } catch (error) {
-        console.error('[Support-Customer] Error loading stats:', error);
         // Don't break on stats error
     }
 }
 
 async function loadTickets() {
     try {
-        console.log('[Support-Customer] Loading tickets with params:', {
-            page: currentPage,
-            limit: currentLimit,
-            status: currentStatus,
-            search: currentSearch
-        });
-
         const token = localStorage.getItem('jwt_token');
         
         if (!token) {
-            console.error('[Support-Customer] No JWT token');
             throw new Error('No JWT token found');
         }
 
@@ -216,8 +171,6 @@ async function loadTickets() {
         });
 
         const url = `/api/support/tickets?${params}`;
-        console.log('[Support-Customer] Requesting:', url);
-
         // Add timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -228,17 +181,12 @@ async function loadTickets() {
         });
 
         clearTimeout(timeoutId);
-        console.log('[Support-Customer] Response status:', response.status);
-
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.error('[Support-Customer] Error response:', errorData);
             throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown'}`);
         }
 
         const data = await response.json();
-        console.log('[Support-Customer] Response data:', data);
-
         const tickets = data.tickets || [];
         const pagination = data.pagination || {};
 
@@ -247,18 +195,13 @@ async function loadTickets() {
         // Cache tickets only if no filters applied (cache the main list)
         if (!currentSearch && currentStatus === 'all') {
             setCache(CACHE_TICKETS, tickets);
-            console.log('[Support-Customer] Tickets cached');
         }
-        
-        console.log('[Support-Customer] Rendering', tickets.length, 'tickets');
         renderTickets(tickets);
         updatePagination();
 
     } catch (error) {
-        console.error('[Support-Customer] Error loading tickets:', error);
         const container = document.getElementById('ticketsContainer');
         if (!container) {
-            console.error('[Support-Customer] Container not found!');
             return;
         }
         
@@ -279,11 +222,9 @@ async function loadTickets() {
 }
 
 function renderTickets(tickets) {
-    console.log('[Support-Customer] renderTickets called with', tickets.length, 'tickets');
     const container = document.getElementById('ticketsContainer');
 
     if (!container) {
-        console.error('[Support-Customer] ticketsContainer not found');
         return;
     }
 
@@ -297,16 +238,12 @@ function renderTickets(tickets) {
                 <div style="font-size: 13px; color: #9ca3af;">Belum ada tiket support yang dibuat</div>
             </div>
         `;
-        console.log('[Support-Customer] Empty state rendered');
         return;
     }
 
     // Separate tickets into active and closed
     const activeTickets = tickets.filter(t => t.status !== 'Closed');
     const closedTickets = tickets.filter(t => t.status === 'Closed');
-
-    console.log('[Support-Customer] Active:', activeTickets.length, 'Closed:', closedTickets.length);
-
     let html = '';
 
     // Active Tickets Section
@@ -366,7 +303,6 @@ function renderTickets(tickets) {
     }
     
     container.innerHTML = html;
-    console.log('[Support-Customer] Rendered - Active:', activeTickets.length, 'Closed:', closedTickets.length);
 }
 
 function renderTicketRow(ticket) {
@@ -432,7 +368,6 @@ function previousPage() {
 }
 
 function openTicket(ticketId) {
-    console.log('[Support-Customer] Opening ticket:', ticketId);
     window.location.href = `/support-ticket-detail.html?id=${ticketId}`;
 }
 
@@ -450,9 +385,6 @@ async function submitCreateTicket(e) {
         const description = document.getElementById('formDescription').value;
         const category = document.getElementById('formCategory').value;
         const priority = document.getElementById('formPriority').value;
-
-        console.log('[Support-Customer] Creating ticket:', { subject, category, priority });
-
         const response = await fetch(`${CONFIG.API_URL}/api/support/tickets`, {
             method: 'POST',
             headers: {
@@ -474,9 +406,6 @@ async function submitCreateTicket(e) {
 
         const data = await response.json();
         const ticketId = data.ticket.id;
-
-        console.log('[Support-Customer] Ticket created:', data.ticket.ticket_number);
-
         // Show success message
         alert(`✓ ${data.ticket.ticket_number} berhasil dibuat!`);
 
@@ -489,7 +418,6 @@ async function submitCreateTicket(e) {
         }, 500);
 
     } catch (error) {
-        console.error('[Support-Customer] Error creating ticket:', error);
         alert(`Error: ${error.message}`);
     }
 }

@@ -122,8 +122,6 @@ async function processFiles() {
     try {
         for (let i = 0; i < selectedFiles.length; i++) {
             const file = selectedFiles[i];
-            console.log(`[Rename Invoice Hijau] Processing file ${i + 1}/${selectedFiles.length}: ${file.name}`);
-            
             // Update loading modal
             updateLoadingModal(i + 1, file.name, selectedFiles.length);
             
@@ -140,7 +138,6 @@ async function processFiles() {
 
         // Auto-download successful files - PARALLEL (semua sekaligus)
         if (successFiles.length > 0) {
-            console.log(`[Rename Invoice Hijau] Starting parallel download for ${successFiles.length} files`);
             const downloadStart = performance.now();
             
             setTimeout(() => {
@@ -149,7 +146,6 @@ async function processFiles() {
                     downloadFile(r.newName, r.fileData);
                 });
                 
-                console.log(`[Rename Invoice Hijau] Download triggered in ${(performance.now() - downloadStart).toFixed(2)}ms`);
             }, 300);
         }
 
@@ -176,7 +172,6 @@ async function processFiles() {
         selectedFiles = [];
         document.getElementById('fileList').classList.add('hidden');
         document.getElementById('processButtonContainer').classList.add('hidden');
-        console.log('[Rename Invoice Hijau] Process complete - button re-enabled for next batch');
     }
 }
 
@@ -187,8 +182,6 @@ async function processFile(file) {
     try {
         const formData = new FormData();
         formData.append('file', file);
-
-        console.log(`[Rename Invoice Hijau] Uploading file: ${file.name}, size: ${file.size}`);
         const uploadStart = performance.now();
 
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/rename-invoice-hijau`, {
@@ -198,20 +191,9 @@ async function processFile(file) {
         });
 
         const uploadTime = performance.now() - uploadStart;
-        console.log(`[Rename Invoice Hijau] Upload took ${uploadTime.toFixed(2)}ms`);
 
         const result = await response.json();
-
-        console.log(`[Rename Invoice Hijau] Response status: ${response.status}`, result);
-
         if (!response.ok) {
-            console.error(`[Rename Invoice Hijau] Error response:`, {
-                status: response.status,
-                statusText: response.statusText,
-                error: result.error,
-                details: result
-            });
-            
             // Check if it's a "not ready yet" error
             if (response.status === 500 && result.error && result.error.includes('not ready')) {
                 return {
@@ -229,8 +211,6 @@ async function processFile(file) {
         }
 
         if (result.success) {
-            console.log(`[Rename Invoice Hijau] Success:`, result.newName);
-            
             // Log rename to history - FIRE AND FORGET (don't await)
             // This runs in background without blocking the UI or download
             (async () => {
@@ -254,10 +234,8 @@ async function processFile(file) {
                                 notes: `No. Invoice: ${result.noInvoice}`
                             })
                         });
-                        console.log('[Rename Invoice Hijau] History logged (background)');
                     }
                 } catch (err) {
-                    console.warn('[Rename Invoice Hijau] Background history logging error:', err.message);
                 }
             })();
             
@@ -269,7 +247,6 @@ async function processFile(file) {
                 fileData: result.fileData  // Base64 encoded PDF
             };
         } else {
-            console.error(`[Rename Invoice Hijau] Processing failed:`, result.error);
             return {
                 success: false,
                 originalName: file.name,
@@ -277,7 +254,6 @@ async function processFile(file) {
             };
         }
     } catch (err) {
-        console.error('[Rename Invoice Hijau] Network/Parse error:', err);
         return {
             success: false,
             originalName: file.name,
@@ -314,8 +290,6 @@ function downloadFile(filename, fileData) {
 // Initialize
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Rename Invoice Hijau] DOMContentLoaded event triggered');
-    
     // Wait for auth to initialize
     let retries = 0;
     const maxRetries = 5;
@@ -324,21 +298,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         retries++;
         if (typeof API === 'undefined') {
             if (retries % 5 === 1) {
-                console.log('[Rename Invoice Hijau] API not defined yet... attempt', retries);
             }
         } else {
             const token = API.getToken();
             
             if (token) {
                 clearInterval(waitForAuth);
-                console.log('[Rename Invoice Hijau] Auth ready, loading history');
                 loadLatestHistory();
                 loadFailedRenameHistory();  // Load failed history from awal
             } else if (retries >= maxRetries) {
                 clearInterval(waitForAuth);
-                console.warn('[Rename Invoice Hijau] Auth failed after', maxRetries, 'retries');
             } else {
-                console.log('[Rename Invoice Hijau] Waiting for auth... attempt', retries);
             }
         }
     }, 500);
@@ -348,12 +318,8 @@ async function loadLatestHistory() {
     try {
         const token = API.getToken();
         if (!token) {
-            console.warn('[Rename Invoice Hijau] No auth token for loading history');
             return;
         }
-        
-        console.log('[Rename Invoice Hijau] Loading latest history from database...');
-        
         // Try to get history by recent updates using a wildcard approach
         // Get recent renames - use a simple prefix which invoice files have
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/rename-history?limit=10`, {
@@ -363,25 +329,17 @@ async function loadLatestHistory() {
                 'Content-Type': 'application/json'
             }
         });
-        
-        console.log('[Rename Invoice Hijau] History API response status:', response.status);
-        
         if (response.ok) {
             const data = await response.json();
-            console.log('[Rename Invoice Hijau] History loaded:', data.history.length, 'items');
-            console.log('[Rename Invoice Hijau] History data:', JSON.stringify(data.history.slice(0, 2), null, 2));
             
             if (data.history && data.history.length > 0) {
                 displayHistorySection(data.history);
             } else {
-                console.log('[Rename Invoice Hijau] No history records found');
             }
         } else {
             const errData = await response.json().catch(() => ({}));
-            console.warn('[Rename Invoice Hijau] Failed to load history:', response.status, errData);
         }
     } catch (err) {
-        console.warn('[Rename Invoice Hijau] Error loading history:', err.message, err.stack);
     }
 }
 
@@ -425,8 +383,6 @@ function updateLoadingModal(current, fileName, total) {
 function showHistoryActionButton(successFiles) {
     // Load and display the latest history records
     if (successFiles.length === 0) return;
-    
-    console.log('[Rename Invoice Hijau] Loading history after successful rename');
     // Load latest history (not filtered by specific invoice)
     loadLatestHistory();
 }
@@ -435,7 +391,6 @@ async function loadAndDisplayHistory(invoice) {
     try {
         const token = API.getToken();
         if (!token) {
-            console.warn('[Rename Invoice Hijau] No auth token');
             return;
         }
         
@@ -449,14 +404,11 @@ async function loadAndDisplayHistory(invoice) {
         
         if (response.ok) {
             const data = await response.json();
-            console.log('[Rename Invoice Hijau] History loaded:', data.history.length, 'items');
             // Clear and display fresh history
             displayHistorySection(data.history || []);
         } else {
-            console.warn('[Rename Invoice Hijau] Failed to load history:', response.status);
         }
     } catch (err) {
-        console.warn('[Rename Invoice Hijau] Error loading history:', err.message);
     }
 }
 
@@ -527,13 +479,9 @@ async function deleteHistoryRecord(historyId) {
     try {
         const token = API.getToken();
         if (!token) {
-            console.warn('[Rename Invoice Hijau] No auth token for deleting');
             Toast.error('Tidak dapat menghapus - token tidak valid');
             return;
         }
-        
-        console.log('[Rename Invoice Hijau] Deleting history record:', historyId);
-        
         const response = await fetch(`/api/invoice/rename-history/${historyId}`, {
             method: 'DELETE',
             headers: {
@@ -543,18 +491,15 @@ async function deleteHistoryRecord(historyId) {
         });
         
         if (response.ok) {
-            console.log('[Rename Invoice Hijau] History deleted successfully');
             Toast.success('History dihapus');
             
             // Reload history
             loadLatestHistory();
         } else {
             const errData = await response.json().catch(() => ({}));
-            console.warn('[Rename Invoice Hijau] Failed to delete:', response.status, errData);
             Toast.error('Gagal menghapus history: ' + (errData.error || 'Unknown error'));
         }
     } catch (err) {
-        console.warn('[Rename Invoice Hijau] Error deleting history:', err.message);
         Toast.error('Error: ' + err.message);
     }
 }
@@ -575,11 +520,9 @@ function formatIndonesianDateTime(isoString) {
         
         // Check if date is valid
         if (isNaN(date.getTime())) {
-            console.warn('[Rename Invoice Hijau] Invalid date:', isoString);
             return isoString;
         }
         
-        console.log('[Rename Invoice Hijau] Formatting date:', isoString, '→', date.toISOString());
         
         // Convert to Jakarta time (UTC+7)
         const jakartaDate = new Date(date.getTime() + (7 * 60 * 60 * 1000));
@@ -594,11 +537,8 @@ function formatIndonesianDateTime(isoString) {
         const minute = jakartaDate.getUTCMinutes().toString().padStart(2, '0');
         
         const result = `${day} ${month} ${year} ${hour}:${minute} WIB`;
-        console.log('[Rename Invoice Hijau] Formatted result:', result);
-        
         return result;
     } catch (err) {
-        console.error('[Rename Invoice Hijau] Error formatting date:', err);
         return isoString;
     }
 }
@@ -652,9 +592,7 @@ async function displayFailedFilesSection(failedFiles) {
                         notes: 'Auto-logged from batch processing'
                     })
                 });
-                console.log('[Failed Rename] Logged:', file.originalName);
             } catch (err) {
-                console.warn('[Failed Rename] Log error:', err.message);
             }
         }
     }
@@ -675,12 +613,8 @@ async function loadFailedRenameHistory() {
     try {
         const token = API.getToken();
         if (!token) {
-            console.warn('[Failed Rename] No auth token');
             return;
         }
-        
-        console.log('[Failed Rename] Loading history from database...');
-        
         // Fetch all failed attempts (not just 10)
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/failed-rename?limit=999`, {
             method: 'GET',
@@ -691,18 +625,14 @@ async function loadFailedRenameHistory() {
         });
         
         if (!response.ok) {
-            console.warn('[Failed Rename] Failed to load:', response.status);
             return;
         }
         
         const data = await response.json();
-        console.log('[Failed Rename] Loaded', data.attempts?.length || 0, 'records');
-        
         if (data.success && data.attempts && data.attempts.length > 0) {
             displayFailedRenameHistory(data.attempts);
         }
     } catch (err) {
-        console.warn('[Failed Rename] Error loading history:', err.message);
     }
 }
 
@@ -714,8 +644,6 @@ function displayFailedRenameHistory(attempts) {
     // Update count
     const failedCount = document.getElementById('failedFilesCount');
     failedCount.textContent = attempts.length;
-    
-    console.log('[Failed Rename] Displaying', attempts.length, 'failed attempts');
 }
 
 

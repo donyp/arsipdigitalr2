@@ -103,7 +103,6 @@ async function populateModalZonas() {
             select.appendChild(opt);
         });
     } catch (err) {
-        console.warn('Failed to load zonas:', err);
     }
 }
 
@@ -181,17 +180,12 @@ function createRowHtml(u, i) {
 
 // ---- Edit User by ID (lookup from users array) ----
 function editUserById(userId) {
-    console.log('[DEBUG] editUserById called with ID:', userId);
-    console.log('[DEBUG] Current users array:', users);
-    
+
     const user = users.find(u => u.id === userId);
     if (!user) {
-        console.error('[DEBUG] User not found in array');
         Toast.error('User tidak ditemukan');
         return;
     }
-    
-    console.log('[DEBUG] Found user:', user);
     editUser(user);
 }
 
@@ -252,10 +246,8 @@ function renderUsers() {
 
 // ---- Open Modal for Add ----
 function openUserModal() {
-    console.log('[DEBUG] openUserModal called');
     const modal = document.getElementById('user-modal');
     if (!modal) {
-        console.error('[DEBUG] Modal element not found!');
         return;
     }
     
@@ -285,17 +277,13 @@ function openUserModal() {
     setTimeout(() => {
         modal.classList.remove('hidden');
         modal.style.display = 'block';
-        console.log('[DEBUG] Modal should now be visible');
     }, 10);
 }
 
 // ---- Open Modal for Edit ----
 function editUser(user) {
-    console.log('[DEBUG] editUser called with user:', user);
-    
     const modal = document.getElementById('user-modal');
     if (!modal) {
-        console.error('[DEBUG] Modal element not found!');
         Toast.error('Modal tidak ditemukan');
         return;
     }
@@ -348,13 +336,11 @@ function editUser(user) {
     setTimeout(() => {
         modal.classList.remove('hidden');
         modal.style.display = 'block';
-        console.log('[DEBUG] Edit modal should now be visible');
     }, 10);
 }
 
 // ---- Close Modal ----
 function closeUserModal() {
-    console.log('[DEBUG] closeUserModal called');
     const modal = document.getElementById('user-modal');
     if (modal) {
         modal.classList.add('hidden');
@@ -436,11 +422,9 @@ function setupUserForm() {
             
             if (editId) {
                 const res = await API.put(`/api/users/${editId}`, userData);
-                console.log('[DEBUG] Update Response:', res);
                 Toast.success('User berhasil diperbarui');
             } else {
                 const res = await API.post('/api/users', userData);
-                console.log('[DEBUG] Create Response:', res);
                 userId = res.user.id;
                 Toast.success('User berhasil ditambahkan');
             }
@@ -448,7 +432,6 @@ function setupUserForm() {
             closeUserModal();
             await loadUsers();
         } catch (err) {
-            console.error('[DEBUG] Form submit error:', err);
             Toast.error('Gagal menyimpan user: ' + err.message);
         }
     });
@@ -482,7 +465,6 @@ async function loadLoginHistory() {
         loginHistory = logs || [];
         renderLoginHistory();
     } catch (err) {
-        console.warn('Failed to load login history:', err);
     }
 }
 
@@ -578,7 +560,6 @@ async function loadActivityLogs() {
         activityLogs = logs || [];
         renderActivityLogs();
     } catch (err) {
-        console.warn('Failed to load activity logs:', err);
     }
 }
 

@@ -51,8 +51,6 @@ class SPARouter {
         // Initialize with current page
         const initialPath = window.location.pathname || '/dashboard';
         this.loadPage(initialPath, false);
-
-        console.log('[SPA] Router initialized');
     }
 
     handleLinkClick(e) {
@@ -85,14 +83,12 @@ class SPARouter {
 
         const pageConfig = this.menuMapping[path];
         if (!pageConfig) {
-            console.warn('[SPA] Unknown route:', path);
             return;
         }
 
         this.isLoading = true;
         const mainContent = document.getElementById('main-content');
         if (!mainContent) {
-            console.error('[SPA] main-content element not found');
             this.isLoading = false;
             return;
         }
@@ -109,7 +105,6 @@ class SPARouter {
                     loader.classList.remove('hidden');
                     document.body.classList.add('loading-state');
                     document.documentElement.classList.add('loading-state');
-                    console.log('[SPA] Loader shown on first load');
                 }
             }
 
@@ -123,11 +118,9 @@ class SPARouter {
             let pageData;
             if (this.pageCache[path]) {
                 pageData = this.pageCache[path];
-                console.log('[SPA] Loaded from cache:', path);
             } else {
                 pageData = await this.fetchPageContent(pageConfig.url);
                 this.pageCache[path] = pageData;
-                console.log('[SPA] Fetched from server:', path);
             }
 
             // Handle both old format (string) and new format (object with html and scripts)
@@ -151,24 +144,18 @@ class SPARouter {
                 // First, remove any old page-specific styles to avoid conflicts
                 const oldStyles = document.querySelectorAll('style[data-spa-page-style]');
                 oldStyles.forEach(style => style.remove());
-                
-                console.log('[SPA] Injecting', pageStyles.length, 'styles from page');
                 pageStyles.forEach((styleData, index) => {
                     const styleEl = document.createElement('style');
                     styleEl.textContent = styleData.textContent;
                     styleEl.setAttribute('data-spa-page-style', 'true');
                     styleEl.setAttribute('data-page', path);
                     document.head.appendChild(styleEl);
-                    console.log('[SPA] Injected style', index + 1);
                 });
             }
 
             // Separate inline scripts from external scripts in pageScripts array
             const inlineScripts = pageScripts.filter(s => !s.src);
             const externalScripts = pageScripts.filter(s => s.src);
-            
-            console.log('[SPA] Processing ' + inlineScripts.length + ' inline scripts and ' + externalScripts.length + ' external scripts');
-
             // Execute external scripts first (if needed)
             for (const scriptData of externalScripts) {
                 // Skip external scripts that are already loaded (avoid redeclaration)
@@ -189,7 +176,6 @@ class SPARouter {
                 }
                 
                 if (alreadyLoaded) {
-                    console.log('[SPA] Skipping already-loaded script:', scriptName);
                     continue;
                 }
                 
@@ -200,7 +186,6 @@ class SPARouter {
                     scriptData.src.includes('xlsx') ||
                     scriptData.src.includes('chart') ||
                     scriptData.src.includes('sweetalert')) {
-                    console.log('[SPA] Skipping third-party library script:', scriptName);
                     continue;
                 }
                 
@@ -208,7 +193,6 @@ class SPARouter {
                 // These load once on first page and persist
                 const globalAppScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js', 'sidebar.js', 'spa-page-handler.js', 'global-announcement.js'];
                 if (globalAppScripts.some(name => scriptPath.includes(name))) {
-                    console.log('[SPA] Skipping global app script (already loaded):', scriptName);
                     continue;
                 }
                 
@@ -221,9 +205,7 @@ class SPARouter {
                         script.onerror = reject;
                         document.body.appendChild(script);
                     });
-                    console.log('[SPA] Loaded external script:', scriptData.src);
                 } catch (e) {
-                    console.warn('[SPA] Error loading external script:', scriptData.src, e);
                 }
             }
 
@@ -234,11 +216,9 @@ class SPARouter {
                     const newScript = document.createElement('script');
                     newScript.textContent = scriptData.textContent;
                     document.body.appendChild(newScript);
-                    console.log('[SPA] Executed inline script');
                     // Wait for script to fully execute before next one
                     await new Promise(resolve => setTimeout(resolve, 50));
                 } catch (e) {
-                    console.warn('[SPA] Error executing inline script:', e);
                 }
             }
 
@@ -247,7 +227,6 @@ class SPARouter {
 
             // Dispatch spa-page-loaded event to notify page-specific scripts
             // This triggers initialization in pages that listen for this event
-            console.log('[SPA] Dispatching spa-page-loaded event');
             window.dispatchEvent(new CustomEvent('spa-page-loaded', {
                 detail: { page: path }
             }));
@@ -304,14 +283,9 @@ class SPARouter {
                         loader.remove();
                     }
                 }, 500);
-                
-                console.log('[SPA] Loader hidden after data loaded');
                 this.isFirstLoad = false;
             }
-
-            console.log('[SPA] Page loaded:', path);
         } catch (error) {
-            console.error('[SPA] Error loading page:', error);
             mainContent.innerHTML = '<div style="padding: 2rem; color: red;">Error loading page. Please try again.</div>';
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
@@ -394,9 +368,6 @@ class SPARouter {
                 type: style.type || 'text/css'
             }));
 
-            console.log('[SPA] Found ' + scriptData.length + ' scripts in page:', url);
-            console.log('[SPA] Found ' + styleData.length + ' styles in page:', url);
-
             // Return both HTML, script data, and style data
             return {
                 html: mainContent.innerHTML,
@@ -404,7 +375,6 @@ class SPARouter {
                 styles: styleData
             };
         } catch (error) {
-            console.error('[SPA] Fetch error:', error);
             throw error;
         }
     }
@@ -418,7 +388,6 @@ class SPARouter {
             try {
                 eval(script.textContent);
             } catch (e) {
-                console.warn('[SPA] Error running init script:', e);
             }
         });
 
@@ -432,10 +401,8 @@ class SPARouter {
                     const newScript = document.createElement('script');
                     newScript.textContent = script.textContent;
                     document.body.appendChild(newScript);
-                    console.log('[SPA] Executed inline script from page');
                     document.body.removeChild(newScript);
                 } catch (e) {
-                    console.warn('[SPA] Error running inline script:', e);
                 }
             });
         }
@@ -453,9 +420,8 @@ class SPARouter {
             this.fetchPageContent(this.menuMapping[path].url)
                 .then(content => {
                     this.pageCache[path] = content;
-                    console.log('[SPA] Preloaded:', path);
                 })
-                .catch(e => console.warn('[SPA] Preload failed:', path, e));
+                .catch(e => {});
         }
     }
 
@@ -466,7 +432,6 @@ class SPARouter {
         } else {
             this.pageCache = {};
         }
-        console.log('[SPA] Cache cleared');
     }
 }
 

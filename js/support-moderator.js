@@ -1,4 +1,4 @@
-﻿// ============================================
+// ============================================
 // Support Ticketing - Moderator Dashboard
 // ============================================
 
@@ -26,8 +26,6 @@ if (!window.__supportVarsInitialized) {
 
 // SPA-aware initialization
 async function initSupportPage() {
-    console.log('[Support-Moderator] Page initialization starting');
-    
     // Check sidebar size and re-inject if page type changed
     const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
     const isUploadFilePage = uploadFilePages.some(page => {
@@ -52,54 +50,39 @@ async function initSupportPage() {
     // Check if DOM is ready - wait for key elements
     const ticketsContainer = document.getElementById('ticketsContainer');
     if (!ticketsContainer) {
-        console.warn('[Support-Moderator] ticketsContainer not found yet, waiting...');
         await new Promise(resolve => setTimeout(resolve, 200));
     }
     
     // Initialize auth
-    console.log('[Support-Moderator] Initializing auth...');
     await initAuth();
     
     // Check if currentUser is loaded
     if (!currentUser) {
-        console.error('[Support-Moderator] currentUser still not defined after initAuth');
         document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: Failed to authenticate</div>';
         return;
     }
-
-    console.log('[Support-Moderator] User authenticated:', currentUser.email, 'Role:', currentUser.role);
-    
     // Load zonas in background (non-blocking)
-    console.log('[Support-Moderator] Loading zonas in background...');
-    loadZonas().catch(err => console.error('[Support-Moderator] Error loading zonas:', err));
+    loadZonas().catch(err => {});
     
     // Display cached data immediately
     const cachedTickets = getCache(window.CACHE_TICKETS);
     const cachedStats = getCache(window.CACHE_STATS);
     
     if (cachedTickets && cachedStats) {
-        console.log('[Support-Moderator] Displaying cached data immediately...');
         renderTickets(cachedTickets);
         updateCachedStats(cachedStats);
         updatePagination();
-        console.log('[Support-Moderator] Cache displayed');
     }
     
     // Fetch fresh data in background
-    console.log('[Support-Moderator] Fetching fresh data in background...');
     const startTime = performance.now();
     Promise.all([
         loadStats(),
         loadTickets()
     ]).then(() => {
         const loadTime = (performance.now() - startTime).toFixed(0);
-        console.log(`[Support-Moderator] Fresh data loaded in ${loadTime}ms`);
     }).catch(err => {
-        console.error('[Support-Moderator] Error loading fresh data:', err);
     });
-
-    console.log('[Support-Moderator] Setting up event listeners...');
-    
     // Setup event listeners
     const searchInput = document.getElementById('searchInput');
     const filterStatus = document.getElementById('filterStatus');
@@ -128,23 +111,17 @@ async function initSupportPage() {
             loadTickets();
         });
     }
-
-    console.log('[Support-Moderator] Dashboard initialized - showing cached data if available');
-
 } // End of variable and function initialization guard
 
 // Listen for both direct page load and SPA navigation
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log('[Support-Moderator] DOMContentLoaded event fired');
     await initSupportPage();
 });
 
 // Also listen for SPA page load event - with timeout to ensure function exists
 setTimeout(() => {
-    console.log('[Support-Moderator] Checking for SPA initialization...');
     if (typeof initSupportPage === 'function' && document.readyState === 'complete') {
-        console.log('[Support-Moderator] SPA page loaded, initializing support page');
-        initSupportPage().catch(err => console.error('[Support-Moderator] Init error:', err));
+        initSupportPage().catch(err => {});
     }
 }, 100);
 
@@ -157,9 +134,7 @@ function setCache(key, value, duration = window.CACHE_DURATION) {
             duration: duration
         };
         localStorage.setItem(key, JSON.stringify(data));
-        console.log(`[Cache] Set ${key}`);
     } catch (err) {
-        console.warn('[Cache] Failed to set cache:', err);
     }
 }
 
@@ -172,15 +147,11 @@ function getCache(key) {
         const isExpired = (Date.now() - data.timestamp) > data.duration;
         
         if (isExpired) {
-            console.log(`[Cache] ${key} expired, removing`);
             localStorage.removeItem(key);
             return null;
         }
-        
-        console.log(`[Cache] Retrieved ${key}`);
         return data.value;
     } catch (err) {
-        console.warn('[Cache] Failed to get cache:', err);
         return null;
     }
 }
@@ -188,9 +159,7 @@ function getCache(key) {
 function clearCache(key) {
     try {
         localStorage.removeItem(key);
-        console.log(`[Cache] Cleared ${key}`);
     } catch (err) {
-        console.warn('[Cache] Failed to clear cache:', err);
     }
 }
 
@@ -200,7 +169,6 @@ function updateCachedStats(stats) {
     document.getElementById('statAnswered').textContent = stats.answered || 0;
     document.getElementById('statResolved').textContent = stats.resolved || 0;
     document.getElementById('statClosed').textContent = stats.closed || 0;
-    console.log('[Support-Moderator] Stats updated from cache');
 }
 
 async function loadZonas() {
@@ -213,21 +181,14 @@ async function loadZonas() {
         if (response.ok) {
             const data = await response.json();
             const zonas = data.zonas || data.data || [];
-            
-            console.log('[Support-Moderator] Zonas response:', zonas);
-            
             // Create map: zona_id (id) -> zona_name (nama)
             zonas.forEach(zona => {
                 window.zonasMap[zona.id] = zona.nama;
             });
-            
-            console.log('[Support-Moderator] Zonas loaded:', window.zonasMap);
-            
             // Populate filter dropdown AFTER we have the map
             await populateZonaFilter(zonas);
         }
     } catch (error) {
-        console.error('[Support-Moderator] Error loading zonas:', error);
     }
 }
 
@@ -248,9 +209,6 @@ async function populateZonaFilter(zonas) {
             
             // Get unique zona_ids from tickets
             const uniqueZonaIds = [...new Set(tickets.map(t => t.zona_id))].sort((a, b) => a - b);
-            
-            console.log('[Support-Moderator] Unique zona IDs in tickets:', uniqueZonaIds);
-            
             // Clear existing options except first
             while (filterZona.options.length > 1) {
                 filterZona.remove(1);
@@ -264,11 +222,8 @@ async function populateZonaFilter(zonas) {
                 option.textContent = zonaName;
                 filterZona.appendChild(option);
             });
-            
-            console.log('[Support-Moderator] Zona filter populated');
         }
     } catch (error) {
-        console.error('[Support-Moderator] Error populating zona filter:', error);
     }
 }
 
@@ -285,7 +240,6 @@ function debounce(func, wait) {
 }
 
 function switchTab(event, tab) {
-    console.log('[Support-Moderator] Switching to tab:', tab);
     window.currentTab = tab;
     window.currentPage = 1;
     
@@ -311,29 +265,21 @@ function switchTab(event, tab) {
 
 async function loadStats() {
     try {
-        console.log('[Support-Moderator] Fetching stats...');
         const token = localStorage.getItem('jwt_token');
         
         if (!token) {
-            console.warn('[Support-Moderator] No JWT token');
             return;
         }
 
         const response = await fetch('/api/support/tickets/stats', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        console.log('[Support-Moderator] Stats response status:', response.status);
-
         if (!response.ok) {
             const error = await response.json().catch(() => ({}));
-            console.error('[Support-Moderator] Stats error:', error);
             throw new Error(`HTTP ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('[Support-Moderator] Stats data:', data);
-        
         const stats = data.stats || {};
 
         // Cache stats
@@ -341,28 +287,16 @@ async function loadStats() {
         
         // Update UI
         updateCachedStats(stats);
-
-        console.log('[Support-Moderator] Stats updated and cached');
     } catch (error) {
-        console.error('[Support-Moderator] Error loading stats:', error);
         // Don't break on stats error, continue to load tickets
     }
 }
 
 async function loadTickets() {
     try {
-        console.log('[Support-Moderator] Loading tickets with params:', {
-            page: window.currentPage,
-            limit: window.currentLimit,
-            status: window.currentStatus,
-            zona: window.currentZona,
-            search: window.currentSearch
-        });
-
         const token = localStorage.getItem('jwt_token');
         
         if (!token) {
-            console.error('[Support-Moderator] No JWT token');
             throw new Error('No JWT token found');
         }
 
@@ -375,8 +309,6 @@ async function loadTickets() {
         });
 
         const url = `/api/support/tickets?${params}`;
-        console.log('[Support-Moderator] Requesting:', url);
-
         // Add timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -387,17 +319,12 @@ async function loadTickets() {
         });
 
         clearTimeout(timeoutId);
-        console.log('[Support-Moderator] Response status:', response.status);
-
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.error('[Support-Moderator] Error response:', errorData);
             throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown'}`);
         }
 
         const data = await response.json();
-        console.log('[Support-Moderator] Response data:', data);
-
         const tickets = data.tickets || [];
         const pagination = data.pagination || {};
 
@@ -406,18 +333,13 @@ async function loadTickets() {
         // Cache tickets only if no filters applied (cache the main list)
         if (!window.currentSearch && !window.currentZona && window.currentStatus === 'all') {
             setCache(CACHE_TICKETS, tickets);
-            console.log('[Support-Moderator] Tickets cached');
         }
-        
-        console.log('[Support-Moderator] Rendering', tickets.length, 'tickets');
         renderTickets(tickets);
         updatePagination();
 
     } catch (error) {
-        console.error('[Support-Moderator] Error loading tickets:', error);
         const container = document.getElementById('ticketsContainer');
         if (!container) {
-            console.error('[Support-Moderator] Container not found!');
             return;
         }
         
@@ -440,11 +362,9 @@ async function loadTickets() {
 }
 
 function renderTickets(tickets) {
-    console.log('[Support-Moderator] renderTickets called with', tickets.length, 'tickets');
     const container = document.getElementById('ticketsContainer');
 
     if (!container) {
-        console.error('[Support-Moderator] ticketsContainer not found');
         return;
     }
 
@@ -475,13 +395,12 @@ function renderTickets(tickets) {
             <tr>
                 <td colspan="7" style="padding: 48px 16px; text-align: center; background: ${bgDefault}; border-bottom: 1px solid ${borderColor};">
                     <div class="empty-state" style="padding: 0; color: ${secondaryTextColor};">
-                        <div class="empty-state-icon">ðŸ“­</div>
+                        <div class="empty-state-icon">📭</div>
                         <div>Tidak ada tiket ditemukan</div>
                     </div>
                 </td>
             </tr>
         `;
-        console.log('[Support-Moderator] Empty state rendered');
         return;
     }
 
@@ -538,7 +457,6 @@ function renderTickets(tickets) {
     }).join('');
     
     container.innerHTML = html;
-    console.log('[Support-Moderator] Table rendered with', filteredTickets.length, 'rows');
 }
 
 // Dark mode helper functions for status styling
@@ -646,7 +564,6 @@ function previousPage() {
 }
 
 function openTicket(ticketId) {
-    console.log('[Support-Moderator] Opening ticket:', ticketId);
     window.location.href = `/support-ticket-detail-moderator.html?id=${ticketId}`;
 }
 
@@ -682,7 +599,6 @@ function getRelativeTime(dateString) {
             return `${months} Bulan Yang Lalu`;
         }
     } catch (e) {
-        console.error('[getRelativeTime] Error:', e);
         return '-';
     }
 }

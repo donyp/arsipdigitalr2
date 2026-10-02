@@ -51,7 +51,6 @@ async function loadLogs() {
         document.getElementById('btn-next').disabled = currentPage >= totalPages;
 
     } catch (err) {
-        console.error('Failed to load audit logs', err);
         Toast.error('Gagal memuat log aktivitas');
         loadingState.classList.add('hidden');
     } finally {
