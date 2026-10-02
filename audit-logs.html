@@ -315,6 +315,9 @@
     </div>
 
     <script>
+        // Debug: Check if script loaded
+        console.log('🔍 Audit Logs Dashboard script loaded');
+        
         // ============================================
         // GLOBAL STATE
         // ============================================
@@ -342,17 +345,29 @@
         // INITIALIZATION
         // ============================================
         async function init() {
+            console.log('🚀 Init function called');
+            
             // Check if user logged in
             const token = localStorage.getItem('jwt_token');
+            console.log('✓ Token check:', !!token);
+            
             if (!token) {
+                console.log('❌ No token, redirecting to login');
                 window.location.href = '/login';
                 return;
             }
             
+            console.log('✓ Setting up UI...');
             setupDatePickers();
             setupEventListeners();
+            
+            console.log('✓ Loading logs...');
             await loadLogs();
+            
+            console.log('✓ Loading stats...');
             loadStats();
+            
+            console.log('✅ Init complete');
         }
 
         function setupDatePickers() {
@@ -823,6 +838,7 @@
         }
 
         // Start application
+        console.log('📄 Document ready, calling init()');
         init();
     </script>
 </body>
