@@ -440,6 +440,42 @@
         #recentHistoryList > div {
             animation: slideIn 0.3s ease;
         }
+
+        /* Custom scrollbar styling */
+        #recentHistoryList {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(147, 51, 234, 0.5) transparent;
+        }
+
+        #recentHistoryList::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #recentHistoryList::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #recentHistoryList::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.5);
+            border-radius: 4px;
+        }
+
+        #recentHistoryList::-webkit-scrollbar-thumb:hover {
+            background: rgba(147, 51, 234, 0.7);
+        }
+
+        /* Dark mode scrollbar */
+        html[data-dark-mode="true"] #recentHistoryList {
+            scrollbar-color: rgba(147, 51, 234, 0.4) transparent;
+        }
+
+        html[data-dark-mode="true"] #recentHistoryList::-webkit-scrollbar-thumb {
+            background: rgba(147, 51, 234, 0.4);
+        }
+
+        html[data-dark-mode="true"] #recentHistoryList::-webkit-scrollbar-thumb:hover {
+            background: rgba(147, 51, 234, 0.6);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
