@@ -418,7 +418,22 @@
         }
 
         #loadingModal > div {
-            animation: scaleIn 0.3s ease;
+            animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Pulse animation for progress bar */
+        @keyframes progressPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+
+        #loadingProgressBar {
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.5);
+        }
+
+        /* Smooth progress transition */
+        #loadingProgressBar {
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* History items */
@@ -507,29 +522,81 @@
                 </div>
 
                 <!-- Loading Modal -->
-                <div id="loadingModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50" style="backdrop-filter: blur(4px);">
-                    <div class="bg-white rounded-xl p-8 shadow-2xl max-w-md w-full mx-4" style="min-height: 200px; display: flex; flex-direction: column; justify-content: center;">
-                        <div class="text-center mb-6">
-                            <div class="inline-block">
-                                <div class="w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600 animate-spin mx-auto mb-4"></div>
+                <div id="loadingModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50" style="backdrop-filter: blur(8px);">
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                        <!-- Header with gradient -->
+                        <div class="bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 p-6 text-center text-white relative overflow-hidden">
+                            <div class="absolute inset-0 opacity-10">
+                                <div class="absolute top-2 right-2 w-32 h-32 bg-white rounded-full blur-2xl"></div>
                             </div>
-                            <h3 class="text-lg font-bold text-gray-800">Memproses File...</h3>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-sm text-gray-600 mb-2">
-                                    <span id="loadingStatus">Mengscan file...</span>
-                                </p>
-                                <p class="text-xs text-gray-500 mb-2 truncate">
-                                    File: <span id="loadingCurrentFile">-</span>
-                                </p>
-                                <div class="bg-gray-200 rounded-full overflow-hidden h-2">
-                                    <div id="loadingProgressBar" class="bg-gradient-to-r from-purple-600 to-purple-400 h-2" style="width: 0%; transition: width 0.2s ease;"></div>
+                            <div class="relative z-10">
+                                <div class="flex justify-center mb-3">
+                                    <div class="relative w-14 h-14">
+                                        <div class="absolute inset-0 rounded-full border-3 border-white/30"></div>
+                                        <div class="absolute inset-0 rounded-full border-3 border-transparent border-t-white animate-spin"></div>
+                                        <svg class="absolute inset-1.5 text-white opacity-40" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H3a1 1 0 00-1 1v10a1 1 0 001 1h14a1 1 0 001-1V6a1 1 0 00-1-1h-3a1 1 0 000-2h3a3 3 0 013 3v10a3 3 0 01-3 3H6a3 3 0 01-3-3V5z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-2 text-center">
-                                    <span id="loadingProgressText">0</span> / <span id="loadingTotalFiles">0</span>
+                                <h3 class="text-xl font-bold">Memproses File...</h3>
+                                <p class="text-purple-100 text-sm mt-1">Harap tunggu sebentar</p>
+                            </div>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="p-6 space-y-5">
+                            <!-- Current File -->
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">File Sedang Diproses</p>
+                                <div class="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 border border-gray-200 dark:border-slate-600">
+                                    <p class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span id="loadingCurrentFile">-</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar with Real Animation -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Progress Keseluruhan</p>
+                                    <p class="text-xs font-bold text-purple-600 dark:text-purple-400">
+                                        <span id="loadingProgressText">0</span>/<span id="loadingTotalFiles">0</span>
+                                    </p>
+                                </div>
+                                <!-- Fancy Progress Bar -->
+                                <div class="relative h-3 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                                    <div id="loadingProgressBar" class="h-full bg-gradient-to-r from-purple-500 via-purple-600 to-indigo-600 rounded-full transition-all duration-300 ease-out shadow-lg" style="width: 0%;">
+                                        <div class="absolute inset-0 opacity-30 animate-pulse bg-gradient-to-r from-transparent via-white to-transparent"></div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                    <span id="loadingStatus">Memulai proses...</span>
                                 </p>
                             </div>
+
+                            <!-- Stats -->
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                                    <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold">Status</p>
+                                    <p class="text-sm font-bold text-blue-900 dark:text-blue-100" id="loadingStatusLabel">Bersiap</p>
+                                </div>
+                                <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                                    <p class="text-xs text-green-600 dark:text-green-400 font-semibold">Kecepatan</p>
+                                    <p class="text-sm font-bold text-green-900 dark:text-green-100" id="loadingSpeed">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="bg-gray-50 dark:bg-slate-700/50 px-6 py-3 border-t border-gray-200 dark:border-slate-700">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+                                ⏱️ <span id="loadingElapsedTime">0s</span> elapsed • Jangan tutup tab ini
+                            </p>
                         </div>
                     </div>
                 </div>

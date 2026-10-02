@@ -425,21 +425,40 @@ async function loadLatestHistory() {
 // ============================================
 // Loading Modal Functions
 // ============================================
+let loadingStartTime = null;
+let fileStartTime = null;
+
 function showLoadingModal(totalFiles) {
     const modal = document.getElementById('loadingModal');
     document.getElementById('loadingTotalFiles').textContent = totalFiles;
     document.getElementById('loadingProgressText').textContent = '0';
     document.getElementById('loadingProgressBar').style.width = '0%';
+    document.getElementById('loadingStatusLabel').textContent = 'Bersiap';
+    document.getElementById('loadingSpeed').textContent = '-';
+    document.getElementById('loadingElapsedTime').textContent = '0s';
     modal.classList.remove('hidden');
+    
+    loadingStartTime = Date.now();
+    
+    // Update elapsed time every second
+    window.elapsedTimeInterval = setInterval(() => {
+        if (loadingStartTime) {
+            const elapsed = Math.floor((Date.now() - loadingStartTime) / 1000);
+            document.getElementById('loadingElapsedTime').textContent = elapsed + 's';
+        }
+    }, 1000);
 }
 
 function hideLoadingModal() {
     const modal = document.getElementById('loadingModal');
     modal.classList.add('hidden');
+    if (window.elapsedTimeInterval) {
+        clearInterval(window.elapsedTimeInterval);
+    }
 }
 
 function updateLoadingModal(current, fileName, total) {
-    // Update progress bar
+    // Update progress bar with smooth animation
     const percentage = (current / total) * 100;
     document.getElementById('loadingProgressBar').style.width = percentage + '%';
     
@@ -447,15 +466,42 @@ function updateLoadingModal(current, fileName, total) {
     document.getElementById('loadingProgressText').textContent = current;
     
     // Update current file being processed
-    const displayName = fileName.length > 35 ? fileName.substring(0, 32) + '...' : fileName;
+    const displayName = fileName.length > 40 ? fileName.substring(0, 37) + '...' : fileName;
     document.getElementById('loadingCurrentFile').textContent = displayName;
     
     // Update status message based on progress
     const statusEl = document.getElementById('loadingStatus');
     if (current < total) {
-        statusEl.textContent = `Mengscan file ${current} dari ${total}...`;
+        statusEl.textContent = `Memproses file ${current} dari ${total}...`;
     } else {
         statusEl.textContent = 'Menyelesaikan proses...';
+    }
+    
+    // Update status label
+    const statusLabel = document.getElementById('loadingStatusLabel');
+    if (current === 0) {
+        statusLabel.textContent = 'Bersiap';
+        statusLabel.className = 'text-sm font-bold text-blue-900 dark:text-blue-100';
+    } else if (current < total) {
+        statusLabel.textContent = 'Berjalan';
+        statusLabel.className = 'text-sm font-bold text-yellow-900 dark:text-yellow-100';
+    } else {
+        statusLabel.textContent = 'Selesai';
+        statusLabel.className = 'text-sm font-bold text-green-900 dark:text-green-100';
+    }
+    
+    // Calculate and display speed (files per second)
+    if (loadingStartTime && current > 0) {
+        const elapsedSeconds = (Date.now() - loadingStartTime) / 1000;
+        const speedPerSec = (current / elapsedSeconds).toFixed(1);
+        const remainingFiles = total - current;
+        const estimatedSeconds = remainingFiles > 0 ? Math.ceil(remainingFiles / speedPerSec) : 0;
+        
+        if (estimatedSeconds > 0) {
+            document.getElementById('loadingSpeed').textContent = estimatedSeconds + 's ETA';
+        } else {
+            document.getElementById('loadingSpeed').textContent = '< 1s';
+        }
     }
 }
 
