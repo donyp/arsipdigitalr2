@@ -463,57 +463,116 @@
         <!-- Main Content -->
         <div id="main-content" style="flex: 1; min-width: 0; transition: all 300ms ease; display: flex; flex-direction: column;">
             <!-- Header -->
-            <div class="gradient-header text-white sticky top-0 z-30 shadow-lg" style="margin-left: 0;">
-                <div class="px-6 py-8">
-                    <div class="flex items-center gap-3">
-                        <div class="bg-white/20 p-3 rounded-lg">
-                            <i class="fas fa-file-alt text-2xl"></i>
-                        </div>
-                        <div>
-                            <h1 class="text-3xl font-bold">Rename Faktur Pajak</h1>
-                            <p class="text-purple-100 text-sm mt-1">Ekstrak NO FAKTUR dan rename otomatis ke nomor faktur</p>
+            <div class="bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600 text-white sticky top-0 z-30 shadow-lg">
+                <div class="px-8 py-8">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-white/20 backdrop-blur-sm p-4 rounded-2xl hover:bg-white/30 transition">
+                                    <i class="fas fa-file-pdf text-3xl"></i>
+                                </div>
+                                <div>
+                                    <h1 class="text-4xl font-bold">Rename Faktur Pajak</h1>
+                                    <p class="text-purple-100 text-sm mt-2 flex items-center gap-2">
+                                        <i class="fas fa-magic"></i>
+                                        Ekstrak NO FAKTUR dan rename otomatis
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Main Content Area -->
-            <div class="p-6 w-full flex-1" style="max-width: none; overflow-y: auto;">
-                <!-- Info Box -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <p class="text-blue-800 text-sm">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        <strong>Cara Kerja:</strong> Upload file Faktur Pajak (PDF). Sistem akan otomatis mencari NO FAKTUR dan rename file menjadi nomor faktur.
-                    </p>
-                </div>
-
-                <!-- Upload Section -->
-                <div class="bg-white rounded-lg shadow-md p-8 mb-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <i class="fas fa-cloud-upload-alt text-purple-600"></i>
-                        Upload File Faktur Pajak
-                    </h2>
-
-                    <!-- File Drop Zone -->
-                    <div class="file-drop-zone p-8 text-center cursor-pointer" id="dropzone">
-                        <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
-                        <i class="fas fa-file-pdf text-4xl text-purple-600 mb-3 block"></i>
-                        <p class="text-gray-700 font-medium mb-2">Tarik file PDF ke sini atau klik untuk browse</p>
-                        <p class="text-gray-500 text-sm">Mendukung multiple file upload sekaligus</p>
-                    </div>
-
-                    <!-- File List -->
-                    <div id="fileList" class="mt-6 space-y-2 hidden">
-                        <h3 class="font-semibold text-gray-700 mb-2">File yang dipilih:</h3>
-                        <div id="filesContainer"></div>
-                        <div id="processButtonContainer" class="hidden">
-                            <button id="btnProcess" onclick="processFiles()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center gap-2">
-                                <i class="fas fa-play"></i>
-                                Mulai Proses Rename
-                            </button>
+            <div class="p-8 w-full flex-1 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800" style="overflow-y: auto;">
+                <div class="max-w-6xl mx-auto space-y-6">
+                    <!-- Info Card -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
+                        <div class="flex items-start gap-4">
+                            <div class="bg-blue-100 dark:bg-blue-900/40 p-3 rounded-xl flex-shrink-0">
+                                <i class="fas fa-lightbulb text-blue-600 dark:text-blue-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-blue-900 dark:text-blue-100 mb-1">Cara Kerja</h3>
+                                <p class="text-blue-800 dark:text-blue-200 text-sm leading-relaxed">
+                                    Upload file Faktur Pajak (PDF). Sistem akan otomatis mencari <span class="font-mono bg-white dark:bg-slate-800 px-2 py-1 rounded">NO FAKTUR</span> dan rename file menjadi nomor faktur dengan format <span class="font-mono bg-white dark:bg-slate-800 px-2 py-1 rounded">{referensi}.pdf</span>
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Main Upload Card -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg overflow-hidden">
+                        <!-- Card Header -->
+                        <div class="bg-gradient-to-r from-purple-500 to-indigo-500 p-6 text-white">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                    <i class="fas fa-arrow-up-from-bracket text-xl"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl font-bold">Pilih File</h2>
+                                    <p class="text-purple-100 text-sm">Drag & drop atau klik untuk browse</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="p-8">
+                            <!-- File Drop Zone -->
+                            <div class="file-drop-zone p-12 text-center cursor-pointer transition-all duration-300" id="dropzone">
+                                <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+                                <div class="flex justify-center mb-4">
+                                    <div class="bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 p-8 rounded-2xl">
+                                        <i class="fas fa-cloud-arrow-up text-5xl text-purple-600 dark:text-purple-400"></i>
+                                    </div>
+                                </div>
+                                <p class="text-gray-800 dark:text-gray-100 font-semibold text-lg mb-2">Tarik file PDF ke sini</p>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">atau</p>
+                                <button onclick="document.getElementById('fileInput').click()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition inline-block">
+                                    <i class="fas fa-folder-open mr-2"></i>Browse File
+                                </button>
+                                <p class="text-gray-500 dark:text-gray-400 text-xs mt-4">Maksimal 25 file PDF sekaligus (rata-rata 2MB per file)</p>
+                            </div>
+
+                            <!-- File List -->
+                            <div id="fileList" class="mt-8 hidden">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                        <i class="fas fa-list text-purple-600 dark:text-purple-400"></i>
+                                        File yang Dipilih
+                                    </h3>
+                                    <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold px-3 py-1 rounded-full">
+                                        <span id="selectedFileCount">0</span> file
+                                    </span>
+                                </div>
+                                <div id="filesContainer" class="space-y-3"></div>
+                            </div>
+
+                            <!-- Process Button -->
+                            <div id="processButtonContainer" class="mt-8 hidden">
+                                <button id="btnProcess" onclick="processFiles()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3 group">
+                                    <i class="fas fa-zap group-hover:animate-pulse"></i>
+                                    <span>Mulai Proses Rename</span>
+                                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- History Section -->
+                    <div id="historySection" class="hidden bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 rounded-2xl shadow-lg p-6 border border-emerald-200 dark:border-emerald-800">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-bold text-emerald-900 dark:text-emerald-100 flex items-center gap-3">
+                                <div class="bg-emerald-100 dark:bg-emerald-900/40 p-2 rounded-lg">
+                                    <i class="fas fa-history text-emerald-600 dark:text-emerald-400"></i>
+                                </div>
+                                Riwayat Rename Terbaru
+                            </h3>
+                            <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-800 px-3 py-1 rounded-full">10 terakhir</span>
+                        </div>
+                        <div id="recentHistoryList" class="space-y-2 max-h-96 overflow-y-auto"></div>
+                    </div>
 
                 <!-- Progress Section -->
                 <div id="progressSection" class="hidden">

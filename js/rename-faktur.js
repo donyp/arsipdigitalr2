@@ -117,29 +117,42 @@ function handleFiles(files) {
     
     fileList.classList.remove('hidden');
     filesContainer.innerHTML = selectedFiles.map((f, i) => `
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
-                </svg>
-                <span class="text-sm font-medium text-gray-700">${i + 1}. ${f.name}</span>
-                <span class="text-xs text-gray-500">${(f.size / 1024).toFixed(1)} KB</span>
+        <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-700 rounded-xl border border-gray-200 dark:border-slate-600 hover:border-purple-300 dark:hover:border-purple-500 hover:shadow-md transition group">
+            <div class="flex items-center gap-4 flex-1 min-w-0">
+                <div class="bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-900/20 p-2 rounded-lg flex-shrink-0">
+                    <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-gray-800 dark:text-gray-100 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">${i + 1}</span>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">${f.name}</span>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${(f.size / 1024).toFixed(1)} KB</p>
+                </div>
             </div>
-            <button onclick="removeFile(${i})" class="p-1 text-red-500 hover:bg-red-50 rounded">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            <button onclick="removeFile(${i})" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition opacity-0 group-hover:opacity-100" title="Hapus">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             </button>
         </div>
     `).join('');
 
     // Add max files note
-    const maxFilesNote = document.createElement('p');
-    maxFilesNote.className = 'text-sm font-semibold text-gray-800 mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded';
-    maxFilesNote.textContent = `📋 Maksimal ${MAX_FILES} file | ${selectedFiles.length} file dipilih`;
+    const maxFilesNote = document.createElement('div');
+    maxFilesNote.className = 'mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl';
+    maxFilesNote.innerHTML = `
+        <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+            <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+            📋 Maksimal ${MAX_FILES} file | <span class="font-bold">${selectedFiles.length}</span> file dipilih
+        </p>
+    `;
     filesContainer.appendChild(maxFilesNote);
     
-    processButtonContainer.classList.remove('hidden');
+    // Update selected file count
+    document.getElementById('selectedFileCount').textContent = selectedFiles.length;
 }
 
 // ============================================
@@ -156,27 +169,42 @@ function removeFile(index) {
         // Re-render file list with correct numbering
         const filesContainer = document.getElementById('filesContainer');
         filesContainer.innerHTML = selectedFiles.map((f, i) => `
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div class="flex items-center gap-3">
-                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
-                    </svg>
-                    <span class="text-sm font-medium text-gray-700">${i + 1}. ${f.name}</span>
-                    <span class="text-xs text-gray-500">${(f.size / 1024).toFixed(1)} KB</span>
+            <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-700 rounded-xl border border-gray-200 dark:border-slate-600 hover:border-purple-300 dark:hover:border-purple-500 hover:shadow-md transition group">
+                <div class="flex items-center gap-4 flex-1 min-w-0">
+                    <div class="bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/30 dark:to-red-900/20 p-2 rounded-lg flex-shrink-0">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-gray-800 dark:text-gray-100 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">${i + 1}</span>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">${f.name}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${(f.size / 1024).toFixed(1)} KB</p>
+                    </div>
                 </div>
-                <button onclick="removeFile(${i})" class="p-1 text-red-500 hover:bg-red-50 rounded">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <button onclick="removeFile(${i})" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition opacity-0 group-hover:opacity-100" title="Hapus">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                 </button>
             </div>
         `).join('');
         
         // Update max files note
-        const maxFilesNote = document.createElement('p');
-        maxFilesNote.className = 'text-sm font-semibold text-gray-800 mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded';
-        maxFilesNote.textContent = `📋 Maksimal 25 file | ${selectedFiles.length} file dipilih`;
+        const maxFilesNote = document.createElement('div');
+        maxFilesNote.className = 'mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl';
+        maxFilesNote.innerHTML = `
+            <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
+                <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                📋 Maksimal 25 file | <span class="font-bold">${selectedFiles.length}</span> file dipilih
+            </p>
+        `;
         filesContainer.appendChild(maxFilesNote);
+        
+        // Update selected file count
+        document.getElementById('selectedFileCount').textContent = selectedFiles.length;
     }
 }
 
