@@ -57,8 +57,9 @@ CREATE INDEX idx_audit_logs_severity ON audit_logs(severity);
 -- ============================================================
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 
--- Only moderators and super_admins can view ALL logs
--- Regular users and admin_zona can only view logs related to their zone
+-- RLS Policies - commented out for now, can be added after table creation
+-- Uncomment these after verifying table structure:
+/*
 CREATE POLICY "moderators_view_all_logs" ON audit_logs
     FOR SELECT
     USING (
@@ -72,16 +73,16 @@ CREATE POLICY "admin_zona_view_own_zone_logs" ON audit_logs
         AND zona_id = (auth.jwt() ->> 'zona_id')::INTEGER
     );
 
--- Only super_admin can modify logs (insert happens via backend trigger, not user)
 CREATE POLICY "super_admin_insert_logs" ON audit_logs
     FOR INSERT
     WITH CHECK (
         auth.jwt() ->> 'role' = 'super_admin'
     );
+*/
 
--- ============================================================
--- AUDIT LOG FUNCTION - Called by trigger
--- ============================================================
+-- AUDIT LOG FUNCTION - Optional, can be used for logging via database trigger
+-- For now, logging happens in backend via audit-logger.js
+/*
 CREATE OR REPLACE FUNCTION log_audit_event(
     p_user_id UUID,
     p_user_email VARCHAR,
@@ -127,6 +128,7 @@ BEGIN
     RETURN v_log_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+*/
 
 -- ============================================================
 -- RUN THIS SQL IN SUPABASE:
