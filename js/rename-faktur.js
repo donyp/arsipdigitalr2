@@ -56,18 +56,39 @@ function handleFiles(files) {
         return;
     }
 
+    // Get existing file names to check for duplicates
+    const existingNames = new Set(selectedFiles.map(f => f.name));
+    let duplicateCount = 0;
+    let newFiles = [];
+    
+    // Filter out duplicates and add new files
+    fileArray.forEach(file => {
+        if (existingNames.has(file.name)) {
+            duplicateCount++;
+        } else {
+            newFiles.push(file);
+            existingNames.add(file.name);
+        }
+    });
+    
+    // Notify about duplicates
+    if (duplicateCount > 0) {
+        Toast.warning(`⚠️ ${duplicateCount} file sudah ada di antrian (diabaikan)`);
+    }
+
+    // Append new files to existing list
+    selectedFiles = selectedFiles.concat(newFiles);
+
     // Max 25 files limit (safe for 2MB avg file size)
     // Memory: 25 × 2MB = 50MB raw; ~67MB with base64 overhead (very safe)
     // Processing time: ~12-13 seconds (acceptable)
     const MAX_FILES = 25;
-    if (fileArray.length > MAX_FILES) {
-        const deletedCount = fileArray.length - MAX_FILES;
-        const deletedFiles = fileArray.slice(MAX_FILES).map(f => f.name).join(', ');
+    if (selectedFiles.length > MAX_FILES) {
+        const deletedCount = selectedFiles.length - MAX_FILES;
+        const deletedFiles = selectedFiles.slice(MAX_FILES).map(f => f.name).join(', ');
         Toast.warning(`⚠️ Maksimal ${MAX_FILES} file sekaligus\n\n${deletedCount} file terbaru dihapus dari antrian:\n${deletedFiles}`);
-        fileArray = fileArray.slice(0, MAX_FILES);
+        selectedFiles = selectedFiles.slice(0, MAX_FILES);
     }
-
-    selectedFiles = fileArray;
 
     // Show file list
     const fileList = document.getElementById('fileList');
@@ -112,7 +133,30 @@ function removeFile(index) {
         document.getElementById('processButtonContainer').classList.add('hidden');
         // Don't hide results - keep history visible
     } else {
-        handleFiles(new DataTransfer().items.length === 0 ? selectedFiles : selectedFiles);
+        // Re-render file list with correct numbering
+        const filesContainer = document.getElementById('filesContainer');
+        filesContainer.innerHTML = selectedFiles.map((f, i) => `
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">${i + 1}. ${f.name}</span>
+                    <span class="text-xs text-gray-500">${(f.size / 1024).toFixed(1)} KB</span>
+                </div>
+                <button onclick="removeFile(${i})" class="p-1 text-red-500 hover:bg-red-50 rounded">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+        
+        // Update max files note
+        const maxFilesNote = document.createElement('p');
+        maxFilesNote.className = 'text-sm font-semibold text-gray-800 mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded';
+        maxFilesNote.textContent = `📋 Maksimal 25 file | ${selectedFiles.length} file dipilih`;
+        filesContainer.appendChild(maxFilesNote);
     }
 }
 
