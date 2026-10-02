@@ -19,28 +19,38 @@ function initRenameFakturPage() {
         return;
     }
 
-    dropzone.addEventListener('click', () => {
-        document.getElementById('fileInput').click();
+    // Remove old event listeners to prevent duplicates
+    const newDropzone = dropzone.cloneNode(true);
+    dropzone.parentNode.replaceChild(newDropzone, dropzone);
+    const fileInput = document.getElementById('fileInput');
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode.replaceChild(newFileInput, fileInput);
+
+    // Get fresh references after cloning
+    const freshDropzone = document.getElementById('dropzone');
+    const freshFileInput = document.getElementById('fileInput');
+
+    freshDropzone.addEventListener('click', () => {
+        freshFileInput.click();
     });
 
-    dropzone.addEventListener('dragover', (e) => {
+    freshDropzone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropzone.classList.add('border-blue-500', 'bg-blue-50');
+        freshDropzone.classList.add('border-blue-500', 'bg-blue-50');
     });
 
-    dropzone.addEventListener('dragleave', () => {
-        dropzone.classList.remove('border-blue-500', 'bg-blue-50');
+    freshDropzone.addEventListener('dragleave', () => {
+        freshDropzone.classList.remove('border-blue-500', 'bg-blue-50');
     });
 
-    dropzone.addEventListener('drop', (e) => {
+    freshDropzone.addEventListener('drop', (e) => {
         e.preventDefault();
-        dropzone.classList.remove('border-blue-500', 'bg-blue-50');
+        freshDropzone.classList.remove('border-blue-500', 'bg-blue-50');
         handleFiles(e.dataTransfer.files);
-
-});
+    });
 
     // File input change event
-    document.getElementById('fileInput').addEventListener('change', (e) => {
+    freshFileInput.addEventListener('change', (e) => {
         handleFiles(e.target.files);
     });
 }
@@ -63,9 +73,8 @@ function handleFiles(files) {
     console.log('[Rename Faktur] selectedFiles before:', selectedFiles.map(f => f.name));
     console.log('[Rename Faktur] new files:', fileArray.map(f => f.name));
 
-    // Create key from filename + size to detect exact duplicates
+    // Get existing file + size to check for duplicates
     const existingKeys = new Set(selectedFiles.map(f => `${f.name}|${f.size}`));
-    console.log('[Rename Faktur] existingKeys:', Array.from(existingKeys));
     
     let duplicateCount = 0;
     let newFiles = [];
@@ -73,15 +82,12 @@ function handleFiles(files) {
     // Filter out duplicates and add new files
     fileArray.forEach(file => {
         const fileKey = `${file.name}|${file.size}`;
-        console.log(`[Rename Faktur] Checking file: ${file.name} (${file.size}bytes), key: ${fileKey}, exists: ${existingKeys.has(fileKey)}`);
         if (existingKeys.has(fileKey)) {
             duplicateCount++;
         } else {
             newFiles.push(file);
         }
     });
-    
-    console.log('[Rename Faktur] duplicateCount:', duplicateCount, 'newFiles:', newFiles.map(f => f.name));
     
     // If all files are duplicates, don't add anything
     if (newFiles.length === 0) {
@@ -96,7 +102,6 @@ function handleFiles(files) {
 
     // Append new files to existing list
     selectedFiles = selectedFiles.concat(newFiles);
-    console.log('[Rename Faktur] selectedFiles after concat:', selectedFiles.map(f => `${f.name}(${f.size})`));
 
     // Max 25 files limit (safe for 2MB avg file size)
     // Memory: 25 × 2MB = 50MB raw; ~67MB with base64 overhead (very safe)
