@@ -3273,10 +3273,6 @@
                 // Auth
                 await initAuth();
                 
-                // Trigger file count sync (non-blocking)
-                API.post('/api/invoice/sync-all-file-counts', {}).catch(e => {
-                });
-                
                 // Load sidebar
                 await loadSidebar('dashboard.html');
                 
