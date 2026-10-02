@@ -194,23 +194,247 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0);
+            backdrop-filter: blur(0px);
+            transition: all 0.3s ease;
         }
         
         .modal.active {
             display: flex;
             align-items: center;
             justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
         }
         
         .modal-content {
             background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
+            border-radius: 1rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.1);
+            max-width: 850px;
+            width: 95%;
+            max-height: 85vh;
             overflow-y: auto;
+            animation: slideUp 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1.5rem;
+            border-radius: 1rem 1rem 0 0;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .modal-body {
+            padding: 2rem;
+            background: white;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .info-card {
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+        
+        .info-card:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            transform: translateY(-2px);
+        }
+        
+        .info-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .info-value {
+            font-size: 0.95rem;
+            color: #1e293b;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        
+        .info-value.mono {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            border: 1px solid #e2e8f0;
+            color: #0f766e;
+        }
+        
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+            margin: 2rem 0;
+        }
+        
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 1rem;
+            padding-left: 0.5rem;
+            border-left: 3px solid #667eea;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .state-box {
+            background: #f8fafc;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+        
+        .state-header {
+            background: linear-gradient(90deg, #f1f5f9, #e2e8f0);
+            padding: 0.75rem 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #334155;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .state-content {
+            padding: 1rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            color: #1e293b;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .status-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .status-error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .status-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+        
+        html[data-dark-mode="true"] .modal-content {
+            background-color: #1e293b !important;
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .modal-header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        
+        html[data-dark-mode="true"] .info-card {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .info-card:hover {
+            background: #1e293b !important;
+            border-color: #475569 !important;
+        }
+        
+        html[data-dark-mode="true"] .info-value {
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .info-value.mono {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #86efac !important;
+        }
+        
+        html[data-dark-mode="true"] .state-box {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+        }
+        
+        html[data-dark-mode="true"] .state-header {
+            background: linear-gradient(90deg, #1e293b, #334155);
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+        }
+        
+        html[data-dark-mode="true"] .state-content {
+            background: #0f172a !important;
+            color: #e2e8f0 !important;
         }
     </style>
 </head>
@@ -410,12 +634,15 @@
     <!-- Detail Modal -->
     <div id="detailModal" class="modal">
         <div class="modal-content">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold text-gray-900">Log Details</h2>
-                    <button onclick="closeDetailModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+            <div class="modal-header">
+                <div>
+                    <h2 class="text-xl font-bold">📋 Audit Log Details</h2>
+                    <p class="text-sm opacity-90 mt-1">Complete activity information and changes</p>
                 </div>
-                <div id="modalContent" class="space-y-4">
+                <button onclick="closeDetailModal()" class="close-btn">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent">
                     <!-- Filled by JavaScript -->
                 </div>
             </div>
@@ -723,108 +950,220 @@
                 const log = await response.json();
                 const modal = document.getElementById('detailModal');
                 const content = document.getElementById('modalContent');
-
-                content.innerHTML = `
-                    <div class="space-y-3">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">ID</span>
-                                <div class="font-mono text-sm break-all">${log.id}</div>
+                
+                const statusGradient = log.status_code < 300 ? 'status-success' : 'status-error';
+                const suspiciousIcon = log.is_suspicious ? '🚨' : '✅';
+                const suspiciousText = log.is_suspicious ? 'Suspicious' : 'Clean';
+                
+                let html = `
+                    <!-- Header Summary -->
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">
+                                🆔 Log ID
                             </div>
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Timestamp</span>
-                                <div>${new Date(log.created_at).toLocaleString()}</div>
+                            <div class="info-value mono">${log.id}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">
+                                📅 Timestamp
+                            </div>
+                            <div class="info-value">${new Date(log.created_at).toLocaleString()}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="section-divider"></div>
+                    
+                    <!-- User Information -->
+                    <div class="section-title">👤 User Information</div>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">📧 Email</div>
+                            <div class="info-value">${escapeHtml(log.user_email || 'N/A')}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">🏷️ Role</div>
+                            <div class="info-value">
+                                <span class="badge badge-${log.user_role === 'admin' ? 'critical' : 'info'}">
+                                    ${log.user_role || 'N/A'}
+                                </span>
                             </div>
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">User</span>
-                                <div>${escapeHtml(log.user_email)}</div>
-                            </div>
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Role</span>
-                                <div>${log.user_role}</div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Action</span>
-                                <div>${escapeHtml(log.action)}</div>
-                            </div>
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Resource Type</span>
-                                <div>${log.resource_type}</div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Operation</span>
-                                <span class="operation-badge op-${log.operation.toLowerCase()}">${log.operation}</span>
-                            </div>
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Status</span>
-                                <div class="text-${log.status_code < 300 ? 'green' : 'red'}-600 font-medium">${log.status_code}</div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Severity</span>
-                                <span class="badge badge-${log.severity}">${log.severity.toUpperCase()}</span>
-                            </div>
-                            <div>
-                                <span class="text-xs text-gray-600 uppercase">Suspicious</span>
-                                <div class="text-${log.is_suspicious ? 'red' : 'green'}-600">
-                                    ${log.is_suspicious ? '🚨 Yes' : '✅ No'}
-                                </div>
-                            </div>
-                        </div>
-
                         ${log.ip_address ? `
-                        <div>
-                            <span class="text-xs text-gray-600 uppercase">IP Address</span>
-                            <div>${log.ip_address}</div>
-                        </div>
-                        ` : ''}
-
-                        ${log.response_message ? `
-                        <div>
-                            <span class="text-xs text-gray-600 uppercase">Response</span>
-                            <div>${escapeHtml(log.response_message)}</div>
-                        </div>
-                        ` : ''}
-
-                        ${log.error_message ? `
-                        <div>
-                            <span class="text-xs text-gray-600 uppercase">Error</span>
-                            <div class="text-red-600 font-mono text-sm">${escapeHtml(log.error_message)}</div>
-                        </div>
-                        ` : ''}
-
-                        ${log.old_values ? `
-                        <div>
-                            <span class="text-xs text-gray-600 uppercase">Previous State</span>
-                            <pre class="bg-gray-100 p-2 rounded text-xs overflow-auto">${JSON.stringify(log.old_values, null, 2)}</pre>
-                        </div>
-                        ` : ''}
-
-                        ${log.new_values ? `
-                        <div>
-                            <span class="text-xs text-gray-600 uppercase">New State</span>
-                            <pre class="bg-gray-100 p-2 rounded text-xs overflow-auto">${JSON.stringify(log.new_values, null, 2)}</pre>
+                        <div class="info-card">
+                            <div class="info-label">🌐 IP Address</div>
+                            <div class="info-value mono">${log.ip_address}</div>
                         </div>
                         ` : ''}
                     </div>
+                    
+                    <div class="section-divider"></div>
+                    
+                    <!-- Activity Details -->
+                    <div class="section-title">⚙️ Activity Details</div>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">📝 Action</div>
+                            <div class="info-value">${escapeHtml(log.action || 'N/A')}</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">📦 Resource Type</div>
+                            <div class="info-value">
+                                <span class="badge badge-info">${log.resource_type}</span>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">🔄 Operation</div>
+                            <div class="info-value">
+                                <span class="operation-badge op-${log.operation.toLowerCase()}">
+                                    ${log.operation}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">📋 Resource Name</div>
+                            <div class="info-value">${escapeHtml(log.resource_name || 'N/A')}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="section-divider"></div>
+                    
+                    <!-- Status & Security -->
+                    <div class="section-title">🔒 Status & Security</div>
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-label">📊 HTTP Status</div>
+                            <div class="info-value">
+                                <span style="font-weight: 700; font-size: 1.125rem;" class="text-${log.status_code < 300 ? 'green' : 'red'}-600">
+                                    ${log.status_code || 'N/A'}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">⚠️ Severity Level</div>
+                            <div class="info-value">
+                                <span class="badge badge-${log.severity}">
+                                    ${log.severity.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">🛡️ Suspicious Activity</div>
+                            <div class="info-value">
+                                <span style="font-size: 1rem;">${suspiciousIcon}</span>
+                                <span style="font-weight: 600;">${suspiciousText}</span>
+                            </div>
+                        </div>
+                    </div>
                 `;
-
+                
+                // Request Details
+                if (log.request_path || log.request_method) {
+                    html += `
+                    <div class="section-divider"></div>
+                    
+                    <div class="section-title">🌐 Request Information</div>
+                    <div class="info-grid">
+                        ${log.request_method ? `
+                        <div class="info-card">
+                            <div class="info-label">📤 Method</div>
+                            <div class="info-value mono" style="font-weight: 700; color: #667eea;">
+                                ${log.request_method}
+                            </div>
+                        </div>
+                        ` : ''}
+                        ${log.request_path ? `
+                        <div class="info-card">
+                            <div class="info-label">🔗 Path</div>
+                            <div class="info-value mono">${log.request_path}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    `;
+                }
+                
+                // Response & Error
+                if (log.response_message || log.error_message) {
+                    html += `
+                    <div class="section-divider"></div>
+                    
+                    <div class="section-title">💬 Response Information</div>
+                    `;
+                    
+                    if (log.response_message) {
+                        html += `
+                        <div class="state-box" style="margin-bottom: 1rem;">
+                            <div class="state-header">✅ Response Message</div>
+                            <div class="state-content">${escapeHtml(log.response_message)}</div>
+                        </div>
+                        `;
+                    }
+                    
+                    if (log.error_message) {
+                        html += `
+                        <div class="state-box">
+                            <div class="state-header" style="background: linear-gradient(90deg, #fee2e2, #fecaca);">❌ Error Message</div>
+                            <div class="state-content">${escapeHtml(log.error_message)}</div>
+                        </div>
+                        `;
+                    }
+                }
+                
+                // State Changes
+                if (log.old_values || log.new_values) {
+                    html += `
+                    <div class="section-divider"></div>
+                    
+                    <div class="section-title">🔄 State Changes</div>
+                    `;
+                    
+                    if (log.old_values && log.new_values) {
+                        html += `
+                        <div class="comparison-grid">
+                            <div class="state-box">
+                                <div class="state-header">📋 Previous State</div>
+                                <div class="state-content">${formatJson(log.old_values)}</div>
+                            </div>
+                            <div class="state-box">
+                                <div class="state-header" style="background: linear-gradient(90deg, #dcfce7, #bbf7d0);">✨ New State</div>
+                                <div class="state-content">${formatJson(log.new_values)}</div>
+                            </div>
+                        </div>
+                        `;
+                    } else if (log.old_values) {
+                        html += `
+                        <div class="state-box">
+                            <div class="state-header">📋 Previous State</div>
+                            <div class="state-content">${formatJson(log.old_values)}</div>
+                        </div>
+                        `;
+                    } else if (log.new_values) {
+                        html += `
+                        <div class="state-box">
+                            <div class="state-header" style="background: linear-gradient(90deg, #dcfce7, #bbf7d0);">✨ New State</div>
+                            <div class="state-content">${formatJson(log.new_values)}</div>
+                        </div>
+                        `;
+                    }
+                }
+                
+                content.innerHTML = html;
                 modal.classList.add('active');
             } catch (error) {
                 console.error('Failed to load log details:', error);
                 showError('Failed to load log details');
             }
+        }
+        
+        function formatJson(obj) {
+            if (typeof obj === 'string') {
+                try {
+                    obj = JSON.parse(obj);
+                } catch (e) {
+                    return escapeHtml(obj);
+                }
+            }
+            return JSON.stringify(obj, null, 2);
         }
 
         function closeDetailModal() {
