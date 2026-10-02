@@ -919,11 +919,11 @@
 
         /* Keep greeting span (Siang/Pagi/etc) blue in both modes */
         #time-greeting {
-            color: #3b82f6;
+            color: inherit;
         }
 
         html[data-dark-mode="true"] #time-greeting {
-            color: #60a5fa !important;
+            color: inherit !important;
         }
 
         /* Keep user name span black/light gray in both modes */
@@ -2046,8 +2046,8 @@
                                 <div style="flex:1;min-width:200px;">
                                     <!-- Greeting text -->
                                     <h1 style="font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.2;margin:0 0 14px 0;color:var(--color-text-primary,#f1f5f9);">
-                                        Selamat <span id="time-greeting" style="color:var(--color-text-primary,#f1f5f9);">Siang</span>,
-                                        <span data-user-name style="background:linear-gradient(135deg,#667eea,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Doni</span>! 👋
+                                        Selamat <span id="time-greeting" style="color:inherit;-webkit-text-fill-color:inherit;">Siang</span>,
+                                        <span data-user-name style="background:linear-gradient(135deg,#667eea,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Doni</span><span style="color:var(--color-text-primary,#f1f5f9);-webkit-text-fill-color:var(--color-text-primary,#f1f5f9);">! 👋</span>
                                     </h1>
 
                                     <!-- Date & time -->
