@@ -8,6 +8,7 @@ let multer, uuid, parseExcel, validateData, upload;
 const path = require('path');
 const fs = require('fs');
 const { updateFileCountDirectly, updateFilePath } = require('./direct-postgres-update');
+const { logSecurityEvent, logWarning, logInfo, logDebug, isDebugMode } = require('./security-logging');
 
 try {
     multer = require('multer');
@@ -924,8 +925,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             }
             
             if (search) {
-                const trimmedSearch = search.trim();
-                query = query.or(`faktur.ilike.%${trimmedSearch}%,konsumen.ilike.%${trimmedSearch}%`);
+                // --- SECURITY FIX #9: SQL injection prevention in search ---
+                // Sanitize search term: remove special characters that could break the ilike query
+                // Supabase ilike is safe against SQL injection (parameterized under the hood)
+                // but we still sanitize to prevent accidental filter bypass
+                const sanitizedSearch = sanitizeString(search.trim());
+                
+                // Only apply search if sanitized result is not empty
+                if (sanitizedSearch && sanitizedSearch.length > 0) {
+                    query = query.or(`faktur.ilike.%${sanitizedSearch}%,konsumen.ilike.%${sanitizedSearch}%`);
+                }
             }
             
             // Order by date desc
@@ -1006,8 +1015,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             if (date_from) statsQuery = statsQuery.gte('tanggal', date_from);
             if (date_to) statsQuery = statsQuery.lte('tanggal', date_to);
             if (search) {
-                const trimmedSearch = search.trim();
-                statsQuery = statsQuery.or(`faktur.ilike.%${trimmedSearch}%,konsumen.ilike.%${trimmedSearch}%`);
+                // --- SECURITY FIX #9: SQL injection prevention in stats query ---
+                const sanitizedSearch = sanitizeString(search.trim());
+                if (sanitizedSearch && sanitizedSearch.length > 0) {
+                    statsQuery = statsQuery.or(`faktur.ilike.%${sanitizedSearch}%,konsumen.ilike.%${sanitizedSearch}%`);
+                }
             }
             
             const { data: allData, error: statsError } = await statsQuery;

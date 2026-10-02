@@ -24,6 +24,7 @@ const WebSocket = require('ws');
 const archiver = require('archiver');
 const R2Storage = require('./r2-storage');
 const { initializeClient: initializeSecretManager, getSecret } = require('./secretManager');
+const { logSecurityEvent, logWarning, logInfo, logDebug, logAudit, isDebugMode } = require('./security-logging');
 
 // Create necessary directories at startup
 const dirsToCreate = [
@@ -835,86 +836,110 @@ async function getMaintenanceStatus() {
  */
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
-    // Allow token from Header OR Query Parameter (?token=...)
-    const token = (authHeader && authHeader.split(' ')[1]) || req.query.token;
+    // SECURITY FIX #4: Disable query-param JWT - headers only (log warning if used)
+    const tokenFromQuery = req.query.token;
+    if (tokenFromQuery) {
+        logWarning('[AUTH]', 'JWT from query parameter (deprecated) - use Authorization header instead', {
+            path: req.path,
+            remoteIp: getClientIp(req)
+        });
+        // Don't use query param token - require header
+    }
+    const token = (authHeader && authHeader.split(' ')[1]);
 
     if (!token) {
         return res.status(401).json({ error: 'Token tidak ditemukan. Silakan login.' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
         if (err) {
             return res.status(403).json({ error: 'Token tidak valid atau sudah expired.' });
         }
-        // --- BYPASS CONSTRAINT CHECK: Elevate to moderator dynamically ---
-        if (decoded.permissions && decoded.permissions.includes('IS_MODERATOR')) {
-            decoded.role = 'moderator';
-        }
-
-        req.user = decoded;
-
-        // --- MAINTENANCE MODE ENFORCEMENT ---
-        // Task 3.5: Async call with comprehensive error handling to prevent blocking
-        getMaintenanceStatus()
-            .then(sys => {
-                if (sys && sys.isMaintenance && decoded.role === 'admin_zona') {
-                    return res.status(503).json({
-                        error: 'Sistem Sedang Perbaikan',
-                        message: 'Akses Admin Zona ditangguhkan sementara untuk pemeliharaan teknis. Silakan coba lagi nanti.'
-                    });
-                }
-
-                // Session Heartbeat (Asynchronous)
-                // Task 3.5: Fire-and-forget pattern with comprehensive error handling
-                const sessionToken = req.headers['x-session-token'];
-                if (sessionToken) {
-                    supabase.from('user_sessions')
-                        .update({ last_activity: new Date().toISOString() })
-                        .eq('session_token', sessionToken)
-                        .then(({ error }) => {
-                            if (error) {
-                                // Task 3.5: Detailed error logging
-                                console.warn('[HEARTBEAT] Error updating session:', {
-                                    sessionToken,
-                                    message: error.message,
-                                    code: error.code
-                                });
-                            }
-                        })
-                        .catch(err => {
-                            // Task 3.5: Catch any promise rejections to prevent blocking
-                            console.warn('[HEARTBEAT] Failed to update session:', {
-                                sessionToken,
-                                message: err.message,
-                                stack: err.stack
-                            });
-                            // Note: Request continues regardless of heartbeat failure
-                        });
-                }
-
-                // Task 3.5: Request continues regardless of async operation results
-                next();
-            })
-            .catch(err => {
-                // Task 3.5: Enhanced error logging with context
-                console.error('[Middleware] Maintenance check async error:', {
-                    message: err.message || err,
-                    stack: err.stack,
-                    userId: decoded.userId,
-                    role: decoded.role,
-                    path: req.path
+        
+        try {
+            // --- SECURITY FIX #2: Verify role from database instead of trusting token ---
+            // Do NOT elevate role based on permissions array in token
+            // Always query database for authoritative role
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('id, email, role, zona_id, permissions, is_active')
+                .eq('id', decoded.sub || decoded.userId)
+                .single();
+            
+            if (error || !user) {
+                logSecurityEvent('[AUTH]', 'User lookup failed during token verification', { 
+                    userId: decoded.sub || decoded.userId, 
+                    errorMessage: error?.message 
                 });
-                // Task 3.5: Fallback behavior - assume maintenance mode is OFF
-                // This ensures async failures never block request processing
-                console.warn('[Middleware] Continuing request processing with maintenance=OFF fallback');
-                next();
+                return res.status(403).json({ error: 'Token tidak valid - user tidak ditemukan.' });
+            }
+
+            // Check if user is active (prevent disabled accounts)
+            if (user.is_active === false) {
+                logSecurityEvent('[AUTH]', 'Attempt to use token for inactive user', { userId: user.id });
+                return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan.' });
+            }
+
+            // Use DATABASE role (authoritative source, never trust token claim)
+            decoded.role = user.role;
+            decoded.zona_id = user.zona_id;
+            decoded.permissions = user.permissions || [];
+            
+            // Log any role mismatch for security audit
+            const tokenRole = decoded.role; // Original from token
+            if (tokenRole !== user.role) {
+                logSecurityEvent('[AUTH]', 'Role mismatch detected - using database role', {
+                    userId: user.id,
+                    email: user.email,
+                    tokenClaim: tokenRole,
+                    databaseRole: user.role
+                });
+            }
+
+            req.user = decoded;
+
+            // --- MAINTENANCE MODE ENFORCEMENT ---
+            const sys = await getMaintenanceStatus();
+            if (sys && sys.isMaintenance && user.role === 'admin_zona') {
+                return res.status(503).json({
+                    error: 'Sistem Sedang Perbaikan',
+                    message: 'Akses Admin Zona ditangguhkan sementara untuk pemeliharaan teknis. Silakan coba lagi nanti.'
+                });
+            }
+
+            // Session Heartbeat (Fire-and-forget, non-blocking)
+            const sessionToken = req.headers['x-session-token'];
+            if (sessionToken) {
+                supabase.from('user_sessions')
+                    .update({ last_activity: new Date().toISOString() })
+                    .eq('session_token', sessionToken)
+                    .catch(err => {
+                        if (isDebugMode()) {
+                            logDebug('[HEARTBEAT]', 'Failed to update session', {
+                                message: err.message
+                            });
+                        }
+                    });
+            }
+
+            // Request continues
+            next();
+        } catch (err) {
+            logSecurityEvent('[AUTH]', 'Authentication verification error', {
+                errorMessage: err.message,
+                userId: decoded.sub || decoded.userId,
+                path: req.path
             });
+            return res.status(403).json({ error: 'Authentication verification failed.' });
+        }
     });
 }
 
+
 /**
- * RBAC Middleware â€” restrict routes to specific roles.
+ * RBAC Middleware – restrict routes to specific roles.
  */
+
 function authorizeRole(...allowedRoles) {
     return (req, res, next) => {
         console.log('[RBAC] User role check:', {
@@ -1195,10 +1220,10 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             .single();
 
         if (error) console.error("[LOGIN] Supabase Error:", error.message || error);
-        if (!user) console.error("[LOGIN] User not found");
+        if (!user) logSecurityEvent("[AUTH]", "User not found during login");
 
         if (error || !user) {
-            console.log('[LOGIN] FAILED: User not found or error');
+            logWarning('[LOGIN]', 'Failed login - user not found', { email: email.substring(0, 3) + '***' });
             
             // Log failed attempt
             const { ipAddress } = AuditLogger.extractClientInfo(req);
@@ -1226,14 +1251,13 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
 
-        console.log('[LOGIN] User found, checking password...');
+        if (isDebugMode()) logDebug('[LOGIN]', 'User found, checking password');
 
         // Verify password
         const isMatch = await bcrypt.compare(password, user.password_hash);
-        console.log('[LOGIN] Password match:', isMatch);
         
         if (!isMatch) {
-            console.log('[LOGIN] FAILED: Password mismatch');
+            logWarning('[LOGIN]', 'Failed login - password mismatch', { email: email.substring(0, 3) + '***' });
             
             // Log failed attempt
             const { ipAddress } = AuditLogger.extractClientInfo(req);
@@ -1261,11 +1285,11 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             return res.status(401).json({ error: 'Email atau password salah.' });
         }
 
-        console.log('[LOGIN] SUCCESS: Password matched, generating token...');
+        if (isDebugMode()) logDebug('[LOGIN]', 'Password matched, generating token', { email: email.substring(0, 3) + '***' });
 
         // SECURITY FIX #2: Check if user must change password on first login
         if (user.force_password_change) {
-            console.log('[LOGIN] User must change password on first login');
+            logInfo('[LOGIN]', 'First login - password change required', { email: email.substring(0, 3) + '***' });
             
             // Log audit entry
             const { ipAddress } = AuditLogger.extractClientInfo(req);
@@ -2687,7 +2711,12 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, upload
         }
 
         const { zona_id, toko_id, category } = req.body;
-        console.log(`[Upload Audit] User: ${req.user.userId}, Body:`, { ...req.body, file: req.file?.originalname });
+        logDebug('[UPLOAD]', 'File upload initiated', { 
+            userId: req.user.userId,
+            zona_id: zona_id,
+            fileName: req.file?.originalname,
+            category: category
+        });
 
         if (!zona_id) {
             return res.status(400).json({ error: 'zona_id wajib diisi.' });
@@ -3058,13 +3087,15 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
 
         const toko_id = req.body?.toko_id;
         const tanggal_dokumen = req.body?.tanggal_dokumen;
-        console.log(`[PIUTANG Upload] User: ${req.user.userId}, File: ${req.file.originalname}`);
-        console.log(`[PIUTANG Upload] req.body:`, req.body);
-        console.log(`[PIUTANG Upload] Received toko_id: ${toko_id}, tanggal_dokumen: ${tanggal_dokumen}`);
+        logDebug('[PIUTANG]', 'PIUTANG file upload initiated', { 
+            userId: req.user.userId,
+            fileName: req.file.originalname,
+            hasDate: !!tanggal_dokumen
+        });
         
         // Parse toko_id - it comes as string from FormData, convert to number
         const parsedTokoId = toko_id ? parseInt(toko_id) : null;
-        console.log(`[PIUTANG Upload] Parsed toko_id: ${parsedTokoId}`);
+        if (isDebugMode()) logDebug('[PIUTANG]', 'Parsed toko_id', { parsedTokoId });
 
         // Extract nominal from filename (e.g., "1.520.000.pdf" → "1.520.000")
         const nominal = req.file.originalname.replace(/\.[^/.]+$/, "").trim();
@@ -7357,3 +7388,4 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
         res.status(500).json({ error: 'Gagal mengubah password' });
     }
 });
+
