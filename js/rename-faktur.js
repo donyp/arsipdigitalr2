@@ -10,6 +10,9 @@ if (typeof selectedFiles === 'undefined') {
 // Setup Drag & Drop (wrapped in init function)
 // ============================================
 function initRenameFakturPage() {
+    // Clear selectedFiles setiap kali halaman di-init (prevent stale data from SPA)
+    selectedFiles = [];
+    
     const dropzone = document.getElementById('dropzone');
     if (!dropzone) {
         setTimeout(initRenameFakturPage, 100);
@@ -67,11 +70,16 @@ function handleFiles(files) {
             duplicateCount++;
         } else {
             newFiles.push(file);
-            existingNames.add(file.name);
         }
     });
     
-    // Notify about duplicates
+    // If all files are duplicates, don't add anything
+    if (newFiles.length === 0) {
+        Toast.warning(`⚠️ Semua file sudah ada di antrian (diabaikan)`);
+        return;
+    }
+    
+    // Notify about duplicates only if there were some
     if (duplicateCount > 0) {
         Toast.warning(`⚠️ ${duplicateCount} file sudah ada di antrian (diabaikan)`);
     }
