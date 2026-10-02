@@ -423,14 +423,28 @@
         // Save user
         async function saveUser() {
             const id = document.getElementById('editUserId').value;
-            const email = document.getElementById('userEmail').value;
-            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value.trim();
+            const name = document.getElementById('userName').value.trim();
             const password = document.getElementById('userPassword').value;
             const role = document.getElementById('userRole').value;
             const is_active = document.getElementById('userActive').checked;
 
+            // Validation
             if (!email || !name) {
                 alert('Email dan Nama wajib diisi');
+                return;
+            }
+
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('Format email tidak valid. Contoh: user@example.com');
+                return;
+            }
+
+            // Role validation
+            if (!role || !['super_admin', 'moderator', 'admin_zona'].includes(role)) {
+                alert('Role tidak valid');
                 return;
             }
 

@@ -4653,9 +4653,21 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Email, nama, dan role wajib diisi.' });
         }
 
+        // Email format validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email.toLowerCase().trim())) {
+            return res.status(400).json({ error: 'Format email tidak valid.' });
+        }
+
+        // Role validation
+        const validRoles = ['super_admin', 'moderator', 'admin_zona'];
+        if (!validRoles.includes(role)) {
+            return res.status(400).json({ error: 'Role tidak valid. Harus: super_admin, moderator, atau admin_zona.' });
+        }
+
         const updates = {};
         updates.email = email.toLowerCase().trim();
-        updates.name = name;
+        updates.name = name.trim();
         updates.role = role;
         if (typeof is_active === 'boolean') updates.is_active = is_active;
         if (zona_id !== undefined) updates.zona_id = zona_id;
