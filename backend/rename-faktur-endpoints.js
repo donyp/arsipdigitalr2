@@ -244,11 +244,11 @@ module.exports = (app, supabase) => {
                     // Create new filename based on referensi detection
                     let newName;
                     if (referensi) {
-                        // Format with referensi: tax-REFERENSI NAMA NOMINAL
-                        newName = `tax-${referensi} ${namaToko.toUpperCase()} ${formatCurrency(totalNominal)}.pdf`;
+                        // Format with referensi: REFERENSI.pdf (simple & clean)
+                        newName = `${referensi}.pdf`;
                         console.log(`[Rename Faktur] ✓ REFERENSI format applied: ${newName}`);
                     } else {
-                        // Standard format: tax-NAMA NOMINAL
+                        // Standard format: tax-NAMA NOMINAL (when referensi not found)
                         newName = `tax-${namaToko.toUpperCase()} ${formatCurrency(totalNominal)}.pdf`;
                         console.log(`[Rename Faktur] ✓ STANDARD format applied (no referensi): ${newName}`);
                     }
