@@ -342,6 +342,13 @@
         // INITIALIZATION
         // ============================================
         async function init() {
+            // Check if user logged in
+            const token = localStorage.getItem('jwt_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
             setupDatePickers();
             setupEventListeners();
             await loadLogs();
@@ -809,6 +816,9 @@
         }
 
         function redirectToLogin() {
+            if (localStorage.getItem('jwt_token')) {
+                localStorage.removeItem('jwt_token');
+            }
             window.location.href = '/login';
         }
 
