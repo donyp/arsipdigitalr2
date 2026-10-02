@@ -18,6 +18,99 @@
             --info: #06b6d4;
         }
         
+        /* Light mode (default) */
+        body {
+            background-color: #f3f4f6;
+            color: #111827;
+        }
+        
+        /* Dark mode */
+        html[data-dark-mode="true"] {
+            background-color: #0f172a;
+            color: #f0f4f8;
+        }
+        
+        html[data-dark-mode="true"] body {
+            background-color: #0f172a;
+            color: #f0f4f8;
+        }
+        
+        html[data-dark-mode="true"] nav {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+        }
+        
+        html[data-dark-mode="true"] .bg-white {
+            background-color: #1e293b !important;
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .text-gray-900 {
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .text-gray-600 {
+            color: #cbd5e1 !important;
+        }
+        
+        html[data-dark-mode="true"] .text-gray-500 {
+            color: #94a3b8 !important;
+        }
+        
+        html[data-dark-mode="true"] .border-gray-200 {
+            border-color: #334155 !important;
+        }
+        
+        html[data-dark-mode="true"] .bg-gray-50 {
+            background-color: #0f172a !important;
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .bg-gray-200 {
+            background-color: #334155 !important;
+        }
+        
+        html[data-dark-mode="true"] .filter-section {
+            background-color: #1e293b !important;
+            border-color: #334155 !important;
+        }
+        
+        html[data-dark-mode="true"] input,
+        html[data-dark-mode="true"] select {
+            background-color: #0f172a !important;
+            color: #f0f4f8 !important;
+            border-color: #334155 !important;
+        }
+        
+        html[data-dark-mode="true"] .sticky-header {
+            background-color: #1e293b !important;
+        }
+        
+        html[data-dark-mode="true"] .modal {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        html[data-dark-mode="true"] .modal-content {
+            background-color: #1e293b !important;
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .table-row-suspicious {
+            background-color: #3f1f1f !important;
+        }
+        
+        html[data-dark-mode="true"] button {
+            color: #f0f4f8 !important;
+        }
+        
+        html[data-dark-mode="true"] .hover\:bg-gray-50:hover {
+            background-color: #334155 !important;
+        }
+        
+        html[data-dark-mode="true"] .hover\:bg-gray-300:hover {
+            background-color: #475569 !important;
+        }
+        
         .badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -30,6 +123,11 @@
         .badge-warning { background: #fef3c7; color: #92400e; }
         .badge-critical { background: #fee2e2; color: #991b1b; }
         .badge-success { background: #dcfce7; color: #166534; }
+        
+        html[data-dark-mode="true"] .badge-info { background: #1e3a8a; color: #93c5fd; }
+        html[data-dark-mode="true"] .badge-warning { background: #78350f; color: #fcd34d; }
+        html[data-dark-mode="true"] .badge-critical { background: #7f1d1d; color: #fca5a5; }
+        html[data-dark-mode="true"] .badge-success { background: #064e3b; color: #86efac; }
         
         .operation-badge {
             display: inline-block;
@@ -46,6 +144,12 @@
         .op-delete { background: #fee2e2; color: #991b1b; }
         .op-download { background: #f3e8ff; color: #6b21a8; }
         
+        html[data-dark-mode="true"] .op-create { background: #064e3b; color: #86efac; }
+        html[data-dark-mode="true"] .op-read { background: #1e3a8a; color: #93c5fd; }
+        html[data-dark-mode="true"] .op-update { background: #78350f; color: #fcd34d; }
+        html[data-dark-mode="true"] .op-delete { background: #7f1d1d; color: #fca5a5; }
+        html[data-dark-mode="true"] .op-download { background: #5b21b6; color: #e9d5ff; }
+        
         .table-row-suspicious {
             background-color: #fef2f2 !important;
             border-left: 4px solid #ef4444;
@@ -55,6 +159,10 @@
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
             background-size: 200% 100%;
             animation: loading 2s infinite;
+        }
+        
+        html[data-dark-mode="true"] .skeleton {
+            background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
         }
         
         @keyframes loading {
@@ -119,8 +227,13 @@
                     </a>
                     <h1 class="text-2xl font-bold text-gray-900">📋 Audit Logs Dashboard</h1>
                 </div>
-                <div class="text-sm text-gray-600">
-                    Updated: <span id="lastUpdate">just now</span>
+                <div class="flex items-center gap-4">
+                    <div class="text-sm text-gray-600">
+                        Updated: <span id="lastUpdate">just now</span>
+                    </div>
+                    <button id="darkModeToggle" onclick="toggleDarkMode()" class="p-2 rounded hover:bg-gray-100 transition">
+                        <span id="darkModeIcon">🌙</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -342,10 +455,31 @@
         };
 
         // ============================================
+        // DARK MODE
+        // ============================================
+        function toggleDarkMode() {
+            const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+            const newState = !isDarkMode;
+            
+            localStorage.setItem('dark_mode_enabled', newState);
+            document.documentElement.setAttribute('data-dark-mode', newState);
+            document.getElementById('darkModeIcon').textContent = newState ? '☀️' : '🌙';
+        }
+        
+        function initDarkMode() {
+            const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+            document.documentElement.setAttribute('data-dark-mode', isDarkMode);
+            document.getElementById('darkModeIcon').textContent = isDarkMode ? '☀️' : '🌙';
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================
         async function init() {
             console.log('🚀 Init function called');
+            
+            // Init dark mode first
+            initDarkMode();
             
             // Check if user logged in
             const token = localStorage.getItem('jwt_token');
