@@ -4662,17 +4662,23 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         if (toko_id !== undefined) updates.toko_id = toko_id;
         if (permissions !== undefined) updates.permissions = permissions;
 
-        console.log('[PUT /api/users/:id] Updating user', userId, 'with:', updates);
+        console.log('[PUT /api/users/:id] Updating user', userId, 'with:', JSON.stringify(updates));
 
         // Re-hash password if provided
-        if (password && password.trim()) {
-            const salt = await bcrypt.genSalt(12);
-            updates.password_hash = await bcrypt.hash(password, salt);
-            console.log('[PUT /api/users/:id] Password being hashed');
+        try {
+            if (password && password.trim()) {
+                console.log('[PUT /api/users/:id] Hashing password...');
+                const salt = await bcrypt.genSalt(12);
+                updates.password_hash = await bcrypt.hash(password, salt);
+                console.log('[PUT /api/users/:id] Password hashed successfully');
+            }
+        } catch (hashErr) {
+            console.error('[PUT /api/users/:id] Password hashing error:', hashErr.message);
+            throw new Error('Password hashing failed: ' + hashErr.message);
         }
 
         console.log('[PUT /api/users/:id] Making Supabase update call...');
-        const { data, error } = await supabase
+        let { data, error } = await supabase
             .from('users')
             .update(updates)
             .eq('id', userId)
@@ -4680,21 +4686,26 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
             .single();
 
         if (error) {
-            console.error('[PUT /api/users/:id] Supabase error:', error);
-            throw error;
+            console.error('[PUT /api/users/:id] Supabase error details:', JSON.stringify(error, null, 2));
+            throw new Error(error.message || 'Database error: ' + JSON.stringify(error));
         }
 
-        console.log('[PUT /api/users/:id] Update successful');
+        console.log('[PUT /api/users/:id] Update successful, data:', JSON.stringify(data, null, 2));
 
-        await supabase.from('audit_logs').insert({
-            user_id: req.user.userId,
-            action: 'Update User',
-            context: `Updated user ${userId}`
-        }).catch(err => console.error('Audit log insert error:', err.message));
+        try {
+            await supabase.from('audit_logs').insert({
+                user_id: req.user.userId,
+                action: 'Update User',
+                context: `Updated user ${userId}`
+            });
+        } catch (auditErr) {
+            console.warn('[PUT /api/users/:id] Audit log insert failed (non-blocking):', auditErr.message);
+        }
 
         res.json({ success: true, user: data });
     } catch (err) {
-        console.error('[PUT /api/users/:id] Error:', err.message, err.stack);
+        console.error('[PUT /api/users/:id] CATCH BLOCK Error:', err.message);
+        console.error('[PUT /api/users/:id] Error stack:', err.stack);
         res.status(500).json({ error: 'Gagal update user: ' + err.message });
     }
 });
