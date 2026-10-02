@@ -495,13 +495,6 @@ async function loadArchives(append = false) {
         let endpoint = viewMode === 'deleted' && isSuperAdmin() ? '/api/files/trash' : '/api/files';
 
         const getVal = (id) => document.getElementById(id)?.value || '';
-            category: getVal('filter-category'),
-            zona_id: getVal('filter-zona'),
-            toko_id: getVal('filter-toko'),
-            tipe_ppn: getVal('filter-tipe'),
-            search: document.getElementById('dashboard-search-input')?.value || '',
-            currentUserRole: currentUser?.role
-        });
         
         const params = new URLSearchParams({
             page: currentPage,
