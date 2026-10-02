@@ -96,71 +96,44 @@ function addFakturPajakRenameEndpoints(app, supabase, createAuth) {
     });
     
     // =====================================================================
-    // GET /api/faktur-pajak/rename-history/:faktur
-    // Get rename history for specific faktur
+    // GET /api/faktur-pajak/rename-history/recent
+    // Get recent renames (last 24 hours)
+    // NOTE: Must be BEFORE /:faktur route to match correctly
     // =====================================================================
-    app.get('/api/faktur-pajak/rename-history/:faktur', createAuth(['super_admin', 'moderator', 'admin_zona']), async (req, res) => {
+    app.get('/api/faktur-pajak/rename-history/recent', createAuth(['super_admin', 'moderator', 'admin_zona']), async (req, res) => {
         try {
-            const { faktur } = req.params;
-            const { limit = 10, offset = 0 } = req.query;
+            const { limit = 100, offset = 0, hours = 24 } = req.query;
             
-            if (!faktur) {
-                return res.status(400).json({ error: 'Faktur parameter required' });
-            }
+            console.log(`[FakturPajak] Getting recent renames (last ${hours} hours)`);
+            console.log(`[FakturPajak] Cutoff: ${hours} hours, Limit: ${limit}`);
             
-            console.log(`[FakturPajak] Getting rename history for: ${faktur}`);
+            // Calculate cutoff time
+            const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+            console.log(`[FakturPajak] Cutoff time: ${cutoffTime}`);
             
             // Get rename history
             const { data, error, count } = await supabase
                 .from('faktur_pajak_rename_history')
                 .select('*', { count: 'exact' })
-                .eq('faktur', faktur)
+                .gte('renamed_at', cutoffTime)
                 .order('renamed_at', { ascending: false })
                 .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
             
             if (error) {
-                console.error('[FakturPajak] Error fetching history:', error);
+                console.error('[FakturPajak] Error fetching recent history:', error);
                 return res.status(500).json({
                     error: 'Failed to fetch history',
                     details: error.message
                 });
             }
             
-            console.log(`[FakturPajak] ✅ Found ${data?.length || 0} rename records for ${faktur}`);
-            
-            // Auto-cleanup: Delete records beyond the top 10 for this faktur
-            // This ensures only the 10 most recent records are kept
-            if (count > 10) {
-                console.log(`[FakturPajak] Auto-cleanup: ${count} total records, deleting older records...`);
-                
-                // Get all records beyond the top 10
-                const { data: oldRecords, error: fetchOldError } = await supabase
-                    .from('faktur_pajak_rename_history')
-                    .select('id')
-                    .eq('faktur', faktur)
-                    .order('renamed_at', { ascending: false })
-                    .range(10, 9999);  // Skip top 10, get the rest
-                
-                if (!fetchOldError && oldRecords && oldRecords.length > 0) {
-                    const oldIds = oldRecords.map(r => r.id);
-                    
-                    // Delete old records
-                    const { error: deleteError } = await supabase
-                        .from('faktur_pajak_rename_history')
-                        .delete()
-                        .in('id', oldIds);
-                    
-                    if (deleteError) {
-                        console.warn('[FakturPajak] Error during cleanup:', deleteError.message);
-                    } else {
-                        console.log(`[FakturPajak] ✅ Auto-cleanup deleted ${oldIds.length} old records`);
-                    }
-                }
-            }
+            console.log(`[FakturPajak] ✅ Found ${data?.length || 0} recent rename records (total: ${count})`);
+            console.log(`[FakturPajak] Sample data:`, data && data.length > 0 ? data[0] : 'none');
             
             res.json({
                 success: true,
-                faktur,
+                time_period: `Last ${hours} hours`,
+                cutoff_time: cutoffTime,
                 history: data || [],
                 total_records: count || 0,
                 limit: parseInt(limit),
@@ -228,43 +201,71 @@ function addFakturPajakRenameEndpoints(app, supabase, createAuth) {
     });
     
     // =====================================================================
-    // GET /api/faktur-pajak/rename-history/recent
-    // Get recent renames (last 24 hours)
+    // GET /api/faktur-pajak/rename-history/:faktur
+    // Get rename history for specific faktur
     // =====================================================================
-    app.get('/api/faktur-pajak/rename-history/recent', createAuth(['super_admin', 'moderator', 'admin_zona']), async (req, res) => {
+    app.get('/api/faktur-pajak/rename-history/:faktur', createAuth(['super_admin', 'moderator', 'admin_zona']), async (req, res) => {
         try {
-            const { limit = 100, offset = 0, hours = 24 } = req.query;
+            const { faktur } = req.params;
+            const { limit = 10, offset = 0 } = req.query;
             
-            console.log(`[FakturPajak] Getting recent renames (last ${hours} hours)`);
-            console.log(`[FakturPajak] Cutoff: ${hours} hours, Limit: ${limit}`);
+            if (!faktur) {
+                return res.status(400).json({ error: 'Faktur parameter required' });
+            }
             
-            // Calculate cutoff time
-            const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
-            console.log(`[FakturPajak] Cutoff time: ${cutoffTime}`);
+            console.log(`[FakturPajak] Getting rename history for: ${faktur}`);
             
             // Get rename history
             const { data, error, count } = await supabase
                 .from('faktur_pajak_rename_history')
                 .select('*', { count: 'exact' })
-                .gte('renamed_at', cutoffTime)
+                .eq('faktur', faktur)
                 .order('renamed_at', { ascending: false })
                 .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
             
             if (error) {
-                console.error('[FakturPajak] Error fetching recent history:', error);
+                console.error('[FakturPajak] Error fetching history:', error);
                 return res.status(500).json({
                     error: 'Failed to fetch history',
                     details: error.message
                 });
             }
             
-            console.log(`[FakturPajak] ✅ Found ${data?.length || 0} recent rename records (total: ${count})`);
-            console.log(`[FakturPajak] Sample data:`, data && data.length > 0 ? data[0] : 'none');
+            console.log(`[FakturPajak] ✅ Found ${data?.length || 0} rename records for ${faktur}`);
+            
+            // Auto-cleanup: Delete records beyond the top 10 for this faktur
+            // This ensures only the 10 most recent records are kept
+            if (count > 10) {
+                console.log(`[FakturPajak] Auto-cleanup: ${count} total records, deleting older records...`);
+                
+                // Get all records beyond the top 10
+                const { data: oldRecords, error: fetchOldError } = await supabase
+                    .from('faktur_pajak_rename_history')
+                    .select('id')
+                    .eq('faktur', faktur)
+                    .order('renamed_at', { ascending: false })
+                    .range(10, 9999);  // Skip top 10, get the rest
+                
+                if (!fetchOldError && oldRecords && oldRecords.length > 0) {
+                    const oldIds = oldRecords.map(r => r.id);
+                    
+                    // Delete old records
+                    const { error: deleteError } = await supabase
+                        .from('faktur_pajak_rename_history')
+                        .delete()
+                        .in('id', oldIds);
+                    
+                    if (deleteError) {
+                        console.warn('[FakturPajak] Error during cleanup:', deleteError.message);
+                    } else {
+                        console.log(`[FakturPajak] ✅ Auto-cleanup deleted ${oldIds.length} old records`);
+                    }
+                }
+            }
             
             res.json({
                 success: true,
-                time_period: `Last ${hours} hours`,
-                cutoff_time: cutoffTime,
+                faktur,
                 history: data || [],
                 total_records: count || 0,
                 limit: parseInt(limit),
