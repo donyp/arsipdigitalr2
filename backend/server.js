@@ -238,7 +238,7 @@ app.use((req, res, next) => {
     // Allow CDN untuk Tailwind CSS, SheetJS, dan analytics
     res.setHeader('Content-Security-Policy', [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://cdn.sheetjs.com https://static.cloudflareinsights.com",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://cdn.sheetjs.com https://unpkg.com https://static.cloudflareinsights.com",
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:",
         "img-src 'self' data: blob: https://static.cloudflareinsights.com",
