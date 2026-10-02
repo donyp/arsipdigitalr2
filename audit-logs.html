@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/SheetJS/0.20.0/xlsx.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.9/dist/flatpickr.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.9/dist/flatpickr.min.js"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --success: #10b981;
+            --info: #06b6d4;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-critical { background: #fee2e2; color: #991b1b; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        
+        .operation-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        
+        .op-create { background: #dcfce7; color: #166534; }
+        .op-read { background: #dbeafe; color: #1e40af; }
+        .op-update { background: #fef3c7; color: #92400e; }
+        .op-delete { background: #fee2e2; color: #991b1b; }
+        .op-download { background: #f3e8ff; color: #6b21a8; }
+        
+        .table-row-suspicious {
+            background-color: #fef2f2 !important;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 2s infinite;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .filter-section {
+            background: #f9fafb;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <a href="javascript:history.back()" class="text-gray-600 hover:text-gray-900 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </a>
+                    <h1 class="text-2xl font-bold text-gray-900">📋 Audit Logs Dashboard</h1>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Updated: <span id="lastUpdate">just now</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="statsContainer">
+            <div class="bg-white rounded-lg border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Total Logs</div>
+                <div class="text-2xl font-bold text-gray-900 mt-2">
+                    <span id="statTotal" class="skeleton" style="display: inline-block; width: 60px; height: 28px;"></span>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Critical Events</div>
+                <div class="text-2xl font-bold text-red-600 mt-2">
+                    <span id="statCritical" class="skeleton" style="display: inline-block; width: 60px; height: 28px;"></span>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">Suspicious Activity</div>
+                <div class="text-2xl font-bold text-orange-600 mt-2">
+                    <span id="statSuspicious" class="skeleton" style="display: inline-block; width: 60px; height: 28px;"></span>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg border border-gray-200 p-4">
+                <div class="text-sm text-gray-600">24h Activity</div>
+                <div class="text-2xl font-bold text-blue-600 mt-2">
+                    <span id="stat24h" class="skeleton" style="display: inline-block; width: 60px; height: 28px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">🔍 Filters</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Date Range -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                    <input type="text" id="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Select date">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                    <input type="text" id="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Select date">
+                </div>
+
+                <!-- Resource Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Resource Type</label>
+                    <select id="resourceType" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">All Types</option>
+                        <option value="invoice">Invoice</option>
+                        <option value="file">File</option>
+                        <option value="user">User</option>
+                        <option value="zona">Zona</option>
+                        <option value="ticket">Ticket</option>
+                    </select>
+                </div>
+
+                <!-- Operation -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Operation</label>
+                    <select id="operation" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">All Operations</option>
+                        <option value="CREATE">Create</option>
+                        <option value="READ">Read</option>
+                        <option value="UPDATE">Update</option>
+                        <option value="DELETE">Delete</option>
+                        <option value="DOWNLOAD">Download</option>
+                    </select>
+                </div>
+
+                <!-- Severity -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Severity</label>
+                    <select id="severity" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <option value="">All Levels</option>
+                        <option value="info">Info</option>
+                        <option value="warning">Warning</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+
+                <!-- User Email -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">User Email</label>
+                    <input type="email" id="userEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Filter by email">
+                </div>
+
+                <!-- Suspicious Only -->
+                <div class="flex items-end">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="suspiciousOnly" class="w-4 h-4">
+                        <span class="text-sm font-medium text-gray-700">Suspicious Only</span>
+                    </label>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-2 items-end">
+                    <button id="applyFilters" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                        Apply Filters
+                    </button>
+                    <button id="clearFilters" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="flex gap-2 mb-4 flex-wrap">
+            <button id="exportCsv" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-2">
+                📥 Export CSV
+            </button>
+            <button id="autoRefreshToggle" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition flex items-center gap-2">
+                🔄 Auto-refresh (60s)
+            </button>
+            <button id="refreshNow" class="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition">
+                Refresh Now
+            </button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="sticky-header">
+                        <tr class="border-b border-gray-200 bg-gray-50">
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Timestamp</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">User</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Action</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Resource</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Operation</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Status</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Severity</th>
+                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTable">
+                        <!-- Skeleton loaders -->
+                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                            <td colspan="8" class="px-6 py-4">
+                                <div class="space-y-3">
+                                    <div class="skeleton h-8"></div>
+                                    <div class="skeleton h-8"></div>
+                                    <div class="skeleton h-8"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="border-t border-gray-200 px-6 py-4 flex justify-between items-center bg-gray-50">
+                <div class="text-sm text-gray-600">
+                    Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> logs
+                </div>
+                <div class="flex gap-2">
+                    <button id="prevPage" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        ← Previous
+                    </button>
+                    <button id="nextPage" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next →
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- No Results Message -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <div class="text-gray-400 text-5xl mb-4">📭</div>
+            <div class="text-gray-600 text-lg">No audit logs found</div>
+        </div>
+    </main>
+
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">Log Details</h2>
+                    <button onclick="closeDetailModal()" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <div id="modalContent" class="space-y-4">
+                    <!-- Filled by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // GLOBAL STATE
+        // ============================================
+        const state = {
+            logs: [],
+            currentPage: 0,
+            pageSize: 50,
+            totalCount: 0,
+            autoRefreshActive: false,
+            autoRefreshInterval: null,
+            filters: {
+                startDate: null,
+                endDate: null,
+                resourceType: '',
+                operation: '',
+                severity: '',
+                userEmail: '',
+                isSuspicious: false
+            },
+            sortBy: 'created_at',
+            sortOrder: 'desc'
+        };
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        async function init() {
+            setupDatePickers();
+            setupEventListeners();
+            await loadLogs();
+            loadStats();
+        }
+
+        function setupDatePickers() {
+            flatpickr('#startDate', {
+                format: 'Y-m-d',
+                onChange: () => {
+                    state.currentPage = 0;
+                }
+            });
+
+            flatpickr('#endDate', {
+                format: 'Y-m-d',
+                onChange: () => {
+                    state.currentPage = 0;
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('applyFilters').addEventListener('click', async () => {
+                updateFilters();
+                state.currentPage = 0;
+                await loadLogs();
+            });
+
+            document.getElementById('clearFilters').addEventListener('click', () => {
+                clearAllFilters();
+                state.currentPage = 0;
+                loadLogs();
+            });
+
+            document.getElementById('refreshNow').addEventListener('click', async () => {
+                await loadLogs();
+                await loadStats();
+            });
+
+            document.getElementById('autoRefreshToggle').addEventListener('click', () => {
+                toggleAutoRefresh();
+            });
+
+            document.getElementById('nextPage').addEventListener('click', async () => {
+                state.currentPage++;
+                await loadLogs();
+                scrollToTable();
+            });
+
+            document.getElementById('prevPage').addEventListener('click', async () => {
+                if (state.currentPage > 0) {
+                    state.currentPage--;
+                    await loadLogs();
+                    scrollToTable();
+                }
+            });
+
+            document.getElementById('exportCsv').addEventListener('click', exportToCSV);
+        }
+
+        // ============================================
+        // LOAD LOGS
+        // ============================================
+        async function loadLogs() {
+            try {
+                const url = buildApiUrl();
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        redirectToLogin();
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                state.logs = result.logs || [];
+                state.totalCount = result.pagination?.total || 0;
+
+                renderLogs();
+                updatePaginationControls();
+                updateLastUpdate();
+            } catch (error) {
+                console.error('Failed to load logs:', error);
+                showError('Failed to load audit logs');
+            }
+        }
+
+        function buildApiUrl() {
+            const params = new URLSearchParams();
+
+            if (state.filters.userEmail) {
+                // Note: API filters by userId, so this would need a lookup
+                // For now, we'll filter client-side
+            }
+            if (state.filters.resourceType) {
+                params.append('resourceType', state.filters.resourceType);
+            }
+            if (state.filters.operation) {
+                params.append('operation', state.filters.operation);
+            }
+            if (state.filters.severity) {
+                params.append('severity', state.filters.severity);
+            }
+            if (state.filters.startDate) {
+                params.append('startDate', state.filters.startDate);
+            }
+            if (state.filters.endDate) {
+                params.append('endDate', state.filters.endDate);
+            }
+            if (state.filters.isSuspicious) {
+                params.append('isSuspicious', 'true');
+            }
+
+            params.append('limit', state.pageSize);
+            params.append('offset', state.currentPage * state.pageSize);
+            params.append('sortBy', state.sortBy);
+            params.append('sortOrder', state.sortOrder);
+
+            const endpoint = state.filters.isSuspicious 
+                ? '/api/audit-logs/suspicious'
+                : '/api/audit-logs';
+
+            return `${endpoint}?${params.toString()}`;
+        }
+
+        function renderLogs() {
+            const table = document.getElementById('logsTable');
+
+            if (state.logs.length === 0) {
+                table.innerHTML = '';
+                document.getElementById('emptyState').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('emptyState').classList.add('hidden');
+
+            table.innerHTML = state.logs.map(log => `
+                <tr class="border-b border-gray-200 hover:bg-gray-50 transition ${log.is_suspicious ? 'table-row-suspicious' : ''}">
+                    <td class="px-6 py-4 text-xs whitespace-nowrap">
+                        ${new Date(log.created_at).toLocaleString()}
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <div class="font-medium">${escapeHtml(log.user_email || 'Unknown')}</div>
+                        <div class="text-xs text-gray-500">${escapeHtml(log.user_role || '')}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        ${escapeHtml(log.action || '')}
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <div class="font-medium">${log.resource_type}</div>
+                        <div class="text-xs text-gray-500">${escapeHtml(log.resource_name || '')}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="operation-badge op-${log.operation.toLowerCase()}">
+                            ${log.operation}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                        <span class="text-${log.status_code < 300 ? 'green' : 'red'}-600 font-medium">
+                            ${log.status_code || 'N/A'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="badge badge-${log.severity}">
+                            ${log.severity.toUpperCase()}
+                            ${log.is_suspicious ? ' ⚠️' : ''}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="showDetailModal('${log.id}')" class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                            View →
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            document.getElementById('showingCount').textContent = state.logs.length;
+            document.getElementById('totalCount').textContent = state.totalCount;
+        }
+
+        // ============================================
+        // LOAD STATS
+        // ============================================
+        async function loadStats() {
+            try {
+                const params = new URLSearchParams();
+                if (state.filters.startDate) params.append('startDate', state.filters.startDate);
+                if (state.filters.endDate) params.append('endDate', state.filters.endDate);
+
+                const response = await fetch(`/api/audit-logs/stats?${params.toString()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const stats = await response.json();
+
+                // Update stats cards
+                document.getElementById('statTotal').textContent = state.totalCount;
+                document.getElementById('statCritical').textContent = 
+                    stats.severity?.find(s => s.severity === 'critical')?.count || 0;
+                document.getElementById('statSuspicious').textContent = stats.suspicious || 0;
+                
+                // Count last 24h
+                const now = new Date();
+                const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+                const last24h = state.logs.filter(log => 
+                    new Date(log.created_at) >= yesterday
+                ).length;
+                document.getElementById('stat24h').textContent = last24h;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // ============================================
+        // MODAL
+        // ============================================
+        async function showDetailModal(logId) {
+            try {
+                const response = await fetch(`/api/audit-logs/${logId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load log details');
+
+                const log = await response.json();
+                const modal = document.getElementById('detailModal');
+                const content = document.getElementById('modalContent');
+
+                content.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">ID</span>
+                                <div class="font-mono text-sm break-all">${log.id}</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Timestamp</span>
+                                <div>${new Date(log.created_at).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">User</span>
+                                <div>${escapeHtml(log.user_email)}</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Role</span>
+                                <div>${log.user_role}</div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Action</span>
+                                <div>${escapeHtml(log.action)}</div>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Resource Type</span>
+                                <div>${log.resource_type}</div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Operation</span>
+                                <span class="operation-badge op-${log.operation.toLowerCase()}">${log.operation}</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Status</span>
+                                <div class="text-${log.status_code < 300 ? 'green' : 'red'}-600 font-medium">${log.status_code}</div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Severity</span>
+                                <span class="badge badge-${log.severity}">${log.severity.toUpperCase()}</span>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-600 uppercase">Suspicious</span>
+                                <div class="text-${log.is_suspicious ? 'red' : 'green'}-600">
+                                    ${log.is_suspicious ? '🚨 Yes' : '✅ No'}
+                                </div>
+                            </div>
+                        </div>
+
+                        ${log.ip_address ? `
+                        <div>
+                            <span class="text-xs text-gray-600 uppercase">IP Address</span>
+                            <div>${log.ip_address}</div>
+                        </div>
+                        ` : ''}
+
+                        ${log.response_message ? `
+                        <div>
+                            <span class="text-xs text-gray-600 uppercase">Response</span>
+                            <div>${escapeHtml(log.response_message)}</div>
+                        </div>
+                        ` : ''}
+
+                        ${log.error_message ? `
+                        <div>
+                            <span class="text-xs text-gray-600 uppercase">Error</span>
+                            <div class="text-red-600 font-mono text-sm">${escapeHtml(log.error_message)}</div>
+                        </div>
+                        ` : ''}
+
+                        ${log.old_values ? `
+                        <div>
+                            <span class="text-xs text-gray-600 uppercase">Previous State</span>
+                            <pre class="bg-gray-100 p-2 rounded text-xs overflow-auto">${JSON.stringify(log.old_values, null, 2)}</pre>
+                        </div>
+                        ` : ''}
+
+                        ${log.new_values ? `
+                        <div>
+                            <span class="text-xs text-gray-600 uppercase">New State</span>
+                            <pre class="bg-gray-100 p-2 rounded text-xs overflow-auto">${JSON.stringify(log.new_values, null, 2)}</pre>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                modal.classList.add('active');
+            } catch (error) {
+                console.error('Failed to load log details:', error);
+                showError('Failed to load log details');
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('active');
+        }
+
+        // ============================================
+        // FILTERS
+        // ============================================
+        function updateFilters() {
+            state.filters = {
+                startDate: document.getElementById('startDate').value || null,
+                endDate: document.getElementById('endDate').value || null,
+                resourceType: document.getElementById('resourceType').value,
+                operation: document.getElementById('operation').value,
+                severity: document.getElementById('severity').value,
+                userEmail: document.getElementById('userEmail').value,
+                isSuspicious: document.getElementById('suspiciousOnly').checked
+            };
+        }
+
+        function clearAllFilters() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('resourceType').value = '';
+            document.getElementById('operation').value = '';
+            document.getElementById('severity').value = '';
+            document.getElementById('userEmail').value = '';
+            document.getElementById('suspiciousOnly').checked = false;
+            state.filters = {
+                startDate: null,
+                endDate: null,
+                resourceType: '',
+                operation: '',
+                severity: '',
+                userEmail: '',
+                isSuspicious: false
+            };
+        }
+
+        // ============================================
+        // AUTO REFRESH
+        // ============================================
+        function toggleAutoRefresh() {
+            state.autoRefreshActive = !state.autoRefreshActive;
+            const btn = document.getElementById('autoRefreshToggle');
+
+            if (state.autoRefreshActive) {
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                btn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
+                state.autoRefreshInterval = setInterval(async () => {
+                    await loadLogs();
+                }, 60000); // 60 seconds
+            } else {
+                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                btn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+                clearInterval(state.autoRefreshInterval);
+            }
+        }
+
+        // ============================================
+        // EXPORT
+        // ============================================
+        async function exportToCSV() {
+            try {
+                const url = `/api/audit-logs/export/csv?${new URLSearchParams(state.filters).toString()}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Export failed');
+
+                const csv = await response.text();
+                downloadFile(csv, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+            } catch (error) {
+                console.error('Export failed:', error);
+                showError('Failed to export logs');
+            }
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // ============================================
+        // PAGINATION
+        // ============================================
+        function updatePaginationControls() {
+            const hasMore = state.currentPage * state.pageSize + state.logs.length < state.totalCount;
+            document.getElementById('prevPage').disabled = state.currentPage === 0;
+            document.getElementById('nextPage').disabled = !hasMore;
+        }
+
+        function scrollToTable() {
+            document.querySelector('table').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ============================================
+        // UTILITIES
+        // ============================================
+        function updateLastUpdate() {
+            const now = new Date();
+            const time = now.toLocaleTimeString();
+            document.getElementById('lastUpdate').textContent = time;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            alert(message); // TODO: Replace with toast notification
+        }
+
+        function redirectToLogin() {
+            window.location.href = '/login';
+        }
+
+        // Start application
+        init();
+    </script>
+</body>
+</html>

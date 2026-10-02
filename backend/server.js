@@ -54,7 +54,9 @@ const compression = require('./compression');
 const registerFeatureEndpoints = require('./feature-endpoints');
 const registerBackupEndpoints = require('./backup-endpoints');
 const registerLoggingEndpoints = require('./logging-endpoints');
+const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
+const AuditLogger = require('./audit-logger');
 const { initializeAutoLogoutScheduler } = require('./scheduled-auto-logout');
 const {
     sanitizeString,
@@ -378,6 +380,11 @@ app.get('/support-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));
 });
 
+// Audit Logs Dashboard Route
+app.get('/audit-logs', authenticateToken, authorizeRole('moderator', 'super_admin'), (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'audit-logs.html'));
+});
+
 // Admin Zona Support Routes
 app.get('/zona/support', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard-customer.html'));
@@ -654,6 +661,9 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     { realtime: { transport: WebSocket } }
 );
+
+// Initialize Audit Logger
+const auditLogger = new AuditLogger(supabase);
 
 // Multer config (memory storage for streaming to Rclone)
 const upload = multer({
@@ -1004,10 +1014,20 @@ console.log('  ? Automatic retention policy enforcement');
 // ============================================================
 console.log('[INIT] Registering Logging & Monitoring endpoints...');
 registerLoggingEndpoints(app, supabase, authenticateToken, authorizeRole);
-console.log('[INIT] Logging & Monitoring endpoints registered ?');
-console.log('  ? Log retrieval and filtering');
-console.log('  ? System health and metrics monitoring');
-console.log('  ? Automatic log rotation and cleanup');
+console.log('[INIT] Logging & Monitoring endpoints registered ✅');
+console.log('  ✓ Log retrieval and filtering');
+console.log('  ✓ System health and metrics monitoring');
+console.log('  ✓ Automatic log rotation and cleanup');
+
+// ============================================================
+// AUDIT LOGGING ENDPOINTS (Phase 2 - Moderator Monitoring)
+// ============================================================
+console.log('[INIT] Registering Audit Logging endpoints...');
+registerAuditEndpoints(app, supabase, authenticateToken, authorizeRole);
+console.log('[INIT] Audit Logging endpoints registered ✅');
+console.log('  ✓ Audit log retrieval with filtering');
+console.log('  ✓ Suspicious activity detection');
+console.log('  ✓ CSV export for compliance');
 
 // ============================================================
 // INVOICE SYSTEM ENDPOINTS (Phase 3 Features)
