@@ -308,9 +308,9 @@
 
         .theme-toggle:hover {
             background: var(--color-bg-tertiary);
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+            border-color: var(--color-border);
+            transform: translateY(-1px);
+            box-shadow: none;
         }
         
         .theme-toggle i {
@@ -402,43 +402,47 @@
 
         .btn-action:hover {
             background: var(--color-bg-tertiary);
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+            border-color: var(--color-border);
+            transform: translateY(-1px);
+            box-shadow: none;
         }
 
         .btn-logout-action {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border: 2px solid transparent;
-            box-shadow: 0 4px 16px rgba(245, 87, 108, 0.3);
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1.5px solid var(--color-border);
+            box-shadow: none;
         }
         
         .btn-logout-action::before {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(239, 68, 68, 0.08);
         }
 
         .btn-logout-action:hover {
-            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
-            box-shadow: 0 8px 24px rgba(245, 87, 108, 0.4);
-            transform: translateY(-2px);
+            background: rgba(239, 68, 68, 0.08);
+            border-color: #ef4444;
+            color: #ef4444;
+            box-shadow: none;
+            transform: translateY(-1px);
         }
 
         .btn-support {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: 2px solid transparent;
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+            background: transparent;
+            color: var(--color-text-secondary);
+            border: 1.5px solid var(--color-border);
+            box-shadow: none;
         }
         
         .btn-support::before {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(102, 126, 234, 0.08);
         }
 
         .btn-support:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-            transform: translateY(-2px);
+            background: rgba(102, 126, 234, 0.08);
+            border-color: #667eea;
+            color: #667eea;
+            box-shadow: none;
+            transform: translateY(-1px);
         }
 
         .welcome-content {
