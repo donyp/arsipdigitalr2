@@ -36,9 +36,9 @@ class AuditLogger {
         severity = 'info' // 'info', 'warning', 'critical'
     }) {
         try {
-            // Jangan log jika data kurang
-            if (!userId || !action || !resourceType || !operation) {
-                console.warn('[AuditLogger] Missing required fields, skipping log');
+            // Validate required fields - userId can be null for failed attempts
+            if (!action || !resourceType || !operation) {
+                console.warn('[AuditLogger] Missing required fields (action, resourceType, operation), skipping log');
                 return null;
             }
 
