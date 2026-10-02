@@ -4645,41 +4645,56 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         return res.status(403).json({ error: 'Akses ditolak' });
     }
     try {
+        const userId = req.params.id;
         const { email, password, name, role, zona_id, toko_id, is_active, permissions } = req.body;
 
+        // Basic validation
+        if (!email || !name || !role) {
+            return res.status(400).json({ error: 'Email, nama, dan role wajib diisi.' });
+        }
+
         const updates = {};
-        if (email) updates.email = email.toLowerCase().trim();
-        if (name) updates.name = name;
-        if (role) updates.role = role;
+        updates.email = email.toLowerCase().trim();
+        updates.name = name;
+        updates.role = role;
         if (typeof is_active === 'boolean') updates.is_active = is_active;
         if (zona_id !== undefined) updates.zona_id = zona_id;
         if (toko_id !== undefined) updates.toko_id = toko_id;
         if (permissions !== undefined) updates.permissions = permissions;
 
+        console.log('[PUT /api/users/:id] Updating user', userId, 'with:', updates);
+
         // Re-hash password if provided
-        if (password) {
+        if (password && password.trim()) {
             const salt = await bcrypt.genSalt(12);
             updates.password_hash = await bcrypt.hash(password, salt);
+            console.log('[PUT /api/users/:id] Password being hashed');
         }
 
+        console.log('[PUT /api/users/:id] Making Supabase update call...');
         const { data, error } = await supabase
             .from('users')
             .update(updates)
-            .eq('id', req.params.id)
+            .eq('id', userId)
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('[PUT /api/users/:id] Supabase error:', error);
+            throw error;
+        }
+
+        console.log('[PUT /api/users/:id] Update successful');
 
         await supabase.from('audit_logs').insert({
             user_id: req.user.userId,
             action: 'Update User',
-            context: `Updated user ${req.params.id}`
-        });
+            context: `Updated user ${userId}`
+        }).catch(err => console.error('Audit log insert error:', err.message));
 
         res.json({ success: true, user: data });
     } catch (err) {
-        console.error('[PUT /api/users/:id] Error:', err.message);
+        console.error('[PUT /api/users/:id] Error:', err.message, err.stack);
         res.status(500).json({ error: 'Gagal update user: ' + err.message });
     }
 });
