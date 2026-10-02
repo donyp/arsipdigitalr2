@@ -26,7 +26,6 @@
         console.error = function(...args) { addLog('error', args); originalError.apply(console, args); };
         console.warn = function(...args) { addLog('warn', args); originalWarn.apply(console, args); };
         
-        console.log('Page loaded, loading scripts...');
     </script>
     
     <script src="js/config.js"></script>
@@ -35,18 +34,11 @@
     <script src="js/auth.js"></script>
     
     <script>
-        console.log('All scripts loaded');
-        console.log('CONFIG:', window.CONFIG);
-        console.log('API:', typeof API);
-        console.log('TOKEN:', API.getToken());
         
         (async () => {
             try {
-                console.log('Testing initAuth...');
                 const user = await initAuth();
-                console.log('initAuth result:', user);
             } catch (err) {
-                console.error('initAuth error:', err.message);
             }
         })();
     </script>

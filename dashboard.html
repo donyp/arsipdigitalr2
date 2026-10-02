@@ -2686,9 +2686,7 @@
                 `;
                 
                 container.appendChild(msg);
-                console.log('[Broadcast] Loaded:', broadcast.content);
             } catch (err) {
-                console.warn('[Broadcast] Error loading:', err.message);
             }
         };
         
@@ -2713,19 +2711,16 @@
                 
                 // Check role: Only moderator and super_admin can access this dashboard
                 if (user.role === 'admin_zona') {
-                    console.log('[Dashboard] Admin_zona user detected, redirecting to dashboard-admin-zona.html');
                     window.location.href = 'dashboard-admin-zona.html';
                     return;
                 }
                 
                 // Wait for auth
                 const userAuth = await initAuth();
-                console.log('[Dashboard] User loaded:', userAuth?.role, userAuth?.zona_id);
                 if (!userAuth) return;
                 
                 // Only moderator and super_admin can access main dashboard
                 if (userAuth.role !== 'moderator' && userAuth.role !== 'super_admin') {
-                    console.log('[Dashboard] Unauthorized role:', userAuth.role);
                     window.location.href = 'index.html';
                     return;
                 }
@@ -2735,12 +2730,10 @@
 
                 // Invoice list content is now embedded directly in dashboard.html
                 // No need to load external files
-                console.log('[Dashboard] Using embedded invoice list for role:', userAuth.role);
 
                 /* REMOVED: External file loading - content now embedded
                 // Determine which invoice list file to load based on user role
                 const invoiceFile = (userAuth.role === 'admin_zona') ? 'invoice-list.html' : 'invoice-list-admin.html';
-                console.log('[Dashboard] Loading invoice file:', invoiceFile, 'for role:', userAuth.role);
 
                 // Try to load invoice list HTML content if it exists
                 try {
@@ -2777,9 +2770,7 @@
                             if (uploadModal) {
                                 const modalClone = uploadModal.cloneNode(true);
                                 document.body.appendChild(modalClone);
-                                console.log('[Dashboard] ✅ Upload modal injected');
                             } else {
-                                console.warn('[Dashboard] ⚠️ Upload modal not found');
                             }
                             
                             // Reinit invoice list functions
@@ -2796,31 +2787,21 @@
                         }
                     }
                 } catch (invoiceLoadError) {
-                    console.warn('[Dashboard] invoice-list.html not found, using embedded filters');
                 }
                 */
                 
                 // Initialize invoice system with role-based filters (ALWAYS call this)
                 setTimeout(async () => {
-                    console.log('[Dashboard] ===== INITIALIZING AFTER DOM LOADED =====');
-                    console.log('[Dashboard] Filter elements check:');
-                    console.log('[Dashboard]   filterStatusGroup:', !!document.getElementById('filterStatusGroup'));
-                    console.log('[Dashboard]   filterToko:', !!document.getElementById('filterToko'));
-                    console.log('[Dashboard]   filterDateFromGroup:', !!document.getElementById('filterDateFromGroup'));
                     
                     if (typeof initInvoiceSystem === 'function') {
-                        console.log('[Dashboard] Calling initInvoiceSystem...');
                         await initInvoiceSystem();
                     } else {
-                        console.error('[Dashboard] ❌ initInvoiceSystem is not a function!');
                     }
                     
                     // DO NOT auto-load invoices here - wait for user to filter tahun/bulan first
                     // Data will be loaded when user clicks "Terapkan Filter" button
-                    console.log('[Dashboard] ✅ Invoice system initialized (waiting for user to filter)');
                 }, 500);
             } catch (error) {
-                console.error('Error loading invoice content:', error);
             }
         });
     </script>
@@ -2906,7 +2887,6 @@
                 
                 closeEditHeadlineModal();
             } catch (err) {
-                console.error('Error saving headline:', err);
                 alert('Gagal menyimpan headline: ' + err.message);
             }
         }
@@ -3004,7 +2984,6 @@
             event.preventDefault();
             const dropdown = document.getElementById(dropdownId);
             if (!dropdown) {
-                console.error('[ToggleDropdown] Dropdown not found:', dropdownId);
                 return;
             }
             
@@ -3012,7 +2991,6 @@
             const menu = dropdown.querySelector('.dropdown-menu');
             
             if (!trigger || !menu) {
-                console.error('[ToggleDropdown] Trigger or menu not found for:', dropdownId);
                 return;
             }
             
@@ -3066,7 +3044,6 @@
             }
             
             if (!hiddenInput) {
-                console.error('[SelectOption] Could not find hidden input for dropdown:', dropdownId);
                 return;
             }
             
@@ -3105,7 +3082,6 @@
             });
             
             if (!foundOption) {
-                console.warn('[SelectOption] Could not find option with label:', label, 'in dropdown:', dropdownId);
             }
             
             // Close menu
@@ -3117,7 +3093,6 @@
             
             // If month dropdown was selected, enable other filters
             if (dropdownId === 'bulanDropdown' && value && value !== '') {
-                console.log('[Filter] Month selected, enabling other filters...');
                 if (typeof enableAllFilters === 'function') {
                     enableAllFilters();
                 }
@@ -3217,7 +3192,6 @@
                     const newDt = new DataTransfer();
                     newDt.items.add(files[0]);
                     fileInput.files = newDt.files;
-                    console.log('[PDF Upload] File selected via drag-drop:', files[0].name);
                 }
             }, false);
             
@@ -3227,7 +3201,6 @@
             // File input change
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    console.log('[PDF Upload] File selected via input:', e.target.files[0].name);
                 }
             });
         }
@@ -3272,7 +3245,6 @@
                     const newDt = new DataTransfer();
                     newDt.items.add(files[0]);
                     fileInput.files = newDt.files;
-                    console.log('[Bukti Bayar Upload] File selected via drag-drop:', files[0].name);
                 }
             }, false);
             
@@ -3282,7 +3254,6 @@
             // File input change
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    console.log('[Bukti Bayar Upload] File selected via input:', e.target.files[0].name);
                 }
             });
         }
@@ -3290,7 +3261,6 @@
     <script>
         // Initialize dashboard for SPA support
         async function initDashboard() {
-            console.log('[Dashboard Init] Page initializing for SPA...');
             
             // Reset invoice system flag for SPA navigation
             window.invoiceSystemInitialized = false;
@@ -3304,9 +3274,7 @@
                 await initAuth();
                 
                 // Trigger file count sync (non-blocking)
-                console.log('[Dashboard Init] Triggering file count sync...');
                 API.post('/api/invoice/sync-all-file-counts', {}).catch(e => {
-                    console.log('[Dashboard Init] Sync trigger failed (non-blocking):', e.message);
                 });
                 
                 // Load sidebar
@@ -3316,20 +3284,16 @@
                 setCurrentDate();
                 
                 // Load invoice filter options - this triggers data loading
-                console.log('[Dashboard Init] Loading filter options and invoice data...');
                 if (typeof loadFilterOptions === 'function') {
                     await loadFilterOptions();
                 } else {
-                    console.log('[Dashboard Init] loadFilterOptions not available yet, will be called by invoice init');
                 }
                 
                 // Initialize invoice system
                 if (typeof initInvoiceSystem === 'function') {
-                    console.log('[Dashboard Init] Calling initInvoiceSystem...');
                     await initInvoiceSystem();
                 }
                 
-                console.log('[Dashboard Init] ✅ Dashboard initialized successfully');
                 
                 // Hide page loader AFTER all data is loaded
                 const pageLoader = document.getElementById('pageLoader');
@@ -3346,7 +3310,6 @@
                     }, 500);
                 }
             } catch (err) {
-                console.error('[Dashboard Init] Initialization failed:', err);
                 
                 // Hide loader even on error
                 const pageLoader = document.getElementById('pageLoader');

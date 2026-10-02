@@ -390,7 +390,6 @@
                         statusEl.title = `Not in daftar (${faktur})`;
                     }
                 } catch (error) {
-                    console.error('Scan error:', error);
                     const statusEl = document.querySelector(`[data-filename="${file.name}"] span`);
                     statusEl.innerHTML = '⚠️';
                     statusEl.title = 'Error checking faktur';

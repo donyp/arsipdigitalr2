@@ -486,12 +486,10 @@
                 const saved = localStorage.getItem('adminZonaFilterState');
                 if (saved) {
                     const state = JSON.parse(saved);
-                    console.log('[AdminZonaFilter] Loaded from localStorage:', state);
                     invoiceFilterState = state;
                     return state;
                 }
             } catch (e) {
-                console.warn('[AdminZonaFilter] Error loading from localStorage:', e);
             }
             return invoiceFilterState;
         }
@@ -502,9 +500,7 @@
         function saveAdminZonaFilterState() {
             try {
                 localStorage.setItem('adminZonaFilterState', JSON.stringify(invoiceFilterState));
-                console.log('[AdminZonaFilter] Saved to localStorage:', invoiceFilterState);
             } catch (e) {
-                console.warn('[AdminZonaFilter] Error saving to localStorage:', e);
             }
         }
         
@@ -514,7 +510,6 @@
         function showAdminZonaEmptyState() {
             const tableBody = document.getElementById('invoiceTableBody');
             if (!tableBody) {
-                console.warn('[AdminZonaEmptyState] invoiceTableBody not found');
                 return;
             }
             
@@ -528,7 +523,6 @@
                 </tr>
             `;
             
-            console.log('[AdminZonaEmptyState] Empty state displayed in table');
         }
         
         
@@ -537,12 +531,10 @@
          */
         async function startAdminZonaBackgroundScan() {
             if (invoiceBackgroundScanStarted) {
-                console.log('[AdminZonaBackgroundScan] Already started, skipping');
                 return;
             }
             
             invoiceBackgroundScanStarted = true;
-            console.log('[AdminZonaBackgroundScan] ⏳ Starting filtered scan based on user selection...');
             
             try {
                 const year = document.getElementById('filterYear')?.value || '';
@@ -575,10 +567,8 @@
                 }
                 
                 const result = await response.json();
-                console.log('[AdminZonaBackgroundScan] ✅ Scanning complete - found', result.count || 0, 'invoices matching filter');
                 
             } catch (error) {
-                console.warn('[AdminZonaBackgroundScan] Error during scan:', error);
             }
         }
 
@@ -587,18 +577,15 @@
             try {
                 // Load filter state from localStorage
                 loadAdminZonaFilterState();
-                console.log('[AdminZonaInit] Filter state loaded:', invoiceFilterState);
                 
                 // RESET: Clear filter state to force default "Semua" on refresh
                 invoiceFilterState.year = '';
                 invoiceFilterState.month = '';
                 invoiceFilterState.hasFiltered = false;
                 saveAdminZonaFilterState();
-                console.log('[AdminZonaInit] Filter state cleared for fresh start');
                 
                 // Show EMPTY STATE message (no data yet)
                 showAdminZonaEmptyState();
-                console.log('[AdminZonaInit] ✅ Empty state displayed');
                 
                 // DO NOT start background scan here - wait for user to filter first
                 // Background scan will be triggered when user clicks "Terapkan Filter"
@@ -615,7 +602,6 @@
                 const currentUser = window.currentUser;
                 
                 if (!currentUser) {
-                    console.error('[AdminZona] currentUser still not available after retries');
                     document.getElementById('user-name').textContent = 'Unknown';
                     document.getElementById('user-zona').textContent = 'Zona: -';
                     // Still show the page even without user
@@ -648,7 +634,6 @@
                     zonaNumber = currentUser.zona_id.toString();
                 }
                 
-                console.log('[AdminZona] User:', userEmail, 'Zona:', zonaName, 'Zona Number:', zonaNumber, 'Full user:', currentUser);
                 
                 // Defer updating DOM elements until they're available
                 setTimeout(() => {
@@ -664,9 +649,7 @@
                     }
                     if (zonaNumberEl) {
                         zonaNumberEl.textContent = zonaNumber;
-                        console.log('[AdminZona] Updated zona-number to:', zonaNumber);
                     } else {
-                        console.error('[AdminZona] zona-number element not found!');
                     }
                 }, 50);
 
@@ -674,19 +657,14 @@
                 document.getElementById('sidebar').style.display = 'none';
 
                 // Load all data first to populate filters
-                console.log('[AdminZona] Starting loadAllInvoices...');
                 try {
                     await loadAllInvoices();
-                    console.log('[AdminZona] loadAllInvoices completed');
                 } catch (err) {
-                    console.error('[AdminZona] Error loading all invoices:', err);
                 }
                 
                 // DO NOT auto-load filtered data here - wait for user to filter tahun/bulan first
                 // Data will be loaded when user clicks "Terapkan Filter" button
-                console.log('[AdminZona] ✅ Filters populated (waiting for user to filter)');
             } catch (err) {
-                console.error('[AdminZona] Init error:', err);
                 // Still show the page even if there's an error
                 document.getElementById('sidebar').style.display = 'none';
             }
@@ -723,7 +701,6 @@
                     yearSelect.appendChild(opt);
                 });
                 
-                console.log('[AdminZona] Year filter populated with:', years.length, 'years:', years);
 
                 // ONLY populate month dropdown with months that have data
                 const monthSelect = document.getElementById('filterMonth');
@@ -745,7 +722,6 @@
                     monthSelect.appendChild(opt);
                 });
                 
-                console.log('[AdminZona] Month filter populated with:', months.length, 'months:', months);
 
                 // Get unique suppliers and populate dropdown
                 const suppliers = [...new Set(invoices.map(inv => inv.toko).filter(Boolean))].sort();
@@ -773,14 +749,12 @@
                     keteranganSelect.appendChild(opt);
                 });
                 
-                console.log('[AdminZona] Loaded', invoices.length, 'invoices - Years:', years.length, 'Months:', months.length, 'Suppliers:', suppliers.length, 'Keterangans:', keterangans.length);
                 
                 // Restore saved filters from localStorage
                 if (invoiceFilterState.year) {
                     const yearSelect = document.getElementById('filterYear');
                     if (yearSelect) {
                         yearSelect.value = invoiceFilterState.year;
-                        console.log('[AdminZonaFilter] ✅ Restored saved year:', invoiceFilterState.year);
                     }
                 }
                 
@@ -788,11 +762,9 @@
                     const monthSelect = document.getElementById('filterMonth');
                     if (monthSelect) {
                         monthSelect.value = invoiceFilterState.month;
-                        console.log('[AdminZonaFilter] ✅ Restored saved month:', invoiceFilterState.month);
                     }
                 }
             } catch (err) {
-                console.error('[AdminZona] Error loading all invoices:', err);
             }
         }
 
@@ -815,7 +787,6 @@
                 if (search) params.append('search', search); // Add search parameter
 
                 const url = `/api/invoice/list?${params.toString()}`;
-                console.log('[AdminZona] Loading from:', url);
 
                 const res = await API.get(url);
                 let invoices = res.data || [];
@@ -841,8 +812,6 @@
                 // Calculate and display total nominal for admin zona
                 updateTotalNominalZona(invoices);
 
-                console.log('[AdminZona] Loaded', invoices.length, 'invoices');
-                console.log('[AdminZona] Sample invoice data:', invoices.slice(0, 3).map(inv => ({
                     faktur: inv.faktur,
                     invoice_pdf_path: inv.invoice_pdf_path,
                     bukti_bayar_path: inv.bukti_bayar_path,
@@ -851,7 +820,6 @@
                     files_required_count: inv.files_required_count
                 })));
             } catch (err) {
-                console.error('[AdminZona] Error loading invoices:', err);
                 document.getElementById('invoiceTableBody').innerHTML = `
                     <tr><td colspan="8" class="empty-state text-red-500">Error: ${err.message}</td></tr>
                 `;
@@ -879,7 +847,6 @@
             }).format(total);
             
             totalDisplay.textContent = `Total: ${formattedTotal}`;
-            console.log('[AdminZonaTotal] Updated nominal display:', formattedTotal, 'from', invoices.length, 'invoices');
         }
 
         // ============================================
@@ -934,7 +901,6 @@
                 localStorage.removeItem('user_data');
                 localStorage.removeItem('device_session_id');
                 
-                console.log('[AdminZona] User logged out');
                 window.location.href = '/login';
             };
             
@@ -952,7 +918,6 @@
                 // Get file status from cached data attribute (set during renderInvoices)
                 const row = document.querySelector(`tr[data-faktur="${faktur}"]`);
                 if (!row) {
-                    console.error('[ShowDownloadMenu] Row not found for faktur:', faktur);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
@@ -963,14 +928,11 @@
                 }
                 
                 const fileStatusStr = row.getAttribute('data-file-status');
-                console.log('[ShowDownloadMenu] Raw data-file-status:', fileStatusStr);
                 
                 let fileStatus = null;
                 try {
                     fileStatus = JSON.parse(fileStatusStr);
-                    console.log('[ShowDownloadMenu] Parsed fileStatus:', fileStatus);
                 } catch (parseErr) {
-                    console.error('[ShowDownloadMenu] Failed to parse file status JSON:', parseErr, 'Raw string:', fileStatusStr);
                     // Fallback
                     fileStatus = {
                         hasInvoice: false,
@@ -1031,7 +993,6 @@
                 });
                 
             } catch (error) {
-                console.error('[ShowDownloadMenu] Error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -1090,7 +1051,6 @@
                         const token = API.getToken() || localStorage.getItem('jwt_token');
                         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
                         
-                        console.log('[DeleteInvoice] Deleting invoice:', faktur, 'ID:', invoiceId);
                         
                         // Show loading animation
                         Swal.fire({
@@ -1152,8 +1112,6 @@
                         }
                         
                         const result = await response.json();
-                        console.log('[DeleteInvoice] ✅ Invoice deleted successfully');
-                        console.log('[DeleteInvoice] Files deleted:', result.filesDeleted);
                         
                         // Show success with details
                         Swal.fire({
@@ -1179,7 +1137,6 @@
                         await loadInvoices();
                         
                     } catch (error) {
-                        console.error('[DeleteInvoice] Error:', error);
                         Swal.fire({
                             icon: 'error',
                             title: '❌ Gagal Menghapus',
@@ -1301,7 +1258,6 @@
                 allInvoicesWithStatus.push(...batchWithFileStatus);
             }
             
-            console.log('[RenderInvoices] File checks complete, rendering table...');
             
             // Render rows
             tbody.innerHTML = allInvoicesWithStatus.map(inv => {
@@ -1324,7 +1280,6 @@
                 </tr>
             `; }).join('');
             
-            console.log('[RenderInvoices] ✅ Rendered successfully with file verification');
         }
 
         async function checkAndRenderButtons(inv, token) {
@@ -1340,13 +1295,11 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const data = await res.json();
-                    console.log(`[CheckButtons] ${inv.faktur} - invoice exists: ${data.exists}`);
                     if (data.exists) {
                         actualUploadedCount++;
                         buttons.push('<button onclick="downloadInvoiceFile(this, \'' + inv.faktur + '\', \'invoice\')" style="background: #3498db; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; white-space: nowrap; transition: all 0.2s;" title="Download Invoice">📄 INV</button>');
                     }
                 } catch (e) {
-                    console.error('[CheckButtons] Error checking invoice:', e);
                 }
             }
             
@@ -1357,13 +1310,11 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const data = await res.json();
-                    console.log(`[CheckButtons] ${inv.faktur} - bukti bayar exists: ${data.exists}`);
                     if (data.exists) {
                         actualUploadedCount++;
                         buttons.push('<button onclick="downloadInvoiceFile(this, \'' + inv.faktur + '\', \'bukti_bayar\')" style="background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; white-space: nowrap; transition: all 0.2s;" title="Download Bukti Bayar">💰 BB</button>');
                     }
                 } catch (e) {
-                    console.error('[CheckButtons] Error checking bukti bayar:', e);
                 }
             }
             
@@ -1374,13 +1325,11 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const data = await res.json();
-                    console.log(`[CheckButtons] ${inv.faktur} - faktur pajak exists: ${data.exists}`);
                     if (data.exists) {
                         actualUploadedCount++;
                         buttons.push('<button onclick="downloadInvoiceFile(this, \'' + inv.faktur + '\', \'faktur_pajak\')" style="background: #9b59b6; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; white-space: nowrap; transition: all 0.2s;" title="Download Faktur Pajak">📋 FP</button>');
                     }
                 } catch (e) {
-                    console.error('[CheckButtons] Error checking faktur pajak:', e);
                 }
             }
             
@@ -1389,7 +1338,6 @@
                 buttons.push('<button onclick="combinePDF(\'' + inv.faktur + '\')" style="background: #e67e22; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; white-space: nowrap; transition: all 0.2s;" title="Combine PDF">📦 Combine</button>');
             }
             
-            console.log(`[CheckButtons] ${inv.faktur} - Final count: ${actualUploadedCount}/${requiredCount}, buttons: ${buttons.length}`);
             
             // Update buttons container
             const container = document.querySelector(`[data-buttons-container="${inv.faktur}"]`);
@@ -1432,34 +1380,28 @@
             const year = document.getElementById('filterYear')?.value || '';
             const month = document.getElementById('filterMonth')?.value || '';
             
-            console.log('[AdminZonaFilter] Applying filters:', { year, month });
             
             // Save filter state to localStorage (year and month are sticky)
             invoiceFilterState.hasFiltered = true;
             invoiceFilterState.year = year;
             invoiceFilterState.month = month;
             saveAdminZonaFilterState();
-            console.log('[AdminZonaFilter] ✅ Filter state saved to localStorage:', invoiceFilterState);
             
             // Ensure filters are populated
-            console.log('[AdminZonaFilter] Ensuring filters are populated...');
             try {
                 await loadAllInvoices();
             } catch (err) {
-                console.warn('[AdminZonaFilter] Warning reloading filter options:', err);
             }
             
             // Start filtered background scan (async, don't wait)
             invoiceBackgroundScanStarted = false; // Reset so scan runs
             startAdminZonaBackgroundScan();
-            console.log('[AdminZonaFilter] ✅ Filtered background scan started (not blocking)');
             
             currentPage = 1;
             await loadInvoices();
         }
 
         function resetFilters() {
-            console.log('[AdminZonaFilter] Resetting all filters to default');
             document.getElementById('filterSearch').value = '';
             document.getElementById('filterSupplier').value = '';
             document.getElementById('filterKeterangan').value = '';
@@ -1481,7 +1423,6 @@
             saveAdminZonaFilterState();
             showAdminZonaEmptyState();
             
-            console.log('[AdminZonaFilter] ✅ All filters reset to default');
         }
 
         function previousPage() {
@@ -1623,7 +1564,6 @@
                     showConfirmButton: false
                 });
             } catch (error) {
-                console.error('Download error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal Mengunduh',
@@ -1738,7 +1678,6 @@
                     showConfirmButton: false
                 });
             } catch (error) {
-                console.error('Combine error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal Menggabungkan',
@@ -1843,7 +1782,6 @@
                 
                 closeEditHeadlineModal();
             } catch (err) {
-                console.error('Error saving headline:', err);
                 alert('Gagal menyimpan headline: ' + err.message);
             }
         }

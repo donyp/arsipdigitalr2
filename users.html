@@ -236,14 +236,11 @@
 
         // Initialize users page
         async function initUsersPage() {
-            console.log('[Users Init] Starting page initialization...');
             try {
                 await initAuth();
                 await loadSidebar('users.html');
                 await loadUsers();
-                console.log('[Users Init] ✅ Page initialized successfully');
             } catch (err) {
-                console.error('[Users Init] Initialization failed:', err);
             }
         }
 
@@ -261,7 +258,6 @@
                 // Render table
                 renderUsersTable();
             } catch (err) {
-                console.error('[Users] Load error:', err);
                 alert('Gagal memuat data user: ' + err.message);
             }
         }

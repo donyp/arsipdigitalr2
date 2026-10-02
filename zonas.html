@@ -184,14 +184,11 @@
 
         // Initialize zonas page
         async function initZonasPage() {
-            console.log('[Zonas Init] Starting page initialization...');
             try {
                 await initAuth();
                 await loadSidebar('zonas.html');
                 await loadData();
-                console.log('[Zonas Init] ✅ Page initialized successfully');
             } catch (err) {
-                console.error('[Zonas Init] Initialization failed:', err);
             }
         }
 

@@ -87,7 +87,6 @@
             .then(r => r.json())
             .then(data => {
                 if (data.token) {
-                    console.log('✅ Login success, token:', data.token);
                     // Now get files with token
                     return fetch('http://localhost:5000/api/files', {
                         headers: { 'Authorization': 'Bearer ' + data.token }
@@ -101,7 +100,6 @@
                 document.getElementById('loading').style.display = 'none';
             })
             .catch(e => {
-                console.error('Error:', e);
                 showError('❌ Error with token: ' + e.message);
             });
         }
@@ -114,15 +112,12 @@
             document.getElementById('stats').style.display = 'none';
             
             // Try multiple endpoints
-            console.log('Attempting to get files...');
             
             Promise.all([
                 fetch('http://localhost:5000/api/files').then(r => r.json()).catch(e => ({ error: e.message })),
                 fetch('http://localhost:5000/api/health/storage').then(r => r.json()).catch(e => ({ error: e.message }))
             ])
             .then(([filesData, storageData]) => {
-                console.log('Files response:', filesData);
-                console.log('Storage response:', storageData);
                 
                 // Display storage info
                 if (storageData.healthy) {
@@ -150,7 +145,6 @@
                 document.getElementById('loading').style.display = 'none';
             })
             .catch(e => {
-                console.error('Error:', e);
                 showError('❌ Error fetching files: ' + e.message);
             });
         }

@@ -593,14 +593,12 @@
                                         }
                                     } catch (verifyErr) {
                                         // If verification fails, assume file is gone - allow re-upload
-                                        console.log('Verification error (allowing re-upload):', verifyErr);
                                         info.isValid = true;
                                     }
                                 }
                             }
                         }
                     } catch (e) {
-                        console.log('Error fetching invoice info:', e);
                     }
                 }
 
@@ -723,10 +721,8 @@
             try {
                 const user = await initAuth(['super_admin', 'moderator']);
                 if (!user) {
-                    console.error('User not authenticated');
                 }
             } catch (error) {
-                console.error('Init error:', error);
             }
         })();
     </script>

@@ -898,7 +898,6 @@
         let selectedFiles = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('[Support-Create] Page loaded');
             await initAuth();
             
             if (!currentUser) {
@@ -911,7 +910,6 @@
                 return;
             }
 
-            console.log('[Support-Create] User:', currentUser);
 
             // Initialize custom dropdowns
             initCustomSelects();
@@ -1091,7 +1089,6 @@
                     return;
                 }
 
-                console.log('[Support-Create] Creating ticket with zona_id:', zonaId);
 
                 // Show loading overlay
                 document.getElementById('loadingOverlay').classList.add('active');
@@ -1117,7 +1114,6 @@
                 }
 
                 const data = await response.json();
-                console.log('[Support-Create] Ticket created:', data.ticket.ticket_number);
 
                 // Hide loading overlay
                 document.getElementById('loadingOverlay').classList.remove('active');
@@ -1130,7 +1126,6 @@
                 autoRedirectAfterSuccess();
 
             } catch (error) {
-                console.error('[Support-Create] Error:', error);
                 document.getElementById('loadingOverlay').classList.remove('active');
                 alert(`Error: ${error.message}`);
             }

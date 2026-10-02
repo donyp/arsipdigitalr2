@@ -26,7 +26,6 @@
 
         async function testAuthMe() {
             const token = localStorage.getItem('jwt_token');
-            console.log('Token:', token);
             
             if (!token) {
                 document.getElementById('result').textContent = 'No token in localStorage!';

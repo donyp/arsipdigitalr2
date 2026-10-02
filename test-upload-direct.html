@@ -129,10 +129,8 @@ startxref
                 
                 const result = await uploadRes.json();
                 updateStatus(`Upload successful! Storage path: ${result.file.storage_path}`, 'success');
-                console.log('Uploaded file:', result.file);
             } catch (err) {
                 updateStatus(`Error: ${err.message}`, 'error');
-                console.error('Upload error:', err);
             }
         }
     </script>

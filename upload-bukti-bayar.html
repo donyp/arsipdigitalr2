@@ -539,7 +539,6 @@
                 dropZone.style.backgroundColor = '#f0fdf4';
                 
                 if (e.dataTransfer.files.length > 0) {
-                    console.log('[Bukti Bayar] Files dropped:', e.dataTransfer.files.length);
                     handleFilesSelected(e.dataTransfer.files);
                 }
             });
@@ -552,13 +551,11 @@
             // File input change
             fileInput.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
-                    console.log('[Bukti Bayar] Files selected via input:', e.target.files.length);
                     handleFilesSelected(e.target.files);
                 }
             });
 
             function handleFilesSelected(files) {
-                console.log('[Bukti Bayar] Processing files...');
                 selectedFiles = [];
                 
                 // Show validating spinner
@@ -581,7 +578,6 @@
                         validCount++;
                     } else {
                         invalidCount++;
-                        console.warn('[Bukti Bayar] Invalid file:', file.name);
                     }
                 });
 
@@ -590,7 +586,6 @@
             }
 
             async function checkForDuplicates(files) {
-                console.log('[Bukti Bayar] Checking for duplicates...');
                 let validCount = 0;
                 let invalidCount = 0;
                 
@@ -648,7 +643,6 @@
                                             }
                                         } catch (fileCheckErr) {
                                             // If check fails, allow re-upload
-                                            console.log('[Bukti Bayar] File check error, allowing:', fileCheckErr.message);
                                             validCount++;
                                             file.tokoName = tokoName;
                                             file.nominal = nominal;
@@ -672,7 +666,6 @@
                                 selectedFiles.push(file);
                             }
                         } catch (err) {
-                            console.log('[Bukti Bayar] Duplicate check error:', err);
                             // If check fails, allow upload
                             validCount++;
                             selectedFiles.push(file);
@@ -736,7 +729,6 @@
                 stats.style.display = 'none';
                 filesList.style.display = 'none';
                 btnUpload.disabled = true;
-                console.log('[Bukti Bayar] Reset completed');
             };
 
             document.getElementById('btnUpload').addEventListener('click', async () => {
@@ -773,7 +765,6 @@
                             throw new Error(`Upload failed for ${file.name}`);
                         }
 
-                        console.log('[Bukti Bayar] Uploaded:', file.name);
                     }
 
                     if (typeof Toast !== 'undefined') {
@@ -783,7 +774,6 @@
                     }
                     window.resetUpload();
                 } catch (error) {
-                    console.error('[Bukti Bayar] Upload error:', error);
                     if (typeof Toast !== 'undefined') {
                         Toast.error('❌ Upload gagal: ' + error.message);
                     } else {

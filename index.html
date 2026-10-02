@@ -570,7 +570,6 @@
                     modal?.classList.add('hidden');
                 }
             } catch (err) {
-                console.warn('Gagal mengecek status perbaikan:', err);
                 // Hide alert on error
                 const modal = document.getElementById('custom-alert');
                 modal?.classList.add('hidden');
@@ -635,7 +634,6 @@
                     dashboardPage = '/dashboard';
                 }
                 
-                console.log('[Login] User role:', result.user?.role, '? Redirecting to:', dashboardPage);
                 
                 // Show success notification - auto redirect after 2.5 seconds
                 await Swal.fire({
@@ -652,7 +650,6 @@
                 });
                 
             } catch (err) {
-                console.error(err);
                 btn.disabled = false;
                 btn.innerHTML = originalBtnHtml;
 
@@ -703,7 +700,6 @@
             }
             
             updateThemeIcon();
-            console.log('[DarkMode] Toggled to:', newState ? 'Dark' : 'Light');
         }
         
         function updateThemeIcon() {

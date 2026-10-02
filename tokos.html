@@ -214,15 +214,12 @@
 
         // Initialize tokos page
         async function initTokosPage() {
-            console.log('[Tokos Init] Starting page initialization...');
             try {
                 await initAuth();
                 await loadSidebar('tokos.html');
                 await loadZonas();
                 await loadTokos();
-                console.log('[Tokos Init] ✅ Page initialized successfully');
             } catch (err) {
-                console.error('[Tokos Init] Initialization failed:', err);
             }
         }
 
@@ -239,7 +236,6 @@
                 tokoZona.innerHTML = options;
                 filterZona.innerHTML = '<option value="">Semua Zona</option>' + options;
             } catch (err) {
-                console.error('[Tokos] Load zonas error:', err);
             }
         }
 
@@ -258,7 +254,6 @@
                 // Render table
                 renderTokosTable();
             } catch (err) {
-                console.error('[Tokos] Load error:', err);
                 alert('Gagal memuat data toko: ' + err.message);
             }
         }

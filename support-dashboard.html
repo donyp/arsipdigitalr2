@@ -1080,15 +1080,11 @@
     
     <!-- Initialize Support Page (SPA trigger) -->
     <script>
-        console.log('[Support Init] Checking if initSupportPage exists...');
         if (typeof initSupportPage === 'function') {
-            console.log('[Support Init] Calling initSupportPage()');
             initSupportPage();
         } else {
-            console.warn('[Support Init] initSupportPage not found, retrying in 500ms...');
             setTimeout(() => {
                 if (typeof initSupportPage === 'function') {
-                    console.log('[Support Init] Retry: calling initSupportPage()');
                     initSupportPage();
                 }
             }, 500);

@@ -70,14 +70,12 @@ ${Array.from(allElements).slice(0, 15).map(e => `  - ${e.id}`).join('\n')}${allE
         // Run tests after page loads
         window.addEventListener('load', () => {
             setTimeout(() => {
-                console.log('Running diagnostic tests...');
                 runTests();
             }, 2000);
         });
 
         // Also run after a delay
         setTimeout(() => {
-            console.log('Running immediate tests...');
             runTests();
         }, 500);
     </script>

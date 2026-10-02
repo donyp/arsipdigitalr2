@@ -316,7 +316,6 @@
         let currentMessages = [], currentInvoiceMessages = [];
         
         async function initNotifyZonaPage() {
-            console.log('[NotifyZona] Page initializing');
             await initAuth(); 
             await loadSidebar('whatsapp-messages.html'); 
             await loadMessages();
@@ -331,17 +330,14 @@
 
         async function loadMessages() {
             try {
-                console.log('[Notify WA] loadMessages starting');
                 const invoiceMsgs = await API.get('/api/whatsapp/pending-invoice-messages').catch(() => ({}));
                 
-                console.log('[Notify WA] Response from API:', invoiceMsgs);
                 
                 // Response is an object with notifications grouped by zona name (from backend)
                 // notifications: { "Zona Name": [{msg1}, {msg2}], "Another Zona": [...] }
                 // Or it could be { notifications: {...}, count: X, ... }
                 
                 let messagesObj = invoiceMsgs.notifications || invoiceMsgs;
-                console.log('[Notify WA] Extracted messages:', messagesObj);
                 
                 // Convert grouped object to flat array for rendering
                 // messagesObj is: { "Zona Name": [{...}], "Zona 2": [{...}] }
@@ -352,33 +348,26 @@
                             currentInvoiceMessages.push(...msgs);
                         }
                     });
-                    console.log('[Notify WA] Flattened messages array:', currentInvoiceMessages);
                 } else if (Array.isArray(messagesObj)) {
                     currentInvoiceMessages = messagesObj;
                 } else {
                     currentInvoiceMessages = [];
                 }
                 
-                console.log('[Notify WA] Final messages array:', currentInvoiceMessages);
                 renderMessages();
             } catch (err) {
-                console.error('[Notify WA] Error loading messages:', err);
                 document.getElementById('invoice-messages-body').innerHTML = '<div class="text-center text-gray-500 py-8">Gagal memuat pesan</div>';
             }
         }
 
         function renderMessages() {
             // Invoice messages ONLY
-            console.log('[Notify WA] renderMessages called, checking for element');
             const invMsgBody = document.getElementById('invoice-messages-body');
             
-            console.log('[Notify WA] invoice-messages-body element:', invMsgBody ? 'FOUND' : 'NOT FOUND');
             
             if (!invMsgBody) {
-                console.warn('[Notify WA] invoice-messages-body element not found, retrying in 300ms...');
                 // Retry after delay - element might not be in DOM yet
                 setTimeout(() => {
-                    console.log('[Notify WA] Retry: checking element again');
                     renderMessages();
                 }, 300);
                 return;
@@ -395,11 +384,9 @@
                     </div>
                 `;
                 updateStats(0, 0);
-                console.log('[Notify WA] No messages to display');
                 return;
             }
             
-            console.log('[Notify WA] Rendering ' + currentInvoiceMessages.length + ' messages');
 
             // Separate into active (pending) and sent
             const activeMessages = currentInvoiceMessages.filter(msg => !msg.sent_at);
@@ -657,16 +644,12 @@ ${msg.message || 'N/A'}
         // SPA Initialization: If this page was loaded via SPA, initNotifyZona will be defined
         // Call it after a small delay to ensure function is defined
         setTimeout(() => {
-            console.log('[NotifyZona] Checking if initialization needed...');
             if (typeof initNotifyZona === 'function') {
-                console.log('[NotifyZona] initNotifyZona found, calling...');
                 initNotifyZona().catch(err => console.error('[NotifyZona] Init error:', err));
             } else {
-                console.log('[NotifyZona] initNotifyZona not found, waiting...');
                 // If not found, wait a bit more
                 setTimeout(() => {
                     if (typeof initNotifyZona === 'function') {
-                        console.log('[NotifyZona] Found on second check, calling...');
                         initNotifyZona().catch(err => console.error('[NotifyZona] Init error:', err));
                     }
                 }, 200);

@@ -1028,7 +1028,6 @@
 
     <script>
         // Debug: Check if script loaded
-        console.log('🔍 Audit Logs Dashboard script loaded');
         
         // ============================================
         // GLOBAL STATE
@@ -1065,32 +1064,25 @@
         // INITIALIZATION
         // ============================================
         async function init() {
-            console.log('🚀 Init function called');
             
             // Init dark mode dari localStorage (set by sidebar)
             initDarkMode();
             
             // Check if user logged in
             const token = localStorage.getItem('jwt_token');
-            console.log('✓ Token check:', !!token);
             
             if (!token) {
-                console.log('❌ No token, redirecting to login');
                 window.location.href = '/login';
                 return;
             }
             
-            console.log('✓ Setting up UI...');
             setupDatePickers();
             setupEventListeners();
             
-            console.log('✓ Loading logs...');
             await loadLogs();
             
-            console.log('✓ Loading stats...');
             loadStats();
             
-            console.log('✅ Init complete');
         }
 
         function setupDatePickers() {
@@ -1176,7 +1168,6 @@
                 updatePaginationControls();
                 updateLastUpdate();
             } catch (error) {
-                console.error('Failed to load logs:', error);
                 showError('Failed to load audit logs');
             }
         }
@@ -1318,7 +1309,6 @@
                 ).length;
                 document.getElementById('stat24h').textContent = last24h;
             } catch (error) {
-                console.error('Failed to load stats:', error);
             }
         }
 
@@ -1542,7 +1532,6 @@
                 content.innerHTML = html;
                 modal.classList.add('active');
             } catch (error) {
-                console.error('Failed to load log details:', error);
                 showError('Failed to load log details');
             }
         }
@@ -1633,7 +1622,6 @@
                 const csv = await response.text();
                 downloadFile(csv, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
             } catch (error) {
-                console.error('Export failed:', error);
                 showError('Failed to export logs');
             }
         }
@@ -1688,7 +1676,6 @@
         }
 
         // Start application
-        console.log('📄 Document ready, calling init()');
         init();
     </script>
 </body>
