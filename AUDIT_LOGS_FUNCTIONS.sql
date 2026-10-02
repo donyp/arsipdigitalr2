@@ -14,9 +14,9 @@ BEGIN
         ORDER BY count DESC;
     ELSE
         RETURN QUERY
-        EXECUTE 'SELECT audit_logs.operation, COUNT(*) as count
+        EXECUTE 'SELECT operation, COUNT(*) as count
                  FROM audit_logs ' || date_range || '
-                 GROUP BY audit_logs.operation
+                 GROUP BY operation
                  ORDER BY count DESC';
     END IF;
 END;
@@ -34,9 +34,9 @@ BEGIN
         ORDER BY count DESC;
     ELSE
         RETURN QUERY
-        EXECUTE 'SELECT audit_logs.resource_type, COUNT(*) as count
+        EXECUTE 'SELECT resource_type, COUNT(*) as count
                  FROM audit_logs ' || date_range || '
-                 GROUP BY audit_logs.resource_type
+                 GROUP BY resource_type
                  ORDER BY count DESC';
     END IF;
 END;
@@ -54,9 +54,9 @@ BEGIN
         ORDER BY count DESC;
     ELSE
         RETURN QUERY
-        EXECUTE 'SELECT audit_logs.severity, COUNT(*) as count
+        EXECUTE 'SELECT severity, COUNT(*) as count
                  FROM audit_logs ' || date_range || '
-                 GROUP BY audit_logs.severity
+                 GROUP BY severity
                  ORDER BY count DESC';
     END IF;
 END;
