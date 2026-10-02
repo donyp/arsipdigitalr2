@@ -59,19 +59,28 @@ function handleFiles(files) {
         return;
     }
 
+    console.log('[Rename Faktur] handleFiles called');
+    console.log('[Rename Faktur] selectedFiles before:', selectedFiles.map(f => f.name));
+    console.log('[Rename Faktur] new files:', fileArray.map(f => f.name));
+
     // Get existing file names to check for duplicates
     const existingNames = new Set(selectedFiles.map(f => f.name));
+    console.log('[Rename Faktur] existingNames:', Array.from(existingNames));
+    
     let duplicateCount = 0;
     let newFiles = [];
     
     // Filter out duplicates and add new files
     fileArray.forEach(file => {
+        console.log(`[Rename Faktur] Checking file: ${file.name}, exists: ${existingNames.has(file.name)}`);
         if (existingNames.has(file.name)) {
             duplicateCount++;
         } else {
             newFiles.push(file);
         }
     });
+    
+    console.log('[Rename Faktur] duplicateCount:', duplicateCount, 'newFiles:', newFiles.map(f => f.name));
     
     // If all files are duplicates, don't add anything
     if (newFiles.length === 0) {
@@ -86,6 +95,7 @@ function handleFiles(files) {
 
     // Append new files to existing list
     selectedFiles = selectedFiles.concat(newFiles);
+    console.log('[Rename Faktur] selectedFiles after concat:', selectedFiles.map(f => f.name));
 
     // Max 25 files limit (safe for 2MB avg file size)
     // Memory: 25 × 2MB = 50MB raw; ~67MB with base64 overhead (very safe)
