@@ -4690,7 +4690,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         if (toko_id !== undefined) updates.toko_id = toko_id;
         if (permissions !== undefined) updates.permissions = permissions;
 
-        // Username update (optional)
+        // Username update (optional) - only update if explicitly provided
         if (username !== undefined && username !== null && username !== '') {
             const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
             if (!usernameRegex.test(username)) {
@@ -4710,9 +4710,11 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
             if (existingUsername) {
                 return res.status(400).json({ error: 'Username sudah digunakan user lain.' });
             }
-        } else if (username === null || username === '') {
+        } else if (username === null) {
+            // Explicitly set to null if user wants to clear it
             updates.username = null;
         }
+        // If username is undefined, don't include it in updates at all
 
         console.log('[PUT /api/users/:id] Updating user', userId, 'with:', JSON.stringify(updates));
 
