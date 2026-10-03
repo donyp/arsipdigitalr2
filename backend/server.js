@@ -4716,6 +4716,8 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         }
         // If username is undefined, don't include it in updates at all
 
+        console.log('[PUT /api/users/:id] Received username param:', username);
+        console.log('[PUT /api/users/:id] Username included in updates:', 'username' in updates);
         console.log('[PUT /api/users/:id] Updating user', userId, 'with:', JSON.stringify(updates));
 
         // Re-hash password if provided
