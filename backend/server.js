@@ -4728,6 +4728,20 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
                 updates.username = trimmedUsername;
             }
 
+            // Password update (optional)
+            if (password !== undefined && password !== null && password !== '') {
+                if (password.length < 6) {
+                    return res.status(400).json({ error: 'Password minimal 6 karakter.' });
+                }
+                try {
+                    const salt = await bcrypt.genSalt(12);
+                    updates.password_hash = await bcrypt.hash(password, salt);
+                } catch (hashErr) {
+                    console.error('Password hashing error:', hashErr.message);
+                    throw new Error('Password hashing failed: ' + hashErr.message);
+                }
+            }
+
             console.log('[PUT /api/users/:id] Own profile update for user', userId, 'with:', JSON.stringify(updates));
             
             let { data, error } = await supabase
