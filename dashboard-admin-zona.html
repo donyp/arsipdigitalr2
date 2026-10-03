@@ -3832,13 +3832,11 @@
                 });
             });
         }
-    </script>
 
-    <script>
         // Profile Modal Functions
         let currentUserData = null;
 
-        async function showProfileModal() {
+        window.showProfileModal = async function() {
             try {
                 // Get current user data from auth
                 const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -3889,16 +3887,16 @@
                 console.error('Error loading profile:', error);
                 alert('Gagal memuat profil');
             }
-        }
+        };
 
-        function closeProfileModal() {
+        window.closeProfileModal = function() {
             document.getElementById('profileModal').classList.remove('active');
-        }
+        };
 
         // Close modal on Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                closeProfileModal();
+                window.closeProfileModal();
             }
         });
     </script>
