@@ -4387,9 +4387,22 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
             finalUsername = username.toLowerCase().trim();
             
             // Check duplicate username
-            const { data: existingUsername } = await supabase.from('users').select('id').eq('username', finalUsername).single().catch(() => ({ data: null }));
-            if (existingUsername) {
-                return res.status(400).json({ error: 'Username sudah digunakan.' });
+            try {
+                const { data: existingUsername } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('username', finalUsername)
+                    .single();
+                
+                if (existingUsername) {
+                    return res.status(400).json({ error: 'Username sudah digunakan.' });
+                }
+            } catch (err) {
+                // No match found is expected, continue
+                if (err.code !== 'PGRST116') { // PGRST116 = no rows returned
+                    console.error('Username check error:', err);
+                    throw err;
+                }
             }
         }
 
@@ -4690,19 +4703,38 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         if (toko_id !== undefined) updates.toko_id = toko_id;
         if (permissions !== undefined) updates.permissions = permissions;
 
-        // Username update - DISABLED until database constraint is fixed
-        // TODO: Re-enable when username column is properly set to nullable in Supabase
-        // For now, we skip username updates in the PUT endpoint to avoid constraint violations
-        // Username can only be set during user creation (POST /api/users)
+        // Username update (optional) - now working!
         if (username !== undefined && username !== null && username !== '') {
-            // Validate format
             const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
             if (!usernameRegex.test(username)) {
                 return res.status(400).json({ error: 'Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.' });
             }
-            // Log but don't update for now
-            console.log('[PUT /api/users/:id] Username update requested but disabled due to DB constraint:', username);
+            
+            const trimmedUsername = username.toLowerCase().trim();
+            
+            // Check if username already used by another user
+            try {
+                const { data: existingUsername } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('username', trimmedUsername)
+                    .neq('id', userId)
+                    .single();
+                
+                if (existingUsername) {
+                    return res.status(400).json({ error: 'Username sudah digunakan user lain.' });
+                }
+            } catch (err) {
+                // No match found is expected, continue
+                if (err.code !== 'PGRST116') { // PGRST116 = no rows returned
+                    console.error('Username check error:', err);
+                    throw err;
+                }
+            }
+            
+            updates.username = trimmedUsername;
         }
+        // If username is undefined or empty, don't include it in updates
 
         console.log('[PUT /api/users/:id] Received username param:', username);
         console.log('[PUT /api/users/:id] Username included in updates:', 'username' in updates);
