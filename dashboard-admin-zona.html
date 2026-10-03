@@ -4088,15 +4088,29 @@
 
         window.togglePasswordVisibility = function() {
             const passwordInput = document.getElementById('profilePasswordEdit');
+            const passwordDisplay = document.getElementById('profilePassword');
             const toggleEditBtn = document.getElementById('profilePasswordToggleEdit');
             const toggleDisplayBtn = document.getElementById('profilePasswordToggleDisplay');
             
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            // Check if we're in edit mode
+            if (profileEditMode && passwordInput.parentElement.classList.contains('active')) {
+                // Edit mode - toggle the password input field
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                } else {
+                    passwordInput.type = 'password';
+                    if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                }
             } else {
-                passwordInput.type = 'password';
-                if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                // Display mode - toggle the display between dots and "click edit to change"
+                if (passwordDisplay.textContent === '••••••••') {
+                    passwordDisplay.textContent = 'Click Edit to change';
+                    if (toggleDisplayBtn) toggleDisplayBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                } else {
+                    passwordDisplay.textContent = '••••••••';
+                    if (toggleDisplayBtn) toggleDisplayBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                }
             }
         };
 
