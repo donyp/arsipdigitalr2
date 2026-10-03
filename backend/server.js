@@ -1366,11 +1366,11 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         console.log('[LOGIN] Attempt:', { email: email.toLowerCase().trim() });
 
-        // Find user
+        // Find user by email or username (dual login support)
         const { data: user, error } = await supabase
             .from('users')
             .select('id, email, name, role, zona_id, toko_id, is_active, permissions, password_hash')
-            .eq('email', email.toLowerCase().trim())
+            .or(`email.eq.${email.toLowerCase().trim()},username.eq.${email.toLowerCase().trim()}`)
             .eq('is_active', true)
             .single();
 
@@ -4371,16 +4371,32 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
         return res.status(403).json({ error: 'Akses ditolak' });
     }
     try {
-        const { email, password, name, role, zona_id, toko_id, permissions } = req.body;
+        const { email, username, password, name, role, zona_id, toko_id, permissions } = req.body;
 
         if (!email || !password || !name || !role) {
-            return res.status(400).json({ error: 'Username, password, nama, dan role wajib diisi.' });
+            return res.status(400).json({ error: 'Email, password, nama, dan role wajib diisi.' });
         }
 
-        // Check duplicate Username (column 'email')
+        // Username validation (optional but must be unique if provided)
+        let finalUsername = null;
+        if (username) {
+            const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+            if (!usernameRegex.test(username)) {
+                return res.status(400).json({ error: 'Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.' });
+            }
+            finalUsername = username.toLowerCase().trim();
+            
+            // Check duplicate username
+            const { data: existingUsername } = await supabase.from('users').select('id').eq('username', finalUsername).single().catch(() => ({ data: null }));
+            if (existingUsername) {
+                return res.status(400).json({ error: 'Username sudah digunakan.' });
+            }
+        }
+
+        // Check duplicate Email
         const { data: existing } = await supabase.from('users').select('id').eq('email', email.toLowerCase().trim()).single();
         if (existing) {
-            return res.status(400).json({ error: 'Username sudah digunakan.' });
+            return res.status(400).json({ error: 'Email sudah digunakan.' });
         }
 
         // Hash password
@@ -4391,7 +4407,7 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
             .from('users')
             .insert({
                 email: email.toLowerCase().trim(),
-                
+                username: finalUsername,
                 password_hash,
                 name,
                 role,
@@ -4646,7 +4662,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     }
     try {
         const userId = req.params.id;
-        const { email, password, name, role, zona_id, toko_id, is_active, permissions } = req.body;
+        const { email, username, password, name, role, zona_id, toko_id, is_active, permissions } = req.body;
 
         // Basic validation
         if (!email || !name || !role) {
@@ -4673,6 +4689,30 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         if (zona_id !== undefined) updates.zona_id = zona_id;
         if (toko_id !== undefined) updates.toko_id = toko_id;
         if (permissions !== undefined) updates.permissions = permissions;
+
+        // Username update (optional)
+        if (username !== undefined && username !== null && username !== '') {
+            const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+            if (!usernameRegex.test(username)) {
+                return res.status(400).json({ error: 'Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.' });
+            }
+            updates.username = username.toLowerCase().trim();
+            
+            // Check if username already used by another user
+            const { data: existingUsername } = await supabase
+                .from('users')
+                .select('id')
+                .eq('username', updates.username)
+                .neq('id', userId)
+                .single()
+                .catch(() => ({ data: null }));
+            
+            if (existingUsername) {
+                return res.status(400).json({ error: 'Username sudah digunakan user lain.' });
+            }
+        } else if (username === null || username === '') {
+            updates.username = null;
+        }
 
         console.log('[PUT /api/users/:id] Updating user', userId, 'with:', JSON.stringify(updates));
 
