@@ -241,6 +241,14 @@
                     <input type="email" id="userEmail" style="padding:12px 14px;border:2px solid var(--color-border);background:var(--color-bg-tertiary);color:var(--color-text-primary);border-radius:10px;font-size:14px;transition:all 0.2s ease;outline:none;" placeholder="user@example.com" onfocus="this.style.borderColor='#667eea';this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)';" onfocusout="this.style.borderColor='var(--color-border)';this.style.boxShadow='none';">
                 </div>
                 
+                <!-- Username Field -->
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="font-size:13px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:4px;">
+                        <i class="fas fa-at" style="color:#a855f7;width:14px;"></i>Username <span style="font-size:11px;color:var(--color-text-secondary);font-weight:400;text-transform:none;letter-spacing:0;">(opsional)</span>
+                    </label>
+                    <input type="text" id="userUsername" style="padding:12px 14px;border:2px solid var(--color-border);background:var(--color-bg-tertiary);color:var(--color-text-primary);border-radius:10px;font-size:14px;transition:all 0.2s ease;outline:none;" placeholder="username_123" onfocus="this.style.borderColor='#a855f7';this.style.boxShadow='0 0 0 3px rgba(168,85,247,0.1)';" onfocusout="this.style.borderColor='var(--color-border)';this.style.boxShadow='none';">
+                </div>
+                
                 <!-- Name Field -->
                 <div style="display:flex;flex-direction:column;gap:6px;">
                     <label style="font-size:13px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:4px;">
@@ -390,6 +398,7 @@
         function openUserModal() {
             document.getElementById('editUserId').value = '';
             document.getElementById('userEmail').value = '';
+            document.getElementById('userUsername').value = '';
             document.getElementById('userName').value = '';
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = 'moderator';
@@ -408,6 +417,7 @@
             
             document.getElementById('editUserId').value = user.id;
             document.getElementById('userEmail').value = user.email;
+            document.getElementById('userUsername').value = user.username || '';
             document.getElementById('userName').value = user.name || '';
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = user.role;
@@ -424,6 +434,7 @@
         async function saveUser() {
             const id = document.getElementById('editUserId').value;
             const email = document.getElementById('userEmail').value.trim();
+            const username = document.getElementById('userUsername').value.trim();
             const name = document.getElementById('userName').value.trim();
             const password = document.getElementById('userPassword').value;
             const role = document.getElementById('userRole').value;
@@ -442,6 +453,15 @@
                 return;
             }
 
+            // Username validation (optional but must follow format if provided)
+            if (username) {
+                const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+                if (!usernameRegex.test(username)) {
+                    alert('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.\nContoh: john_doe, user-123');
+                    return;
+                }
+            }
+
             // Role validation
             if (!role || !['super_admin', 'moderator', 'admin_zona'].includes(role)) {
                 alert('Role tidak valid');
@@ -450,6 +470,7 @@
 
             try {
                 const data = { email, name, role, is_active };
+                if (username) data.username = username;
                 if (password) data.password = password;
 
                 console.log('[saveUser] Sending request:', id ? 'UPDATE' : 'CREATE', data);
