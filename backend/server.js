@@ -4737,6 +4737,8 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         }
 
         console.log('[PUT /api/users/:id] Making Supabase update call...');
+        console.log('[PUT /api/users/:id] Update payload:', JSON.stringify(updates, null, 2));
+        
         let { data, error } = await supabase
             .from('users')
             .update(updates)
@@ -4745,6 +4747,8 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
             .single();
 
         if (error) {
+            console.error('[PUT /api/users/:id] Supabase error code:', error.code);
+            console.error('[PUT /api/users/:id] Supabase error message:', error.message);
             console.error('[PUT /api/users/:id] Supabase error details:', JSON.stringify(error, null, 2));
             throw new Error(error.message || 'Database error: ' + JSON.stringify(error));
         }
