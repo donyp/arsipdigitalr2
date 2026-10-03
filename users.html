@@ -241,12 +241,13 @@
                     <input type="email" id="userEmail" style="padding:12px 14px;border:2px solid var(--color-border);background:var(--color-bg-tertiary);color:var(--color-text-primary);border-radius:10px;font-size:14px;transition:all 0.2s ease;outline:none;" placeholder="user@example.com" onfocus="this.style.borderColor='#667eea';this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)';" onfocusout="this.style.borderColor='var(--color-border)';this.style.boxShadow='none';">
                 </div>
                 
-                <!-- Username Field -->
-                <div style="display:flex;flex-direction:column;gap:6px;">
+                <!-- Username Field - DISABLED FOR EDITING (only available on creation) -->
+                <div style="display:flex;flex-direction:column;gap:6px;" id="usernameFieldWrapper">
                     <label style="font-size:13px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:4px;">
-                        <i class="fas fa-at" style="color:#a855f7;width:14px;"></i>Username <span style="font-size:11px;color:var(--color-text-secondary);font-weight:400;text-transform:none;letter-spacing:0;">(opsional)</span>
+                        <i class="fas fa-at" style="color:#a855f7;width:14px;"></i>Username <span style="font-size:11px;color:var(--color-text-secondary);font-weight:400;text-transform:none;letter-spacing:0;">(opsional, hanya saat membuat user)</span>
                     </label>
                     <input type="text" id="userUsername" style="padding:12px 14px;border:2px solid var(--color-border);background:var(--color-bg-tertiary);color:var(--color-text-primary);border-radius:10px;font-size:14px;transition:all 0.2s ease;outline:none;" placeholder="username_123" onfocus="this.style.borderColor='#a855f7';this.style.boxShadow='0 0 0 3px rgba(168,85,247,0.1)';" onfocusout="this.style.borderColor='var(--color-border)';this.style.boxShadow='none';">
+                    <p style="font-size:11px;color:#a855f7;margin:4px 0 0 0;font-weight:500;">ℹ️ Username hanya dapat diatur saat membuat user baru. Hubungi admin untuk mengubah username.</p>
                 </div>
                 
                 <!-- Name Field -->
@@ -405,6 +406,9 @@
             document.getElementById('userActive').checked = true;
             document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-plus" style="color:#667eea;"></i>Tambah User';
             document.getElementById('userPassword').required = true;
+            document.getElementById('userUsername').disabled = false; // Enable username for new users
+            document.getElementById('usernameFieldWrapper').style.opacity = '1';
+            document.getElementById('usernameFieldWrapper').style.pointerEvents = 'auto';
             document.getElementById('userModal').style.display = 'flex';
             // Trigger animation
             setTimeout(() => document.getElementById('userModal').style.animation = 'fadeIn 0.3s ease', 0);
@@ -417,7 +421,7 @@
             
             document.getElementById('editUserId').value = user.id;
             document.getElementById('userEmail').value = user.email;
-            document.getElementById('userUsername').value = user.username || '';
+            document.getElementById('userUsername').value = user.username || ''; // Show username but disabled
             document.getElementById('userName').value = user.name || '';
             document.getElementById('userPassword').value = '';
             document.getElementById('userRole').value = user.role;
@@ -425,6 +429,9 @@
             document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-edit" style="color:#667eea;"></i>Edit User';
             document.getElementById('userPassword').required = false;
             document.getElementById('userPassword').placeholder = 'Kosongkan untuk tidak mengubah password';
+            document.getElementById('userUsername').disabled = true; // Disable username field for editing
+            document.getElementById('usernameFieldWrapper').style.opacity = '0.6';
+            document.getElementById('usernameFieldWrapper').style.pointerEvents = 'none';
             document.getElementById('userModal').style.display = 'flex';
             // Trigger animation
             setTimeout(() => document.getElementById('userModal').style.animation = 'slideUp 0.3s cubic-bezier(0.4,0,0.2,1)', 0);
