@@ -501,10 +501,11 @@
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            height: 90px;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(168, 85, 247, 0.2));
-            opacity: 0.8;
+            width: 180px;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(168, 85, 247, 0.1));
+            opacity: 0.6;
+            z-index: 0;
         }
 
         .profile-card-content {
@@ -644,6 +645,7 @@
             gap: 6px;
             flex-shrink: 0;
             align-items: center;
+            flex-direction: column;
         }
 
         .profile-btn {
@@ -659,6 +661,7 @@
             justify-content: center;
             gap: 4px;
             white-space: nowrap;
+            min-width: 45px;
         }
 
         .profile-btn-close {
@@ -672,15 +675,81 @@
             transform: translateY(-1px);
         }
 
-        .profile-btn-copy {
+        .profile-btn-edit {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            width: 100%;
+        }
+
+        .profile-btn-edit:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .profile-btn-save {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
+            width: 100%;
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .profile-btn-copy:hover {
+        .profile-btn-save:not(:disabled):hover,
+        .profile-btn-save.enabled {
+            opacity: 1;
+            cursor: pointer;
             transform: translateY(-1px);
             box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+        }
+
+        .profile-btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .profile-btn-cancel {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            width: 100%;
+        }
+
+        .profile-btn-cancel:hover {
+            background: var(--color-border);
+            transform: translateY(-1px);
+        }
+
+        /* Edit Mode Styles */
+        .profile-info-editable {
+            display: none;
+        }
+
+        .profile-info-editable.active {
+            display: flex;
+        }
+
+        .profile-info-value.hidden {
+            display: none;
+        }
+
+        .profile-edit-input {
+            padding: 6px 8px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            font-size: 12px;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .profile-edit-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
 
         @keyframes fadeIn {
@@ -1372,6 +1441,7 @@
                             <div class="profile-info-content">
                                 <div class="profile-info-label">Email</div>
                                 <div class="profile-info-value" id="profileEmail">loading...</div>
+                                <input type="email" id="profileEmailEdit" class="profile-edit-input profile-info-editable" placeholder="Email">
                             </div>
                         </div>
 
@@ -1383,6 +1453,7 @@
                             <div class="profile-info-content">
                                 <div class="profile-info-label">Username</div>
                                 <div class="profile-info-value" id="profileUsername">-</div>
+                                <input type="text" id="profileUsernameEdit" class="profile-edit-input profile-info-editable" placeholder="Username (opsional)">
                             </div>
                         </div>
 
@@ -1410,9 +1481,18 @@
                     </div>
                 </div>
 
-                <!-- Right: Close Button -->
+                <!-- Right: Buttons -->
                 <div class="profile-actions">
-                    <button class="profile-btn profile-btn-close" onclick="closeProfileModal()">
+                    <button class="profile-btn profile-btn-close" id="profileCloseBtn" onclick="closeProfileModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button class="profile-btn profile-btn-edit" id="profileEditBtn" onclick="window.enterProfileEditMode()">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="profile-btn profile-btn-save" id="profileSaveBtn" disabled onclick="window.saveProfileChanges()">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="profile-btn profile-btn-cancel" id="profileCancelBtn" style="display:none;" onclick="window.exitProfileEditMode()">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -3887,16 +3967,18 @@
                         });
                         if (zonaResponse.ok) {
                             const zonaData = await zonaResponse.json();
-                            document.getElementById('profileZona').textContent = zonaData.zona?.nama || `Zona #${zonaId}`;
+                            // Handle both .zona.nama and .data.nama structures
+                            const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona #${zonaId}`;
+                            document.getElementById('profileZona').textContent = zonaNama;
                         } else {
-                            document.getElementById('profileZona').textContent = `Zona #${zonaId}`;
+                            document.getElementById('profileZona').textContent = `Zona ${zonaId}`;
                         }
                     } else {
                         document.getElementById('profileZona').textContent = '-';
                     }
                 } catch (err) {
                     console.error('Error fetching zona:', err);
-                    document.getElementById('profileZona').textContent = user.zona_id ? `Zona #${user.zona_id}` : '-';
+                    document.getElementById('profileZona').textContent = user.zona_id ? `Zona ${user.zona_id}` : '-';
                 }
                 
                 // Format member since date
@@ -3927,4 +4009,160 @@
                 window.closeProfileModal();
             }
         });
+
+        // Edit Mode Functions
+        let profileEditMode = false;
+        let profileOriginalData = {};
+
+        window.enterProfileEditMode = function() {
+            profileEditMode = true;
+            profileOriginalData = {
+                email: document.getElementById('profileEmail').textContent,
+                username: document.getElementById('profileUsername').textContent === '-' ? '' : document.getElementById('profileUsername').textContent
+            };
+
+            // Hide display values, show inputs
+            document.getElementById('profileEmail').classList.add('hidden');
+            document.getElementById('profileUsername').classList.add('hidden');
+            document.getElementById('profileEmailEdit').classList.add('active');
+            document.getElementById('profileUsernameEdit').classList.add('active');
+
+            // Set input values
+            document.getElementById('profileEmailEdit').value = profileOriginalData.email;
+            document.getElementById('profileUsernameEdit').value = profileOriginalData.username;
+
+            // Hide edit button, show cancel
+            document.getElementById('profileEditBtn').style.display = 'none';
+            document.getElementById('profileCancelBtn').style.display = 'flex';
+            document.getElementById('profileCloseBtn').style.display = 'none';
+
+            // Add change listeners
+            document.getElementById('profileEmailEdit').addEventListener('change', window.checkProfileChanges);
+            document.getElementById('profileUsernameEdit').addEventListener('change', window.checkProfileChanges);
+
+            // Focus email input
+            document.getElementById('profileEmailEdit').focus();
+        };
+
+        window.exitProfileEditMode = function() {
+            profileEditMode = false;
+
+            // Hide inputs, show display values
+            document.getElementById('profileEmail').classList.remove('hidden');
+            document.getElementById('profileUsername').classList.remove('hidden');
+            document.getElementById('profileEmailEdit').classList.remove('active');
+            document.getElementById('profileUsernameEdit').classList.remove('active');
+
+            // Show edit button, hide cancel
+            document.getElementById('profileEditBtn').style.display = 'flex';
+            document.getElementById('profileCancelBtn').style.display = 'none';
+            document.getElementById('profileCloseBtn').style.display = 'flex';
+
+            // Reset save button
+            document.getElementById('profileSaveBtn').disabled = true;
+        };
+
+        window.checkProfileChanges = function() {
+            const currentEmail = document.getElementById('profileEmailEdit').value;
+            const currentUsername = document.getElementById('profileUsernameEdit').value;
+
+            const hasChanges = currentEmail !== profileOriginalData.email || 
+                              currentUsername !== profileOriginalData.username;
+
+            document.getElementById('profileSaveBtn').disabled = !hasChanges;
+            if (hasChanges) {
+                document.getElementById('profileSaveBtn').classList.add('enabled');
+            } else {
+                document.getElementById('profileSaveBtn').classList.remove('enabled');
+            }
+        };
+
+        window.saveProfileChanges = async function() {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                if (!token) {
+                    alert('Session expired. Please login again.');
+                    return;
+                }
+
+                const newEmail = document.getElementById('profileEmailEdit').value.trim();
+                const newUsername = document.getElementById('profileUsernameEdit').value.trim() || null;
+
+                // Validation
+                if (!newEmail) {
+                    alert('Email tidak boleh kosong');
+                    return;
+                }
+
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(newEmail)) {
+                    alert('Format email tidak valid');
+                    return;
+                }
+
+                if (newUsername) {
+                    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+                    if (!usernameRegex.test(newUsername)) {
+                        alert('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash');
+                        return;
+                    }
+                }
+
+                // Get current user ID from stored data
+                const userId = currentUserData?.id;
+                if (!userId) {
+                    alert('User ID not found');
+                    return;
+                }
+
+                // Show loading state
+                document.getElementById('profileSaveBtn').disabled = true;
+                const originalText = document.getElementById('profileSaveBtn').innerHTML;
+                document.getElementById('profileSaveBtn').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                // Update user via API
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: newEmail,
+                        username: newUsername,
+                        name: currentUserData.name,
+                        role: currentUserData.role
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to save changes');
+                }
+
+                const updatedData = await response.json();
+
+                // Update displayed values
+                currentUserData.email = newEmail;
+                currentUserData.username = newUsername;
+                
+                document.getElementById('profileEmail').textContent = newEmail;
+                document.getElementById('profileUsername').textContent = newUsername || '-';
+
+                // Exit edit mode
+                window.exitProfileEditMode();
+
+                // Show success message
+                alert('Profil berhasil diperbarui!');
+
+                // Restore button
+                document.getElementById('profileSaveBtn').innerHTML = originalText;
+
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                alert('Gagal menyimpan perubahan: ' + error.message);
+                document.getElementById('profileSaveBtn').disabled = false;
+                document.getElementById('profileSaveBtn').innerHTML = '<i class="fas fa-check"></i>';
+            }
+        };
     </script>
