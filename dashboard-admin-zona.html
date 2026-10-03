@@ -4090,20 +4090,20 @@
 
                 // Validation
                 if (!newEmail) {
-                    alert('Email tidak boleh kosong');
+                    toastr.error('Email tidak boleh kosong');
                     return;
                 }
 
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(newEmail)) {
-                    alert('Format email tidak valid');
+                    toastr.error('Format email tidak valid');
                     return;
                 }
 
                 if (newUsername) {
                     const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
                     if (!usernameRegex.test(newUsername)) {
-                        alert('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash');
+                        toastr.error('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash');
                         return;
                     }
                 }
@@ -4111,7 +4111,7 @@
                 // Get current user ID from stored data
                 const userId = currentUserData?.id;
                 if (!userId) {
-                    alert('User ID not found');
+                    toastr.error('User ID tidak ditemukan');
                     return;
                 }
 
@@ -4150,15 +4150,15 @@
                 // Exit edit mode
                 window.exitProfileEditMode();
 
-                // Show success message
-                alert('Profil berhasil diperbarui!');
+                // Show success message with toast
+                toastr.success('Profil berhasil diperbarui!');
 
                 // Restore button
                 document.getElementById('profileSaveBtn').innerHTML = originalText;
 
             } catch (error) {
                 console.error('Error saving profile:', error);
-                alert('Gagal menyimpan perubahan: ' + error.message);
+                toastr.error('Gagal menyimpan perubahan: ' + error.message);
                 document.getElementById('profileSaveBtn').disabled = false;
                 document.getElementById('profileSaveBtn').innerHTML = '<i class="fas fa-check"></i>';
             }
