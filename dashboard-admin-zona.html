@@ -4102,7 +4102,11 @@
             try {
                 const token = localStorage.getItem('jwt_token');
                 if (!token) {
-                    alert('Session expired. Please login again.');
+                    if (typeof toastr !== 'undefined' && toastr.error) {
+                        toastr.error('Session expired. Please login again.');
+                    } else {
+                        alert('Session expired. Please login again.');
+                    }
                     return;
                 }
 
@@ -4112,34 +4116,54 @@
 
                 // Validation
                 if (!newEmail) {
-                    toastr.error('Email tidak boleh kosong');
+                    if (typeof toastr !== 'undefined' && toastr.error) {
+                        toastr.error('Email tidak boleh kosong');
+                    } else {
+                        alert('Email tidak boleh kosong');
+                    }
                     return;
                 }
 
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(newEmail)) {
-                    toastr.error('Format email tidak valid');
+                    if (typeof toastr !== 'undefined' && toastr.error) {
+                        toastr.error('Format email tidak valid');
+                    } else {
+                        alert('Format email tidak valid');
+                    }
                     return;
                 }
 
                 if (newUsername) {
                     const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
                     if (!usernameRegex.test(newUsername)) {
-                        toastr.error('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash');
+                        if (typeof toastr !== 'undefined' && toastr.error) {
+                            toastr.error('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash');
+                        } else {
+                            alert('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash');
+                        }
                         return;
                     }
                 }
 
                 // Validate password if provided
                 if (newPassword && newPassword.length < 6) {
-                    toastr.error('Password minimal 6 karakter');
+                    if (typeof toastr !== 'undefined' && toastr.error) {
+                        toastr.error('Password minimal 6 karakter');
+                    } else {
+                        alert('Password minimal 6 karakter');
+                    }
                     return;
                 }
 
                 // Get current user ID from stored data
                 const userId = currentUserData?.id;
                 if (!userId) {
-                    toastr.error('User ID tidak ditemukan');
+                    if (typeof toastr !== 'undefined' && toastr.error) {
+                        toastr.error('User ID tidak ditemukan');
+                    } else {
+                        alert('User ID tidak ditemukan');
+                    }
                     return;
                 }
 
@@ -4180,14 +4204,22 @@
                 window.exitProfileEditMode();
 
                 // Show success message with toast
-                toastr.success('Profil berhasil diperbarui!');
+                if (typeof toastr !== 'undefined' && toastr.success) {
+                    toastr.success('Profil berhasil diperbarui!');
+                } else {
+                    alert('Profil berhasil diperbarui!');
+                }
 
                 // Restore button
                 document.getElementById('profileSaveBtn').innerHTML = originalText;
 
             } catch (error) {
                 console.error('Error saving profile:', error);
-                toastr.error('Gagal menyimpan perubahan: ' + error.message);
+                if (typeof toastr !== 'undefined' && toastr.error) {
+                    toastr.error('Gagal menyimpan perubahan: ' + error.message);
+                } else {
+                    alert('Gagal menyimpan perubahan: ' + error.message);
+                }
                 document.getElementById('profileSaveBtn').disabled = false;
                 document.getElementById('profileSaveBtn').innerHTML = '<i class="fas fa-check"></i>';
             }
