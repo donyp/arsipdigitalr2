@@ -4690,34 +4690,19 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         if (toko_id !== undefined) updates.toko_id = toko_id;
         if (permissions !== undefined) updates.permissions = permissions;
 
-        // Username update (optional) - only update if explicitly provided
-        // NOTE: Only update username if it's explicitly provided and valid
+        // Username update - DISABLED until database constraint is fixed
+        // TODO: Re-enable when username column is properly set to nullable in Supabase
+        // For now, we skip username updates in the PUT endpoint to avoid constraint violations
+        // Username can only be set during user creation (POST /api/users)
         if (username !== undefined && username !== null && username !== '') {
+            // Validate format
             const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
             if (!usernameRegex.test(username)) {
                 return res.status(400).json({ error: 'Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.' });
             }
-            
-            const trimmedUsername = username.toLowerCase().trim();
-            
-            // Check if username already used by another user
-            const { data: existingUsername, error: checkError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('username', trimmedUsername)
-                .neq('id', userId)
-                .single()
-                .catch(() => ({ data: null, error: null }));
-            
-            if (existingUsername) {
-                return res.status(400).json({ error: 'Username sudah digunakan user lain.' });
-            }
-            
-            // Only add to updates if all checks pass
-            updates.username = trimmedUsername;
+            // Log but don't update for now
+            console.log('[PUT /api/users/:id] Username update requested but disabled due to DB constraint:', username);
         }
-        // If username is undefined or empty, don't include it in updates at all
-        // This prevents accidental null assignments that might violate constraints
 
         console.log('[PUT /api/users/:id] Received username param:', username);
         console.log('[PUT /api/users/:id] Username included in updates:', 'username' in updates);
