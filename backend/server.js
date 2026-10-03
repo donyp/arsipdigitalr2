@@ -4669,14 +4669,84 @@ app.post('/api/admin/recreate-admin-zona-users', authenticateToken, authorizeRol
 
 // PUT /api/users/:id â€” update user
 app.put('/api/users/:id', authenticateToken, async (req, res) => {
-    // Permission check: allow super_admin and moderator only
-    if (req.user.role !== 'super_admin' && req.user.role !== 'moderator') {
+    // Permission check: allow users to update their own profile, or super_admin/moderator to update anyone
+    const userId = req.params.id;
+    const isOwnProfile = req.user.userId === userId;
+    const isAdmin = req.user.role === 'super_admin' || req.user.role === 'moderator';
+    
+    if (!isOwnProfile && !isAdmin) {
         return res.status(403).json({ error: 'Akses ditolak' });
     }
     try {
         const userId = req.params.id;
         const { email, username, password, name, role, zona_id, toko_id, is_active, permissions } = req.body;
+        const isOwnProfile = req.user.userId === userId;
 
+        // For own profile update, only allow email/username changes
+        if (isOwnProfile) {
+            if (!email) {
+                return res.status(400).json({ error: 'Email wajib diisi.' });
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email.toLowerCase().trim())) {
+                return res.status(400).json({ error: 'Format email tidak valid.' });
+            }
+
+            const updates = {
+                email: email.toLowerCase().trim()
+            };
+
+            // Username update (optional)
+            if (username !== undefined && username !== null && username !== '') {
+                const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+                if (!usernameRegex.test(username)) {
+                    return res.status(400).json({ error: 'Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.' });
+                }
+                
+                const trimmedUsername = username.toLowerCase().trim();
+                
+                // Check if username already used by another user
+                try {
+                    const { data: existingUsername } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('username', trimmedUsername)
+                        .neq('id', userId)
+                        .single();
+                    
+                    if (existingUsername) {
+                        return res.status(400).json({ error: 'Username sudah digunakan user lain.' });
+                    }
+                } catch (err) {
+                    if (err.code !== 'PGRST116') {
+                        console.error('Username check error:', err);
+                        throw err;
+                    }
+                }
+                
+                updates.username = trimmedUsername;
+            }
+
+            console.log('[PUT /api/users/:id] Own profile update for user', userId, 'with:', JSON.stringify(updates));
+            
+            let { data, error } = await supabase
+                .from('users')
+                .update(updates)
+                .eq('id', userId)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('[PUT /api/users/:id] Supabase error:', error.message);
+                throw new Error(error.message || 'Database error');
+            }
+
+            res.json({ success: true, user: data });
+            return;
+        }
+
+        // Admin-level user updates (can change everything)
         // Basic validation
         if (!email || !name || !role) {
             return res.status(400).json({ error: 'Email, nama, dan role wajib diisi.' });
@@ -4736,9 +4806,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
         }
         // If username is undefined or empty, don't include it in updates
 
-        console.log('[PUT /api/users/:id] Received username param:', username);
-        console.log('[PUT /api/users/:id] Username included in updates:', 'username' in updates);
-        console.log('[PUT /api/users/:id] Updating user', userId, 'with:', JSON.stringify(updates));
+        console.log('[PUT /api/users/:id] Admin update for user', userId, 'with:', JSON.stringify(updates));
 
         // Re-hash password if provided
         try {

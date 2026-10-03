@@ -4128,10 +4128,8 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        email: newEmail,
-                        username: newUsername,
-                        name: currentUserData.name,
-                        role: currentUserData.role
+                        email: newEmail || currentUserData.email,
+                        username: newUsername
                     })
                 });
 
