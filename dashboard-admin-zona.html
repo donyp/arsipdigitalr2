@@ -806,6 +806,70 @@
             color: var(--color-accent);
         }
 
+        /* Custom Notification */
+        .custom-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            max-width: 500px;
+            padding: 16px 24px;
+            background: var(--color-bg-secondary);
+            border-left: 4px solid #22c55e;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            font-size: 14px;
+            color: var(--color-text-primary);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            z-index: 10000;
+        }
+
+        .custom-notification.show {
+            display: block;
+        }
+
+        .custom-notification.success {
+            border-left-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .custom-notification.error {
+            border-left-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .custom-notification.warning {
+            border-left-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        .custom-notification.hide {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -1572,6 +1636,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Custom Notification Container -->
+    <div id="customNotification" class="custom-notification"></div>
 
     <!-- Sidebar (hidden for admin zona) -->
     <aside id="sidebar"></aside>
@@ -4072,6 +4139,21 @@
             }
         };
 
+        window.showNotification = function(message, type = 'success', duration = 3000) {
+            const notif = document.getElementById('customNotification');
+            notif.textContent = message;
+            notif.className = `custom-notification ${type} show`;
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    notif.classList.add('hide');
+                    setTimeout(() => {
+                        notif.classList.remove('show', 'hide');
+                    }, 300);
+                }, duration);
+            }
+        };
+
         window.closeProfileModal = function() {
             document.getElementById('profileModal').classList.remove('active');
         };
@@ -4196,34 +4278,34 @@
 
                 // Validation
                 if (!newEmail) {
-                    alert('Email tidak boleh kosong');
+                    window.showNotification('Email tidak boleh kosong', 'error');
                     return;
                 }
 
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(newEmail)) {
-                    alert('Format email tidak valid');
+                    window.showNotification('Format email tidak valid', 'error');
                     return;
                 }
 
                 if (newUsername) {
                     const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
                     if (!usernameRegex.test(newUsername)) {
-                        alert('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash');
+                        window.showNotification('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash', 'error');
                         return;
                     }
                 }
 
                 // Validate password if provided
                 if (newPassword && newPassword.length < 6) {
-                    alert('Password minimal 6 karakter');
+                    window.showNotification('Password minimal 6 karakter', 'error');
                     return;
                 }
 
                 // Get current user ID from stored data
                 const userId = currentUserData?.id;
                 if (!userId) {
-                    alert('User ID tidak ditemukan');
+                    window.showNotification('User ID tidak ditemukan', 'error');
                     return;
                 }
 
@@ -4264,14 +4346,14 @@
                 window.exitProfileEditMode();
 
                 // Show success message
-                alert('Profil berhasil diperbarui!');
+                window.showNotification('Profil berhasil diperbarui!', 'success');
 
                 // Restore button
                 document.getElementById('profileSaveBtn').innerHTML = originalText;
 
             } catch (error) {
                 console.error('Error saving profile:', error);
-                alert('Gagal menyimpan perubahan: ' + error.message);
+                window.showNotification('Gagal menyimpan perubahan: ' + error.message, 'error');
                 document.getElementById('profileSaveBtn').disabled = false;
                 document.getElementById('profileSaveBtn').innerHTML = '<i class="fas fa-check"></i>';
             }
