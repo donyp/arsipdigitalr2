@@ -760,11 +760,26 @@
             box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
 
-        .profile-password-input-wrapper {
+        .profile-password-display-wrapper {
             position: relative;
             display: flex;
             align-items: center;
             width: 100%;
+        }
+
+        .profile-password-display-wrapper .profile-info-value {
+            flex: 1;
+        }
+
+        .profile-password-input-wrapper {
+            position: relative;
+            display: none;
+            align-items: center;
+            width: 100%;
+        }
+
+        .profile-password-input-wrapper.active {
+            display: flex;
         }
 
         .profile-password-input-wrapper .profile-edit-input {
@@ -1503,10 +1518,15 @@
                             </div>
                             <div class="profile-info-content">
                                 <div class="profile-info-label">Password</div>
-                                <div class="profile-info-value" id="profilePassword">••••••••</div>
+                                <div class="profile-password-display-wrapper">
+                                    <div class="profile-info-value" id="profilePassword">••••••••</div>
+                                    <button type="button" class="profile-password-toggle" id="profilePasswordToggleDisplay" onclick="window.togglePasswordVisibility()">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                                 <div class="profile-password-input-wrapper profile-info-editable">
                                     <input type="password" id="profilePasswordEdit" class="profile-edit-input" placeholder="Biarkan kosong jika tidak ingin ubah">
-                                    <button type="button" class="profile-password-toggle" id="profilePasswordToggle" onclick="window.togglePasswordVisibility()">
+                                    <button type="button" class="profile-password-toggle" id="profilePasswordToggleEdit" onclick="window.togglePasswordVisibility()">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
@@ -4068,14 +4088,15 @@
 
         window.togglePasswordVisibility = function() {
             const passwordInput = document.getElementById('profilePasswordEdit');
-            const toggleBtn = document.getElementById('profilePasswordToggle');
+            const toggleEditBtn = document.getElementById('profilePasswordToggleEdit');
+            const toggleDisplayBtn = document.getElementById('profilePasswordToggleDisplay');
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
             } else {
                 passwordInput.type = 'password';
-                toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye"></i>';
             }
         };
 
@@ -4131,7 +4152,12 @@
             
             // Reset password input type to password
             document.getElementById('profilePasswordEdit').type = 'password';
-            document.getElementById('profilePasswordToggle').innerHTML = '<i class="fas fa-eye"></i>';
+            const toggleEditBtn = document.getElementById('profilePasswordToggleEdit');
+            if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            
+            // Reset display button
+            const toggleDisplayBtn = document.getElementById('profilePasswordToggleDisplay');
+            if (toggleDisplayBtn) toggleDisplayBtn.innerHTML = '<i class="fas fa-eye"></i>';
 
             // Show edit button, hide cancel
             document.getElementById('profileEditBtn').style.display = 'flex';
