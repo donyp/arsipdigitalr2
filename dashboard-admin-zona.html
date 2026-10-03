@@ -3838,17 +3838,36 @@
 
         window.showProfileModal = async function() {
             try {
-                // Get current user data from auth
-                const user = JSON.parse(localStorage.getItem('user') || '{}');
-                
-                if (!user || !user.id) {
-                    console.error('User not found');
+                // Get token from localStorage
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    console.error('No authentication token found');
+                    alert('Silakan login terlebih dahulu');
                     return;
                 }
 
-                currentUserData = user;
-                
-                // Update profile card
+                // Fetch current user from API
+                const response = await fetch('/api/auth/me', {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Origin': window.location.origin
+                    }
+                });
+
+                if (!response.ok) {
+                    // Fallback: try to get user from localStorage
+                    const savedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                    if (!savedUser.id) {
+                        throw new Error('Failed to load user data');
+                    }
+                    currentUserData = savedUser;
+                } else {
+                    const userData = await response.json();
+                    currentUserData = userData.user || userData;
+                }
+
+                // Update profile card with current user data
+                const user = currentUserData;
                 const initial = (user.name || user.email || 'A').charAt(0).toUpperCase();
                 document.getElementById('profileAvatar').textContent = initial;
                 document.getElementById('profileName').textContent = user.name || 'User';
@@ -3858,17 +3877,26 @@
                 
                 // Get zona name
                 try {
-                    const zonaResponse = await fetch(`/api/zonas/${user.zona_id}`, {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                    });
-                    if (zonaResponse.ok) {
-                        const zonaData = await zonaResponse.json();
-                        document.getElementById('profileZona').textContent = zonaData.zona?.nama || `Zona #${user.zona_id}`;
+                    const zonaId = user.zona_id;
+                    if (zonaId) {
+                        const zonaResponse = await fetch(`/api/zonas/${zonaId}`, {
+                            headers: { 
+                                'Authorization': `Bearer ${token}`,
+                                'Origin': window.location.origin
+                            }
+                        });
+                        if (zonaResponse.ok) {
+                            const zonaData = await zonaResponse.json();
+                            document.getElementById('profileZona').textContent = zonaData.zona?.nama || `Zona #${zonaId}`;
+                        } else {
+                            document.getElementById('profileZona').textContent = `Zona #${zonaId}`;
+                        }
                     } else {
-                        document.getElementById('profileZona').textContent = `Zona #${user.zona_id}`;
+                        document.getElementById('profileZona').textContent = '-';
                     }
                 } catch (err) {
-                    document.getElementById('profileZona').textContent = `Zona #${user.zona_id}`;
+                    console.error('Error fetching zona:', err);
+                    document.getElementById('profileZona').textContent = user.zona_id ? `Zona #${user.zona_id}` : '-';
                 }
                 
                 // Format member since date
@@ -3885,7 +3913,7 @@
                 document.getElementById('profileModal').classList.add('active');
             } catch (error) {
                 console.error('Error loading profile:', error);
-                alert('Gagal memuat profil');
+                alert('Gagal memuat profil: ' + error.message);
             }
         };
 
