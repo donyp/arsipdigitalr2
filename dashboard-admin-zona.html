@@ -752,6 +752,37 @@
             box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
         }
 
+        .profile-password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .profile-password-input-wrapper .profile-edit-input {
+            padding-right: 36px;
+            width: 100%;
+        }
+
+        .profile-password-toggle {
+            position: absolute;
+            right: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            padding: 4px 6px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .profile-password-toggle:hover {
+            color: var(--color-accent);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -1465,7 +1496,12 @@
                             <div class="profile-info-content">
                                 <div class="profile-info-label">Password</div>
                                 <div class="profile-info-value" id="profilePassword">••••••••</div>
-                                <input type="password" id="profilePasswordEdit" class="profile-edit-input profile-info-editable" placeholder="Biarkan kosong jika tidak ingin ubah">
+                                <div class="profile-password-input-wrapper profile-info-editable">
+                                    <input type="password" id="profilePasswordEdit" class="profile-edit-input" placeholder="Biarkan kosong jika tidak ingin ubah">
+                                    <button type="button" class="profile-password-toggle" id="profilePasswordToggle" onclick="window.togglePasswordVisibility()">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -4022,6 +4058,19 @@
             }
         });
 
+        window.togglePasswordVisibility = function() {
+            const passwordInput = document.getElementById('profilePasswordEdit');
+            const toggleBtn = document.getElementById('profilePasswordToggle');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        };
+
         // Edit Mode Functions
         let profileEditMode = false;
         let profileOriginalData = {};
@@ -4040,7 +4089,7 @@
             document.getElementById('profilePassword').classList.add('hidden');
             document.getElementById('profileEmailEdit').classList.add('active');
             document.getElementById('profileUsernameEdit').classList.add('active');
-            document.getElementById('profilePasswordEdit').classList.add('active');
+            document.querySelector('.profile-password-input-wrapper').classList.add('active');
 
             // Set input values
             document.getElementById('profileEmailEdit').value = profileOriginalData.email;
@@ -4070,7 +4119,11 @@
             document.getElementById('profilePassword').classList.remove('hidden');
             document.getElementById('profileEmailEdit').classList.remove('active');
             document.getElementById('profileUsernameEdit').classList.remove('active');
-            document.getElementById('profilePasswordEdit').classList.remove('active');
+            document.querySelector('.profile-password-input-wrapper').classList.remove('active');
+            
+            // Reset password input type to password
+            document.getElementById('profilePasswordEdit').type = 'password';
+            document.getElementById('profilePasswordToggle').innerHTML = '<i class="fas fa-eye"></i>';
 
             // Show edit button, hide cancel
             document.getElementById('profileEditBtn').style.display = 'flex';
