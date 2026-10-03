@@ -487,8 +487,8 @@
         .profile-card {
             background: var(--color-bg-secondary);
             border-radius: 20px;
-            width: 85%;
-            max-width: 360px;
+            width: 90%;
+            max-width: 500px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             border: 1px solid var(--color-border);
             overflow: hidden;
@@ -510,7 +510,10 @@
         .profile-card-content {
             position: relative;
             z-index: 1;
-            padding: 30px 24px 24px;
+            padding: 20px 24px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
         }
 
         .profile-header {
@@ -518,30 +521,31 @@
             flex-direction: column;
             align-items: center;
             text-align: center;
-            margin-bottom: 18px;
+            flex-shrink: 0;
+            padding-top: 10px;
         }
 
         .profile-avatar {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
+            font-size: 36px;
             color: white;
             font-weight: 700;
             box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             border: 3px solid var(--color-bg-secondary);
         }
 
         .profile-name {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 800;
             color: var(--color-text-primary);
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             background: linear-gradient(135deg, var(--color-text-primary), var(--color-text-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -549,47 +553,47 @@
         }
 
         .profile-role {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.7px;
             color: #667eea;
             display: inline-block;
             background: rgba(102, 126, 234, 0.1);
-            padding: 3px 10px;
-            border-radius: 16px;
-            margin-bottom: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
         }
 
         .profile-divider {
-            height: 1px;
+            height: 100%;
+            width: 1px;
             background: var(--color-border);
-            margin: 16px 0;
+            margin: -20px 0;
         }
 
         .profile-info-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-bottom: 18px;
+            gap: 10px;
+            flex: 1;
         }
 
         .profile-info-item {
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
+            align-items: center;
+            gap: 8px;
         }
 
         .profile-info-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             background: rgba(102, 126, 234, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #667eea;
-            font-size: 14px;
+            font-size: 13px;
             flex-shrink: 0;
         }
 
@@ -598,64 +602,63 @@
         }
 
         .profile-info-label {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--color-text-secondary);
-            letter-spacing: 0.4px;
-            margin-bottom: 2px;
+            letter-spacing: 0.3px;
+            margin-bottom: 1px;
         }
 
         .profile-info-value {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--color-text-primary);
             font-weight: 600;
-            word-break: break-all;
+            word-break: break-word;
         }
 
         .profile-status {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
+            gap: 5px;
+            padding: 6px 10px;
             background: rgba(34, 197, 94, 0.1);
-            border-radius: 10px;
-            margin-bottom: 16px;
+            border-radius: 8px;
         }
 
         .profile-status-dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: #22c55e;
         }
 
         .profile-status-text {
-            font-size: 12px;
+            font-size: 11px;
             color: #22c55e;
             font-weight: 600;
         }
 
         .profile-actions {
             display: flex;
-            gap: 8px;
-            padding-top: 16px;
-            border-top: 1px solid var(--color-border);
+            gap: 6px;
+            flex-shrink: 0;
+            align-items: center;
         }
 
         .profile-btn {
-            flex: 1;
-            padding: 10px 14px;
+            padding: 8px 12px;
             border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 5px;
+            gap: 4px;
+            white-space: nowrap;
         }
 
         .profile-btn-close {
@@ -666,7 +669,7 @@
 
         .profile-btn-close:hover {
             background: var(--color-border);
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
 
         .profile-btn-copy {
@@ -676,7 +679,7 @@
         }
 
         .profile-btn-copy:hover {
-            transform: translateY(-2px);
+            transform: translateY(-1px);
             box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
         }
 
@@ -1341,74 +1344,76 @@
     <div id="profileModal" class="profile-modal-overlay" onclick="if(event.target===this)closeProfileModal()">
         <div class="profile-card">
             <div class="profile-card-content">
-                <!-- Header -->
+                <!-- Left: Avatar & Name -->
                 <div class="profile-header">
                     <div class="profile-avatar" id="profileAvatar">A</div>
-                    <h2 class="profile-name" id="profileName">Admin Zona</h2>
-                    <span class="profile-role" id="profileRole">Admin Zona</span>
-                </div>
-
-                <!-- Status -->
-                <div class="profile-status">
-                    <div class="profile-status-dot"></div>
-                    <span class="profile-status-text">Aktif</span>
+                    <h2 class="profile-name" id="profileName">Admin</h2>
+                    <span class="profile-role" id="profileRole">Admin</span>
                 </div>
 
                 <!-- Divider -->
                 <div class="profile-divider"></div>
 
-                <!-- Info Group -->
-                <div class="profile-info-group">
-                    <!-- Email -->
-                    <div class="profile-info-item">
-                        <div class="profile-info-icon">
-                            <i class="fas fa-envelope"></i>
-                        </div>
-                        <div class="profile-info-content">
-                            <div class="profile-info-label">Email</div>
-                            <div class="profile-info-value" id="profileEmail">loading...</div>
-                        </div>
+                <!-- Center: Info -->
+                <div style="flex: 1;">
+                    <!-- Status -->
+                    <div class="profile-status" style="margin-bottom: 12px;">
+                        <div class="profile-status-dot"></div>
+                        <span class="profile-status-text">Aktif</span>
                     </div>
 
-                    <!-- Username -->
-                    <div class="profile-info-item">
-                        <div class="profile-info-icon">
-                            <i class="fas fa-at"></i>
+                    <!-- Info Group -->
+                    <div class="profile-info-group">
+                        <!-- Email -->
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="profile-info-content">
+                                <div class="profile-info-label">Email</div>
+                                <div class="profile-info-value" id="profileEmail">loading...</div>
+                            </div>
                         </div>
-                        <div class="profile-info-content">
-                            <div class="profile-info-label">Username</div>
-                            <div class="profile-info-value" id="profileUsername">-</div>
-                        </div>
-                    </div>
 
-                    <!-- Zona -->
-                    <div class="profile-info-item">
-                        <div class="profile-info-icon">
-                            <i class="fas fa-map-marker-alt"></i>
+                        <!-- Username -->
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="fas fa-at"></i>
+                            </div>
+                            <div class="profile-info-content">
+                                <div class="profile-info-label">Username</div>
+                                <div class="profile-info-value" id="profileUsername">-</div>
+                            </div>
                         </div>
-                        <div class="profile-info-content">
-                            <div class="profile-info-label">Zona</div>
-                            <div class="profile-info-value" id="profileZona">loading...</div>
-                        </div>
-                    </div>
 
-                    <!-- Member Since -->
-                    <div class="profile-info-item">
-                        <div class="profile-info-icon">
-                            <i class="fas fa-calendar-alt"></i>
+                        <!-- Zona -->
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="profile-info-content">
+                                <div class="profile-info-label">Zona</div>
+                                <div class="profile-info-value" id="profileZona">loading...</div>
+                            </div>
                         </div>
-                        <div class="profile-info-content">
-                            <div class="profile-info-label">Member Since</div>
-                            <div class="profile-info-value" id="profileMemberSince">loading...</div>
+
+                        <!-- Member Since -->
+                        <div class="profile-info-item">
+                            <div class="profile-info-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="profile-info-content">
+                                <div class="profile-info-label">Member</div>
+                                <div class="profile-info-value" id="profileMemberSince">loading...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Actions -->
+                <!-- Right: Close Button -->
                 <div class="profile-actions">
                     <button class="profile-btn profile-btn-close" onclick="closeProfileModal()">
                         <i class="fas fa-times"></i>
-                        Close
                     </button>
                 </div>
             </div>
