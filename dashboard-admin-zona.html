@@ -3838,8 +3838,8 @@
 
         window.showProfileModal = async function() {
             try {
-                // Get token from localStorage
-                const token = localStorage.getItem('token');
+                // Get token from localStorage - using same key as api.js
+                const token = localStorage.getItem('jwt_token');
                 if (!token) {
                     console.error('No authentication token found');
                     alert('Silakan login terlebih dahulu');
@@ -3850,24 +3850,19 @@
                 const response = await fetch('/api/auth/me', {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
-                        'Origin': window.location.origin
+                        'Content-Type': 'application/json'
                     }
                 });
 
                 if (!response.ok) {
-                    // Fallback: try to get user from localStorage
-                    const savedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                    if (!savedUser.id) {
-                        throw new Error('Failed to load user data');
-                    }
-                    currentUserData = savedUser;
-                } else {
-                    const userData = await response.json();
-                    currentUserData = userData.user || userData;
+                    throw new Error('Failed to load user data');
                 }
 
-                // Update profile card with current user data
+                const userData = await response.json();
+                currentUserData = userData.user || userData;
                 const user = currentUserData;
+
+                // Update profile card with current user data
                 const initial = (user.name || user.email || 'A').charAt(0).toUpperCase();
                 document.getElementById('profileAvatar').textContent = initial;
                 document.getElementById('profileName').textContent = user.name || 'User';
@@ -3882,7 +3877,7 @@
                         const zonaResponse = await fetch(`/api/zonas/${zonaId}`, {
                             headers: { 
                                 'Authorization': `Bearer ${token}`,
-                                'Origin': window.location.origin
+                                'Content-Type': 'application/json'
                             }
                         });
                         if (zonaResponse.ok) {
