@@ -4063,15 +4063,27 @@
 
         window.showProfileModal = async function() {
             try {
-                // Get token from localStorage - using same key as api.js
+                // Get token from localStorage
                 const token = localStorage.getItem('jwt_token');
                 if (!token) {
                     console.error('No authentication token found');
-                    alert('Silakan login terlebih dahulu');
+                    window.showNotification('Silakan login terlebih dahulu', 'error');
                     return;
                 }
 
-                // Fetch current user from API
+                // Show modal immediately with loading state
+                document.getElementById('profileModal').classList.add('active');
+                
+                // Set loading placeholders
+                document.getElementById('profileAvatar').textContent = '...';
+                document.getElementById('profileName').textContent = 'Loading...';
+                document.getElementById('profileRole').textContent = 'Loading...';
+                document.getElementById('profileEmail').textContent = 'Loading...';
+                document.getElementById('profileUsername').textContent = 'Loading...';
+                document.getElementById('profileZona').textContent = 'Loading...';
+                document.getElementById('profileMemberSince').textContent = 'Loading...';
+
+                // Fetch current user from API (in background)
                 const response = await fetch('/api/auth/me', {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -4095,7 +4107,15 @@
                 document.getElementById('profileEmail').textContent = user.email || '-';
                 document.getElementById('profileUsername').textContent = user.username || '-';
                 
-                // Get zona name
+                // Format member since date
+                if (user.created_at) {
+                    const date = new Date(user.created_at);
+                    document.getElementById('profileMemberSince').textContent = date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+                } else {
+                    document.getElementById('profileMemberSince').textContent = '-';
+                }
+                
+                // Get zona name (non-blocking)
                 try {
                     const zonaId = user.zona_id;
                     if (zonaId) {
@@ -4107,8 +4127,7 @@
                         });
                         if (zonaResponse.ok) {
                             const zonaData = await zonaResponse.json();
-                            // Handle both .zona.nama and .data.nama structures
-                            const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona #${zonaId}`;
+                            const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona ${zonaId}`;
                             document.getElementById('profileZona').textContent = zonaNama;
                         } else {
                             document.getElementById('profileZona').textContent = `Zona ${zonaId}`;
@@ -4121,21 +4140,9 @@
                     document.getElementById('profileZona').textContent = user.zona_id ? `Zona ${user.zona_id}` : '-';
                 }
                 
-                // Format member since date
-                const createdAt = user.created_at || new Date().toISOString();
-                const date = new Date(createdAt);
-                const formattedDate = date.toLocaleDateString('id-ID', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                });
-                document.getElementById('profileMemberSince').textContent = formattedDate;
-                
-                // Show modal
-                document.getElementById('profileModal').classList.add('active');
             } catch (error) {
                 console.error('Error loading profile:', error);
-                alert('Gagal memuat profil: ' + error.message);
+                window.showNotification('Gagal memuat profil: ' + error.message, 'error');
             }
         };
 
