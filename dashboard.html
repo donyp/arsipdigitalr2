@@ -3359,6 +3359,17 @@
                 return;
             }
             
+            // Disable sort headers while loading
+            const thStatus = document.getElementById('th-status');
+            const thTanggal = document.getElementById('th-tanggal');
+            const thTotal = document.getElementById('th-total');
+            const sortHeaders = [thStatus, thTanggal, thTotal].filter(h => h);
+            sortHeaders.forEach(header => {
+                header.style.opacity = '0.5';
+                header.style.cursor = 'wait';
+                header.style.pointerEvents = 'none';
+            });
+            
             // Get all filter values
             const filterSearch = document.getElementById('filterSearch')?.value || '';
             const filterStatus = document.getElementById('filterStatus')?.value || '';
@@ -3461,10 +3472,22 @@
                         });
                     } else {
                         console.error('Failed to fetch filtered data for sort');
+                        // Re-enable headers on error
+                        sortHeaders.forEach(header => {
+                            header.style.opacity = '1';
+                            header.style.cursor = 'pointer';
+                            header.style.pointerEvents = 'auto';
+                        });
                         return;
                     }
                 } catch (err) {
                     console.error('Error fetching filtered data for sort:', err);
+                    // Re-enable headers on error
+                    sortHeaders.forEach(header => {
+                        header.style.opacity = '1';
+                        header.style.cursor = 'pointer';
+                        header.style.pointerEvents = 'auto';
+                    });
                     return;
                 }
             } else {
@@ -3530,6 +3553,13 @@
             
             // Update sort indicators
             updateSortIndicators(field);
+            
+            // Re-enable sort headers after sort complete
+            sortHeaders.forEach(header => {
+                header.style.opacity = '1';
+                header.style.cursor = 'pointer';
+                header.style.pointerEvents = 'auto';
+            });
             
             console.log('=== Sort complete ===');
         }
