@@ -160,9 +160,9 @@ async function compressWithZlib(inputBuffer, targetSize, documentType) {
             const ratio = compressed.length / inputBuffer.length;
             console.log(`[PDFCompress] Zlib: ${(compressed.length / 1024 / 1024).toFixed(2)} MB (ratio: ${ratio.toFixed(2)}x)`);
 
-            // Relaxed threshold: accept any compression >= 2% for PDFs
-            // PDFs are already compressed, small reductions are still valuable
-            if (ratio < 0.98) {
+            // Threshold: accept compression >= 20% for PDFs
+            // PDFs are already compressed, but 20% savings is still achievable with lossless zlib
+            if (ratio < 0.80) {
                 resolve({
                     success: true,
                     buffer: compressed,
@@ -174,7 +174,7 @@ async function compressWithZlib(inputBuffer, targetSize, documentType) {
                     isDeflated: true
                 });
             } else {
-                reject(new Error('Zlib compression not effective (< 2%)'));
+                reject(new Error('Zlib compression not effective (< 20%)'));
             }
         });
     });
