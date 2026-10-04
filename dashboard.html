@@ -3339,13 +3339,20 @@
         // ============================================================
         // SORTING FUNCTIONALITY FOR MODERATOR DASHBOARD
         // ============================================================
-        let currentSortField = null;
-        let sortDirection = {}; // { field: 'asc' or 'desc' }
+        // Use window object to prevent re-declaration on SPA page navigation
+        if (!window.sortTableState) {
+            window.sortTableState = {
+                currentSortField: null,
+                sortDirection: {}
+            };
+        }
+        
+        const sortTableState = window.sortTableState;
         
         function sortTable(field) {
             console.log('=== sortTable called ===');
             console.log('field:', field);
-            console.log('currentSortField before:', currentSortField);
+            console.log('currentSortField before:', sortTableState.currentSortField);
             
             const invoiceTableBody = document.getElementById('invoiceTableBody');
             if (!invoiceTableBody) {
@@ -3354,12 +3361,12 @@
             }
             
             // Toggle direction for same field
-            if (currentSortField === field) {
-                sortDirection[field] = sortDirection[field] === 'asc' ? 'desc' : 'asc';
-                console.log('Same field - toggling direction to:', sortDirection[field]);
+            if (sortTableState.currentSortField === field) {
+                sortTableState.sortDirection[field] = sortTableState.sortDirection[field] === 'asc' ? 'desc' : 'asc';
+                console.log('Same field - toggling direction to:', sortTableState.sortDirection[field]);
             } else {
-                sortDirection[field] = 'asc';
-                currentSortField = field;
+                sortTableState.sortDirection[field] = 'asc';
+                sortTableState.currentSortField = field;
                 console.log('New field - set direction to asc, currentSortField to:', field);
             }
             
@@ -3413,7 +3420,7 @@
                     bValue = parseFloat(bNumStr.replace(/\./g, '').replace(',', '.')) || 0;
                 }
                 
-                if (sortDirection[field] === 'asc') {
+                if (sortTableState.sortDirection[field] === 'asc') {
                     return aValue > bValue ? 1 : -1;
                 } else {
                     return aValue < bValue ? 1 : -1;
@@ -3445,13 +3452,13 @@
             // Update active indicator
             if (sortedField === 'status' && statusHeader) {
                 statusHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                statusHeader.classList.add(sortDirection['status'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                statusHeader.classList.add(sortTableState.sortDirection['status'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             } else if (sortedField === 'tanggal' && tanggalHeader) {
                 tanggalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                tanggalHeader.classList.add(sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                tanggalHeader.classList.add(sortTableState.sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             } else if (sortedField === 'total' && totalHeader) {
                 totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                totalHeader.classList.add(sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                totalHeader.classList.add(sortTableState.sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             }
         }
     </script>
