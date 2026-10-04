@@ -593,6 +593,7 @@
         }
     </style>
 </head>
+<script src="js/notification-system.js"></script>
 <body>
     <!-- Apply dark mode if enabled -->
     <script>
@@ -1137,7 +1138,7 @@
                 const message = document.getElementById('replyMessage').value.trim();
                 
                 if (!message) {
-                    alert('Pesan tidak boleh kosong');
+                    Notify.error('Pesan tidak boleh kosong');
                     return;
                 }
 

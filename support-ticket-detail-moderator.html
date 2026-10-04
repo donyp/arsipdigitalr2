@@ -681,6 +681,7 @@
         }
     </style>
 </head>
+<script src="js/notification-system.js"></script>
 <body>
     <!-- Apply dark mode if enabled -->
     <script>
@@ -1070,7 +1071,7 @@
                 ticketData.status = newStatus;
                 
                 // Show success message
-                alert('Status tiket berhasil diperbarui');
+                Notify.success('Status tiket berhasil diperbarui');
                 
                 // If status changed to Resolved or Closed, redirect to dashboard after 2 seconds
                 if (['Resolved', 'Closed'].includes(newStatus)) {
@@ -1079,7 +1080,7 @@
                     }, 1500);
                 }
             } catch (error) {
-                alert('Error: ' + error.message);
+                Notify.error('Error: ' + error.message);
                 // Revert dropdown
                 await loadTicketDetail();
             }
@@ -1133,7 +1134,7 @@
                 const message = document.getElementById('replyMessage').value.trim();
                 
                 if (!message) {
-                    alert('Pesan tidak boleh kosong');
+                    Notify.error('Pesan tidak boleh kosong');
                     return;
                 }
 

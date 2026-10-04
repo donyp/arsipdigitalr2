@@ -395,6 +395,7 @@
         }
     </style>
 </head>
+<script src="js/notification-system.js"></script>
 <body class="bg-gray-50">
     <!-- Apply dark mode if enabled -->
     <script>
@@ -734,11 +735,7 @@
 
             document.getElementById('btnUpload').addEventListener('click', async () => {
                 if (selectedFiles.length === 0) {
-                    if (typeof Toast !== 'undefined') {
-                        Toast.error('Pilih file terlebih dahulu');
-                    } else {
-                        alert('Pilih file terlebih dahulu');
-                    }
+                    Notify.error('Pilih file terlebih dahulu');
                     return;
                 }
 
@@ -768,18 +765,10 @@
 
                     }
 
-                    if (typeof Toast !== 'undefined') {
-                        Toast.success('✅ Bukti Bayar berhasil diupload!');
-                    } else {
-                        alert('✅ Bukti Bayar berhasil diupload!');
-                    }
+                    Notify.success('✅ Bukti Bayar berhasil diupload!');
                     window.resetUpload();
                 } catch (error) {
-                    if (typeof Toast !== 'undefined') {
-                        Toast.error('❌ Upload gagal: ' + error.message);
-                    } else {
-                        alert('❌ Upload gagal: ' + error.message);
-                    }
+                    Notify.error('❌ Upload gagal: ' + error.message);
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalText;

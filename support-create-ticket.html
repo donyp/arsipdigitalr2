@@ -758,6 +758,7 @@
         }
     </style>
 </head>
+<script src="js/notification-system.js"></script>
 <body>
     <!-- Apply dark mode if enabled -->
     <script>
@@ -1078,7 +1079,7 @@
                 const priority = document.getElementById('formPriority').value;
 
                 if (!subject || !description || !category) {
-                    alert('Silakan isi semua field yang diperlukan');
+                    Notify.error('Silakan isi semua field yang diperlukan');
                     return;
                 }
 
@@ -1086,7 +1087,7 @@
                 const zonaId = currentUser.zona_id;
                 
                 if (!zonaId) {
-                    alert('Error: Zona tidak ditemukan. Silakan logout dan login kembali.');
+                    Notify.error('Error: Zona tidak ditemukan. Silakan logout dan login kembali.');
                     return;
                 }
 
@@ -1128,7 +1129,7 @@
 
             } catch (error) {
                 document.getElementById('loadingOverlay').classList.remove('active');
-                alert(`Error: ${error.message}`);
+                Notify.error(`Error: ${error.message}`);
             }
         }
 

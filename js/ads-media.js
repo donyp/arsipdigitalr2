@@ -700,7 +700,7 @@ async function downloadMedia(id, filename) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     } catch (err) {
-        alert('Gagal mengunduh file. Silakan coba lagi.');
+        Notify.error('Gagal mengunduh file. Silakan coba lagi.');
     }
 }
 
