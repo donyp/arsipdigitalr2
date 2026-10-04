@@ -2387,40 +2387,6 @@
                                         <input type="hidden" id="filterKeterangan" value="">
                                     </div>
                                     
-                                    <!-- Status File filter - CUSTOM DROPDOWN (Uploaded/Pending/Missing) -->
-                                    <div style="display: flex; flex-direction: column;">
-                                        <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file text-blue-600"></i>Status File</label>
-                                        <div class="custom-dropdown" id="statusFileDropdown">
-                                            <button class="dropdown-trigger" onclick="toggleCustomDropdown(event, 'statusFileDropdown')">
-                                                <span class="dropdown-label">Semua</span>
-                                                <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                                                </svg>
-                                            </button>
-                                            <div class="dropdown-menu" style="display: none;">
-                                                <div class="dropdown-options">
-                                                    <div class="dropdown-option selected" onclick="selectOption(event, 'statusFileDropdown', '', 'Semua')">
-                                                        <span class="checkmark">✓</span>
-                                                        <span>Semua</span>
-                                                    </div>
-                                                    <div class="dropdown-option" onclick="selectOption(event, 'statusFileDropdown', 'uploaded', 'Lengkap (Uploaded)')">
-                                                        <span class="checkmark"></span>
-                                                        <span>✓ Lengkap (Uploaded)</span>
-                                                    </div>
-                                                    <div class="dropdown-option" onclick="selectOption(event, 'statusFileDropdown', 'pending', '⏳ Sebagian (Pending)')">
-                                                        <span class="checkmark"></span>
-                                                        <span>⏳ Sebagian (Pending)</span>
-                                                    </div>
-                                                    <div class="dropdown-option" onclick="selectOption(event, 'statusFileDropdown', 'missing', '✗ Kurang (Missing)')">
-                                                        <span class="checkmark"></span>
-                                                        <span>✗ Kurang (Missing)</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <input type="hidden" id="filterStatusFile" value="">
-                                    </div>
-                                    
                                     <!-- Toko filter - CUSTOM DROPDOWN -->
                                     <div style="display: flex; flex-direction: column;">
                                         <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><i class="fas fa-store text-blue-600"></i>Toko</label>
