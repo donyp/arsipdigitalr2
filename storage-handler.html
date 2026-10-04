@@ -1076,12 +1076,13 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    // Calculate storage quota usage
+                    // Calculate storage quota usage from API response
                     const usedBytes = parseFloat(data.stats.totalSize) || 0;
-                    const quotaBytes = 10 * 1024 * 1024 * 1024; // 10 GB default quota
+                    const quotaGB = data.stats.quotaGB || 10;
+                    const quotaBytes = quotaGB * 1024 * 1024 * 1024;
                     
                     const usedFormatted = formatFileSize(usedBytes);
-                    const quotaFormatted = formatFileSize(quotaBytes);
+                    const quotaFormatted = `${quotaGB} GB`;
                     const storageDisplay = `${usedFormatted} / ${quotaFormatted}`;
                     
                     const todayUpload = formatFileSize(parseFloat(data.stats.todayUploadSize) || 0);
@@ -1100,7 +1101,7 @@
                     document.getElementById('statTodayUsed').textContent = todayUsed;
                     document.getElementById('statTodayUsedCount').textContent = data.stats.todayChangesCount + ' changes';
                     
-                    console.log('[Stats] Used:', usedFormatted, '/ Total:', quotaFormatted, `(${usagePercent}%)`, '| Today Upload:', todayUpload, '| Today Used:', todayUsed);
+                    console.log('[Stats] Used:', usedFormatted, '/ Quota:', quotaFormatted, `(${usagePercent}%)`, '| Today Upload:', todayUpload, '| Today Used:', todayUsed);
                     document.getElementById('stats').style.display = 'grid';
                 }
             } catch (error) {

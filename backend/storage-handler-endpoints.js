@@ -870,6 +870,9 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                     totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
                     totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
                     
+                    // Storage quota info
+                    quotaGB: parseInt(process.env.STORAGE_QUOTA_GB || 10),
+                    
                     // Today's uploads - return raw bytes
                     todayUploadSize, // bytes
                     todayUploadCount,
