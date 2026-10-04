@@ -18,8 +18,7 @@ This snapshot captures the current state of all file operation endpoints before 
 4. **POST /api/invoice/upload-document** - Invoice supporting docs (Bukti Bayar / Faktur Pajak)
 5. **POST /api/invoice/upload-faktur-pajak** - Faktur Pajak upload
 6. **POST /api/files/upload-piutang** - Piutang upload
-7. **POST /api/ads-media/upload** - Media upload (500MB max)
-8. **POST /api/bugs/upload** - Bug report screenshot upload
+7. **POST /api/bugs/upload** - Bug report screenshot upload
 
 ### Download Endpoints (Current Implementation)
 1. **GET /api/files/download** - Download files by ID

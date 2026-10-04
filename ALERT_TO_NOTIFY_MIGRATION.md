@@ -299,9 +299,6 @@ Notify.confirm(
 - [ ] Line 774: Success → `Notify.success(...)`
 - [ ] Line 781: Error → `Notify.error(...)`
 
-#### js/ads-media.js (1 instance)
-- [ ] Line 703: Error → `Notify.error(...)`
-
 ### Low Priority Files (Skip)
 - localhost-dashboard.html (test file)
 - dashboard-admin-zona.backup.html (backup)

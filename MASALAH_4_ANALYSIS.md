@@ -8,8 +8,7 @@
 1. **POST /api/files/upload** - Generic file upload (100MB limit)
 2. **POST /api/files/upload-piutang** - PIUTANG invoice upload
 3. **POST /api/files/upload-chunked** - Chunked upload for large files
-4. **POST /api/ads-media/upload** - Media file upload
-5. **POST /api/bugs/upload** - Bug screenshot upload
+4. **POST /api/bugs/upload** - Bug screenshot upload
 
 #### File Types Handled
 | Type | Extension | Current Use |
@@ -173,8 +172,7 @@ const COMPRESSION_CONFIG = {
 **Upload flows to modify:**
 1. ✅ `/api/files/upload` - Generic file upload
 2. ✅ `/api/files/upload-piutang` - Invoice upload
-3. ✅ `/api/ads-media/upload` - Media files
-4. ⚠️ `/api/files/upload-chunked` - Already chunked, compression before chunking
+3. ⚠️ `/api/files/upload-chunked` - Already chunked, compression before chunking
 
 **Decompression flows:**
 1. Preview endpoint - Decompress on-the-fly
