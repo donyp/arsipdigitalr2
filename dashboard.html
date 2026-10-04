@@ -3430,8 +3430,11 @@
                     const token = localStorage.getItem('jwt_token') || localStorage.getItem('authToken');
                     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
                     
-                    const apiUrl = window.CONFIG?.API_URL || 'http://localhost:3000';
-                    const url = `${apiUrl}/api/invoice/list?${params.toString()}`;
+                    // Use relative URL (no protocol) to comply with CSP and work in both dev/prod
+                    // When deployed, this will use https://
+                    // In dev localhost, browser handles the protocol
+                    const baseUrl = window.CONFIG?.API_URL || window.location.origin;
+                    const url = `${baseUrl}/api/invoice/list?${params.toString()}`;
                     console.log('Fetching filtered data from:', url);
                     
                     const response = await fetch(url, {
@@ -3496,11 +3499,11 @@
             }
             
             // Set sort direction
-            if (sortTableState.currentSortField === field) {
-                sortTableState.sortDirection[field] = sortTableState.sortDirection[field] === 'asc' ? 'desc' : 'asc';
+            if (window.sortTableState.currentSortField === field) {
+                window.sortTableState.sortDirection[field] = window.sortTableState.sortDirection[field] === 'asc' ? 'desc' : 'asc';
             } else {
-                sortTableState.sortDirection[field] = 'asc';
-                sortTableState.currentSortField = field;
+                window.sortTableState.sortDirection[field] = 'asc';
+                window.sortTableState.currentSortField = field;
             }
             
             // Get all rows from table
@@ -3541,7 +3544,7 @@
                     bValue = parseFloat(bNumStr.replace(/\./g, '').replace(',', '.')) || 0;
                 }
                 
-                if (sortTableState.sortDirection[field] === 'asc') {
+                if (window.sortTableState.sortDirection[field] === 'asc') {
                     return aValue > bValue ? 1 : -1;
                 } else {
                     return aValue < bValue ? 1 : -1;
@@ -3580,13 +3583,13 @@
             // Update active indicator
             if (sortedField === 'status' && statusHeader) {
                 statusHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                statusHeader.classList.add(sortTableState.sortDirection['status'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                statusHeader.classList.add(window.sortTableState.sortDirection['status'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             } else if (sortedField === 'tanggal' && tanggalHeader) {
                 tanggalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                tanggalHeader.classList.add(sortTableState.sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                tanggalHeader.classList.add(window.sortTableState.sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             } else if (sortedField === 'total' && totalHeader) {
                 totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                totalHeader.classList.add(sortTableState.sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                totalHeader.classList.add(window.sortTableState.sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             }
         }
     </script>
