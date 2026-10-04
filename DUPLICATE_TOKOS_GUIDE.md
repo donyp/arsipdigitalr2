@@ -37,44 +37,37 @@ SELECT
     t.id,
     t.nama,
     t.zona_id,
-    COUNT(DISTINCT f.id) as file_count,
-    COUNT(DISTINCT i.id) as invoice_count
+    COUNT(DISTINCT f.id) as file_count
 FROM toko t
 LEFT JOIN files f ON f.toko_id = t.id
-LEFT JOIN invoices i ON i.toko_id = t.id
 WHERE t.nama = 'Dunia Baja Cibitung'
 GROUP BY t.id, t.nama, t.zona_id
 ORDER BY t.id;
 ```
 
 **PENTING:** 
-- Lihat mana yang punya MORE data (files + invoices)
-- **KEEP** = yang punya lebih banyak data
-- **DELETE** = yang punya data lebih sedikit
+- Lihat mana yang punya MORE file
+- **KEEP** = yang punya lebih banyak file
+- **DELETE** = yang punya file lebih sedikit (idealnya 0)
 
 Contoh:
-| id  | nama | zona_id | file_count | invoice_count |
-|-----|------|---------|-----------|--------------|
-| 123 | Dunia Baja Cibitung | 16 | 5 | 3 |  ← KEEP (8 total)
-| 456 | Dunia Baja Cibitung | 16 | 0 | 0 |  ← DELETE (0 total)
+| id  | nama | zona_id | file_count |
+|-----|------|---------|-----------|
+| 123 | Dunia Baja Cibitung | 16 | 5 |  ← KEEP (5 files)
+| 456 | Dunia Baja Cibitung | 16 | 0 |  ← DELETE (0 files)
 
 ---
 
-## LANGKAH 3: Merge Data (Pindahkan File & Invoice)
-Sebelum delete, pindahkan semua data dari duplikat ke yang asli:
+## LANGKAH 3: Merge Data (Pindahkan File)
+Sebelum delete, pindahkan semua file dari duplikat ke yang asli:
 
 ```sql
 BEGIN TRANSACTION;
 
--- Pindahkan files
+-- Pindahkan files dari toko yang akan dihapus ke toko yang dipertahankan
 UPDATE files 
-SET toko_id = 123   -- NEW_TOKO_ID (yang banyak data)
+SET toko_id = 123   -- NEW_TOKO_ID (yang banyak file)
 WHERE toko_id = 456; -- OLD_TOKO_ID (yang akan dihapus)
-
--- Pindahkan invoices
-UPDATE invoices 
-SET toko_id = 123   -- NEW_TOKO_ID
-WHERE toko_id = 456; -- OLD_TOKO_ID
 
 COMMIT;
 ```
@@ -97,6 +90,8 @@ GROUP BY toko_id;
 - toko_id 123: file_count = 5 (data sudah terakumulasi)
 - toko_id 456: file_count = 0 (kosong, siap delete)
 
+Jika toko_id 456 masih ada data (file_count > 0), jangan lanjut ke LANGKAH 5!
+
 ---
 
 ## LANGKAH 5: Delete Duplicate
@@ -116,15 +111,15 @@ SELECT COUNT(*) as remaining FROM toko WHERE id = 456;
 ## ✅ Setelah Semua Selesai
 
 1. Refresh halaman Manajemen > Toko
-2. Duplikat sudah hilang, data tetap tersimpan
-3. File dan invoice masih ada di toko yang dikebolekan
+2. Duplikat sudah hilang
+3. File tetap tersimpan di toko yang dikebolekan
 
 ---
 
 ## ⚠️ JANGAN LUPA!
 
 - ❌ Jangan langsung DELETE tanpa merge
-- ❌ Jangan hapus yang punya banyak data
+- ❌ Jangan hapus yang punya file
 - ✅ Selalu verify setiap step sebelum lanjut
 - ✅ Buat backup database jika kuatir
 
@@ -133,11 +128,24 @@ SELECT COUNT(*) as remaining FROM toko WHERE id = 456;
 ## Contoh Lengkap Duplikat yang Perlu Dihapus
 
 Dari screenshot, tokos yang duplicate:
-1. **Dunia Baja Cibitung** - Zona 16 (2x) → DELETE yang kosong
-2. **Dunia Baja Jangga** - Zona 15 (2x) → DELETE yang kosong
-3. **Dunia Baja Kalibabang** - Zona 15 (2x) → DELETE yang kosong
-4. **Dunia Baja Karyusutin** - Zona 15 (2x) → DELETE yang kosong
-5. **Dunia Baja Komren** - Zona 04 (2x) → DELETE yang kosong
+1. **Dunia Baja Cibitung** - Zona 16 (2x) → Cek mana yang kosong → DELETE yang kosong
+2. **Dunia Baja Jangga** - Zona 15 (2x) → Cek mana yang kosong → DELETE yang kosong
+3. **Dunia Baja Kalibabang** - Zona 15 (2x) → Cek mana yang kosong → DELETE yang kosong
+4. **Dunia Baja Karyusutin** - Zona 15 (2x) → Cek mana yang kosong → DELETE yang kosong
+5. **Dunia Baja Komren** - Zona 04 (2x) → Cek mana yang kosong → DELETE yang kosong
 
 **Ulangi langkah 1-5 untuk setiap duplicate!**
+
+---
+
+## Quick Reference
+
+| Langkah | Action | Query |
+|---------|--------|-------|
+| 1 | Identifikasi | `GROUP BY nama, zona_id HAVING COUNT(*) > 1` |
+| 2 | Audit | `LEFT JOIN files` - hitung yang banyak vs sedikit |
+| 3 | Merge | `UPDATE files SET toko_id = NEW WHERE toko_id = OLD` |
+| 4 | Verifikasi | Cek NEW punya semua file, OLD kosong |
+| 5 | Delete | `DELETE FROM toko WHERE id = OLD` |
+
 

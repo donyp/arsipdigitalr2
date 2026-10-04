@@ -24,11 +24,9 @@ SELECT
     t.id,
     t.nama,
     t.zona_id,
-    COUNT(DISTINCT f.id) as file_count,
-    COUNT(DISTINCT i.id) as invoice_count
+    COUNT(DISTINCT f.id) as file_count
 FROM toko t
 LEFT JOIN files f ON f.toko_id = t.id
-LEFT JOIN invoices i ON i.toko_id = t.id
 WHERE t.nama = 'Dunia Baja Cibitung'
 GROUP BY t.id, t.nama, t.zona_id
 ORDER BY t.id;
@@ -36,18 +34,13 @@ ORDER BY t.id;
 
 -- STEP 3: MERGE DATA - Update all references from old toko to new toko
 -- IMPORTANT: Replace:
---   - OLD_TOKO_ID with the duplicate you want to DELETE (fewer files/invoices)
---   - NEW_TOKO_ID with the one you want to KEEP (more files/invoices)
+--   - OLD_TOKO_ID with the duplicate you want to DELETE (fewer files)
+--   - NEW_TOKO_ID with the one you want to KEEP (more files)
 
 BEGIN TRANSACTION;
 
 -- Move files from old toko to new toko
 UPDATE files 
-SET toko_id = NEW_TOKO_ID 
-WHERE toko_id = OLD_TOKO_ID;
-
--- Move invoices from old toko to new toko
-UPDATE invoices 
 SET toko_id = NEW_TOKO_ID 
 WHERE toko_id = OLD_TOKO_ID;
 
@@ -71,4 +64,5 @@ WHERE id = OLD_TOKO_ID;
 
 -- VERIFY DELETE
 SELECT COUNT(*) as remaining_tokos FROM toko WHERE id = OLD_TOKO_ID;
+
 

@@ -2,1682 +2,1072 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audit Logs Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/SheetJS/0.20.0/xlsx.full.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.9/dist/flatpickr.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.9/dist/flatpickr.min.js"></script>
+    <title>Audit Logs - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #3b82f6;
-            --primary-dark: #1e40af;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --success: #10b981;
-            --info: #06b6d4;
-            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-        
         * {
-            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        
-        /* Light mode (default) */
+
         body {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-            color: #111827;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 20px;
         }
-        
-        /* Dark mode */
-        html[data-dark-mode="true"] body {
-            background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
-            color: #f0f4f8;
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
         }
-        
-        /* Navbar Enhancement */
-        nav {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-        
-        html[data-dark-mode="true"] nav {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
-            border-color: #334155 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        html[data-dark-mode="true"] .bg-white {
-            background-color: #1e293b !important;
-            color: #f0f4f8 !important;
-        }
-        
-        /* Stats Cards - Modern Design */
-        .stats-card {
+
+        .header {
             background: white;
-            border-radius: 0.875rem;
-            padding: 1.5rem;
-            border: 1px solid #e5e7eb;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
         }
-        
-        .stats-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
-            background-size: 200% 100%;
-        }
-        
-        .stats-card:hover {
-            transform: translateY(-4px);
-            border-color: #d1d5db;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-        }
-        
-        .stats-value {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-top: 0.5rem;
-        }
-        
-        .stats-label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #6b7280;
-            letter-spacing: 0.025em;
-            text-transform: uppercase;
-        }
-        
-        html[data-dark-mode="true"] .stats-card {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-color: #334155;
-        }
-        
-        html[data-dark-mode="true"] .stats-card:hover {
-            border-color: #475569;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
-        }
-        
-        html[data-dark-mode="true"] .stats-label {
-            color: #cbd5e1;
-        }
-        
-        
-        /* Filter Section - Modern Design */
-        .filter-section {
-            background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-            border-radius: 0.875rem;
-            border: 1px solid #e5e7eb;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            backdrop-filter: blur(10px);
-        }
-        
-        html[data-dark-mode="true"] .filter-section {
-            background: linear-gradient(135deg, #1e293b, #0f172a) !important;
-            border-color: #334155 !important;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-        
-        .filter-section h3 {
-            font-size: 1rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
+
+        .header h1 {
+            color: #333;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            color: #1f2937;
+            gap: 12px;
+            margin-bottom: 15px;
         }
-        
-        html[data-dark-mode="true"] .filter-section h3 {
-            color: #f0f4f8 !important;
+
+        .header h1 i {
+            color: #667eea;
+            font-size: 28px;
         }
-        
-        /* Input/Select Enhancement */
-        input, select {
-            border-radius: 0.625rem;
-            border: 1px solid #d1d5db;
-            padding: 0.625rem 1rem;
-            font-size: 0.875rem;
-            background-color: white;
-            color: #111827;
-            transition: all 0.2s ease;
+
+        .header p {
+            color: #666;
+            font-size: 14px;
         }
-        
-        input:focus, select:focus {
+
+        .filters {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .filters h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #667eea;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-        
-        html[data-dark-mode="true"] input,
-        html[data-dark-mode="true"] select {
-            background-color: #0f172a !important;
-            color: #f0f4f8 !important;
-            border-color: #334155 !important;
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
-        
-        html[data-dark-mode="true"] input:focus,
-        html[data-dark-mode="true"] select:focus {
-            border-color: #818cf8 !important;
-            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1) !important;
-        }
-        
-        /* Button Enhancement */
-        button {
-            border-radius: 0.625rem;
-            padding: 0.625rem 1rem;
-            font-size: 0.875rem;
-            font-weight: 600;
+
+        .btn {
+            padding: 10px 16px;
             border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
-        button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        }
-        
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        #applyFilters {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+        .btn-primary {
+            background: #667eea;
             color: white;
         }
-        
-        #clearFilters {
-            background: #f3f4f6;
-            color: #374151;
-            border: 1px solid #d1d5db;
+
+        .btn-primary:hover {
+            background: #5568d3;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
-        
-        #exportCsv {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e8e8e8;
+        }
+
+        .btn-danger {
+            background: #ff4757;
             color: white;
         }
-        
-        #autoRefreshToggle {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+
+        .btn-danger:hover {
+            background: #ff3838;
+        }
+
+        .btn-success {
+            background: #2ed573;
             color: white;
         }
-        
-        #refreshNow {
-            background: #6b7280;
-            color: white;
+
+        .btn-success:hover {
+            background: #26d063;
         }
-        
-        html[data-dark-mode="true"] #clearFilters {
-            background: #334155;
-            color: #f0f4f8;
-            border-color: #475569;
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
         }
-        
-        /* Table Enhancement - Modern Design */
-        .table-container {
+
+        .stat-card {
             background: white;
-            border-radius: 0.875rem;
-            border: 1px solid #e5e7eb;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+        }
+
+        .stat-card.info {
+            border-left-color: #667eea;
+        }
+
+        .stat-card.warning {
+            border-left-color: #ffa502;
+        }
+
+        .stat-card.critical {
+            border-left-color: #ff4757;
+        }
+
+        .stat-card.success {
+            border-left-color: #2ed573;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-subtext {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .logs-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            backdrop-filter: blur(10px);
         }
-        
-        html[data-dark-mode="true"] .table-container {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-color: #334155;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+
+        .logs-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        
-        table {
+
+        .logs-header h3 {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .logs-count {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .logs-table {
             width: 100%;
             border-collapse: collapse;
         }
-        
-        thead {
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-            border-bottom: 2px solid #e5e7eb;
+
+        .logs-table thead {
+            background: #f8f9fa;
         }
-        
-        html[data-dark-mode="true"] thead {
-            background: linear-gradient(135deg, #1e293b, #0f172a) !important;
-            border-color: #334155 !important;
-        }
-        
-        th {
-            padding: 1rem;
+
+        .logs-table th {
+            padding: 15px;
             text-align: left;
-            font-size: 0.875rem;
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: 0.025em;
+            color: #666;
             text-transform: uppercase;
-            color: #6b7280;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e0e0e0;
         }
-        
-        html[data-dark-mode="true"] th {
-            color: #cbd5e1 !important;
+
+        .logs-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background 0.2s ease;
         }
-        
-        tbody tr {
-            border-bottom: 1px solid #f3f4f6;
-            transition: all 0.2s ease;
+
+        .logs-table tbody tr:hover {
+            background: #f8f9fa;
         }
-        
-        html[data-dark-mode="true"] tbody tr {
-            border-color: #334155 !important;
+
+        .logs-table tbody td {
+            padding: 15px;
+            font-size: 13px;
+            color: #555;
         }
-        
-        tbody tr:hover {
-            background-color: #f9fafb;
-        }
-        
-        html[data-dark-mode="true"] tbody tr:hover {
-            background-color: #334155 !important;
-        }
-        
-        td {
-            padding: 1rem;
-            color: #374151;
-        }
-        
-        html[data-dark-mode="true"] td {
-            color: #e2e8f0 !important;
-        }
-        
-        .table-row-suspicious {
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0.05), transparent);
-            border-left: 4px solid #ef4444;
-        }
-        
-        html[data-dark-mode="true"] .table-row-suspicious {
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent);
-            border-color: #ef4444;
-        }
-        
-        
+
         .badge {
             display: inline-block;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.5rem;
-            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        
-        .badge:hover {
-            transform: scale(1.05);
+
+        .badge.info {
+            background: #e8eef7;
+            color: #667eea;
         }
-        
-        .badge-info { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
-        .badge-warning { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
-        .badge-critical { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }
-        .badge-success { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; }
-        
-        html[data-dark-mode="true"] .badge-info { background: linear-gradient(135deg, #1e3a8a, #1e40af); color: #93c5fd; }
-        html[data-dark-mode="true"] .badge-warning { background: linear-gradient(135deg, #78350f, #92400e); color: #fcd34d; }
-        html[data-dark-mode="true"] .badge-critical { background: linear-gradient(135deg, #7f1d1d, #991b1b); color: #fca5a5; }
-        html[data-dark-mode="true"] .badge-success { background: linear-gradient(135deg, #064e3b, #166534); color: #86efac; }
-        
+
+        .badge.warning {
+            background: #fff5e6;
+            color: #ffa502;
+        }
+
+        .badge.critical {
+            background: #ffe6e6;
+            color: #ff4757;
+        }
+
+        .badge.success {
+            background: #e6f7f1;
+            color: #2ed573;
+        }
+
         .operation-badge {
             display: inline-block;
-            padding: 0.375rem 0.625rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            backdrop-filter: blur(10px);
-            transition: all 0.2s ease;
-        }
-        
-        .operation-badge:hover {
-            transform: scale(1.08) rotate(1deg);
-        }
-        
-        .op-create { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #166534; }
-        .op-read { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
-        .op-update { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
-        .op-delete { background: linear-gradient(135deg, #fee2e2, #fecaca); color: #991b1b; }
-        .op-download { background: linear-gradient(135deg, #f3e8ff, #e9d5ff); color: #6b21a8; }
-        
-        html[data-dark-mode="true"] .op-create { background: linear-gradient(135deg, #064e3b, #166534); color: #86efac; }
-        html[data-dark-mode="true"] .op-read { background: linear-gradient(135deg, #1e3a8a, #1e40af); color: #93c5fd; }
-        html[data-dark-mode="true"] .op-update { background: linear-gradient(135deg, #78350f, #92400e); color: #fcd34d; }
-        html[data-dark-mode="true"] .op-delete { background: linear-gradient(135deg, #7f1d1d, #991b1b); color: #fca5a5; }
-        html[data-dark-mode="true"] .op-download { background: linear-gradient(135deg, #5b21b6, #6b21a8); color: #e9d5ff; }
-        
-        /* Pagination Enhancement */
-        .pagination-footer {
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-            border-top: 1px solid #e5e7eb;
-            padding: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        html[data-dark-mode="true"] .pagination-footer {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-color: #334155;
-        }
-        
-        .pagination-info {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #6b7280;
-        }
-        
-        html[data-dark-mode="true"] .pagination-info {
-            color: #cbd5e1;
-        }
-        
-        #prevPage, #nextPage {
-            background: white;
-            border: 1px solid #d1d5db;
-            color: #374151;
-            padding: 0.625rem 1.25rem;
-        }
-        
-        #prevPage:hover:not(:disabled), #nextPage:hover:not(:disabled) {
-            background: #f3f4f6;
-            border-color: #9ca3af;
-        }
-        
-        html[data-dark-mode="true"] #prevPage,
-        html[data-dark-mode="true"] #nextPage {
-            background: #334155;
-            border-color: #475569;
-            color: #f0f4f8;
-        }
-        
-        html[data-dark-mode="true"] #prevPage:hover:not(:disabled),
-        html[data-dark-mode="true"] #nextPage:hover:not(:disabled) {
-            background: #475569;
-            border-color: #64748b;
-        }
-        
-        /* Empty State */
-        #emptyState {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 80px;
             text-align: center;
-            padding: 3rem 2rem;
-            background: white;
-            border-radius: 0.875rem;
-            border: 2px dashed #e5e7eb;
-            margin-top: 2rem;
         }
-        
-        html[data-dark-mode="true"] #emptyState {
-            background: linear-gradient(135deg, #1e293b, #0f172a);
-            border-color: #334155;
+
+        .op-create {
+            background: #e6f7f1;
+            color: #2ed573;
         }
-        
-        #emptyState .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        #emptyState .empty-text {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #6b7280;
-            margin-top: 1rem;
-        }
-        
-        html[data-dark-mode="true"] #emptyState .empty-text {
-            color: #cbd5e1;
-        }
-        
-        /* Action Bar */
-        .action-bar {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-        
-        .action-bar button {
-            flex: 1;
-            min-width: 150px;
-        }
-        
-        @media (max-width: 768px) {
-            .action-bar {
-                flex-direction: column;
-            }
-            
-            .action-bar button {
-                width: 100%;
-            }
-        }
-        
-        /* Skeleton Loader Animation */
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 2s infinite;
-            border-radius: 0.375rem;
-            height: 1.5rem;
-        }
-        
-        html[data-dark-mode="true"] .skeleton {
-            background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
-        }
-        
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
-        /* Sticky Header */
-        .sticky-header {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-        }
-        
-        html[data-dark-mode="true"] .sticky-header {
-            background: linear-gradient(135deg, #1e293b, #0f172a) !important;
-        }
-        
-        /* Detail Button */
-        .btn-view-detail {
+
+        .op-read {
+            background: #e8eef7;
             color: #667eea;
+        }
+
+        .op-update {
+            background: #fff5e6;
+            color: #ffa502;
+        }
+
+        .op-delete {
+            background: #ffe6e6;
+            color: #ff4757;
+        }
+
+        .op-download {
+            background: #e8eef7;
+            color: #667eea;
+        }
+
+        .action-link {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: none;
             font-weight: 600;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            transition: all 0.2s ease;
+            transition: color 0.2s ease;
         }
-        
-        .btn-view-detail:hover {
-            background: rgba(102, 126, 234, 0.1);
-            transform: translateX(2px);
+
+        .action-link:hover {
+            color: #5568d3;
+            text-decoration: underline;
         }
-        
-        html[data-dark-mode="true"] .btn-view-detail {
-            color: #818cf8;
-        }
-        
-        html[data-dark-mode="true"] .btn-view-detail:hover {
-            background: rgba(129, 140, 248, 0.1);
-        }
-        
+
         .modal {
             display: none;
             position: fixed;
-            z-index: 50;
-            left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0);
-            backdrop-filter: blur(0px);
-            transition: all 0.3s ease;
-        }
-        
-        .modal.active {
-            display: flex;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
-            background-color: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
         }
-        
+
+        .modal.active {
+            display: flex;
+        }
+
         .modal-content {
             background: white;
-            border-radius: 1rem;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 1px rgba(0, 0, 0, 0.1);
-            max-width: 850px;
-            width: 95%;
-            max-height: 85vh;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
             overflow-y: auto;
-            animation: slideUp 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
-        
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
+
         .modal-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 1.5rem;
-            border-radius: 1rem 1rem 0 0;
-            color: white;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 15px;
         }
-        
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
         .modal-body {
-            padding: 2rem;
-            background: white;
+            color: #555;
         }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .info-card {
-            background: #f8fafc;
-            border-radius: 0.75rem;
-            padding: 1rem;
-            border: 1px solid #e2e8f0;
-            transition: all 0.2s ease;
-        }
-        
-        .info-card:hover {
-            background: #eef2ff;
-            border-color: #c7d2fe;
-            transform: translateY(-2px);
-        }
-        
-        .info-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            color: #64748b;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
+
+        .detail-row {
             display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 12px;
         }
-        
-        .info-value {
-            font-size: 0.95rem;
-            color: #1e293b;
-            font-weight: 500;
+
+        .detail-label {
+            flex: 0 0 120px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            flex: 1;
+            color: #333;
+            font-size: 13px;
             word-break: break-word;
         }
-        
-        .info-value.mono {
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.85rem;
+
+        .detail-json {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            overflow-x: auto;
+            color: #555;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            padding: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
             background: white;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
-            border: 1px solid #e2e8f0;
-            color: #0f766e;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
         }
-        
-        .section-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-            margin: 2rem 0;
+
+        .pagination button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
         }
-        
-        .section-title {
-            font-size: 0.875rem;
-            font-weight: 700;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: #475569;
-            margin-bottom: 1rem;
-            padding-left: 0.5rem;
-            border-left: 3px solid #667eea;
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
-        
-        .comparison-grid {
+
+        .pagination .page-info {
+            font-size: 12px;
+            color: #999;
+            margin: 0 10px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .chart-title {
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .chart-bars {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
         }
-        
-        @media (max-width: 768px) {
-            .comparison-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
+
+        .chart-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        
-        .state-box {
-            background: #f8fafc;
-            border-radius: 0.75rem;
-            border: 1px solid #e2e8f0;
+
+        .bar-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: capitalize;
+        }
+
+        .bar {
+            height: 200px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            position: relative;
             overflow: hidden;
         }
-        
-        .state-header {
-            background: linear-gradient(90deg, #f1f5f9, #e2e8f0);
-            padding: 0.75rem 1rem;
-            font-weight: 600;
-            font-size: 0.875rem;
-            color: #334155;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .state-content {
-            padding: 1rem;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 0.8rem;
-            color: #1e293b;
-            max-height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        
-        .status-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-        
-        .status-error {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        }
-        
-        .status-warning {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        }
-        
-        .close-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            width: 2.5rem;
-            height: 2.5rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: 1.5rem;
+
+        .bar-fill {
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            border-radius: 6px;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
-            transition: all 0.2s ease;
-        }
-        
-        .close-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: rotate(90deg);
-        }
-        
-        html[data-dark-mode="true"] .modal-content {
-            background-color: #1e293b;
-            color: #f0f4f8;
-            border-color: #334155;
-        }
-        
-        html[data-dark-mode="true"] .modal-header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
             color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding-bottom: 5px;
         }
-        
-        html[data-dark-mode="true"] .modal-body {
-            background-color: #1e293b;
-            color: #f0f4f8;
-        }
-        
-        html[data-dark-mode="true"] .info-grid {
-            color: #f0f4f8;
-        }
-        
-        html[data-dark-mode="true"] .info-card {
-            background: #0f172a;
-            border-color: #334155;
-            color: #f0f4f8;
-        }
-        
-        html[data-dark-mode="true"] .info-card:hover {
-            background: #1e3a8a;
-            border-color: #475569;
-            color: #f0f4f8;
-        }
-        
-        html[data-dark-mode="true"] .info-label {
-            color: #cbd5e1;
-        }
-        
-        html[data-dark-mode="true"] .info-value {
-            color: #e2e8f0;
-        }
-        
-        html[data-dark-mode="true"] .info-value.mono {
-            background: #0f172a;
-            border-color: #334155;
-            color: #10b981;
-        }
-        
-        html[data-dark-mode="true"] .section-divider {
-            background: linear-gradient(90deg, transparent, #334155, transparent);
-        }
-        
-        html[data-dark-mode="true"] .section-title {
-            color: #cbd5e1;
-            border-left-color: #818cf8;
-        }
-        
-        html[data-dark-mode="true"] .state-box {
-            background: #0f172a;
-            border-color: #334155;
-        }
-        
-        html[data-dark-mode="true"] .state-header {
-            background: linear-gradient(90deg, #1e293b, #334155);
-            border-color: #334155;
-            color: #cbd5e1;
-        }
-        
-        html[data-dark-mode="true"] .state-content {
-            background: #0f172a;
-            color: #e2e8f0;
-        }
-        
-        html[data-dark-mode="true"] .close-btn {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        html[data-dark-mode="true"] .close-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+
+        @media (max-width: 768px) {
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .logs-table {
+                font-size: 12px;
+            }
+
+            .logs-table td,
+            .logs-table th {
+                padding: 10px;
+            }
+
+            .modal-content {
+                max-width: 90vw;
+                padding: 20px;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Navbar -->
-    <nav class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <a href="javascript:history.back()" class="text-gray-600 hover:text-gray-900 transition p-2 hover:bg-gray-100 rounded-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                        </svg>
-                    </a>
-                    <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">📋 Audit Logs</h1>
-                </div>
-                <div class="text-sm font-medium text-gray-600">
-                    Updated: <span id="lastUpdate" class="font-mono">just now</span>
-                </div>
-            </div>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-shield-alt"></i>
+                Audit Logs Dashboard
+            </h1>
+            <p>Monitor dan analisis semua aktivitas sistem untuk compliance dan security</p>
         </div>
-    </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="statsContainer">
-            <div class="stats-card">
-                <div class="stats-label">🔢 Total Logs</div>
-                <div class="stats-value"><span id="statTotal">0</span></div>
+        <!-- Stats -->
+        <div class="stats" id="stats">
+            <div class="stat-card info">
+                <div class="stat-label">Total Logs</div>
+                <div class="stat-value">-</div>
+                <div class="stat-subtext">Semua waktu</div>
             </div>
-            <div class="stats-card">
-                <div class="stats-label">🚨 Critical Events</div>
-                <div class="stats-value" style="color: #ef4444;"><span id="statCritical">0</span></div>
+            <div class="stat-card critical">
+                <div class="stat-label">Suspicious Activity</div>
+                <div class="stat-value">-</div>
+                <div class="stat-subtext">Perlu review</div>
             </div>
-            <div class="stats-card">
-                <div class="stats-label">⚠️ Suspicious Activity</div>
-                <div class="stats-value" style="color: #f59e0b;"><span id="statSuspicious">0</span></div>
+            <div class="stat-card warning">
+                <div class="stat-label">Critical Actions</div>
+                <div class="stat-value">-</div>
+                <div class="stat-subtext">Bulan ini</div>
             </div>
-            <div class="stats-card">
-                <div class="stats-label">📊 24h Activity</div>
-                <div class="stats-value" style="color: #06b6d4;"><span id="stat24h">0</span></div>
+            <div class="stat-card success">
+                <div class="stat-label">Users Active</div>
+                <div class="stat-value">-</div>
+                <div class="stat-subtext">Hari ini</div>
             </div>
         </div>
 
         <!-- Filters -->
-        <div class="filter-section">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">🔍 Filters</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Date Range -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-                    <input type="text" id="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Select date">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-                    <input type="text" id="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Select date">
-                </div>
-
-                <!-- Resource Type -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Resource Type</label>
-                    <select id="resourceType" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        <option value="">All Types</option>
+        <div class="filters">
+            <h3>Filter Logs</h3>
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="resourceType">Resource Type</label>
+                    <select id="resourceType">
+                        <option value="">Semua Resource</option>
                         <option value="invoice">Invoice</option>
                         <option value="file">File</option>
                         <option value="user">User</option>
                         <option value="zona">Zona</option>
+                        <option value="toko">Toko</option>
                         <option value="ticket">Ticket</option>
+                        <option value="system">System</option>
+                        <option value="report">Report</option>
                     </select>
                 </div>
 
-                <!-- Operation -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Operation</label>
-                    <select id="operation" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        <option value="">All Operations</option>
-                        <option value="CREATE">Create</option>
-                        <option value="READ">Read</option>
-                        <option value="UPDATE">Update</option>
-                        <option value="DELETE">Delete</option>
-                        <option value="DOWNLOAD">Download</option>
+                <div class="filter-group">
+                    <label for="operation">Operation</label>
+                    <select id="operation">
+                        <option value="">Semua Operation</option>
+                        <option value="CREATE">CREATE</option>
+                        <option value="UPDATE">UPDATE</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="READ">READ</option>
+                        <option value="DOWNLOAD">DOWNLOAD</option>
+                        <option value="BULK_DELETE">BULK_DELETE</option>
                     </select>
                 </div>
 
-                <!-- Severity -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Severity</label>
-                    <select id="severity" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        <option value="">All Levels</option>
+                <div class="filter-group">
+                    <label for="severity">Severity</label>
+                    <select id="severity">
+                        <option value="">Semua Severity</option>
                         <option value="info">Info</option>
                         <option value="warning">Warning</option>
                         <option value="critical">Critical</option>
                     </select>
                 </div>
 
-                <!-- User Email -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">User Email</label>
-                    <input type="email" id="userEmail" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Filter by email">
+                <div class="filter-group">
+                    <label for="isSuspicious">Suspicious Only</label>
+                    <select id="isSuspicious">
+                        <option value="">Semua</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                    </select>
                 </div>
 
-                <!-- Suspicious Only -->
-                <div class="flex items-end">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" id="suspiciousOnly" class="w-4 h-4">
-                        <span class="text-sm font-medium text-gray-700">Suspicious Only</span>
-                    </label>
+                <div class="filter-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate">
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="flex gap-2 items-end">
-                    <button id="applyFilters" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition">
-                        Apply Filters
-                    </button>
-                    <button id="clearFilters" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
-                        Clear
-                    </button>
+                <div class="filter-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate">
                 </div>
+            </div>
+
+            <div class="filter-actions">
+                <button class="btn btn-primary" onclick="applyFilters()">
+                    <i class="fas fa-search"></i> Apply Filters
+                </button>
+                <button class="btn btn-secondary" onclick="resetFilters()">
+                    <i class="fas fa-redo"></i> Reset
+                </button>
+                <button class="btn btn-secondary" onclick="exportCSV()">
+                    <i class="fas fa-download"></i> Export CSV
+                </button>
+                <button class="btn btn-danger" onclick="markReviewed()" id="markReviewedBtn" style="display: none;">
+                    <i class="fas fa-check-circle"></i> Mark as Reviewed
+                </button>
             </div>
         </div>
 
-        <!-- Action Bar -->
-        <div class="action-bar">
-            <button id="exportCsv" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition flex items-center gap-2">
-                📥 Export CSV
-            </button>
-            <button id="autoRefreshToggle" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition flex items-center gap-2">
-                🔄 Auto-refresh (60s)
-            </button>
-            <button id="refreshNow" class="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition">
-                Refresh Now
-            </button>
-        </div>
-
-        <!-- Table -->
-        <div class="table-container">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="sticky-header">
-                        <tr class="border-b border-gray-200 bg-gray-50">
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Timestamp</th>
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">User</th>
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Action</th>
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Resource</th>
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Operation</th>
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Status</th>
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Severity</th>
-                            <th class="px-6 py-3 text-left font-semibold text-gray-900">Details</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logsTable">
-                        <!-- Skeleton loaders -->
-                        <tr class="border-b border-gray-200">
-                            <td colspan="8" class="px-6 py-4">
-                                <div class="space-y-3">
-                                    <div class="skeleton h-8"></div>
-                                    <div class="skeleton h-8"></div>
-                                    <div class="skeleton h-8"></div>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        <!-- Logs Table -->
+        <div class="logs-container">
+            <div class="logs-header">
+                <h3><i class="fas fa-list"></i> Activity Logs</h3>
+                <div class="logs-count">Total: <span id="logCount">0</span></div>
             </div>
 
-            <!-- Pagination -->
-            <div class="pagination-footer">
-                <div class="pagination-info">
-                    Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> logs
-                </div>
-                <div class="flex gap-2">
-                    <button id="prevPage" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        ← Previous
-                    </button>
-                    <button id="nextPage" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Next →
-                    </button>
+            <div id="logsContent">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading logs...</p>
                 </div>
             </div>
-        </div>
 
-        <!-- No Results Message -->
-        <div id="emptyState" class="hidden text-center py-12">
-            <div class="empty-icon">📭</div>
-            <div class="empty-text">No audit logs found matching your criteria</div>
-            <p class="text-gray-500 text-sm mt-2">Try adjusting your filters to see more results</p>
-        </div>
-    </main>
-
-    <!-- Detail Modal -->
-    <div id="detailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h2 class="text-xl font-bold">📋 Audit Log Details</h2>
-                    <p class="text-sm opacity-90 mt-1">Complete activity information and changes</p>
+            <div class="pagination">
+                <button onclick="previousPage()" id="prevBtn" disabled>← Previous</button>
+                <div class="page-info">
+                    Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
                 </div>
-                <button onclick="closeDetailModal()" class="close-btn">✕</button>
-            </div>
-            <div class="modal-body">
-                <div id="modalContent">
-                    <!-- Filled by JavaScript -->
-                </div>
+                <button onclick="nextPage()" id="nextBtn" disabled>Next →</button>
             </div>
         </div>
     </div>
 
+    <!-- Detail Modal -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Audit Log Detail</h2>
+                <button class="modal-close" onclick="closeDetailModal()">×</button>
+            </div>
+            <div class="modal-body" id="detailContent"></div>
+        </div>
+    </div>
+
     <script>
-        // Debug: Check if script loaded
-        
-        // ============================================
-        // GLOBAL STATE
-        // ============================================
-        const state = {
-            logs: [],
-            currentPage: 0,
-            pageSize: 10,  // Changed from 50 to 10
-            totalCount: 0,
-            autoRefreshActive: false,
-            autoRefreshInterval: null,
-            filters: {
-                startDate: null,
-                endDate: null,
-                resourceType: '',
-                operation: '',
-                severity: '',
-                userEmail: '',
-                isSuspicious: false
-            },
-            sortBy: 'created_at',
-            sortOrder: 'desc'
-        };
+        // Configuration
+        const API_BASE = '/api';
+        let currentPage = 1;
+        let currentFilters = {};
+        let allLogs = [];
 
-        // ============================================
-        // DARK MODE (sync dengan sidebar)
-        // ============================================
-        function initDarkMode() {
-            const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
-            document.documentElement.setAttribute('data-dark-mode', isDarkMode);
-        }
-
-        // ============================================
-        // INITIALIZATION
-        // ============================================
-        async function init() {
-            
-            // Init dark mode dari localStorage (set by sidebar)
-            initDarkMode();
-            
-            // Check if user logged in
-            const token = localStorage.getItem('jwt_token');
-            
-            if (!token) {
-                window.location.href = '/login';
-                return;
-            }
-            
-            setupDatePickers();
-            setupEventListeners();
-            
-            await loadLogs();
-            
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLogs();
             loadStats();
-            
-        }
+        });
 
-        function setupDatePickers() {
-            flatpickr('#startDate', {
-                format: 'Y-m-d',
-                onChange: () => {
-                    state.currentPage = 0;
-                }
-            });
-
-            flatpickr('#endDate', {
-                format: 'Y-m-d',
-                onChange: () => {
-                    state.currentPage = 0;
-                }
-            });
-        }
-
-        function setupEventListeners() {
-            document.getElementById('applyFilters').addEventListener('click', async () => {
-                updateFilters();
-                state.currentPage = 0;
-                await loadLogs();
-            });
-
-            document.getElementById('clearFilters').addEventListener('click', () => {
-                clearAllFilters();
-                state.currentPage = 0;
-                loadLogs();
-            });
-
-            document.getElementById('refreshNow').addEventListener('click', async () => {
-                await loadLogs();
-                await loadStats();
-            });
-
-            document.getElementById('autoRefreshToggle').addEventListener('click', () => {
-                toggleAutoRefresh();
-            });
-
-            document.getElementById('nextPage').addEventListener('click', async () => {
-                state.currentPage++;
-                await loadLogs();
-                scrollToTable();
-            });
-
-            document.getElementById('prevPage').addEventListener('click', async () => {
-                if (state.currentPage > 0) {
-                    state.currentPage--;
-                    await loadLogs();
-                    scrollToTable();
-                }
-            });
-
-            document.getElementById('exportCsv').addEventListener('click', exportToCSV);
-        }
-
-        // ============================================
-        // LOAD LOGS
-        // ============================================
         async function loadLogs() {
-            try {
-                const url = buildApiUrl();
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
-                    }
-                });
-
-                if (!response.ok) {
-                    if (response.status === 401) {
-                        redirectToLogin();
-                        return;
-                    }
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const result = await response.json();
-                state.logs = result.logs || [];
-                state.totalCount = result.pagination?.total || 0;
-
-                renderLogs();
-                updatePaginationControls();
-                updateLastUpdate();
-            } catch (error) {
-                showError('Failed to load audit logs');
-            }
-        }
-
-        function buildApiUrl() {
-            const params = new URLSearchParams();
-
-            if (state.filters.userEmail) {
-                // Note: API filters by userId, so this would need a lookup
-                // For now, we'll filter client-side
-            }
-            if (state.filters.resourceType) {
-                params.append('resourceType', state.filters.resourceType);
-            }
-            if (state.filters.operation) {
-                params.append('operation', state.filters.operation);
-            }
-            if (state.filters.severity) {
-                params.append('severity', state.filters.severity);
-            }
-            if (state.filters.startDate) {
-                params.append('startDate', state.filters.startDate);
-            }
-            if (state.filters.endDate) {
-                params.append('endDate', state.filters.endDate);
-            }
-            if (state.filters.isSuspicious) {
-                params.append('isSuspicious', 'true');
-            }
-
-            params.append('limit', state.pageSize);
-            params.append('offset', state.currentPage * state.pageSize);
-            params.append('sortBy', state.sortBy);
-            params.append('sortOrder', state.sortOrder);
-
-            const endpoint = state.filters.isSuspicious 
-                ? '/api/audit-logs/suspicious'
-                : '/api/audit-logs';
-
-            return `${endpoint}?${params.toString()}`;
-        }
-
-        function renderLogs() {
-            const table = document.getElementById('logsTable');
-
-            if (state.logs.length === 0) {
-                table.innerHTML = '';
-                document.getElementById('emptyState').classList.remove('hidden');
-                return;
-            }
-
-            document.getElementById('emptyState').classList.add('hidden');
-
-            table.innerHTML = state.logs.map(log => `
-                <tr class="border-b border-gray-200 hover:bg-gray-50 transition ${log.is_suspicious ? 'table-row-suspicious' : ''}">
-                    <td class="px-6 py-4 text-xs whitespace-nowrap font-mono text-gray-500">
-                        ${new Date(log.created_at).toLocaleString()}
-                    </td>
-                    <td class="px-6 py-4 text-sm">
-                        <div class="font-medium">${escapeHtml(log.user_email || 'Unknown')}</div>
-                        <div class="text-xs text-gray-500">${escapeHtml(log.user_role || '')}</div>
-                    </td>
-                    <td class="px-6 py-4 text-sm font-medium">
-                        ${escapeHtml(log.action || '')}
-                    </td>
-                    <td class="px-6 py-4 text-sm">
-                        <div class="font-medium">${log.resource_type}</div>
-                        <div class="text-xs text-gray-500">${escapeHtml(log.resource_name || '')}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="operation-badge op-${escapeHtml(log.operation.toLowerCase())}">
-                            ${escapeHtml(log.operation)}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-sm font-mono font-semibold">
-                        <span style="color: ${log.status_code < 300 ? '#10b981' : '#ef4444'};">
-                            ${log.status_code || 'N/A'}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="badge badge-${log.severity}">
-                            ${log.severity.toUpperCase()}
-                            ${log.is_suspicious ? ' 🚨' : ''}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4">
-                        <button class="btn-view-detail" data-log-id="${escapeHtml(String(log.id))}">
-                            View →
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-            
-            // SECURITY FIX #2: Add event listeners instead of inline onclick
-            document.querySelectorAll('[data-log-id]').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const logId = button.getAttribute('data-log-id');
-                    if (logId) {
-                        showDetailModal(logId);
-                    }
-                });
+            const params = new URLSearchParams({
+                limit: 20,
+                offset: (currentPage - 1) * 20,
+                ...currentFilters
             });
 
-            document.getElementById('showingCount').textContent = state.logs.length;
-            document.getElementById('totalCount').textContent = state.totalCount;
-        }
-
-        // ============================================
-        // LOAD STATS
-        // ============================================
-        async function loadStats() {
             try {
-                const params = new URLSearchParams();
-                if (state.filters.startDate) params.append('startDate', state.filters.startDate);
-                if (state.filters.endDate) params.append('endDate', state.filters.endDate);
-
-                const response = await fetch(`/api/audit-logs/stats?${params.toString()}`, {
+                const response = await fetch(`${API_BASE}/audit-logs?${params}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
                     }
                 });
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (!response.ok) throw new Error('Failed to load logs');
 
-                const stats = await response.json();
+                const data = await response.json();
+                allLogs = data.logs;
 
-                // Update stats cards
-                document.getElementById('statTotal').textContent = state.totalCount;
-                document.getElementById('statCritical').textContent = 
-                    stats.severity?.find(s => s.severity === 'critical')?.count || 0;
-                document.getElementById('statSuspicious').textContent = stats.suspicious || 0;
-                
-                // Count last 24h
-                const now = new Date();
-                const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                const last24h = state.logs.filter(log => 
-                    new Date(log.created_at) >= yesterday
-                ).length;
-                document.getElementById('stat24h').textContent = last24h;
+                renderLogs(data.logs);
+
+                // Update pagination
+                const totalPages = Math.ceil(data.pagination.total / data.pagination.limit);
+                document.getElementById('totalPages').textContent = totalPages;
+                document.getElementById('currentPage').textContent = currentPage;
+                document.getElementById('logCount').textContent = data.pagination.total;
+
+                document.getElementById('prevBtn').disabled = currentPage === 1;
+                document.getElementById('nextBtn').disabled = !data.pagination.hasMore;
+
             } catch (error) {
-            }
-        }
-
-        // ============================================
-        // MODAL
-        // ============================================
-        async function showDetailModal(logId) {
-            try {
-                const response = await fetch(`/api/audit-logs/${logId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
-                    }
-                });
-
-                if (!response.ok) throw new Error('Failed to load log details');
-
-                const log = await response.json();
-                const modal = document.getElementById('detailModal');
-                const content = document.getElementById('modalContent');
-                
-                const statusGradient = log.status_code < 300 ? 'status-success' : 'status-error';
-                const suspiciousIcon = log.is_suspicious ? '🚨' : '✅';
-                const suspiciousText = log.is_suspicious ? 'Suspicious' : 'Clean';
-                
-                // SECURITY FIX #2: Use textContent for safe attribute rendering
-                // Instead of: onclick="showDetailModal('${log.id}')"
-                // We render safely without dynamic onclick
-                
-                let html = `
-                    <!-- Header Summary -->
-                    <div class="info-grid">
-                        <div class="info-card">
-                            <div class="info-label">
-                                🆔 Log ID
-                            </div>
-                            <div class="info-value mono" data-value="id">${escapeHtml(String(log.id))}</div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-label">
-                                📅 Timestamp
-                            </div>
-                            <div class="info-value">${new Date(log.created_at).toLocaleString()}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="section-divider"></div>
-                    
-                    <!-- User Information -->
-                    <div class="section-title">👤 User Information</div>
-                    <div class="info-grid">
-                        <div class="info-card">
-                            <div class="info-label">📧 Email</div>
-                            <div class="info-value">${escapeHtml(log.user_email || 'N/A')}</div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-label">🏷️ Role</div>
-                            <div class="info-value">
-                                <span class="badge badge-${log.user_role === 'admin' ? 'critical' : 'info'}">
-                                    ${escapeHtml(log.user_role || 'N/A')}
-                                </span>
-                            </div>
-                        </div>
-                        ${log.ip_address ? `
-                        <div class="info-card">
-                            <div class="info-label">🌐 IP Address</div>
-                            <div class="info-value mono">${escapeHtml(String(log.ip_address))}</div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="section-divider"></div>
-                    
-                    <!-- Activity Details -->
-                    <div class="section-title">⚙️ Activity Details</div>
-                    <div class="info-grid">
-                        <div class="info-card">
-                            <div class="info-label">📝 Action</div>
-                            <div class="info-value">${escapeHtml(log.action || 'N/A')}</div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-label">📦 Resource Type</div>
-                            <div class="info-value">
-                                <span class="badge badge-info">${escapeHtml(log.resource_type)}</span>
-                            </div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-label">🔄 Operation</div>
-                            <div class="info-value">
-                                <span class="operation-badge op-${escapeHtml(log.operation.toLowerCase())}">
-                                    ${escapeHtml(log.operation)}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-label">📋 Resource Name</div>
-                            <div class="info-value">${escapeHtml(log.resource_name || 'N/A')}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="section-divider"></div>
-                    
-                    <!-- Status & Security -->
-                    <div class="section-title">🔒 Status & Security</div>
-                    <div class="info-grid">
-                        <div class="info-card">
-                            <div class="info-label">📊 HTTP Status</div>
-                            <div class="info-value">
-                                <span style="font-weight: 700; font-size: 1.125rem;" class="text-${log.status_code < 300 ? 'green' : 'red'}-600">
-                                    ${escapeHtml(String(log.status_code || 'N/A'))}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-label">⚠️ Severity Level</div>
-                            <div class="info-value">
-                                <span class="badge badge-${escapeHtml(log.severity)}">
-                                    ${escapeHtml(log.severity.toUpperCase())}
-                                </span>
-                            </div>
-                        </div>
-                        <div class="info-card">
-                            <div class="info-label">🛡️ Suspicious Activity</div>
-                            <div class="info-value">
-                                <span style="font-size: 1rem;">${suspiciousIcon}</span>
-                                <span style="font-weight: 600;">${escapeHtml(suspiciousText)}</span>
-                            </div>
-                        </div>
+                console.error('Error loading logs:', error);
+                document.getElementById('logsContent').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading logs</p>
                     </div>
                 `;
-                
-                // Request Details
-                if (log.request_path || log.request_method) {
-                    html += `
-                    <div class="section-divider"></div>
-                    
-                    <div class="section-title">🌐 Request Information</div>
-                    <div class="info-grid">
-                        ${log.request_method ? `
-                        <div class="info-card">
-                            <div class="info-label">📤 Method</div>
-                            <div class="info-value mono" style="font-weight: 700; color: #667eea;">
-                                ${escapeHtml(log.request_method)}
-                            </div>
-                        </div>
-                        ` : ''}
-                        ${log.request_path ? `
-                        <div class="info-card">
-                            <div class="info-label">🔗 Path</div>
-                            <div class="info-value mono">${escapeHtml(log.request_path)}</div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    `;
-                }
-                
-                // Response & Error
-                if (log.response_message || log.error_message) {
-                    html += `
-                    <div class="section-divider"></div>
-                    
-                    <div class="section-title">💬 Response Information</div>
-                    `;
-                    
-                    if (log.response_message) {
-                        html += `
-                        <div class="state-box" style="margin-bottom: 1rem;">
-                            <div class="state-header">✅ Response Message</div>
-                            <div class="state-content">${escapeHtml(log.response_message)}</div>
-                        </div>
-                        `;
-                    }
-                    
-                    if (log.error_message) {
-                        html += `
-                        <div class="state-box">
-                            <div class="state-header" style="background: linear-gradient(90deg, #fee2e2, #fecaca);">❌ Error Message</div>
-                            <div class="state-content">${escapeHtml(log.error_message)}</div>
-                        </div>
-                        `;
-                    }
-                }
-                
-                // State Changes - SECURITY FIX: formatJson already escapes, but wrap safely
-                if (log.old_values || log.new_values) {
-                    html += `
-                    <div class="section-divider"></div>
-                    
-                    <div class="section-title">🔄 State Changes</div>
-                    `;
-                    
-                    if (log.old_values && log.new_values) {
-                        html += `
-                        <div class="comparison-grid">
-                            <div class="state-box">
-                                <div class="state-header">📋 Previous State</div>
-                                <div class="state-content">${escapeHtml(formatJson(log.old_values))}</div>
-                            </div>
-                            <div class="state-box">
-                                <div class="state-header" style="background: linear-gradient(90deg, #dcfce7, #bbf7d0);">✨ New State</div>
-                                <div class="state-content">${escapeHtml(formatJson(log.new_values))}</div>
-                            </div>
-                        </div>
-                        `;
-                    } else if (log.old_values) {
-                        html += `
-                        <div class="state-box">
-                            <div class="state-header">📋 Previous State</div>
-                            <div class="state-content">${escapeHtml(formatJson(log.old_values))}</div>
-                        </div>
-                        `;
-                    } else if (log.new_values) {
-                        html += `
-                        <div class="state-box">
-                            <div class="state-header" style="background: linear-gradient(90deg, #dcfce7, #bbf7d0);">✨ New State</div>
-                            <div class="state-content">${escapeHtml(formatJson(log.new_values))}</div>
-                        </div>
-                        `;
-                    }
-                }
-                
-                content.innerHTML = html;
-                modal.classList.add('active');
-            } catch (error) {
-                showError('Failed to load log details');
             }
         }
-        
-        function formatJson(obj) {
-            if (typeof obj === 'string') {
-                try {
-                    obj = JSON.parse(obj);
-                } catch (e) {
-                    return escapeHtml(obj);
-                }
+
+        async function loadStats() {
+            const params = new URLSearchParams({
+                startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            });
+
+            try {
+                const response = await fetch(`${API_BASE}/audit-logs/stats?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load stats');
+
+                const data = await response.json();
+                // Update stats (would need more complex logic for real stats)
+
+            } catch (error) {
+                console.error('Error loading stats:', error);
             }
-            return JSON.stringify(obj, null, 2);
+        }
+
+        function renderLogs(logs) {
+            if (!logs || logs.length === 0) {
+                document.getElementById('logsContent').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No logs found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Resource</th>
+                        <th>Operation</th>
+                        <th>Severity</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            logs.forEach(log => {
+                const date = new Date(log.created_at).toLocaleString('id-ID');
+                const severityClass = log.severity || 'info';
+                const operationClass = `op-${log.operation.toLowerCase()}`;
+                const suspicious = log.is_suspicious ? '⚠️ Yes' : 'No';
+
+                html += `<tr>
+                    <td>${date}</td>
+                    <td>
+                        <small>${log.user_email || 'System'}</small><br>
+                        <span class="badge ${severityClass}">${log.user_role || 'N/A'}</span>
+                    </td>
+                    <td>${log.action}</td>
+                    <td>
+                        <span class="badge ${severityClass}">${log.resource_type}</span><br>
+                        <small>${log.resource_name || '-'}</small>
+                    </td>
+                    <td><span class="operation-badge ${operationClass}">${log.operation}</span></td>
+                    <td><span class="badge ${severityClass}">${log.severity || 'info'}</span></td>
+                    <td>${log.status_code} ${suspicious}</td>
+                    <td><a class="action-link" onclick="showDetail(${log.id})">View</a></td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('logsContent').innerHTML = html;
+        }
+
+        async function showDetail(logId) {
+            try {
+                const response = await fetch(`${API_BASE}/audit-logs/${logId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load detail');
+
+                const log = await response.json();
+
+                let detailHtml = `
+                    <div class="detail-row">
+                        <div class="detail-label">Timestamp</div>
+                        <div class="detail-value">${new Date(log.created_at).toLocaleString('id-ID')}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">User</div>
+                        <div class="detail-value">
+                            ${log.user_email}<br>
+                            <small>${log.user_role}</small>
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Action</div>
+                        <div class="detail-value">${log.action}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Resource</div>
+                        <div class="detail-value">
+                            Type: ${log.resource_type}<br>
+                            ID: ${log.resource_id}<br>
+                            Name: ${log.resource_name || '-'}
+                        </div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Operation</div>
+                        <div class="detail-value">${log.operation}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Severity</div>
+                        <div class="detail-value"><span class="badge ${log.severity}">${log.severity}</span></div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Status</div>
+                        <div class="detail-value">${log.status_code} ${log.is_suspicious ? '⚠️ SUSPICIOUS' : 'OK'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">IP Address</div>
+                        <div class="detail-value">${log.ip_address || '-'}</div>
+                    </div>
+                    <div class="detail-row">
+                        <div class="detail-label">Request Path</div>
+                        <div class="detail-value">${log.request_path}</div>
+                    </div>
+                `;
+
+                if (log.old_values) {
+                    detailHtml += `
+                        <div class="detail-row">
+                            <div class="detail-label">Old Values</div>
+                            <div class="detail-value">
+                                <div class="detail-json">${JSON.stringify(log.old_values, null, 2)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (log.new_values) {
+                    detailHtml += `
+                        <div class="detail-row">
+                            <div class="detail-label">New Values</div>
+                            <div class="detail-value">
+                                <div class="detail-json">${JSON.stringify(log.new_values, null, 2)}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (log.error_message) {
+                    detailHtml += `
+                        <div class="detail-row">
+                            <div class="detail-label">Error</div>
+                            <div class="detail-value">${log.error_message}</div>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('detailContent').innerHTML = detailHtml;
+                document.getElementById('detailModal').classList.add('active');
+
+            } catch (error) {
+                console.error('Error loading detail:', error);
+                alert('Failed to load detail');
+            }
         }
 
         function closeDetailModal() {
             document.getElementById('detailModal').classList.remove('active');
         }
 
-        // ============================================
-        // FILTERS
-        // ============================================
-        function updateFilters() {
-            state.filters = {
-                startDate: document.getElementById('startDate').value || null,
-                endDate: document.getElementById('endDate').value || null,
+        function applyFilters() {
+            currentFilters = {
                 resourceType: document.getElementById('resourceType').value,
                 operation: document.getElementById('operation').value,
                 severity: document.getElementById('severity').value,
-                userEmail: document.getElementById('userEmail').value,
-                isSuspicious: document.getElementById('suspiciousOnly').checked
+                isSuspicious: document.getElementById('isSuspicious').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value
             };
+
+            // Remove empty values
+            Object.keys(currentFilters).forEach(key => {
+                if (!currentFilters[key]) delete currentFilters[key];
+            });
+
+            currentPage = 1;
+            loadLogs();
         }
 
-        function clearAllFilters() {
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
+        function resetFilters() {
             document.getElementById('resourceType').value = '';
             document.getElementById('operation').value = '';
             document.getElementById('severity').value = '';
-            document.getElementById('userEmail').value = '';
-            document.getElementById('suspiciousOnly').checked = false;
-            state.filters = {
-                startDate: null,
-                endDate: null,
-                resourceType: '',
-                operation: '',
-                severity: '',
-                userEmail: '',
-                isSuspicious: false
-            };
+            document.getElementById('isSuspicious').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+
+            currentFilters = {};
+            currentPage = 1;
+            loadLogs();
         }
 
-        // ============================================
-        // AUTO REFRESH
-        // ============================================
-        function toggleAutoRefresh() {
-            state.autoRefreshActive = !state.autoRefreshActive;
-            const btn = document.getElementById('autoRefreshToggle');
-
-            if (state.autoRefreshActive) {
-                btn.classList.add('bg-green-600', 'hover:bg-green-700');
-                btn.classList.remove('bg-purple-600', 'hover:bg-purple-700');
-                state.autoRefreshInterval = setInterval(async () => {
-                    await loadLogs();
-                }, 60000); // 60 seconds
-            } else {
-                btn.classList.remove('bg-green-600', 'hover:bg-green-700');
-                btn.classList.add('bg-purple-600', 'hover:bg-purple-700');
-                clearInterval(state.autoRefreshInterval);
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadLogs();
+                window.scrollTo(0, 0);
             }
         }
 
-        // ============================================
-        // EXPORT
-        // ============================================
-        async function exportToCSV() {
+        function nextPage() {
+            currentPage++;
+            loadLogs();
+            window.scrollTo(0, 0);
+        }
+
+        async function exportCSV() {
+            const params = new URLSearchParams(currentFilters);
             try {
-                const url = `/api/audit-logs/export/csv?${new URLSearchParams(state.filters).toString()}`;
-                const response = await fetch(url, {
+                const response = await fetch(`${API_BASE}/audit-logs/export/csv?${params}`, {
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
                     }
                 });
 
-                if (!response.ok) throw new Error('Export failed');
-
-                const csv = await response.text();
-                downloadFile(csv, `audit-logs-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
             } catch (error) {
-                showError('Failed to export logs');
+                console.error('Error exporting CSV:', error);
+                alert('Failed to export CSV');
             }
         }
 
-        function downloadFile(content, filename, type) {
-            const blob = new Blob([content], { type });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
+        async function markReviewed() {
+            const suspiciousLogs = allLogs.filter(log => log.is_suspicious).map(log => log.id);
 
-        // ============================================
-        // PAGINATION
-        // ============================================
-        function updatePaginationControls() {
-            const hasMore = state.currentPage * state.pageSize + state.logs.length < state.totalCount;
-            document.getElementById('prevPage').disabled = state.currentPage === 0;
-            document.getElementById('nextPage').disabled = !hasMore;
-        }
-
-        function scrollToTable() {
-            document.querySelector('table').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // ============================================
-        // UTILITIES
-        // ============================================
-        function updateLastUpdate() {
-            const now = new Date();
-            const time = now.toLocaleTimeString();
-            document.getElementById('lastUpdate').textContent = time;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function showError(message) {
-            alert(message); // TODO: Replace with toast notification
-        }
-
-        function redirectToLogin() {
-            if (localStorage.getItem('jwt_token')) {
-                localStorage.removeItem('jwt_token');
+            if (suspiciousLogs.length === 0) {
+                alert('No suspicious logs to mark as reviewed');
+                return;
             }
-            window.location.href = '/login';
-        }
 
-        // Start application
-        init();
+            try {
+                const response = await fetch(`${API_BASE}/audit-logs/mark-reviewed`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ logIds: suspiciousLogs })
+                });
+
+                if (!response.ok) throw new Error('Failed to mark as reviewed');
+
+                alert('Marked as reviewed');
+                loadLogs();
+            } catch (error) {
+                console.error('Error marking as reviewed:', error);
+                alert('Failed to mark as reviewed');
+            }
+        }
     </script>
 </body>
 </html>
