@@ -57,6 +57,7 @@ const registerBackupEndpoints = require('./backup-endpoints');
 const registerLoggingEndpoints = require('./logging-endpoints');
 const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
+const registerSessionEndpoints = require('./session-endpoints');
 const AuditLogger = require('./audit-logger');
 const { initializeAutoLogoutScheduler } = require('./scheduled-auto-logout');
 const {
@@ -1179,6 +1180,10 @@ const sessionManagement = require('./session-management');
 const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
 const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
+
+// Register session endpoints
+registerSessionEndpoints(app, supabase, createAuth, auditLogger);
+console.log('[INIT] Session management endpoints registered ✅');
 const { addFakturPajakRenameEndpoints } = require('./faktur-pajak-rename-endpoints');
 const renameFakturEndpoints = require('./rename-faktur-endpoints');
 const renameInvoiceHijauEndpoints = require('./rename-invoice-hijau-endpoints');
@@ -1507,13 +1512,49 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             });
         }
 
-        // Check Session Limit for Admin Zona - only count VALID active sessions
-        const { data: activeSessions, error: sessionError } = await supabase
-            .from('user_sessions')
-            .select('*')
-            .eq('user_id', user.id)
-            .eq('is_active', true)
-            .gt('expires_at', new Date().toISOString());
+        // Check Concurrent Session Limit (Max 2 sessions per user)
+        const SessionManager = require('./session-manager');
+        const sessionManager = new SessionManager(supabase);
+        
+        const sessionCheck = await sessionManager.canCreateSession(user.id);
+        
+        if (!sessionCheck.allowed) {
+            logWarning('[LOGIN]', 'Rejected - concurrent session limit', { 
+                email: email.substring(0, 3) + '***',
+                activeCount: sessionCheck.activeCount 
+            });
+            
+            // Log audit entry
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: user.id,
+                userEmail: user.email,
+                userRole: user.role,
+                zonaId: user.zona_id,
+                action: 'Login rejected - concurrent session limit reached',
+                resourceType: 'user_session',
+                resourceId: user.id,
+                resourceName: user.email,
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/auth/login',
+                requestMethod: 'POST',
+                statusCode: 403,
+                responseMessage: sessionCheck.reason,
+                errorMessage: 'Concurrent session limit exceeded',
+                isSuspicious: false,
+                severity: 'warning'
+            });
+            
+            return res.status(403).json({ 
+                error: sessionCheck.reason,
+                activeSessionsCount: sessionCheck.activeCount,
+                maxAllowed: 2
+            });
+        }
+        
+        console.log(`[LOGIN] ✅ Session check passed - ${sessionCheck.activeCount || 0}/2 active sessions`);
 
         if (sessionError) console.error("[SESSION] Check Error:", sessionError);
 
@@ -1541,26 +1582,25 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-        // Clean up expired sessions for this user
-        await supabase
-            .from('user_sessions')
-            .update({ is_active: false })
-            .eq('user_id', user.id)
-            .lt('expires_at', new Date().toISOString());
+        // Create new session using SessionManager
+        const SessionManager = require('./session-manager');
+        const sessionManager = new SessionManager(supabase);
+        
+        const userAgent = req.headers['user-agent'] || 'Unknown';
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        
+        const sessionResult = await sessionManager.createSession(
+            user.id,
+            userAgent,
+            ipAddress
+        );
 
-        // Upsert Session
-        const { session_id } = req.body;
-        if (session_id) {
-            await supabase
-                .from('user_sessions')
-                .upsert({
-                    user_id: user.id,
-                    session_token: session_id,
-                    user_agent: req.headers['user-agent'] || 'Unknown',
-                    last_activity: new Date().toISOString(),
-                    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-                }, { onConflict: 'session_token' });
+        if (!sessionResult.success) {
+            console.error('[LOGIN] Failed to create session:', sessionResult.error);
+            return res.status(500).json({ error: 'Gagal membuat session' });
         }
+
+        console.log(`[LOGIN] ✅ Session created: ${sessionResult.sessionToken.substring(0, 8)}...`);
 
         // Audit with detailed info
         const userAgent = req.headers['user-agent'] || 'Unknown';
@@ -1600,6 +1640,8 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         res.json({
             success: true,
             token,
+            sessionToken: sessionResult.sessionToken,
+            sessionExpiresAt: sessionResult.expiresAt,
             user: {
                 id: user.id,
                 email: user.email,
@@ -1642,12 +1684,45 @@ app.post('/api/auth/verify-admin', async (req, res) => {
 
 // POST /api/auth/logout (stateless Ã¢â‚¬â€ just for audit logging)
 app.post('/api/auth/logout', authenticateToken, async (req, res) => {
-    await supabase.from('audit_logs').insert({
-        user_id: req.user.userId,
-        action: 'Logout',
-        context: 'User logged out'
-    });
-    res.json({ success: true, message: 'Logged out.' });
+    try {
+        const { sessionToken } = req.body;
+        
+        // Terminate session if provided
+        if (sessionToken) {
+            const SessionManager = require('./session-manager');
+            const sessionManager = new SessionManager(supabase);
+            await sessionManager.terminateSession(sessionToken);
+            console.log(`[LOGOUT] ✅ Session terminated`);
+        }
+
+        // Log audit
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id,
+            action: 'User logout',
+            resourceType: 'user_session',
+            resourceId: req.user.userId,
+            resourceName: req.user.email,
+            operation: 'DELETE',
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: '/api/auth/logout',
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: 'Logout successful',
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        });
+
+        res.json({ success: true, message: 'Logout berhasil' });
+    } catch (err) {
+        console.error('[LOGOUT] Error:', err);
+        res.status(500).json({ error: 'Logout gagal' });
+    }
 });
 
 // GET /api/auth/me Ã¢â‚¬â€ get current user info
