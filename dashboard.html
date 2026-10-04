@@ -3343,8 +3343,14 @@
         let sortDirection = {}; // { field: 'asc' or 'desc' }
         
         function sortTable(field) {
+            console.log('sortTable called with field:', field);
             const invoiceTableBody = document.getElementById('invoiceTableBody');
-            if (!invoiceTableBody) return;
+            if (!invoiceTableBody) {
+                console.error('invoiceTableBody not found!');
+                return;
+            }
+            
+            console.log('invoiceTableBody found, current rows:', invoiceTableBody.querySelectorAll('tr').length);
             
             // Toggle direction for same field
             if (currentSortField === field) {
@@ -3356,16 +3362,19 @@
             
             // Get all rows from table
             const rows = Array.from(invoiceTableBody.querySelectorAll('tr'));
+            console.log('Rows to sort:', rows.length);
             
             // Sort rows
             rows.sort((a, b) => {
                 let aValue, bValue;
                 
                 if (field === 'status') {
+                    console.log('Sorting by STATUS - cell[0]');
                     // Extract status count and total
                     // Format: "0/3" or "2/2" → extract numerator and denominator
                     const aStatusText = a.cells[0].textContent.trim();
                     const bStatusText = b.cells[0].textContent.trim();
+                    console.log('Status values:', aStatusText, bStatusText);
                     
                     // Parse "X/Y" format
                     const aMatch = aStatusText.match(/(\d+)\/(\d+)/);
@@ -3381,17 +3390,23 @@
                     aValue = aTotal > 0 ? (aCount / aTotal) * 1000 + aCount : 0;
                     bValue = bTotal > 0 ? (bCount / bTotal) * 1000 + bCount : 0;
                 } else if (field === 'tanggal') {
+                    console.log('Sorting by TANGGAL - cell[1]');
                     // Extract date from cell (format: DD/MM/YYYY)
-                    aValue = new Date(a.cells[1].textContent.trim().split('/').reverse().join('-'));
-                    bValue = new Date(b.cells[1].textContent.trim().split('/').reverse().join('-'));
+                    const aTanggal = a.cells[1].textContent.trim();
+                    const bTanggal = b.cells[1].textContent.trim();
+                    console.log('Tanggal values:', aTanggal, bTanggal);
+                    aValue = new Date(aTanggal.split('/').reverse().join('-'));
+                    bValue = new Date(bTanggal.split('/').reverse().join('-'));
+                    console.log('Parsed dates:', aValue, bValue);
                 } else if (field === 'total') {
+                    console.log('Sorting by TOTAL - cell[7]');
                     // Extract total as number from Indonesian format "Rp 13.186.950"
                     // Indonesian format: dots (.) = thousands separator, comma (,) = decimal
                     // Total column is at index 7 (0=Status, 1=Tanggal, 2=No Faktur, 3=Status Bayar, 4=Tipe, 5=Nama Konsumen, 6=Nama Toko, 7=Total)
                     const aText = a.cells[7].textContent.trim();
                     const bText = b.cells[7].textContent.trim();
                     
-                    console.log('Sorting total:', { aText, bText });
+                    console.log('Total values:', { aText, bText });
                     
                     // Extract only digits and dots/commas
                     const aNumStr = aText.replace(/[^\d.,]/g, '');
