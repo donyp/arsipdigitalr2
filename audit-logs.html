@@ -592,6 +592,8 @@
     </style>
 </head>
 <body>
+    <script src="js/notification-system.js"></script>
+    
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -963,7 +965,7 @@
 
             } catch (error) {
                 console.error('Error loading detail:', error);
-                alert('Failed to load detail');
+                Notify.error('Failed to load detail');
             }
         }
 
@@ -1037,7 +1039,7 @@
                 document.body.removeChild(a);
             } catch (error) {
                 console.error('Error exporting CSV:', error);
-                alert('Failed to export CSV');
+                Notify.error('Failed to export CSV');
             }
         }
 
@@ -1045,7 +1047,7 @@
             const suspiciousLogs = allLogs.filter(log => log.is_suspicious).map(log => log.id);
 
             if (suspiciousLogs.length === 0) {
-                alert('No suspicious logs to mark as reviewed');
+                Notify.warning('No suspicious logs to mark as reviewed');
                 return;
             }
 
@@ -1061,11 +1063,11 @@
 
                 if (!response.ok) throw new Error('Failed to mark as reviewed');
 
-                alert('Marked as reviewed');
+                Notify.success('Marked as reviewed');
                 loadLogs();
             } catch (error) {
                 console.error('Error marking as reviewed:', error);
-                alert('Failed to mark as reviewed');
+                Notify.error('Failed to mark as reviewed');
             }
         }
     </script>

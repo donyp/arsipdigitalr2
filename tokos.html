@@ -96,6 +96,7 @@
             document.documentElement.setAttribute('data-dark-mode', 'true');
         }
     </script>
+    <script src="js/notification-system.js"></script>
     <style>
         body {
             zoom: 0.8;
@@ -255,7 +256,7 @@
                 // Render table
                 renderTokosTable();
             } catch (err) {
-                alert('Gagal memuat data toko: ' + err.message);
+                Notify.error('Gagal memuat data toko: ' + err.message);
             }
         }
 
@@ -321,7 +322,7 @@
             const zona_id = parseInt(document.getElementById('tokoZona').value);
 
             if (!nama || !kode || !zona_id) {
-                alert('Semua field wajib diisi');
+                Notify.error('Semua field wajib diisi');
                 return;
             }
 
@@ -337,20 +338,24 @@
                 closeTokoModal();
                 await loadTokos();
             } catch (err) {
-                alert('Error: ' + err.message);
+                Notify.error('Error: ' + err.message);
             }
         }
 
         // Delete toko
         async function deleteToko(tokoId) {
-            if (!confirm('Hapus toko ini?')) return;
-            
-            try {
-                await API.post(`/api/toko/${tokoId}`, null, { method: 'DELETE' });
-                await loadTokos();
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
+            Notify.confirmDelete(
+                'Hapus Toko',
+                'Apakah Anda yakin ingin menghapus toko ini? Tindakan ini tidak dapat dibatalkan.',
+                async () => {
+                    try {
+                        await API.post(`/api/toko/${tokoId}`, null, { method: 'DELETE' });
+                        await loadTokos();
+                    } catch (err) {
+                        Notify.error('Error: ' + err.message);
+                    }
+                }
+            );
         }
 
         // Close modal

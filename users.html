@@ -101,6 +101,7 @@
             document.documentElement.setAttribute('data-dark-mode', 'true');
         }
     </script>
+    <script src="js/notification-system.js"></script>
     <style>
         body {
             zoom: 0.8;
@@ -353,7 +354,7 @@
                 // Render table
                 renderUsersTable();
             } catch (err) {
-                alert('Gagal memuat data user: ' + err.message);
+                Notify.error('Gagal memuat data user: ' + err.message);
             }
         }
 
@@ -444,14 +445,14 @@
 
             // Validation
             if (!email || !name) {
-                alert('Email dan Nama wajib diisi');
+                Notify.error('Email dan Nama wajib diisi');
                 return;
             }
 
             // Email validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
-                alert('Format email tidak valid. Contoh: user@example.com');
+                Notify.error('Format email tidak valid. Contoh: user@example.com');
                 return;
             }
 
@@ -459,14 +460,14 @@
             if (username) {
                 const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
                 if (!usernameRegex.test(username)) {
-                    alert('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.\nContoh: john_doe, user-123');
+                    Notify.error('Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.\nContoh: john_doe, user-123');
                     return;
                 }
             }
 
             // Role validation
             if (!role || !['super_admin', 'moderator', 'admin_zona'].includes(role)) {
-                alert('Role tidak valid');
+                Notify.error('Role tidak valid');
                 return;
             }
 
@@ -481,7 +482,7 @@
                     await API.put(`/api/users/${id}`, data);
                 } else {
                     if (!password) {
-                        alert('Password wajib diisi untuk user baru');
+                        Notify.error('Password wajib diisi untuk user baru');
                         return;
                     }
                     await API.post('/api/users', data);
@@ -489,10 +490,10 @@
 
                 closeUserModal();
                 await loadUsers();
-                alert(id ? 'User berhasil diupdate!' : 'User berhasil ditambahkan!');
+                Notify.success(id ? 'User berhasil diupdate!' : 'User berhasil ditambahkan!');
             } catch (err) {
                 console.error('[saveUser] Error:', err);
-                alert('Error: ' + err.message);
+                Notify.error('Error: ' + err.message);
             }
         }
 
@@ -504,7 +505,7 @@
                 await API.post(`/api/users/${userId}`, null, { method: 'DELETE' });
                 await loadUsers();
             } catch (err) {
-                alert('Error: ' + err.message);
+                Notify.error('Error: ' + err.message);
             }
         }
 
