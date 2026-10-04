@@ -810,7 +810,12 @@
                 if (!response.ok) throw new Error('Failed to load stats');
 
                 const data = await response.json();
-                // Update stats (would need more complex logic for real stats)
+                
+                // Update stats cards with data
+                document.querySelectorAll('.stat-value')[0].textContent = data.totalLogs || 0;
+                document.querySelectorAll('.stat-value')[1].textContent = data.suspiciousActivity || 0;
+                document.querySelectorAll('.stat-value')[2].textContent = data.criticalActions || 0;
+                document.querySelectorAll('.stat-value')[3].textContent = data.usersActive || 0;
 
             } catch (error) {
                 console.error('Error loading stats:', error);
