@@ -407,7 +407,7 @@ async function submitCreateTicket(e) {
         const data = await response.json();
         const ticketId = data.ticket.id;
         // Show success message
-        alert(`✓ ${data.ticket.ticket_number} berhasil dibuat!`);
+        Notify.success(`✓ ${data.ticket.ticket_number} berhasil dibuat!`);
 
         closeCreateModal();
 
@@ -418,7 +418,7 @@ async function submitCreateTicket(e) {
         }, 500);
 
     } catch (error) {
-        alert(`Error: ${error.message}`);
+        Notify.error(`Error: ${error.message}`);
     }
 }
 

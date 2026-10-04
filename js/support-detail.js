@@ -263,49 +263,49 @@ async function submitReply(e) {
 }
 
 async function resolveTicket() {
-    if (!confirm('Tandai tiket ini sebagai Resolved?')) return;
+    Notify.confirmDelete('Resolve Tiket', 'Tandai tiket ini sebagai Resolved?', async () => {
+        try {
+            const token = localStorage.getItem('jwt_token');
+            const response = await fetch(`/api/support/tickets/${ticketId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: 'Resolved' })
+            });
 
-    try {
-        const token = localStorage.getItem('jwt_token');
-        const response = await fetch(`/api/support/tickets/${ticketId}/status`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: 'Resolved' })
-        });
+            if (!response.ok) throw new Error('Failed to resolve ticket');
 
-        if (!response.ok) throw new Error('Failed to resolve ticket');
-
-        showNotification('✓ Tiket ditandai sebagai Resolved', 'success');
-        setTimeout(() => loadTicketDetail(), 1000);
-    } catch (error) {
-        showNotification(`Error: ${error.message}`, 'error');
-    }
+            Notify.success('✓ Tiket ditandai sebagai Resolved');
+            setTimeout(() => loadTicketDetail(), 1000);
+        } catch (error) {
+            Notify.error(`Error: ${error.message}`);
+        }
+    });
 }
 
 async function closeTicket() {
-    if (!confirm('Tutup tiket ini?')) return;
+    Notify.confirmDelete('Tutup Tiket', 'Tutup tiket ini?', async () => {
+        try {
+            const token = localStorage.getItem('jwt_token');
+            const response = await fetch(`/api/support/tickets/${ticketId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: 'Closed' })
+            });
 
-    try {
-        const token = localStorage.getItem('jwt_token');
-        const response = await fetch(`/api/support/tickets/${ticketId}/status`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: 'Closed' })
-        });
+            if (!response.ok) throw new Error('Failed to close ticket');
 
-        if (!response.ok) throw new Error('Failed to close ticket');
-
-        showNotification('✓ Tiket ditutup', 'success');
-        setTimeout(() => loadTicketDetail(), 1000);
-    } catch (error) {
-        showNotification(`Error: ${error.message}`, 'error');
-    }
+            Notify.success('✓ Tiket ditutup');
+            setTimeout(() => loadTicketDetail(), 1000);
+        } catch (error) {
+            Notify.error(`Error: ${error.message}`);
+        }
+    });
 }
 
 function goBackToList() {
