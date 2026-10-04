@@ -16,6 +16,11 @@ class NotificationSystem {
      * Initialize notification container
      */
     initializeContainer() {
+        // If already initialized, return
+        if (this.container && document.body.contains(this.container)) {
+            return;
+        }
+
         // If body not ready, defer initialization
         if (!document.body) {
             console.warn('[Notify] document.body not ready, deferring container initialization');
@@ -23,9 +28,15 @@ class NotificationSystem {
             return;
         }
 
-        if (document.getElementById('notification-container')) return;
+        // Check if container already exists
+        let container = document.getElementById('notification-container');
+        if (container) {
+            this.container = container;
+            console.log('[Notify] Container found in DOM');
+            return;
+        }
 
-        const container = document.createElement('div');
+        container = document.createElement('div');
         container.id = 'notification-container';
         container.style.cssText = `
             position: fixed;
@@ -43,15 +54,13 @@ class NotificationSystem {
             document.body.appendChild(container);
             this.container = container;
             console.log('[Notify] Container initialized');
+            this.injectStyles();
         } catch (error) {
             console.error('[Notify] Failed to append container:', error);
             // Try again in next tick
             setTimeout(() => this.initializeContainer(), 100);
             return;
         }
-
-        // Add CSS styles
-        this.injectStyles();
     }
 
     /**
@@ -360,6 +369,18 @@ class NotificationSystem {
      * Show notification
      */
     show(message, type = 'info', icon = 'ℹ', duration = 4000) {
+        // Ensure container is initialized before showing
+        if (!this.container) {
+            console.warn('[Notify] Container not ready, reinitializing...');
+            this.initializeContainer();
+            
+            // If still not ready, fallback to console
+            if (!this.container) {
+                console.log(`[Notify-${type.toUpperCase()}] ${message}`);
+                return { element: null };
+            }
+        }
+
         // Limit queue
         if (this.toastQueue.length >= this.maxToasts) {
             const first = this.toastQueue.shift();
