@@ -2507,14 +2507,14 @@
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
-                                        <th id="th-status" onclick="sortTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
-                                        <th id="th-tanggal" onclick="sortTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
+                                        <th id="th-status" onclick="window.sortTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
+                                        <th id="th-tanggal" onclick="window.sortTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 6%;">Tipe</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
-                                        <th id="th-total" onclick="sortTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
+                                        <th id="th-total" onclick="window.sortTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Keterangan</th>
                                         <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Aksi</th>
                                     </tr>
@@ -3339,27 +3339,21 @@
         // ============================================================
         // SORTING FUNCTIONALITY FOR MODERATOR DASHBOARD
         // ============================================================
-        // Use window object to prevent re-declaration on SPA page navigation
-        if (!window.sortTableState) {
+        // Initialize sort state only once (prevent SPA re-declaration)
+        if (typeof window.sortTableState === 'undefined') {
             window.sortTableState = {
                 currentSortField: null,
                 sortDirection: {}
             };
-        }
-        
-        const sortTableState = window.sortTableState;
-        
-        async function sortTable(field) {
-            console.log('=== sortTable called ===');
-            console.log('field:', field);
             
+            // Define sortTable only once
+            window.sortTable = async function sortTable(field) {
             const invoiceTableBody = document.getElementById('invoiceTableBody');
             if (!invoiceTableBody) {
-                console.error('invoiceTableBody not found!');
                 return;
             }
             
-            // Disable sort headers while loading
+            // Disable sort headers while sorting
             const thStatus = document.getElementById('th-status');
             const thTanggal = document.getElementById('th-tanggal');
             const thTotal = document.getElementById('th-total');
@@ -3370,134 +3364,6 @@
                 header.style.pointerEvents = 'none';
             });
             
-            // Get all filter values
-            const filterSearch = document.getElementById('filterSearch')?.value || '';
-            const filterStatus = document.getElementById('filterStatus')?.value || '';
-            const filterToko = document.getElementById('filterToko')?.value || '';
-            const filterKeterangan = document.getElementById('filterKeterangan')?.value || '';
-            const filterYear = document.getElementById('filterYear')?.value || '';
-            const filterMonth = document.getElementById('filterMonth')?.value || '';
-            
-            // Check if ANY filter is active - always fetch ALL data for current month
-            const hasActiveFilters = filterSearch || filterStatus || filterToko || filterKeterangan || filterYear || filterMonth;
-            
-            if (hasActiveFilters) {
-                console.log('Filters detected - fetching ALL filtered data from selected month/year');
-                try {
-                    // Build query params - MUST match exactly what applyInvoiceFilters sends
-                    const params = new URLSearchParams();
-                    
-                    // Non-date filters
-                    if (filterToko) params.append('toko', filterToko);
-                    if (filterKeterangan) params.append('keterangan', filterKeterangan);
-                    if (filterSearch) params.append('search', filterSearch);
-                    
-                    // Handle Year and Month filtering - MUST match applyInvoiceFilters logic exactly
-                    // This ensures we sort ONLY data from the selected month/year, not all invoices
-                    if (filterYear && filterMonth) {
-                        // Both year and month selected
-                        const dateFromValue = `${filterYear}-${String(filterMonth).padStart(2, '0')}-01`;
-                        const dateToObj = new Date(parseInt(filterYear), parseInt(filterMonth), 0);
-                        const dateToValue = `${filterYear}-${String(filterMonth).padStart(2, '0')}-${dateToObj.getDate()}`;
-                        params.append('date_from', dateFromValue);
-                        params.append('date_to', dateToValue);
-                        console.log(`Date range: ${dateFromValue} to ${dateToValue}`);
-                    } else if (filterYear) {
-                        // Only year selected
-                        const dateFromValue = `${filterYear}-01-01`;
-                        const dateToValue = `${filterYear}-12-31`;
-                        params.append('date_from', dateFromValue);
-                        params.append('date_to', dateToValue);
-                        console.log(`Date range: ${dateFromValue} to ${dateToValue}`);
-                    } else if (filterMonth) {
-                        // Only month selected - use SAVED state year (from localStorage)
-                        let yearToUse = window.invoiceFilterState?.year;
-                        if (!yearToUse) {
-                            yearToUse = new Date().getFullYear();
-                        }
-                        const dateFromValue = `${yearToUse}-${String(filterMonth).padStart(2, '0')}-01`;
-                        const dateToObj = new Date(parseInt(yearToUse), parseInt(filterMonth), 0);
-                        const dateToValue = `${yearToUse}-${String(filterMonth).padStart(2, '0')}-${dateToObj.getDate()}`;
-                        params.append('date_from', dateFromValue);
-                        params.append('date_to', dateToValue);
-                        console.log(`Date range (month only): ${dateFromValue} to ${dateToValue}`);
-                    }
-                    
-                    // Fetch ALL data without pagination limit for the filtered month
-                    params.append('limit', 10000);  // Get up to 10000 records
-                    params.append('offset', 0);
-                    
-                    const token = localStorage.getItem('jwt_token') || localStorage.getItem('authToken');
-                    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                    
-                    // Use relative URL (no protocol) to comply with CSP and work in both dev/prod
-                    // When deployed, this will use https://
-                    // In dev localhost, browser handles the protocol
-                    const baseUrl = window.CONFIG?.API_URL || window.location.origin;
-                    const url = `${baseUrl}/api/invoice/list?${params.toString()}`;
-                    console.log('Fetching filtered data from:', url);
-                    
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: headers
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
-                        const allData = result.data || [];
-                        
-                        console.log(`Fetched ${allData.length} records matching filters`);
-                        
-                        // Clear table body
-                        invoiceTableBody.innerHTML = '';
-                        
-                        // Create rows from fetched data
-                        allData.forEach(inv => {
-                            const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
-                            const filesRequired = isPPN ? 3 : 2;
-                            const filesUploaded = inv.files_uploaded_count || 0;
-                            const statusText = `${filesUploaded}/${filesRequired}`;
-                            
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${statusText}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.tanggal || ''}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.faktur || ''}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.status || ''}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.keterangan || ''}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.konsumen || ''}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.toko || ''}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">Rp ${(inv.total_jumlah_jual || 0).toLocaleString('id-ID')}</td>
-                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;"></td>
-                                <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e5e7eb;"></td>
-                            `;
-                            invoiceTableBody.appendChild(row);
-                        });
-                    } else {
-                        console.error('Failed to fetch filtered data for sort');
-                        // Re-enable headers on error
-                        sortHeaders.forEach(header => {
-                            header.style.opacity = '1';
-                            header.style.cursor = 'pointer';
-                            header.style.pointerEvents = 'auto';
-                        });
-                        return;
-                    }
-                } catch (err) {
-                    console.error('Error fetching filtered data for sort:', err);
-                    // Re-enable headers on error
-                    sortHeaders.forEach(header => {
-                        header.style.opacity = '1';
-                        header.style.cursor = 'pointer';
-                        header.style.pointerEvents = 'auto';
-                    });
-                    return;
-                }
-            } else {
-                // No filters at all - just sort current page locally
-                console.log('No filters - sorting current page data');
-            }
-            
             // Set sort direction
             if (window.sortTableState.currentSortField === field) {
                 window.sortTableState.sortDirection[field] = window.sortTableState.sortDirection[field] === 'asc' ? 'desc' : 'asc';
@@ -3506,68 +3372,79 @@
                 window.sortTableState.currentSortField = field;
             }
             
-            // Get all rows from table
-            const rows = Array.from(invoiceTableBody.querySelectorAll('tr'));
-            console.log('Total rows to sort:', rows.length);
+            // Get all rows from table (exclude any non-data rows like loading states)
+            const rows = Array.from(invoiceTableBody.querySelectorAll('tr')).filter(row => row.getAttribute('data-faktur'));
             
-            // Sort rows
-            rows.sort((a, b) => {
-                let aValue, bValue;
-                
+            if (rows.length === 0) {
+                // Re-enable headers if no data
+                sortHeaders.forEach(header => {
+                    header.style.opacity = '1';
+                    header.style.cursor = 'pointer';
+                    header.style.pointerEvents = 'auto';
+                });
+                return;
+            }
+            
+            // Extract and parse values for each row
+            const rowData = rows.map(row => ({
+                row,
+                statusValue: (() => {
+                    const text = row.cells[0].textContent.trim();
+                    const match = text.match(/(\d+)\/(\d+)/);
+                    const count = match ? parseInt(match[1]) : 0;
+                    const total = match ? parseInt(match[2]) : 0;
+                    return total > 0 ? (count / total) * 1000 + count : 0;
+                })(),
+                tanggalValue: (() => {
+                    const text = row.cells[1].textContent.trim();
+                    return new Date(text.split('/').reverse().join('-'));
+                })(),
+                totalValue: (() => {
+                    const text = row.cells[7].textContent.trim();
+                    const numStr = text.replace(/[^\d.,]/g, '');
+                    return parseFloat(numStr.replace(/\./g, '').replace(',', '.')) || 0;
+                })()
+            }));
+            
+            // Sort data
+            rowData.sort((a, b) => {
+                let aVal, bVal;
                 if (field === 'status') {
-                    const aStatusText = a.cells[0].textContent.trim();
-                    const bStatusText = b.cells[0].textContent.trim();
-                    
-                    const aMatch = aStatusText.match(/(\d+)\/(\d+)/);
-                    const bMatch = bStatusText.match(/(\d+)\/(\d+)/);
-                    
-                    const aCount = aMatch ? parseInt(aMatch[1]) : 0;
-                    const aTotal = aMatch ? parseInt(aMatch[2]) : 0;
-                    const bCount = bMatch ? parseInt(bMatch[1]) : 0;
-                    const bTotal = bMatch ? parseInt(bMatch[2]) : 0;
-                    
-                    aValue = aTotal > 0 ? (aCount / aTotal) * 1000 + aCount : 0;
-                    bValue = bTotal > 0 ? (bCount / bTotal) * 1000 + bCount : 0;
+                    aVal = a.statusValue;
+                    bVal = b.statusValue;
                 } else if (field === 'tanggal') {
-                    const aTanggal = a.cells[1].textContent.trim();
-                    const bTanggal = b.cells[1].textContent.trim();
-                    aValue = new Date(aTanggal.split('/').reverse().join('-'));
-                    bValue = new Date(bTanggal.split('/').reverse().join('-'));
+                    aVal = a.tanggalValue;
+                    bVal = b.tanggalValue;
                 } else if (field === 'total') {
-                    const aText = a.cells[7].textContent.trim();
-                    const bText = b.cells[7].textContent.trim();
-                    
-                    const aNumStr = aText.replace(/[^\d.,]/g, '');
-                    const bNumStr = bText.replace(/[^\d.,]/g, '');
-                    
-                    aValue = parseFloat(aNumStr.replace(/\./g, '').replace(',', '.')) || 0;
-                    bValue = parseFloat(bNumStr.replace(/\./g, '').replace(',', '.')) || 0;
+                    aVal = a.totalValue;
+                    bVal = b.totalValue;
                 }
                 
                 if (window.sortTableState.sortDirection[field] === 'asc') {
-                    return aValue > bValue ? 1 : -1;
+                    return aVal > bVal ? 1 : -1;
                 } else {
-                    return aValue < bValue ? 1 : -1;
+                    return aVal < bVal ? 1 : -1;
                 }
             });
             
-            // Reorder rows in table
-            rows.forEach(row => invoiceTableBody.appendChild(row));
+            // Reorder rows by appending in sorted order
+            rowData.forEach(item => {
+                invoiceTableBody.appendChild(item.row);
+            });
             
             // Update sort indicators
             updateSortIndicators(field);
             
-            // Re-enable sort headers after sort complete
+            // Re-enable sort headers
             sortHeaders.forEach(header => {
                 header.style.opacity = '1';
                 header.style.cursor = 'pointer';
                 header.style.pointerEvents = 'auto';
             });
+            };
             
-            console.log('=== Sort complete ===');
-        }
-        
-        function updateSortIndicators(sortedField) {
+            // Define updateSortIndicators only once
+            window.updateSortIndicators = function updateSortIndicators(sortedField) {
             const statusHeader = document.getElementById('sort-status');
             const tanggalHeader = document.getElementById('sort-tanggal');
             const totalHeader = document.getElementById('sort-total');
@@ -3591,7 +3468,8 @@
                 totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
                 totalHeader.classList.add(window.sortTableState.sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             }
-        }
+        };
+        } // Close if(typeof window.sortTableState === 'undefined')
     </script>
     <script>
         // Initialize dashboard for SPA support
