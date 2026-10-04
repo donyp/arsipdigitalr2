@@ -3457,14 +3457,36 @@
                     const konsumenFontSize = konsumenText.length > 25 ? '11px' : '14px';
                     const tokoFontSize = tokoText.length > 20 ? '11px' : '14px';
                     
-                    // Assume all files uploaded for quick render (status badges won't be accurate but still shows data)
-                    // This is fast since we skip file checking
-                    const actualUploadedCount = requiredCount;
+                    // Count actual files from API data (without file checks)
+                    let actualUploadedCount = 0;
+                    if (inv.invoice_pdf_path || inv.uploaded_file_path) actualUploadedCount++;
+                    if (inv.bukti_bayar_path) actualUploadedCount++;
+                    if (inv.keterangan === 'PPN' && inv.faktur_pajak_path) actualUploadedCount++;
+                    
                     const statusText = `${actualUploadedCount}/${requiredCount}`;
                     const isDarkMode = document.documentElement.getAttribute('data-dark-mode') === 'true';
-                    const statusStyle = isDarkMode 
-                        ? 'background: #064e3b; color: #10b981;'
-                        : 'background: #d4edda; color: #000000;';
+                    
+                    // Color based on actual file count (no file checking needed)
+                    let statusStyle;
+                    if (isDarkMode) {
+                        statusStyle = 'background: #7c5a0a; color: #fef08a;'; // Yellow
+                        if (actualUploadedCount === requiredCount) {
+                            statusStyle = 'background: #064e3b; color: #10b981;'; // Green
+                        } else if (actualUploadedCount === 0) {
+                            statusStyle = 'background: #7f1d1d; color: #fca5a5;'; // Red
+                        } else if (actualUploadedCount === requiredCount - 1) {
+                            statusStyle = 'background: #92400e; color: #fdba74;'; // Orange
+                        }
+                    } else {
+                        statusStyle = 'background: #fff3cd; color: #000000;'; // Yellow
+                        if (actualUploadedCount === requiredCount) {
+                            statusStyle = 'background: #d4edda; color: #000000;'; // Green
+                        } else if (actualUploadedCount === 0) {
+                            statusStyle = 'background: #f8d7da; color: #000000;'; // Red
+                        } else if (actualUploadedCount === requiredCount - 1) {
+                            statusStyle = 'background: #ffe8cc; color: #000000;'; // Orange
+                        }
+                    }
                     
                     tableHTML += `
                         <tr style="transition: background 0.2s; border-bottom: 2px solid #34495e;" data-faktur="${inv.faktur}">
