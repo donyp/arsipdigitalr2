@@ -558,3 +558,60 @@ const Notify = new NotificationSystem();
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Notify;
 }
+
+
+/**
+ * GLOBAL OVERRIDE: Intercept all alert() and confirm() calls
+ * Automatically replace with Notify system
+ * This ensures any new code using alert/confirm gets replaced automatically
+ */
+
+// Create global Notify instance
+const Notify = new NotificationSystem();
+
+// Override window.alert() - replace with Notify.info()
+const originalAlert = window.alert;
+window.alert = function(message) {
+    // Detect if it's a success message (has ✓ or success keywords)
+    if (message && (message.includes('✓') || message.includes('berhasil') || message.includes('sukses'))) {
+        Notify.success(message);
+    }
+    // Detect if it's an error message (has ✕ or error keywords)
+    else if (message && (message.includes('✕') || message.includes('error') || message.includes('gagal'))) {
+        Notify.error(message);
+    }
+    // Default to info
+    else {
+        Notify.info(message || 'Information');
+    }
+};
+
+// Override window.confirm() - replace with Notify.confirm()
+const originalConfirm = window.confirm;
+window.confirm = function(message) {
+    return new Promise((resolve) => {
+        // Detect if it's a delete/destructive action
+        if (message && (message.toLowerCase().includes('hapus') || message.toLowerCase().includes('delete'))) {
+            Notify.confirmDelete(
+                'Confirm Action',
+                message,
+                () => resolve(true),
+                () => resolve(false)
+            );
+        }
+        // Generic confirmation
+        else {
+            Notify.confirm(
+                'Confirm',
+                message,
+                () => resolve(true),
+                () => resolve(false)
+            );
+        }
+    });
+};
+
+// Fallback if Notify not yet initialized
+if (typeof window.Notify === 'undefined') {
+    window.Notify = new NotificationSystem();
+}
