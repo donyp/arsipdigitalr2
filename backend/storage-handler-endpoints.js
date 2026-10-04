@@ -203,26 +203,62 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             });
 
             const response = await s3Client.send(command);
+            const filename = path.basename(filePath);
+            
+            // Determine content type
+            const ext = path.extname(filename).toLowerCase();
+            const contentTypeMap = {
+                '.pdf': 'application/pdf',
+                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                '.xls': 'application/vnd.ms-excel',
+                '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.csv': 'text/csv',
+                '.txt': 'text/plain',
+                '.zip': 'application/zip'
+            };
+            
+            const contentType = contentTypeMap[ext] || response.ContentType || 'application/octet-stream';
 
-            // Set headers
-            res.setHeader('Content-Type', response.ContentType || 'application/octet-stream');
-            res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filePath)}"`);
-            res.setHeader('Content-Length', response.ContentLength);
+            // Set response headers
+            res.set({
+                'Content-Type': contentType,
+                'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
+                'Content-Length': response.ContentLength || 0,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            });
 
-            // Stream the file
-            const passThrough = new stream.PassThrough();
-            response.Body.pipe(passThrough);
-            passThrough.pipe(res);
+            // Pipe the stream directly
+            if (response.Body && typeof response.Body.pipe === 'function') {
+                response.Body.pipe(res);
+            } else if (response.Body) {
+                // Handle if Body is not a stream (e.g., Uint8Array)
+                const buffer = await response.Body.transformToByteArray();
+                res.send(buffer);
+            } else {
+                return res.status(500).json({
+                    success: false,
+                    error: 'No file content in response'
+                });
+            }
 
-            console.log(`[StorageHandler] ✅ Downloading: ${filePath}`);
+            console.log(`[StorageHandler] ✅ Download started: ${filename}`);
 
         } catch (error) {
             console.error('[StorageHandler] Download error:', error);
-            res.status(500).json({
-                success: false,
-                error: 'Failed to download file',
-                message: error.message
-            });
+            
+            if (!res.headersSent) {
+                res.status(500).json({
+                    success: false,
+                    error: 'Failed to download file',
+                    message: error.message
+                });
+            }
         }
     });
 

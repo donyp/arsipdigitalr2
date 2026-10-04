@@ -706,11 +706,24 @@
                 return;
             }
 
+            Notify.info(`📥 Starting ${selectedFiles.size} downloads...`);
             let downloadCount = 0;
+            
             for (const path of selectedFiles) {
-                setTimeout(() => downloadFile(path), downloadCount * 300);
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = `/api/storage-handler/download/${encodeURIComponent(path)}`;
+                    link.download = path.split('/').pop() || 'download';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, downloadCount * 300);
                 downloadCount++;
             }
+            
+            setTimeout(() => {
+                Notify.success(`✅ ${selectedFiles.size} files queued for download`);
+            }, downloadCount * 300 + 500);
         }
 
         function bulkMove() {
@@ -806,10 +819,27 @@
         }
 
         async function downloadFile(filePath) {
-            const link = document.createElement('a');
-            link.href = `/api/storage-handler/download/${filePath}`;
-            link.download = filePath.split('/').pop();
-            link.click();
+            try {
+                Notify.info('📥 Starting download...');
+                
+                const link = document.createElement('a');
+                link.href = `/api/storage-handler/download/${encodeURIComponent(filePath)}`;
+                link.download = filePath.split('/').pop() || 'download';
+                
+                // Trigger download
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Show success after a short delay
+                setTimeout(() => {
+                    Notify.success('✅ Download started successfully');
+                }, 500);
+                
+            } catch (error) {
+                Notify.error('Failed to download file');
+                console.error('Download error:', error);
+            }
         }
 
         async function deleteItem(path, type) {
