@@ -195,6 +195,7 @@
                                     <tr>
                                         <th style="padding:16px 24px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;font-size:12px;letter-spacing:0.5px;">User</th>
                                         <th style="padding:16px 24px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;font-size:12px;letter-spacing:0.5px;">Email</th>
+                                        <th style="padding:16px 24px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;font-size:12px;letter-spacing:0.5px;">Username</th>
                                         <th style="padding:16px 24px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;font-size:12px;letter-spacing:0.5px;">Role</th>
                                         <th style="padding:16px 24px;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;font-size:12px;letter-spacing:0.5px;">Status</th>
                                         <th style="padding:16px 24px;text-align:right;font-weight:700;color:var(--color-text-primary);text-transform:uppercase;font-size:12px;letter-spacing:0.5px;">Aksi</th>
@@ -360,7 +361,7 @@
         function renderUsersTable() {
             const tbody = document.getElementById('users-body');
             if (currentUsers.length === 0) {
-                tbody.innerHTML = '<tr style="border-bottom:1px solid var(--color-border);"><td colspan="5" style="padding:32px 24px;text-align:center;color:var(--color-text-secondary);">Tidak ada data user</td></tr>';
+                tbody.innerHTML = '<tr style="border-bottom:1px solid var(--color-border);"><td colspan="6" style="padding:32px 24px;text-align:center;color:var(--color-text-secondary);">Tidak ada data user</td></tr>';
                 return;
             }
 
@@ -375,6 +376,7 @@
                         ${user.name || user.email}
                     </td>
                     <td style="padding:16px 24px;color:var(--color-text-secondary);">${user.email}</td>
+                    <td style="padding:16px 24px;color:var(--color-text-secondary);">${user.username || '-'}</td>
                     <td style="padding:16px 24px;">
                         <span style="display:inline-block;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;background:${roleInfo.bg};color:${roleInfo.text};border:1px solid ${roleInfo.border};letter-spacing:0.3px;">
                             ${roleInfo.label}
