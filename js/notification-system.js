@@ -112,22 +112,22 @@ class NotificationSystem {
 
             @keyframes slideInRight {
                 from {
-                    transform: translateY(400px);
+                    transform: translateX(420px);
                     opacity: 0;
                 }
                 to {
-                    transform: translateY(0);
+                    transform: translateX(0);
                     opacity: 1;
                 }
             }
 
             @keyframes slideOutRight {
                 from {
-                    transform: translateY(0);
+                    transform: translateX(0);
                     opacity: 1;
                 }
                 to {
-                    transform: translateY(400px);
+                    transform: translateX(420px);
                     opacity: 0;
                 }
             }
