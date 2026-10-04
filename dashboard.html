@@ -3385,11 +3385,19 @@
                     aValue = new Date(a.cells[1].textContent.trim().split('/').reverse().join('-'));
                     bValue = new Date(b.cells[1].textContent.trim().split('/').reverse().join('-'));
                 } else if (field === 'total') {
-                    // Extract total as number (remove Rp, spaces, dots, commas)
-                    const aText = a.cells[8].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
-                    const bText = b.cells[8].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
-                    aValue = parseFloat(aText) || 0;
-                    bValue = parseFloat(bText) || 0;
+                    // Extract total as number from Indonesian format "Rp 13.186.950"
+                    // Indonesian format: dots (.) = thousands separator, comma (,) = decimal
+                    const aText = a.cells[8].textContent.trim();
+                    const bText = b.cells[8].textContent.trim();
+                    
+                    // Extract only digits and dots/commas
+                    const aNumStr = aText.replace(/[^\d.,]/g, '');
+                    const bNumStr = bText.replace(/[^\d.,]/g, '');
+                    
+                    // Convert Indonesian format to number:
+                    // Remove all dots (thousands separator), keep last comma if present (decimal)
+                    aValue = parseFloat(aNumStr.replace(/\./g, '').replace(',', '.')) || 0;
+                    bValue = parseFloat(bNumStr.replace(/\./g, '').replace(',', '.')) || 0;
                 }
                 
                 if (sortDirection[field] === 'asc') {
