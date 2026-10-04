@@ -1163,6 +1163,15 @@ registerFeatureEndpoints(app, supabase, authenticateToken, authorizeRole);
 console.log('[INIT] Phase 1 feature endpoints registered âœ…');
 
 // ============================================================
+// STORAGE HANDLER ENDPOINTS (Cloudflare R2 File Manager)
+// ============================================================
+console.log('[INIT] Registering Storage Handler endpoints...');
+const registerStorageHandlerEndpoints = require('./storage-handler-endpoints');
+registerStorageHandlerEndpoints(app, supabase, authenticateToken, authorizeRole);
+console.log('[INIT] Storage Handler endpoints registered âœ…');
+console.log('  âœ" R2 File Manager (Browse, Upload, Download, Delete, Rename)');
+
+// ============================================================
 // SESSION MANAGEMENT & FAQ ENDPOINTS (Phase 2 Features)
 // ============================================================
 console.log('[INIT] Registering Phase 2 feature endpoints...');
