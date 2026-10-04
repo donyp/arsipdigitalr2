@@ -722,7 +722,7 @@
                 return;
             }
 
-            Notify.info(`📥 Preparing ${selectedFiles.size} downloads...`);
+            Notify.info(`📥 Starting ${selectedFiles.size} downloads...`);
             let downloadCount = 0;
             
             for (const filePath of selectedFiles) {
@@ -735,24 +735,20 @@
                         if (response.ok) {
                             const data = await response.json();
                             if (data.success && data.url) {
-                                const link = document.createElement('a');
-                                link.href = data.url;
-                                link.download = filePath.split('/').pop() || 'download';
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
+                                // Trigger download via window.location.href
+                                window.open(data.url, '_blank');
                             }
                         }
                     } catch (error) {
                         console.error('[BulkDownload] Error for', filePath, error);
                     }
-                }, downloadCount * 300);
+                }, downloadCount * 500); // 500ms stagger untuk bulk
                 downloadCount++;
             }
             
             setTimeout(() => {
-                Notify.success(`✅ ${selectedFiles.size} files queued for download`);
-            }, downloadCount * 300 + 500);
+                Notify.success(`✅ ${selectedFiles.size} files started downloading`);
+            }, downloadCount * 500 + 800);
         }
 
         function bulkMove() {
@@ -853,7 +849,7 @@
                 
                 console.log('[Download] Requesting signed URL for:', filePath);
                 
-                // Request signed URL from backend
+                // Request signed URL from backend (sudah include attachment header)
                 const response = await fetch(`/api/storage-handler/download-signed/${encodeURIComponent(filePath)}`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
                 });
@@ -870,19 +866,13 @@
 
                 console.log('[Download] Got signed URL, initiating download');
                 
-                // Use signed URL for direct download
-                const link = document.createElement('a');
-                link.href = data.url;
-                link.download = filePath.split('/').pop() || 'download';
-                link.style.display = 'none';
-                
-                document.body.appendChild(link);
-                link.click();
+                // Open signed URL in new tab/window OR trigger download
+                // Using window.open with _blank will trigger download since URL has attachment header
+                window.location.href = data.url;
                 
                 setTimeout(() => {
-                    document.body.removeChild(link);
-                    Notify.success('✅ Download started successfully');
-                }, 100);
+                    Notify.success('✅ Download started - check your downloads folder');
+                }, 500);
                 
             } catch (error) {
                 console.error('[Download] Error:', error);

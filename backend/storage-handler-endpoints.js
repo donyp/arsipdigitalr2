@@ -278,7 +278,7 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
     /**
      * GET /api/storage-handler/download-signed/:path(*)
-     * Alternative: Get signed URL for direct R2 download (more reliable)
+     * Get signed URL for direct R2 download (forces file download, not preview)
      */
     app.get('/api/storage-handler/download-signed/*', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
         try {
@@ -292,20 +292,47 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             }
 
             filePath = decodeURIComponent(filePath);
+            const filename = path.basename(filePath);
 
             console.log(`[StorageHandler] Signed download URL requested for: ${filePath}`);
 
+            // Determine content type
+            const ext = path.extname(filename).toLowerCase();
+            const contentTypeMap = {
+                '.pdf': 'application/pdf',
+                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                '.xls': 'application/vnd.ms-excel',
+                '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.gif': 'image/gif',
+                '.csv': 'text/csv',
+                '.txt': 'text/plain',
+                '.zip': 'application/zip',
+                '.json': 'application/json'
+            };
+            
+            const contentType = contentTypeMap[ext] || 'application/octet-stream';
+
+            // Force download by setting response-content-disposition
             const command = new GetObjectCommand({
                 Bucket: config.bucketName,
-                Key: filePath
+                Key: filePath,
+                ResponseContentType: contentType,
+                ResponseContentDisposition: `attachment; filename="${encodeURIComponent(filename)}"`
             });
 
             // Generate signed URL valid for 15 minutes
+            // Use S3 presigner which will include the response headers in the URL
             const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+
+            console.log(`[StorageHandler] ✅ Generated signed URL for: ${filename}`);
 
             res.json({
                 success: true,
                 url: signedUrl,
+                filename: filename,
                 expiresIn: 900
             });
 
