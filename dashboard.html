@@ -2387,6 +2387,40 @@
                                         <input type="hidden" id="filterKeterangan" value="">
                                     </div>
                                     
+                                    <!-- Status File filter - CUSTOM DROPDOWN (Uploaded/Pending/Missing) -->
+                                    <div style="display: flex; flex-direction: column;">
+                                        <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><i class="fas fa-file text-blue-600"></i>Status File</label>
+                                        <div class="custom-dropdown" id="statusFileDropdown">
+                                            <button class="dropdown-trigger" onclick="toggleCustomDropdown(event, 'statusFileDropdown')">
+                                                <span class="dropdown-label">Semua</span>
+                                                <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                                                </svg>
+                                            </button>
+                                            <div class="dropdown-menu" style="display: none;">
+                                                <div class="dropdown-options">
+                                                    <div class="dropdown-option selected" onclick="selectOption(event, 'statusFileDropdown', '', 'Semua')">
+                                                        <span class="checkmark">✓</span>
+                                                        <span>Semua</span>
+                                                    </div>
+                                                    <div class="dropdown-option" onclick="selectOption(event, 'statusFileDropdown', 'uploaded', 'Lengkap (Uploaded)')">
+                                                        <span class="checkmark"></span>
+                                                        <span>✓ Lengkap (Uploaded)</span>
+                                                    </div>
+                                                    <div class="dropdown-option" onclick="selectOption(event, 'statusFileDropdown', 'pending', '⏳ Sebagian (Pending)')">
+                                                        <span class="checkmark"></span>
+                                                        <span>⏳ Sebagian (Pending)</span>
+                                                    </div>
+                                                    <div class="dropdown-option" onclick="selectOption(event, 'statusFileDropdown', 'missing', '✗ Kurang (Missing)')">
+                                                        <span class="checkmark"></span>
+                                                        <span>✗ Kurang (Missing)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" id="filterStatusFile" value="">
+                                    </div>
+                                    
                                     <!-- Toko filter - CUSTOM DROPDOWN -->
                                     <div style="display: flex; flex-direction: column;">
                                         <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><i class="fas fa-store text-blue-600"></i>Toko</label>
@@ -2507,15 +2541,15 @@
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Status</th>
+                                        <th id="th-status" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;" onclick="sortTable('status')">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
                                         <th id="th-tanggal" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;" onclick="sortTable('tanggal')">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 6%;">Tipe</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
-                                        <th id="th-total" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%; cursor: pointer; user-select: none;" onclick="sortTable('total')">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%;">Keterangan</th>
+                                        <th id="th-total" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;" onclick="sortTable('total')">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
+                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Keterangan</th>
                                         <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Aksi</th>
                                     </tr>
                                 </thead>
@@ -3361,14 +3395,25 @@
             rows.sort((a, b) => {
                 let aValue, bValue;
                 
-                if (field === 'tanggal') {
+                if (field === 'status') {
+                    // Extract status count (e.g., "1/3" → 1, "2/2" → 2)
+                    const aStatusText = a.cells[0].textContent.trim();
+                    const bStatusText = b.cells[0].textContent.trim();
+                    
+                    // Parse "X/Y" format
+                    const aMatch = aStatusText.match(/(\d+)\/(\d+)/);
+                    const bMatch = bStatusText.match(/(\d+)\/(\d+)/);
+                    
+                    aValue = aMatch ? parseInt(aMatch[1]) : 0;
+                    bValue = bMatch ? parseInt(bMatch[1]) : 0;
+                } else if (field === 'tanggal') {
                     // Extract date from cell (format: DD/MM/YYYY)
                     aValue = new Date(a.cells[1].textContent.trim().split('/').reverse().join('-'));
                     bValue = new Date(b.cells[1].textContent.trim().split('/').reverse().join('-'));
                 } else if (field === 'total') {
                     // Extract total as number (remove Rp, spaces, dots, commas)
-                    const aText = a.cells[7].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
-                    const bText = b.cells[7].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
+                    const aText = a.cells[8].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
+                    const bText = b.cells[8].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
                     aValue = parseFloat(aText) || 0;
                     bValue = parseFloat(bText) || 0;
                 }
@@ -3388,27 +3433,28 @@
         }
         
         function updateSortIndicators(sortedField) {
+            const statusHeader = document.getElementById('sort-status');
             const tanggalHeader = document.getElementById('sort-tanggal');
             const totalHeader = document.getElementById('sort-total');
             
-            if (tanggalHeader) {
-                if (sortedField === 'tanggal') {
-                    tanggalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                    tanggalHeader.classList.add(sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
-                } else {
-                    tanggalHeader.classList.remove('fa-chevron-up');
-                    tanggalHeader.classList.add('fa-chevron-down');
+            // Reset all indicators
+            [statusHeader, tanggalHeader, totalHeader].forEach(header => {
+                if (header) {
+                    header.classList.remove('fa-chevron-up');
+                    header.classList.add('fa-chevron-down');
                 }
-            }
+            });
             
-            if (totalHeader) {
-                if (sortedField === 'total') {
-                    totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                    totalHeader.classList.add(sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
-                } else {
-                    totalHeader.classList.remove('fa-chevron-up');
-                    totalHeader.classList.add('fa-chevron-down');
-                }
+            // Update active indicator
+            if (sortedField === 'status' && statusHeader) {
+                statusHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
+                statusHeader.classList.add(sortDirection['status'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+            } else if (sortedField === 'tanggal' && tanggalHeader) {
+                tanggalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
+                tanggalHeader.classList.add(sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+            } else if (sortedField === 'total' && totalHeader) {
+                totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
+                totalHeader.classList.add(sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             }
         }
     </script>
