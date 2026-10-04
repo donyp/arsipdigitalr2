@@ -3387,17 +3387,24 @@
                 } else if (field === 'total') {
                     // Extract total as number from Indonesian format "Rp 13.186.950"
                     // Indonesian format: dots (.) = thousands separator, comma (,) = decimal
-                    const aText = a.cells[8].textContent.trim();
-                    const bText = b.cells[8].textContent.trim();
+                    // Total column is at index 7 (0=Status, 1=Tanggal, 2=No Faktur, 3=Status Bayar, 4=Tipe, 5=Nama Konsumen, 6=Nama Toko, 7=Total)
+                    const aText = a.cells[7].textContent.trim();
+                    const bText = b.cells[7].textContent.trim();
+                    
+                    console.log('Sorting total:', { aText, bText });
                     
                     // Extract only digits and dots/commas
                     const aNumStr = aText.replace(/[^\d.,]/g, '');
                     const bNumStr = bText.replace(/[^\d.,]/g, '');
                     
+                    console.log('After regex:', { aNumStr, bNumStr });
+                    
                     // Convert Indonesian format to number:
                     // Remove all dots (thousands separator), keep last comma if present (decimal)
                     aValue = parseFloat(aNumStr.replace(/\./g, '').replace(',', '.')) || 0;
                     bValue = parseFloat(bNumStr.replace(/\./g, '').replace(',', '.')) || 0;
+                    
+                    console.log('Parsed values:', { aValue, bValue });
                 }
                 
                 if (sortDirection[field] === 'asc') {
