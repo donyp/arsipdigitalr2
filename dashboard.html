@@ -2508,13 +2508,13 @@
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Status</th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Tanggal</th>
+                                        <th id="th-tanggal" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;" onclick="sortTable('tanggal')">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 6%;">Tipe</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Total</th>
+                                        <th id="th-total" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%; cursor: pointer; user-select: none;" onclick="sortTable('total')">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%;">Keterangan</th>
                                         <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Aksi</th>
                                     </tr>
@@ -3333,6 +3333,83 @@
                 if (e.target.files.length > 0) {
                 }
             });
+        }
+    </script>
+    <script>
+        // ============================================================
+        // SORTING FUNCTIONALITY FOR MODERATOR DASHBOARD
+        // ============================================================
+        let currentSortField = null;
+        let sortDirection = {}; // { field: 'asc' or 'desc' }
+        
+        function sortTable(field) {
+            const invoiceTableBody = document.getElementById('invoiceTableBody');
+            if (!invoiceTableBody) return;
+            
+            // Toggle direction for same field
+            if (currentSortField === field) {
+                sortDirection[field] = sortDirection[field] === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortDirection[field] = 'asc';
+                currentSortField = field;
+            }
+            
+            // Get all rows from table
+            const rows = Array.from(invoiceTableBody.querySelectorAll('tr'));
+            
+            // Sort rows
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                if (field === 'tanggal') {
+                    // Extract date from cell (format: DD/MM/YYYY)
+                    aValue = new Date(a.cells[1].textContent.trim().split('/').reverse().join('-'));
+                    bValue = new Date(b.cells[1].textContent.trim().split('/').reverse().join('-'));
+                } else if (field === 'total') {
+                    // Extract total as number (remove Rp, spaces, dots, commas)
+                    const aText = a.cells[7].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
+                    const bText = b.cells[7].textContent.trim().replace(/[^\d,]/g, '').replace(',', '.');
+                    aValue = parseFloat(aText) || 0;
+                    bValue = parseFloat(bText) || 0;
+                }
+                
+                if (sortDirection[field] === 'asc') {
+                    return aValue > bValue ? 1 : -1;
+                } else {
+                    return aValue < bValue ? 1 : -1;
+                }
+            });
+            
+            // Reorder rows in table
+            rows.forEach(row => invoiceTableBody.appendChild(row));
+            
+            // Update sort indicators
+            updateSortIndicators(field);
+        }
+        
+        function updateSortIndicators(sortedField) {
+            const tanggalHeader = document.getElementById('sort-tanggal');
+            const totalHeader = document.getElementById('sort-total');
+            
+            if (tanggalHeader) {
+                if (sortedField === 'tanggal') {
+                    tanggalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
+                    tanggalHeader.classList.add(sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                } else {
+                    tanggalHeader.classList.remove('fa-chevron-up');
+                    tanggalHeader.classList.add('fa-chevron-down');
+                }
+            }
+            
+            if (totalHeader) {
+                if (sortedField === 'total') {
+                    totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
+                    totalHeader.classList.add(sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+                } else {
+                    totalHeader.classList.remove('fa-chevron-up');
+                    totalHeader.classList.add('fa-chevron-down');
+                }
+            }
         }
     </script>
     <script>
