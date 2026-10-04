@@ -277,9 +277,173 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
     });
 
     /**
-     * GET /api/storage-handler/download-signed/:path(*)
-     * Get signed URL for direct R2 download (forces file download, not preview)
+     * POST /api/storage-handler/download-bulk
+     * Download multiple files as ZIP if count > 5, otherwise individual downloads
      */
+    app.post('/api/storage-handler/download-bulk', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+        try {
+            const { files = [] } = req.body;
+
+            if (!files || files.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'No files specified'
+                });
+            }
+
+            if (files.length > 100) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Maximum 100 files allowed'
+                });
+            }
+
+            console.log(`[StorageHandler] Bulk download request: ${files.length} files`);
+
+            // If <= 5 files, return signed URLs for individual downloads
+            if (files.length <= 5) {
+                console.log('[StorageHandler] <= 5 files, generating individual URLs');
+                
+                const urls = [];
+                for (const filePath of files) {
+                    try {
+                        const filename = path.basename(filePath);
+                        const ext = path.extname(filename).toLowerCase();
+                        
+                        const contentTypeMap = {
+                            '.pdf': 'application/pdf',
+                            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                            '.xls': 'application/vnd.ms-excel',
+                            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            '.png': 'image/png',
+                            '.jpg': 'image/jpeg',
+                            '.jpeg': 'image/jpeg',
+                            '.gif': 'image/gif',
+                            '.csv': 'text/csv',
+                            '.txt': 'text/plain',
+                            '.zip': 'application/zip',
+                            '.json': 'application/json'
+                        };
+                        
+                        const contentType = contentTypeMap[ext] || 'application/octet-stream';
+
+                        const command = new GetObjectCommand({
+                            Bucket: config.bucketName,
+                            Key: filePath,
+                            ResponseContentType: contentType,
+                            ResponseContentDisposition: `attachment; filename="${encodeURIComponent(filename)}"`
+                        });
+
+                        const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+                        urls.push({ path: filePath, url: signedUrl, filename });
+                    } catch (error) {
+                        console.error(`[StorageHandler] Error generating URL for ${filePath}:`, error);
+                    }
+                }
+
+                return res.json({
+                    success: true,
+                    type: 'individual',
+                    files: urls
+                });
+            }
+
+            // If > 5 files, create ZIP
+            console.log(`[StorageHandler] > 5 files (${files.length}), creating ZIP...`);
+
+            const JSZip = require('jszip');
+            const zip = new JSZip();
+            let filesAdded = 0;
+            let filesFailed = 0;
+
+            // Add each file to ZIP
+            for (const filePath of files) {
+                try {
+                    const filename = path.basename(filePath);
+                    
+                    console.log(`[StorageHandler] Adding to ZIP: ${filename}`);
+
+                    const command = new GetObjectCommand({
+                        Bucket: config.bucketName,
+                        Key: filePath
+                    });
+
+                    const response = await s3Client.send(command);
+                    
+                    // Convert stream to buffer
+                    const chunks = [];
+                    for await (const chunk of response.Body) {
+                        chunks.push(chunk);
+                    }
+                    const buffer = Buffer.concat(chunks);
+
+                    // Add to ZIP
+                    zip.file(filename, buffer);
+                    filesAdded++;
+
+                } catch (error) {
+                    console.error(`[StorageHandler] Error adding ${filePath} to ZIP:`, error);
+                    filesFailed++;
+                }
+            }
+
+            if (filesAdded === 0) {
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to add any files to ZIP'
+                });
+            }
+
+            // Generate ZIP file
+            console.log(`[StorageHandler] Generating ZIP (${filesAdded} files added, ${filesFailed} failed)`);
+
+            const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+
+            // Upload ZIP to R2 temporary
+            const zipFileName = `batch-download-${Date.now()}.zip`;
+            const uploadCommand = new PutObjectCommand({
+                Bucket: config.bucketName,
+                Key: `temp/${zipFileName}`,
+                Body: zipBuffer,
+                ContentType: 'application/zip',
+                Metadata: {
+                    'temp': 'true',
+                    'created-by': req.user.email,
+                    'created-at': new Date().toISOString()
+                }
+            });
+
+            await s3Client.send(uploadCommand);
+            console.log(`[StorageHandler] ✅ ZIP uploaded to temp: ${zipFileName}`);
+
+            // Generate signed URL for ZIP download
+            const downloadCommand = new GetObjectCommand({
+                Bucket: config.bucketName,
+                Key: `temp/${zipFileName}`,
+                ResponseContentType: 'application/zip',
+                ResponseContentDisposition: `attachment; filename="${encodeURIComponent(zipFileName)}"`
+            });
+
+            const signedZipUrl = await getSignedUrl(s3Client, downloadCommand, { expiresIn: 900 });
+
+            res.json({
+                success: true,
+                type: 'zip',
+                url: signedZipUrl,
+                filename: zipFileName,
+                filesIncluded: filesAdded,
+                filesFailed: filesFailed
+            });
+
+        } catch (error) {
+            console.error('[StorageHandler] Bulk download error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to process bulk download',
+                message: error.message
+            });
+        }
+    });
     app.get('/api/storage-handler/download-signed/*', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
         try {
             let filePath = req.params[0];

@@ -687,7 +687,17 @@
             if (count > 0) {
                 toolbar.style.display = 'flex';
                 document.getElementById('bulkSelectedCount').textContent = `${count} selected`;
-                document.getElementById('bulkDownloadBtn').disabled = count > 10;
+                
+                // Enable/disable download button
+                const downloadBtn = document.getElementById('bulkDownloadBtn');
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                    if (count > 5) {
+                        downloadBtn.title = `Auto ZIP: ${count} files will be compressed`;
+                    } else {
+                        downloadBtn.title = `Individual downloads: ${count} files`;
+                    }
+                }
             } else {
                 toolbar.style.display = 'none';
                 selectedFiles.clear();
@@ -717,38 +727,97 @@
 
         async function bulkDownload() {
             if (selectedFiles.size === 0) return;
-            if (selectedFiles.size > 10) {
-                Notify.warning('Max 10 files at once');
+            if (selectedFiles.size > 100) {
+                Notify.warning('Maximum 100 files allowed');
                 return;
             }
 
-            Notify.info(`📥 Starting ${selectedFiles.size} downloads...`);
-            let downloadCount = 0;
+            const fileCount = selectedFiles.size;
             
-            for (const filePath of selectedFiles) {
-                setTimeout(async () => {
-                    try {
-                        const response = await fetch(`/api/storage-handler/download-signed/${encodeURIComponent(filePath)}`, {
-                            headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
-                        });
+            // If > 5 files, create ZIP
+            if (fileCount > 5) {
+                Notify.info(`📦 Preparing ZIP with ${fileCount} files...`);
+                
+                try {
+                    const response = await fetch('/api/storage-handler/download-bulk', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            files: Array.from(selectedFiles)
+                        })
+                    });
 
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.success && data.url) {
-                                // Trigger download via window.location.href
-                                window.open(data.url, '_blank');
-                            }
-                        }
-                    } catch (error) {
-                        console.error('[BulkDownload] Error for', filePath, error);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
                     }
-                }, downloadCount * 500); // 500ms stagger untuk bulk
-                downloadCount++;
+
+                    const data = await response.json();
+
+                    if (data.success && data.type === 'zip') {
+                        console.log('[BulkDownload] ZIP created, starting download');
+                        window.location.href = data.url;
+                        
+                        setTimeout(() => {
+                            Notify.success(`✅ ZIP downloading (${data.filesIncluded} files${data.filesFailed > 0 ? `, ${data.filesFailed} failed` : ''})`);
+                            clearSelection();
+                        }, 500);
+                    } else {
+                        throw new Error('Invalid response');
+                    }
+
+                } catch (error) {
+                    console.error('[BulkDownload] Error:', error);
+                    Notify.error('Failed to create ZIP: ' + error.message);
+                }
+                return;
             }
+
+            // If <= 5 files, individual downloads
+            Notify.info(`📥 Starting ${fileCount} downloads...`);
             
-            setTimeout(() => {
-                Notify.success(`✅ ${selectedFiles.size} files started downloading`);
-            }, downloadCount * 500 + 800);
+            try {
+                const response = await fetch('/api/storage-handler/download-bulk', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: Array.from(selectedFiles)
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.type === 'individual') {
+                    let downloadCount = 0;
+                    
+                    for (const file of data.files) {
+                        setTimeout(() => {
+                            window.open(file.url, '_blank');
+                        }, downloadCount * 500);
+                        downloadCount++;
+                    }
+
+                    setTimeout(() => {
+                        Notify.success(`✅ ${fileCount} files started downloading`);
+                        clearSelection();
+                    }, downloadCount * 500 + 800);
+                } else {
+                    throw new Error('Invalid response');
+                }
+
+            } catch (error) {
+                console.error('[BulkDownload] Error:', error);
+                Notify.error('Failed to start downloads: ' + error.message);
+            }
         }
 
         function bulkMove() {
