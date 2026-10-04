@@ -4552,6 +4552,16 @@ function disableFiltersExceptMonth() {
             }
         }
     });
+    
+    // Disable search bar until month is selected
+    const filterSearch = document.getElementById('filterSearch');
+    if (filterSearch) {
+        filterSearch.disabled = true;
+        filterSearch.style.opacity = '0.5';
+        filterSearch.style.cursor = 'not-allowed';
+        filterSearch.style.pointerEvents = 'none';
+        filterSearch.placeholder = '📅 Pilih bulan terlebih dahulu';
+    }
 }
 
 // Enable all filter dropdowns after month is selected
@@ -4575,6 +4585,16 @@ function enableAllFilters() {
             }
         }
     });
+    
+    // Enable search bar when month is selected
+    const filterSearch = document.getElementById('filterSearch');
+    if (filterSearch) {
+        filterSearch.disabled = false;
+        filterSearch.style.opacity = '1';
+        filterSearch.style.cursor = 'text';
+        filterSearch.style.pointerEvents = 'auto';
+        filterSearch.placeholder = '🔍 Cari faktur, nomor, atau kategori...';
+    }
 }
 
 // Check if month is selected and enable/disable accordingly

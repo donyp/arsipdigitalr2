@@ -3587,6 +3587,11 @@
                 } else {
                 }
                 
+                // Check month selection and disable/enable filters accordingly
+                if (typeof checkMonthSelectionAndToggleFilters === 'function') {
+                    checkMonthSelectionAndToggleFilters();
+                }
+                
                 // Initialize invoice system
                 if (typeof initInvoiceSystem === 'function') {
                     await initInvoiceSystem();
