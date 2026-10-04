@@ -2063,6 +2063,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Invoice PDF] Expected new path: ${expectedNewPath}`);
                 console.log(`[Invoice PDF] Current DB path: ${invoice.invoice_pdf_path || 'NULL'}`);
                 
+                // PRE-CALCULATE COMPRESSION TO GET NOTE FOR RESPONSE
+                let compressionNoteForResponse = null;
+                try {
+                    const preCompressionResult = await compressPDF(fileBuffer, 'invoice_pdf');
+                    compressionNoteForResponse = preCompressionResult?.compressionNote || null;
+                    console.log(`[Invoice PDF] Pre-calculated compression note: ${compressionNoteForResponse}`);
+                } catch (preCompErr) {
+                    console.log(`[Invoice PDF] Pre-compression failed (will retry in background):`, preCompErr.message);
+                }
+                
                 // Check if this is a re-upload of same file (path already matches new structure)
                 const isReuploadWithNewPath = invoice.invoice_pdf_path === expectedNewPath;
                 if (isReuploadWithNewPath) {
@@ -2105,12 +2115,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         let uploadResult = null;
                         let remotePath = null;
                         let compressionResult = null;
+                        let compressionNote = null; // Store for response
                         
                         try {
                             console.log(`[Invoice PDF BG] Original file size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
                             
                             // Apply compression
                             compressionResult = await compressPDF(fileBuffer, 'invoice_pdf');
+                            compressionNote = compressionResult?.compressionNote; // Capture for response
                             console.log(`[Invoice PDF BG] Compression result:`, {
                                 was_compressed: compressionResult.compressed,
                                 original_size: compressionResult.originalSize,
@@ -2284,7 +2296,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // WhatsApp data
                     zona_id: invoice.zona_id,
                     tipe: invoice.keterangan || 'PPN',
-                    nominal: invoice.total_jumlah_jual
+                    nominal: invoice.total_jumlah_jual,
+                    // Compression note (pre-calculated)
+                    compression_note: compressionNoteForResponse
                 });
                 
             } catch (error) {
@@ -2379,6 +2393,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                     // Build expected new path with location
                     const expectedNewPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`;
+                    
+                    // PRE-CALCULATE COMPRESSION TO GET NOTE FOR RESPONSE
+                    let compressionNoteForResponse = null;
+                    try {
+                        const preCompressionResult = await compressPDF(fileBuffer, 'faktur_pajak');
+                        compressionNoteForResponse = preCompressionResult?.compressionNote || null;
+                        console.log(`[Invoice Document] Pre-calculated compression note: ${compressionNoteForResponse}`);
+                    } catch (preCompErr) {
+                        console.log(`[Invoice Document] Pre-compression failed (will retry in background):`, preCompErr.message);
+                    }
                     
                     // Check if this is a re-upload of same file (path already matches new structure)
                     const isReuploadWithNewPath = invoice?.faktur_pajak_path === expectedNewPath;
@@ -2627,6 +2651,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Build expected new path with location
                     const expectedNewPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}/${finalFilename}`;
                     
+                    // PRE-CALCULATE COMPRESSION TO GET NOTE FOR RESPONSE
+                    let compressionNoteForResponse = null;
+                    try {
+                        const preCompressionResult = await compressPDF(fileBuffer, 'bukti_bayar');
+                        compressionNoteForResponse = preCompressionResult?.compressionNote || null;
+                        console.log(`[Invoice Document] Pre-calculated compression note: ${compressionNoteForResponse}`);
+                    } catch (preCompErr) {
+                        console.log(`[Invoice Document] Pre-compression failed (will retry in background):`, preCompErr.message);
+                    }
+                    
                     // Check if this is a re-upload of same file (path already matches new structure)
                     const isReuploadWithNewPath = invoice?.bukti_bayar_path === expectedNewPath;
                     if (isReuploadWithNewPath) {
@@ -2825,7 +2859,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         type: 'bukti_bayar',
                         originalName: filename,
                         status: 'processing',
-                        faktur: nomorFaktur
+                        faktur: nomorFaktur,
+                        // Compression note (pre-calculated)
+                        compression_note: compressionNoteForResponse
                     });
                 }
 
@@ -3055,7 +3091,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     faktur: fakturNumber,
                     status: 'processing',
                     files_uploaded_count: currentCount,
-                    files_required_count: filesRequired
+                    files_required_count: filesRequired,
+                    // Compression note (pre-calculated)
+                    compression_note: compressionNoteForResponse
                 });
 
             } catch (error) {
