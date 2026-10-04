@@ -3396,7 +3396,8 @@
                 let aValue, bValue;
                 
                 if (field === 'status') {
-                    // Extract status count (e.g., "1/3" → 1, "2/2" → 2)
+                    // Extract status count and total
+                    // Format: "0/3" or "2/2" → extract numerator and denominator
                     const aStatusText = a.cells[0].textContent.trim();
                     const bStatusText = b.cells[0].textContent.trim();
                     
@@ -3404,8 +3405,15 @@
                     const aMatch = aStatusText.match(/(\d+)\/(\d+)/);
                     const bMatch = bStatusText.match(/(\d+)\/(\d+)/);
                     
-                    aValue = aMatch ? parseInt(aMatch[1]) : 0;
-                    bValue = bMatch ? parseInt(bMatch[1]) : 0;
+                    const aCount = aMatch ? parseInt(aMatch[1]) : 0;
+                    const aTotal = aMatch ? parseInt(aMatch[2]) : 0;
+                    const bCount = bMatch ? parseInt(bMatch[1]) : 0;
+                    const bTotal = bMatch ? parseInt(bMatch[2]) : 0;
+                    
+                    // Calculate percentage: completed/total
+                    // This handles both 3/3 and 2/2 equally
+                    aValue = aTotal > 0 ? (aCount / aTotal) * 1000 + aCount : 0;
+                    bValue = bTotal > 0 ? (bCount / bTotal) * 1000 + bCount : 0;
                 } else if (field === 'tanggal') {
                     // Extract date from cell (format: DD/MM/YYYY)
                     aValue = new Date(a.cells[1].textContent.trim().split('/').reverse().join('-'));
