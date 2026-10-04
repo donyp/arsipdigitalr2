@@ -3501,7 +3501,15 @@
                     }
                     
                     tableHTML += `
-                        <tr style="transition: background 0.2s; border-bottom: 2px solid #34495e;" data-faktur="${inv.faktur}">
+                        <tr style="transition: background 0.2s; border-bottom: 2px solid #34495e;" data-faktur="${inv.faktur}" data-file-status='${JSON.stringify({
+                            hasInvoice: !!(inv.invoice_pdf_path || inv.uploaded_file_path),
+                            hasBuktiBayar: !!inv.bukti_bayar_path,
+                            hasFakturPajak: !!(inv.keterangan === 'PPN' && inv.faktur_pajak_path),
+                            isPPN: inv.keterangan === 'PPN',
+                            isComplete: actualUploadedCount === requiredCount,
+                            actualCount: actualUploadedCount,
+                            requiredCount: requiredCount
+                        })}'>
                             <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">
                                 <span style="display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; ${statusStyle}">
                                     ${statusText}
