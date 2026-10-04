@@ -3372,75 +3372,154 @@
                 window.sortTableState.currentSortField = field;
             }
             
-            // Get all rows from table (exclude any non-data rows like loading states)
-            const rows = Array.from(invoiceTableBody.querySelectorAll('tr')).filter(row => row.getAttribute('data-faktur'));
-            
-            if (rows.length === 0) {
-                // Re-enable headers if no data
+            try {
+                // Fetch ALL invoices from selected month/year (not paginated)
+                const status = document.getElementById('filterStatus')?.value || '';
+                const toko = document.getElementById('filterToko')?.value || '';
+                const keterangan = document.getElementById('filterKeterangan')?.value || '';
+                const year = document.getElementById('filterYear')?.value || '';
+                const month = document.getElementById('filterMonth')?.value || '';
+                const search = document.getElementById('filterSearch')?.value || '';
+                
+                const token = API.getToken() || localStorage.getItem('jwt_token');
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                
+                // Build query string - same as applyInvoiceFilters but with high limit
+                const params = new URLSearchParams();
+                if (toko) params.append('toko', toko);
+                if (keterangan) params.append('keterangan', keterangan);
+                if (search) params.append('search', search);
+                
+                // Handle Year and Month filtering
+                if (year && month) {
+                    const dateFromValue = `${year}-${String(month).padStart(2, '0')}-01`;
+                    const dateToObj = new Date(parseInt(year), parseInt(month), 0);
+                    const dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
+                    params.append('date_from', dateFromValue);
+                    params.append('date_to', dateToValue);
+                } else if (year) {
+                    const dateFromValue = `${year}-01-01`;
+                    const dateToValue = `${year}-12-31`;
+                    params.append('date_from', dateFromValue);
+                    params.append('date_to', dateToValue);
+                } else if (month) {
+                    const currentYear = new Date().getFullYear();
+                    const dateFromValue = `${currentYear}-${String(month).padStart(2, '0')}-01`;
+                    const dateToObj = new Date(currentYear, parseInt(month), 0);
+                    const dateToValue = `${currentYear}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
+                    params.append('date_from', dateFromValue);
+                    params.append('date_to', dateToValue);
+                }
+                
+                // Fetch ALL matching invoices (use high limit to get all)
+                params.append('limit', 10000);
+                params.append('offset', 0);
+                
+                const response = await fetch(`${window.location.origin}/api/invoice/list?${params.toString()}`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch invoices for sorting');
+                }
+                
+                const result = await response.json();
+                const allInvoices = result.data || [];
+                
+                if (allInvoices.length === 0) {
+                    // No data to sort
+                    sortHeaders.forEach(header => {
+                        header.style.opacity = '1';
+                        header.style.cursor = 'pointer';
+                        header.style.pointerEvents = 'auto';
+                    });
+                    updateSortIndicators(field);
+                    return;
+                }
+                
+                // Render all fetched invoices (complete list before sort)
+                await renderInvoiceTable(allInvoices);
+                
+                // Now get rows from newly rendered table
+                const rows = Array.from(invoiceTableBody.querySelectorAll('tr')).filter(row => row.getAttribute('data-faktur'));
+                
+                if (rows.length === 0) {
+                    sortHeaders.forEach(header => {
+                        header.style.opacity = '1';
+                        header.style.cursor = 'pointer';
+                        header.style.pointerEvents = 'auto';
+                    });
+                    updateSortIndicators(field);
+                    return;
+                }
+                
+                // Extract and parse values for each row
+                const rowData = rows.map(row => ({
+                    row,
+                    statusValue: (() => {
+                        const text = row.cells[0].textContent.trim();
+                        const match = text.match(/(\d+)\/(\d+)/);
+                        const count = match ? parseInt(match[1]) : 0;
+                        const total = match ? parseInt(match[2]) : 0;
+                        return total > 0 ? (count / total) * 1000 + count : 0;
+                    })(),
+                    tanggalValue: (() => {
+                        const text = row.cells[1].textContent.trim();
+                        return new Date(text.split('/').reverse().join('-'));
+                    })(),
+                    totalValue: (() => {
+                        const text = row.cells[7].textContent.trim();
+                        const numStr = text.replace(/[^\d.,]/g, '');
+                        return parseFloat(numStr.replace(/\./g, '').replace(',', '.')) || 0;
+                    })()
+                }));
+                
+                // Sort data
+                rowData.sort((a, b) => {
+                    let aVal, bVal;
+                    if (field === 'status') {
+                        aVal = a.statusValue;
+                        bVal = b.statusValue;
+                    } else if (field === 'tanggal') {
+                        aVal = a.tanggalValue;
+                        bVal = b.tanggalValue;
+                    } else if (field === 'total') {
+                        aVal = a.totalValue;
+                        bVal = b.totalValue;
+                    }
+                    
+                    if (window.sortTableState.sortDirection[field] === 'asc') {
+                        return aVal > bVal ? 1 : -1;
+                    } else {
+                        return aVal < bVal ? 1 : -1;
+                    }
+                });
+                
+                // Reorder rows by appending in sorted order
+                rowData.forEach(item => {
+                    invoiceTableBody.appendChild(item.row);
+                });
+                
+                // Update sort indicators
+                window.updateSortIndicators(field);
+                
+                // Update pagination info to show all sorted data
+                window.invoiceTotalCount = allInvoices.length;
+                if (typeof updatePaginationInfo === 'function') {
+                    updatePaginationInfo();
+                }
+                
+            } catch (error) {
+                console.error('Sort error:', error);
+            } finally {
+                // Re-enable sort headers
                 sortHeaders.forEach(header => {
                     header.style.opacity = '1';
                     header.style.cursor = 'pointer';
                     header.style.pointerEvents = 'auto';
                 });
-                return;
             }
-            
-            // Extract and parse values for each row
-            const rowData = rows.map(row => ({
-                row,
-                statusValue: (() => {
-                    const text = row.cells[0].textContent.trim();
-                    const match = text.match(/(\d+)\/(\d+)/);
-                    const count = match ? parseInt(match[1]) : 0;
-                    const total = match ? parseInt(match[2]) : 0;
-                    return total > 0 ? (count / total) * 1000 + count : 0;
-                })(),
-                tanggalValue: (() => {
-                    const text = row.cells[1].textContent.trim();
-                    return new Date(text.split('/').reverse().join('-'));
-                })(),
-                totalValue: (() => {
-                    const text = row.cells[7].textContent.trim();
-                    const numStr = text.replace(/[^\d.,]/g, '');
-                    return parseFloat(numStr.replace(/\./g, '').replace(',', '.')) || 0;
-                })()
-            }));
-            
-            // Sort data
-            rowData.sort((a, b) => {
-                let aVal, bVal;
-                if (field === 'status') {
-                    aVal = a.statusValue;
-                    bVal = b.statusValue;
-                } else if (field === 'tanggal') {
-                    aVal = a.tanggalValue;
-                    bVal = b.tanggalValue;
-                } else if (field === 'total') {
-                    aVal = a.totalValue;
-                    bVal = b.totalValue;
-                }
-                
-                if (window.sortTableState.sortDirection[field] === 'asc') {
-                    return aVal > bVal ? 1 : -1;
-                } else {
-                    return aVal < bVal ? 1 : -1;
-                }
-            });
-            
-            // Reorder rows by appending in sorted order
-            rowData.forEach(item => {
-                invoiceTableBody.appendChild(item.row);
-            });
-            
-            // Update sort indicators
-            updateSortIndicators(field);
-            
-            // Re-enable sort headers
-            sortHeaders.forEach(header => {
-                header.style.opacity = '1';
-                header.style.cursor = 'pointer';
-                header.style.pointerEvents = 'auto';
-            });
             };
             
             // Define updateSortIndicators only once
