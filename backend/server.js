@@ -1182,6 +1182,14 @@ const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
 const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
 
+// Create auth factory for session endpoints
+const createAuth = (allowedRoles = null) => {
+    if (!allowedRoles || allowedRoles.length === 0) {
+        return [authenticateToken];
+    }
+    return [authenticateToken, authorizeRole(...allowedRoles)];
+};
+
 // Register session endpoints
 registerSessionEndpoints(app, supabase, createAuth, auditLogger);
 console.log('[INIT] Session management endpoints registered ✅');
