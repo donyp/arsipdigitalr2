@@ -566,9 +566,6 @@ if (typeof module !== 'undefined' && module.exports) {
  * This ensures any new code using alert/confirm gets replaced automatically
  */
 
-// Create global Notify instance
-const Notify = new NotificationSystem();
-
 // Override window.alert() - replace with Notify.info()
 const originalAlert = window.alert;
 window.alert = function(message) {
