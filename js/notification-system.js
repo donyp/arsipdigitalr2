@@ -22,11 +22,11 @@ class NotificationSystem {
         container.id = 'notification-container';
         container.style.cssText = `
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
             z-index: 9999;
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse;
             gap: 10px;
             max-width: 400px;
             pointer-events: none;
@@ -55,7 +55,7 @@ class NotificationSystem {
                 font-size: 14px;
                 font-weight: 500;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                animation: slideInRight 0.3s ease-out;
+                animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
                 display: flex;
                 align-items: center;
                 gap: 12px;
@@ -112,28 +112,28 @@ class NotificationSystem {
 
             @keyframes slideInRight {
                 from {
-                    transform: translateX(400px);
+                    transform: translateY(400px);
                     opacity: 0;
                 }
                 to {
-                    transform: translateX(0);
+                    transform: translateY(0);
                     opacity: 1;
                 }
             }
 
             @keyframes slideOutRight {
                 from {
-                    transform: translateX(0);
+                    transform: translateY(0);
                     opacity: 1;
                 }
                 to {
-                    transform: translateX(400px);
+                    transform: translateY(400px);
                     opacity: 0;
                 }
             }
 
             .notification.removing {
-                animation: slideOutRight 0.3s ease-in forwards;
+                animation: slideOutRight 0.4s cubic-bezier(0.34, 0, 0.66, -0.56) forwards;
             }
 
             /* Modal Styles */
@@ -243,8 +243,15 @@ class NotificationSystem {
 
             /* Mobile responsive */
             @media (max-width: 640px) {
+                #notification-container {
+                    bottom: 16px;
+                    right: 16px;
+                    left: 16px;
+                    max-width: none;
+                }
+
                 .notification {
-                    max-width: calc(100vw - 40px);
+                    max-width: none;
                     font-size: 13px;
                 }
 
