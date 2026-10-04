@@ -1076,13 +1076,22 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    // Total stats - use smart formatting
-                    const totalSize = formatFileSize(parseFloat(data.stats.totalSize) || 0);
+                    // Calculate storage quota usage
+                    const usedBytes = parseFloat(data.stats.totalSize) || 0;
+                    const quotaBytes = 10 * 1024 * 1024 * 1024; // 10 GB default quota
+                    
+                    const usedFormatted = formatFileSize(usedBytes);
+                    const quotaFormatted = formatFileSize(quotaBytes);
+                    const storageDisplay = `${usedFormatted} / ${quotaFormatted}`;
+                    
                     const todayUpload = formatFileSize(parseFloat(data.stats.todayUploadSize) || 0);
                     const todayUsed = formatFileSize(parseFloat(data.stats.todayUsedSize) || 0);
                     
-                    document.getElementById('statTotalSize').textContent = totalSize;
-                    document.getElementById('statTotalFiles').textContent = data.stats.totalFiles + ' files';
+                    document.getElementById('statTotalSize').textContent = storageDisplay;
+                    
+                    // Calculate percentage for visual feedback
+                    const usagePercent = ((usedBytes / quotaBytes) * 100).toFixed(1);
+                    document.getElementById('statTotalFiles').textContent = `${data.stats.totalFiles} files (${usagePercent}%)`;
                     
                     // Today's stats
                     document.getElementById('statTodayUpload').textContent = todayUpload;
@@ -1091,7 +1100,7 @@
                     document.getElementById('statTodayUsed').textContent = todayUsed;
                     document.getElementById('statTodayUsedCount').textContent = data.stats.todayChangesCount + ' changes';
                     
-                    console.log('[Stats] Total:', totalSize, '| Today Upload:', todayUpload, '| Today Used:', todayUsed);
+                    console.log('[Stats] Used:', usedFormatted, '/ Total:', quotaFormatted, `(${usagePercent}%)`, '| Today Upload:', todayUpload, '| Today Used:', todayUsed);
                     document.getElementById('stats').style.display = 'grid';
                 }
             } catch (error) {
