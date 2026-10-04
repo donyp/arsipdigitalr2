@@ -3063,6 +3063,11 @@
 
                 await initAuth();
 
+                // Pre-load profile data in background
+                if (typeof window.preloadProfileData === 'function') {
+                    window.preloadProfileData().catch(err => console.warn('Profile preload error:', err));
+                }
+
                 let retries = 0;
                 while (!window.currentUser && retries < 50) {
                     await new Promise(resolve => setTimeout(resolve, 50));
@@ -4060,6 +4065,40 @@
 
         // Profile Modal Functions
         let currentUserData = null;
+        let profileDataLoaded = false;
+
+        // Pre-load profile data on page load
+        window.preloadProfileData = async function() {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                if (!token) return;
+
+                const response = await fetch('/api/auth/me', {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) return;
+
+                const userData = await response.json();
+                currentUserData = userData.user || userData;
+                profileDataLoaded = true;
+
+                // Also fetch zona info in background
+                if (currentUserData.zona_id) {
+                    const zonaResponse = await fetch(`/api/zonas/${currentUserData.zona_id}`, {
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }).catch(err => null);
+                }
+            } catch (err) {
+                console.warn('Profile preload error:', err);
+            }
+        };
 
         window.showProfileModal = async function() {
             try {
@@ -4071,10 +4110,49 @@
                     return;
                 }
 
-                // Show modal immediately with loading state
+                // Show modal immediately
                 document.getElementById('profileModal').classList.add('active');
                 
-                // Set loading placeholders
+                // If data already loaded, show it immediately
+                if (profileDataLoaded && currentUserData) {
+                    const user = currentUserData;
+                    const initial = (user.name || user.email || 'A').charAt(0).toUpperCase();
+                    document.getElementById('profileAvatar').textContent = initial;
+                    document.getElementById('profileName').textContent = user.name || 'User';
+                    document.getElementById('profileRole').textContent = user.role ? user.role.replace(/_/g, ' ').toUpperCase() : 'User';
+                    document.getElementById('profileEmail').textContent = user.email || '-';
+                    document.getElementById('profileUsername').textContent = user.username || '-';
+                    
+                    // Format member since date
+                    if (user.created_at) {
+                        const date = new Date(user.created_at);
+                        document.getElementById('profileMemberSince').textContent = date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+                    } else {
+                        document.getElementById('profileMemberSince').textContent = '-';
+                    }
+
+                    // Get zona name
+                    if (user.zona_id) {
+                        const zonaResponse = await fetch(`/api/zonas/${user.zona_id}`, {
+                            headers: { 
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        if (zonaResponse.ok) {
+                            const zonaData = await zonaResponse.json();
+                            const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona ${user.zona_id}`;
+                            document.getElementById('profileZona').textContent = zonaNama;
+                        } else {
+                            document.getElementById('profileZona').textContent = `Zona ${user.zona_id}`;
+                        }
+                    } else {
+                        document.getElementById('profileZona').textContent = '-';
+                    }
+                    return;
+                }
+
+                // If data not preloaded, show loading state
                 document.getElementById('profileAvatar').textContent = '...';
                 document.getElementById('profileName').textContent = 'Loading...';
                 document.getElementById('profileRole').textContent = 'Loading...';
@@ -4083,7 +4161,7 @@
                 document.getElementById('profileZona').textContent = 'Loading...';
                 document.getElementById('profileMemberSince').textContent = 'Loading...';
 
-                // Fetch current user from API (in background)
+                // Fetch current user from API
                 const response = await fetch('/api/auth/me', {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -4097,9 +4175,10 @@
 
                 const userData = await response.json();
                 currentUserData = userData.user || userData;
+                profileDataLoaded = true;
                 const user = currentUserData;
 
-                // Update profile card with current user data
+                // Update profile card
                 const initial = (user.name || user.email || 'A').charAt(0).toUpperCase();
                 document.getElementById('profileAvatar').textContent = initial;
                 document.getElementById('profileName').textContent = user.name || 'User';
@@ -4115,29 +4194,23 @@
                     document.getElementById('profileMemberSince').textContent = '-';
                 }
                 
-                // Get zona name (non-blocking)
-                try {
-                    const zonaId = user.zona_id;
-                    if (zonaId) {
-                        const zonaResponse = await fetch(`/api/zonas/${zonaId}`, {
-                            headers: { 
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        if (zonaResponse.ok) {
-                            const zonaData = await zonaResponse.json();
-                            const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona ${zonaId}`;
-                            document.getElementById('profileZona').textContent = zonaNama;
-                        } else {
-                            document.getElementById('profileZona').textContent = `Zona ${zonaId}`;
+                // Get zona name
+                if (user.zona_id) {
+                    const zonaResponse = await fetch(`/api/zonas/${user.zona_id}`, {
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
                         }
+                    });
+                    if (zonaResponse.ok) {
+                        const zonaData = await zonaResponse.json();
+                        const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona ${user.zona_id}`;
+                        document.getElementById('profileZona').textContent = zonaNama;
                     } else {
-                        document.getElementById('profileZona').textContent = '-';
+                        document.getElementById('profileZona').textContent = `Zona ${user.zona_id}`;
                     }
-                } catch (err) {
-                    console.error('Error fetching zona:', err);
-                    document.getElementById('profileZona').textContent = user.zona_id ? `Zona ${user.zona_id}` : '-';
+                } else {
+                    document.getElementById('profileZona').textContent = '-';
                 }
                 
             } catch (error) {
