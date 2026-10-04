@@ -616,21 +616,21 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 success: true,
                 prefix: prefix || '/',
                 stats: {
-                    // Total stats
+                    // Total stats - return raw bytes for flexible formatting
                     totalFiles,
-                    totalSize,
+                    totalSize, // bytes
                     totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
                     totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
                     
-                    // Today's uploads
-                    todayUploadSize,
+                    // Today's uploads - return raw bytes
+                    todayUploadSize, // bytes
                     todayUploadCount,
                     todayUploadMB: (todayUploadSize / 1024 / 1024).toFixed(2),
-                    todayUploadGB: todayUploadGB,
+                    todayUploadGB: (todayUploadSize / 1024 / 1024 / 1024).toFixed(2),
                     
-                    // Today's usage
-                    todayUsedSize,
-                    todayUsedGB: todayUsedGB,
+                    // Today's usage - return raw bytes
+                    todayUsedSize, // bytes
+                    todayUsedGB: (todayUsedSize / 1024 / 1024 / 1024).toFixed(2),
                     todayChangesCount,
                     
                     // File types

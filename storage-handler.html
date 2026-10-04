@@ -625,10 +625,10 @@
                 const isSelected = selectedFiles.has(item.path);
                 const icon = item.type === 'folder' ? 'fas fa-folder' : 'fas fa-file';
                 const iconClass = item.type === 'folder' ? 'folder' : item.extension === '.pdf' ? 'pdf' : 'image';
-                const size = item.type === 'folder' ? '-' : (item.size / 1024 / 1024).toFixed(2) + ' MB';
+                const size = item.type === 'folder' ? '-' : formatFileSize(item.size);
                 const date = item.type === 'folder' ? '-' : new Date(item.lastModified).toLocaleString('id-ID');
 
-                html += `<div class="file-item ${isSelected ? 'selected' : ''}" data-path="${item.path}">
+                html += `<div class="file-item ${isSelected ? 'selected' : ''}" data-path="${item.path}" ondblclick="event.stopPropagation(); ${item.type === 'folder' ? `navigateToFolder('${item.path}')` : ''}">
                     <div class="checkbox-wrapper" onclick="event.stopPropagation(); toggleFileSelect('${item.path}')">
                         <div class="checkbox ${isSelected ? 'checked' : ''}">
                             ${isSelected ? '<i class="fas fa-check"></i>' : ''}
@@ -652,6 +652,22 @@
             }
             html += '</div>';
             container.innerHTML = html;
+        }
+
+        /**
+         * Format file size with smart unit selection
+         * @param {number} bytes - File size in bytes
+         * @returns {string} Formatted size (e.g., "1.5 MB", "256 KB", "2.3 GB")
+         */
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            if (i === 0) return bytes + ' B'; // Bytes - no decimal
+            return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]; // 2 decimals for KB, MB, GB, TB
         }
 
         function toggleFileSelect(path) {
@@ -969,17 +985,22 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    // Total stats
-                    document.getElementById('statTotalSize').textContent = data.stats.totalSizeGB + ' GB';
+                    // Total stats - use smart formatting
+                    const totalSize = formatFileSize(parseFloat(data.stats.totalSize) || 0);
+                    const todayUpload = formatFileSize(parseFloat(data.stats.todayUploadSize) || 0);
+                    const todayUsed = formatFileSize(parseFloat(data.stats.todayUsedSize) || 0);
+                    
+                    document.getElementById('statTotalSize').textContent = totalSize;
                     document.getElementById('statTotalFiles').textContent = data.stats.totalFiles + ' files';
                     
                     // Today's stats
-                    document.getElementById('statTodayUpload').textContent = data.stats.todayUploadGB + ' GB';
+                    document.getElementById('statTodayUpload').textContent = todayUpload;
                     document.getElementById('statTodayUploadCount').textContent = data.stats.todayUploadCount + ' uploads';
                     
-                    document.getElementById('statTodayUsed').textContent = data.stats.todayUsedGB + ' GB';
+                    document.getElementById('statTodayUsed').textContent = todayUsed;
                     document.getElementById('statTodayUsedCount').textContent = data.stats.todayChangesCount + ' changes';
                     
+                    console.log('[Stats] Total:', totalSize, '| Today Upload:', todayUpload, '| Today Used:', todayUsed);
                     document.getElementById('stats').style.display = 'grid';
                 }
             } catch (error) {
