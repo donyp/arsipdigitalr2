@@ -3349,7 +3349,7 @@
         
         const sortTableState = window.sortTableState;
         
-        function sortTable(field) {
+        async function sortTable(field) {
             console.log('=== sortTable called ===');
             console.log('field:', field);
             console.log('currentSortField before:', sortTableState.currentSortField);
@@ -3358,6 +3358,97 @@
             if (!invoiceTableBody) {
                 console.error('invoiceTableBody not found!');
                 return;
+            }
+            
+            // If filtering is active, fetch ALL data (no pagination) for sorting
+            const filterSearch = document.getElementById('filterSearch')?.value || '';
+            const filterStatus = document.getElementById('filterStatus')?.value || '';
+            const filterToko = document.getElementById('filterToko')?.value || '';
+            const filterKeterangan = document.getElementById('filterKeterangan')?.value || '';
+            const filterYear = document.getElementById('filterYear')?.value || '';
+            const filterMonth = document.getElementById('filterMonth')?.value || '';
+            
+            const hasActiveFilters = filterSearch || filterStatus || filterToko || filterKeterangan || filterYear || filterMonth;
+            
+            if (hasActiveFilters) {
+                console.log('Active filters detected - fetching ALL data for sort');
+                try {
+                    // Build query params same as filter logic
+                    const params = new URLSearchParams();
+                    if (filterToko) params.append('toko', filterToko);
+                    if (filterKeterangan) params.append('keterangan', filterKeterangan);
+                    if (filterSearch) params.append('search', filterSearch);
+                    
+                    // Handle Year and Month filtering
+                    if (filterYear && filterMonth) {
+                        const dateFromValue = `${filterYear}-${String(filterMonth).padStart(2, '0')}-01`;
+                        const dateToObj = new Date(parseInt(filterYear), parseInt(filterMonth), 0);
+                        const dateToValue = `${filterYear}-${String(filterMonth).padStart(2, '0')}-${dateToObj.getDate()}`;
+                        params.append('date_from', dateFromValue);
+                        params.append('date_to', dateToValue);
+                    } else if (filterYear) {
+                        const dateFromValue = `${filterYear}-01-01`;
+                        const dateToValue = `${filterYear}-12-31`;
+                        params.append('date_from', dateFromValue);
+                        params.append('date_to', dateToValue);
+                    } else if (filterMonth) {
+                        const currentYear = new Date().getFullYear();
+                        const dateFromValue = `${currentYear}-${String(filterMonth).padStart(2, '0')}-01`;
+                        const dateToObj = new Date(currentYear, parseInt(filterMonth), 0);
+                        const dateToValue = `${currentYear}-${String(filterMonth).padStart(2, '0')}-${dateToObj.getDate()}`;
+                        params.append('date_from', dateFromValue);
+                        params.append('date_to', dateToValue);
+                    }
+                    
+                    // Fetch ALL data without pagination limit
+                    params.append('limit', 10000);  // Get up to 10000 records
+                    params.append('offset', 0);
+                    
+                    const token = localStorage.getItem('jwt_token') || localStorage.getItem('authToken');
+                    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+                    
+                    const response = await fetch(`${window.CONFIG?.API_URL || 'http://localhost:3000'}/api/invoice/list?${params.toString()}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        const allData = result.data || [];
+                        
+                        // Clear table body
+                        invoiceTableBody.innerHTML = '';
+                        
+                        // Create rows from fetched data
+                        allData.forEach(inv => {
+                            const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
+                            const filesRequired = isPPN ? 3 : 2;
+                            const filesUploaded = inv.files_uploaded_count || 0;
+                            const statusText = `${filesUploaded}/${filesRequired}`;
+                            
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${statusText}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.tanggal || ''}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.faktur || ''}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.status || ''}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.keterangan || ''}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.konsumen || ''}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">${inv.toko || ''}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;">Rp ${(inv.total_jumlah_jual || 0).toLocaleString('id-ID')}</td>
+                                <td style="padding: 14px 16px; text-align: left; border-bottom: 1px solid #e5e7eb;"></td>
+                                <td style="padding: 14px 16px; text-align: center; border-bottom: 1px solid #e5e7eb;"></td>
+                            `;
+                            invoiceTableBody.appendChild(row);
+                        });
+                        
+                        console.log(`Fetched ${allData.length} records for sorting with filters`);
+                    } else {
+                        console.error('Failed to fetch data for sort with filters');
+                    }
+                } catch (err) {
+                    console.error('Error fetching data for sort:', err);
+                }
             }
             
             // Toggle direction for same field
