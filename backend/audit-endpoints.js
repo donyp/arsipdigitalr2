@@ -173,52 +173,77 @@ module.exports = function registerAuditEndpoints(app, supabase, authenticateToke
         try {
             const { startDate, endDate } = req.query;
 
-            let query = supabase.from('audit_logs').select('*');
+            // Helper functions for calculations
+            const getOperationStats = (logs) => {
+                const stats = {};
+                logs.forEach(log => {
+                    stats[log.operation] = (stats[log.operation] || 0) + 1;
+                });
+                return Object.entries(stats).map(([key, value]) => ({ operation: key, count: value }));
+            };
 
-            // Apply date filters if provided
-            if (startDate) {
-                const start = new Date(startDate).toISOString();
-                query = query.gte('created_at', start);
-            }
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                query = query.lte('created_at', end.toISOString());
-            }
+            const getResourceStats = (logs) => {
+                const stats = {};
+                logs.forEach(log => {
+                    stats[log.resource_type] = (stats[log.resource_type] || 0) + 1;
+                });
+                return Object.entries(stats).map(([key, value]) => ({ resource_type: key, count: value }));
+            };
 
-            const { data, error } = await query;
+            const getSeverityStats = (logs) => {
+                const stats = {};
+                logs.forEach(log => {
+                    stats[log.severity] = (stats[log.severity] || 0) + 1;
+                });
+                return Object.entries(stats).map(([key, value]) => ({ severity: key, count: value }));
+            };
 
-            if (error) {
-                console.error('[AuditLogs] Stats query error:', error);
+            // Get total logs (all time)
+            const { data: allLogs, error: allLogsError } = await supabase
+                .from('audit_logs')
+                .select('*', { count: 'exact', head: false });
+
+            if (allLogsError) {
+                console.error('[AuditLogs] Stats query error:', allLogsError);
                 return res.status(500).json({ error: 'Failed to fetch audit stats' });
             }
 
-            // Calculate stats client-side
-            const logs = data || [];
-            const operationStats = {};
-            const resourceStats = {};
-            const severityStats = {};
+            // Get stats for date range (default: last 30 days)
+            let startDateFilter = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+            let endDateFilter = endDate || new Date().toISOString();
+
+            let query = supabase.from('audit_logs').select('*');
+            query = query.gte('created_at', startDateFilter);
+            query = query.lte('created_at', endDateFilter);
+
+            const { data: rangedLogs, error: rangedError } = await query;
+
+            if (rangedError) {
+                console.error('[AuditLogs] Ranged stats query error:', rangedError);
+                return res.status(500).json({ error: 'Failed to fetch audit stats' });
+            }
+
+            // Calculate stats
+            const logs = rangedLogs || [];
             let suspiciousCount = 0;
+            let criticalCount = 0;
+            const usersSet = new Set();
 
             logs.forEach(log => {
-                // Count by operation
-                operationStats[log.operation] = (operationStats[log.operation] || 0) + 1;
-                
-                // Count by resource
-                resourceStats[log.resource_type] = (resourceStats[log.resource_type] || 0) + 1;
-                
-                // Count by severity
-                severityStats[log.severity] = (severityStats[log.severity] || 0) + 1;
-                
-                // Count suspicious
                 if (log.is_suspicious) suspiciousCount++;
+                if (log.severity === 'critical') criticalCount++;
+                if (log.user_email) usersSet.add(log.user_email);
             });
 
             res.json({
-                operations: Object.entries(operationStats).map(([key, value]) => ({ operation: key, count: value })),
-                resources: Object.entries(resourceStats).map(([key, value]) => ({ resource_type: key, count: value })),
-                severity: Object.entries(severityStats).map(([key, value]) => ({ severity: key, count: value })),
-                suspicious: suspiciousCount
+                totalLogs: allLogs ? allLogs.length : 0,
+                suspiciousActivity: suspiciousCount,
+                criticalActions: criticalCount,
+                usersActive: usersSet.size,
+                // Additional breakdown stats
+                operations: getOperationStats(logs),
+                resources: getResourceStats(logs),
+                severity: getSeverityStats(logs)
             });
         } catch (err) {
             console.error('[AuditLogs] Stats error:', err.message);
