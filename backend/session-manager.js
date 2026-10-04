@@ -5,8 +5,18 @@
 
 const crypto = require('crypto');
 
-const MAX_CONCURRENT_SESSIONS = 2;
 const SESSION_DURATION_HOURS = 24;
+
+// Role-based session limits
+const SESSION_LIMITS = {
+    super_admin: 1,      // Super admin: max 1 session
+    moderator: 1,        // Moderator: max 1 session
+    admin_zona: 2,       // Admin zona: max 2 sessions
+    operator: 2,         // Operator: max 2 sessions
+    viewer: 2            // Viewer: max 2 sessions
+};
+
+const DEFAULT_LIMIT = 2; // Default for unknown roles
 
 class SessionManager {
     constructor(supabaseClient) {
@@ -21,11 +31,14 @@ class SessionManager {
     }
 
     /**
-     * Check if user can create new session
-     * Returns { allowed: boolean, reason?: string, activeCount?: number }
+     * Check if user can create new session (role-based limits)
+     * Returns { allowed: boolean, reason?: string, activeCount?: number, maxAllowed?: number }
      */
-    async canCreateSession(userId) {
+    async canCreateSession(userId, userRole) {
         try {
+            // Get max sessions allowed for this role
+            const maxSessions = SESSION_LIMITS[userRole] || DEFAULT_LIMIT;
+            
             // Call Postgres function to count active sessions (auto-cleanup expired)
             const { data, error } = await this.supabase.rpc('count_active_sessions', {
                 p_user_id: userId
@@ -38,17 +51,22 @@ class SessionManager {
             }
 
             const activeCount = data || 0;
-            console.log(`[SessionManager] User ${userId} has ${activeCount} active sessions`);
+            console.log(`[SessionManager] User ${userId} (${userRole}) has ${activeCount}/${maxSessions} active sessions`);
 
-            if (activeCount >= MAX_CONCURRENT_SESSIONS) {
+            if (activeCount >= maxSessions) {
+                const reason = maxSessions === 1 
+                    ? `Anda hanya boleh login dari 1 perangat sekaligus. Silakan logout dari perangat lain terlebih dahulu.`
+                    : `Maksimal ${maxSessions} sesi login bersamaan. Anda sudah memiliki ${activeCount} sesi aktif. Silakan logout dari perangat lain terlebih dahulu.`;
+                
                 return {
                     allowed: false,
-                    reason: `Maksimal ${MAX_CONCURRENT_SESSIONS} sesi login bersamaan. Anda sudah memiliki ${activeCount} sesi aktif. Silakan logout dari perangkat lain terlebih dahulu.`,
-                    activeCount
+                    reason,
+                    activeCount,
+                    maxAllowed: maxSessions
                 };
             }
 
-            return { allowed: true, activeCount };
+            return { allowed: true, activeCount, maxAllowed: maxSessions };
         } catch (err) {
             console.error('[SessionManager] Exception checking sessions:', err);
             return { allowed: true }; // Fail open

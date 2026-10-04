@@ -1512,15 +1512,16 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             });
         }
 
-        // Check Concurrent Session Limit (Max 2 sessions per user)
+        // Check Concurrent Session Limit (Role-based: super_admin & moderator = 1, admin_zona = 2)
         const SessionManager = require('./session-manager');
         const sessionManager = new SessionManager(supabase);
         
-        const sessionCheck = await sessionManager.canCreateSession(user.id);
+        const sessionCheck = await sessionManager.canCreateSession(user.id, user.role);
         
         if (!sessionCheck.allowed) {
             logWarning('[LOGIN]', 'Rejected - concurrent session limit', { 
                 email: email.substring(0, 3) + '***',
+                role: user.role,
                 activeCount: sessionCheck.activeCount 
             });
             
@@ -1531,7 +1532,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
                 userEmail: user.email,
                 userRole: user.role,
                 zonaId: user.zona_id,
-                action: 'Login rejected - concurrent session limit reached',
+                action: `Login rejected - concurrent session limit (${user.role}: max ${sessionCheck.maxAllowed}, current ${sessionCheck.activeCount})`,
                 resourceType: 'user_session',
                 resourceId: user.id,
                 resourceName: user.email,
@@ -1550,11 +1551,12 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             return res.status(403).json({ 
                 error: sessionCheck.reason,
                 activeSessionsCount: sessionCheck.activeCount,
-                maxAllowed: 2
+                maxAllowed: sessionCheck.maxAllowed,
+                userRole: user.role
             });
         }
         
-        console.log(`[LOGIN] ✅ Session check passed - ${sessionCheck.activeCount || 0}/2 active sessions`);
+        console.log(`[LOGIN] ✅ Session check passed - ${user.role}: ${sessionCheck.activeCount}/${sessionCheck.maxAllowed} active sessions`);
 
         if (sessionError) console.error("[SESSION] Check Error:", sessionError);
 
