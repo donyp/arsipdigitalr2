@@ -510,7 +510,7 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
     /**
      * GET /api/storage-handler/stats
-     * Get storage statistics
+     * Get storage statistics with today's tracking
      */
     app.get('/api/storage-handler/stats', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
         try {
@@ -525,7 +525,14 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
             let totalSize = 0;
             let totalFiles = 0;
+            let todayUploadSize = 0;
+            let todayUploadCount = 0;
+            let todayUsedSize = 0;
+            let todayChangesCount = 0;
             const fileTypes = {};
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
             let continuationToken = null;
             let isTruncated = true;
@@ -547,20 +554,50 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
                     const ext = path.extname(obj.Key).toLowerCase() || 'no-extension';
                     fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+
+                    // Track today's uploads (files modified today)
+                    const lastModified = new Date(obj.LastModified);
+                    lastModified.setHours(0, 0, 0, 0);
+                    
+                    if (lastModified.getTime() === today.getTime()) {
+                        todayUploadSize += obj.Size;
+                        todayUploadCount++;
+                        todayUsedSize += obj.Size;
+                        todayChangesCount++;
+                    }
                 }
 
                 isTruncated = response.IsTruncated;
                 continuationToken = response.NextContinuationToken;
             }
 
+            // Estimate "today used" as recent changes (last 24 hours activity)
+            // For now, we'll use upload count as proxy
+            const todayUsedGB = Math.max(0, (todayUsedSize / 1024 / 1024 / 1024).toFixed(2));
+            const todayUploadGB = Math.max(0, (todayUploadSize / 1024 / 1024 / 1024).toFixed(2));
+
             res.json({
                 success: true,
                 prefix: prefix || '/',
                 stats: {
+                    // Total stats
                     totalFiles,
                     totalSize,
                     totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
                     totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
+                    
+                    // Today's uploads
+                    todayUploadSize,
+                    todayUploadCount,
+                    todayUploadMB: (todayUploadSize / 1024 / 1024).toFixed(2),
+                    todayUploadGB: todayUploadGB,
+                    
+                    // Today's usage
+                    todayUsedSize,
+                    todayUsedGB: todayUsedGB,
+                    todayChangesCount,
+                    
+                    // File types
                     fileTypes
                 }
             });

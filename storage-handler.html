@@ -144,11 +144,37 @@
             transition: background 0.2s;
         }
         .file-item:hover { background: var(--color-bg-tertiary); }
+        .file-item.selected { background: rgba(59, 130, 246, 0.1); border-left: 4px solid var(--color-info); }
 
         .file-icon { font-size: 24px; text-align: center; }
         .file-icon.folder { color: #fbbf24; }
         .file-icon.pdf { color: #ef4444; }
         .file-icon.image { color: #10b981; }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--color-border);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-bg-primary);
+            transition: all 0.2s;
+        }
+
+        .checkbox.checked {
+            background: var(--color-info);
+            border-color: var(--color-info);
+            color: white;
+        }
 
         .file-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
         .file-name { font-weight: 600; color: var(--color-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -185,20 +211,49 @@
             padding: 20px;
             border-radius: 16px;
             border: 1px solid var(--color-border);
+            position: relative;
+            overflow: hidden;
         }
 
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .stat-card.success::before { background: var(--gradient-success); }
+
         .stat-label {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--color-text-secondary);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
+            font-weight: 600;
         }
 
         .stat-value {
             font-size: 28px;
             font-weight: 800;
             color: var(--color-text-primary);
+        }
+
+        .stat-subvalue {
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+            margin-top: 4px;
+        }
+
+        .stat-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            font-size: 32px;
+            opacity: 0.1;
         }
 
         .modal {
@@ -361,12 +416,22 @@
         <!-- Stats -->
         <div class="stats" id="stats" style="display: none;">
             <div class="stat-card">
-                <div class="stat-label">Total Files</div>
-                <div class="stat-value" id="statTotalFiles">-</div>
-            </div>
-            <div class="stat-card">
+                <div class="stat-icon">📦</div>
                 <div class="stat-label">Total Size</div>
                 <div class="stat-value" id="statTotalSize">-</div>
+                <div class="stat-subvalue" id="statTotalFiles">- files</div>
+            </div>
+            <div class="stat-card success">
+                <div class="stat-icon">📤</div>
+                <div class="stat-label">Today Upload</div>
+                <div class="stat-value" id="statTodayUpload">-</div>
+                <div class="stat-subvalue" id="statTodayUploadCount">- files</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📥</div>
+                <div class="stat-label">Today Used</div>
+                <div class="stat-value" id="statTodayUsed">-</div>
+                <div class="stat-subvalue" id="statTodayUsedCount">- changes</div>
             </div>
         </div>
 
@@ -389,6 +454,28 @@
             </button>
             <button class="btn btn-secondary" onclick="refreshBrowser()">
                 <i class="fas fa-sync"></i>
+            </button>
+        </div>
+
+        <!-- Bulk Actions Toolbar (hidden by default) -->
+        <div class="toolbar" id="bulkActionsToolbar" style="display: none; background: rgba(59, 130, 246, 0.1); border-color: var(--color-info);">
+            <div style="flex: 1;">
+                <span id="bulkSelectedCount" style="font-weight: 600;">0 selected</span>
+            </div>
+            <button class="btn btn-secondary" onclick="selectAllToggle()">
+                <i class="fas fa-check-double"></i> <span id="selectAllText">Select All</span>
+            </button>
+            <button class="btn btn-secondary" onclick="clearSelection()">
+                <i class="fas fa-times"></i> Clear
+            </button>
+            <button class="btn btn-primary" onclick="bulkDownload()" id="bulkDownloadBtn">
+                <i class="fas fa-download"></i> Download
+            </button>
+            <button class="btn btn-primary" onclick="bulkMove()">
+                <i class="fas fa-arrows-alt"></i> Move
+            </button>
+            <button class="btn btn-error" onclick="bulkDelete()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
+                <i class="fas fa-trash"></i> Delete
             </button>
         </div>
 
@@ -472,17 +559,23 @@
         let currentPath = '';
         let currentItems = [];
         let renameTarget = null;
+        let selectedFiles = new Set();
+        let selectAllActive = false;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadFiles(currentPath);
             loadStats();
             setupEventListeners();
+            // Refresh stats every 30 seconds for realtime updates
+            setInterval(loadStats, 30000);
         });
 
         function goBack() { window.history.back(); }
 
         function navigateToFolder(folderPath) {
             currentPath = folderPath;
+            selectedFiles.clear();
+            selectAllActive = false;
             loadFiles(folderPath);
             updateBreadcrumb(folderPath);
         }
@@ -529,13 +622,18 @@
 
             let html = '<div class="file-list">';
             for (const item of items) {
+                const isSelected = selectedFiles.has(item.path);
                 const icon = item.type === 'folder' ? 'fas fa-folder' : 'fas fa-file';
                 const iconClass = item.type === 'folder' ? 'folder' : item.extension === '.pdf' ? 'pdf' : 'image';
                 const size = item.type === 'folder' ? '-' : (item.size / 1024 / 1024).toFixed(2) + ' MB';
                 const date = item.type === 'folder' ? '-' : new Date(item.lastModified).toLocaleString('id-ID');
 
-                html += `<div class="file-item">
-                    <div class="file-icon ${iconClass}"><i class="${icon}"></i></div>
+                html += `<div class="file-item ${isSelected ? 'selected' : ''}" data-path="${item.path}">
+                    <div class="checkbox-wrapper" onclick="event.stopPropagation(); toggleFileSelect('${item.path}')">
+                        <div class="checkbox ${isSelected ? 'checked' : ''}">
+                            ${isSelected ? '<i class="fas fa-check"></i>' : ''}
+                        </div>
+                    </div>
                     <div class="file-info">
                         <div class="file-name">${item.name}</div>
                         <div class="file-path">${item.fullPath}</div>
@@ -544,16 +642,111 @@
                     <div class="file-date" style="display: ${item.type === 'folder' ? 'none' : 'block'};">${date}</div>
                     <div class="file-actions">
                         ${item.type === 'folder' ? 
-                            `<button class="action-btn" onclick="navigateToFolder('${item.path}')"><i class="fas fa-folder-open"></i></button>` :
-                            `<button class="action-btn" onclick="downloadFile('${item.path}')"><i class="fas fa-download"></i></button>`
+                            `<button class="action-btn" onclick="event.stopPropagation(); navigateToFolder('${item.path}')"><i class="fas fa-folder-open"></i></button>` :
+                            `<button class="action-btn" onclick="event.stopPropagation(); downloadFile('${item.path}')"><i class="fas fa-download"></i></button>`
                         }
-                        <button class="action-btn" onclick="openRenameModal('${item.path}', '${item.name}')"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn" onclick="deleteItem('${item.path}', '${item.type}')"><i class="fas fa-trash"></i></button>
+                        <button class="action-btn" onclick="event.stopPropagation(); openRenameModal('${item.path}', '${item.name}')"><i class="fas fa-edit"></i></button>
+                        <button class="action-btn" onclick="event.stopPropagation(); deleteItem('${item.path}', '${item.type}')"><i class="fas fa-trash"></i></button>
                     </div>
                 </div>`;
             }
             html += '</div>';
             container.innerHTML = html;
+        }
+
+        function toggleFileSelect(path) {
+            if (selectedFiles.has(path)) {
+                selectedFiles.delete(path);
+            } else {
+                selectedFiles.add(path);
+            }
+            updateBulkActionsUI();
+            renderFiles(currentItems);
+        }
+
+        function updateBulkActionsUI() {
+            const toolbar = document.getElementById('bulkActionsToolbar');
+            const count = selectedFiles.size;
+            
+            if (count > 0) {
+                toolbar.style.display = 'flex';
+                document.getElementById('bulkSelectedCount').textContent = `${count} selected`;
+                document.getElementById('bulkDownloadBtn').disabled = count > 10;
+            } else {
+                toolbar.style.display = 'none';
+                selectedFiles.clear();
+                selectAllActive = false;
+            }
+        }
+
+        function selectAllToggle() {
+            if (selectAllActive) {
+                clearSelection();
+            } else {
+                currentItems.forEach(item => selectedFiles.add(item.path));
+                selectAllActive = true;
+                document.getElementById('selectAllText').textContent = 'Deselect All';
+                updateBulkActionsUI();
+                renderFiles(currentItems);
+            }
+        }
+
+        function clearSelection() {
+            selectedFiles.clear();
+            selectAllActive = false;
+            document.getElementById('selectAllText').textContent = 'Select All';
+            updateBulkActionsUI();
+            renderFiles(currentItems);
+        }
+
+        async function bulkDownload() {
+            if (selectedFiles.size === 0) return;
+            if (selectedFiles.size > 10) {
+                Notify.warning('Max 10 files at once');
+                return;
+            }
+
+            let downloadCount = 0;
+            for (const path of selectedFiles) {
+                setTimeout(() => downloadFile(path), downloadCount * 300);
+                downloadCount++;
+            }
+        }
+
+        function bulkMove() {
+            Notify.info('Move feature coming soon');
+        }
+
+        async function bulkDelete() {
+            if (selectedFiles.size === 0) return;
+
+            Notify.confirmDelete(
+                `Delete ${selectedFiles.size} items?`,
+                'This action cannot be undone',
+                async () => {
+                    const paths = Array.from(selectedFiles);
+                    let deleted = 0;
+
+                    for (const path of paths) {
+                        try {
+                            const response = await fetch('/api/storage-handler/delete', {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ path: path, recursive: true })
+                            });
+
+                            if (response.ok) deleted++;
+                        } catch (error) {}
+                    }
+
+                    Notify.success(`✅ Deleted ${deleted}/${paths.length} items`);
+                    clearSelection();
+                    refreshBrowser();
+                }
+            );
         }
 
         function setupEventListeners() {
@@ -617,7 +810,6 @@
             link.href = `/api/storage-handler/download/${filePath}`;
             link.download = filePath.split('/').pop();
             link.click();
-            Notify.success('📥 Download started');
         }
 
         async function deleteItem(path, type) {
@@ -747,8 +939,17 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    document.getElementById('statTotalFiles').textContent = data.stats.totalFiles;
+                    // Total stats
                     document.getElementById('statTotalSize').textContent = data.stats.totalSizeGB + ' GB';
+                    document.getElementById('statTotalFiles').textContent = data.stats.totalFiles + ' files';
+                    
+                    // Today's stats
+                    document.getElementById('statTodayUpload').textContent = data.stats.todayUploadGB + ' GB';
+                    document.getElementById('statTodayUploadCount').textContent = data.stats.todayUploadCount + ' uploads';
+                    
+                    document.getElementById('statTodayUsed').textContent = data.stats.todayUsedGB + ' GB';
+                    document.getElementById('statTodayUsedCount').textContent = data.stats.todayChangesCount + ' changes';
+                    
                     document.getElementById('stats').style.display = 'grid';
                 }
             } catch (error) {
