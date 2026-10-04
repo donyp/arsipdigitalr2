@@ -672,7 +672,7 @@
             });
 
             if (validFiles.length === 0) {
-                Toast.error('Tidak ada file valid');
+                Notify.error('Tidak ada file valid');
                 return;
             }
 
@@ -680,7 +680,7 @@
             overlay.classList.add('show');
 
             let successCount = 0;
-            let failCount = 0;
+            let failedFiles = [];
 
             for (let i = 0; i < validFiles.length; i++) {
                 const file = validFiles[i];
@@ -703,24 +703,30 @@
                         
                         // Show compression note if available
                         if (result.compression_note) {
-                            Toast.info(`📦 ${file.name}: ${result.compression_note}`);
+                            Notify.info(`📦 ${file.name}: ${result.compression_note}`);
                         }
                     } else {
-                        failCount++;
+                        failedFiles.push(file.name);
                     }
                 } catch (err) {
-                    failCount++;
+                    failedFiles.push(file.name);
                 }
             }
 
             overlay.classList.remove('show');
 
+            // Show results
             if (successCount > 0) {
-                Toast.success(`✅ ${successCount} file berhasil diupload!`);
-                resetUpload();
+                Notify.success(`✅ ${successCount} file berhasil diupload!`);
             }
-            if (failCount > 0) {
-                Toast.error(`⚠️ ${failCount} file gagal diupload`);
+            
+            if (failedFiles.length > 0) {
+                Notify.error(`❌ ${failedFiles.length} file gagal: ${failedFiles.join(', ')}`);
+            }
+
+            // Reset UI only if all uploads successful
+            if (failedFiles.length === 0 && successCount > 0) {
+                resetUpload();
             }
         });
 

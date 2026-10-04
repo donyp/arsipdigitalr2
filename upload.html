@@ -443,24 +443,30 @@
                 }
 
                 // Show summary
-                let msg = `✅ Upload Complete\n\nBerhasil: ${successCount}\nGagal: ${failCount}`;
-                if (errors.length > 0) {
-                    msg += `\n\nErrors:\n${errors.slice(0, 5).join('\n')}`;
+                if (successCount > 0) {
+                    Notify.success(`✅ ${successCount} invoice berhasil diupload!`);
                 }
-                Toast.warning(msg, '⚠️ Upload Selesai');
+                
+                if (failCount > 0) {
+                    Notify.error(`❌ ${failCount} file gagal diupload`);
+                }
 
-                // Reset
-                invoiceFilesToUpload = [];
-                document.getElementById('invoice-files-selected').classList.add('hidden');
-                document.getElementById('invoice-file-input').value = '';
-                btn.disabled = true;
-                btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Upload Invoice PDF';
-
-            } catch (err) {
-                Toast.error(err.message, '❌ Error Upload');
+                // Reset UI only if all uploads successful
+                if (failCount === 0 && successCount > 0) {
+                    invoiceFilesToUpload = [];
+                    document.getElementById('invoice-files-selected').classList.add('hidden');
+                    document.getElementById('invoice-file-input').value = '';
+                }
+            } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Upload Invoice PDF';
             }
+
+            } catch (err) {
+                Notify.error(err.message);
+                btn.disabled = false;
+                btn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg> Upload Invoice PDF';
+            } finally {
         }
 
         // Drag and drop for invoice files
