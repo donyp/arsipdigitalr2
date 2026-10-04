@@ -627,7 +627,7 @@
                         <strong>${item.file.name}</strong>
                         <div class="file-item-info">
                             ${item.isValid ? 
-                                `NO: <strong>${item.noFaktur}</strong> | NAMA: <strong>${item.tokoName || item.namaFromFile || '?'}</strong> | NOMINAL: <strong>${item.nominal ? 'Rp' + item.nominal.toLocaleString('id-ID') : item.nominalFromFile || '?'}</strong> | SIZE: <strong>${(item.file.size / 1024 / 1024).toFixed(2)} MB</strong> ${item.file.size > 1024 * 1024 ? '| <span style="color: #e74c3c; font-weight: 600;">📦 Will compress</span>' : '| <span style="color: #27ae60;">✓ No compression</span>'}` :
+                                `NO: <strong>${item.noFaktur}</strong> | NAMA: <strong>${item.tokoName || item.namaFromFile || '?'}</strong> | NOMINAL: <strong>${item.nominal ? 'Rp' + item.nominal.toLocaleString('id-ID') : item.nominalFromFile || '?'}</strong> | SIZE: <strong>${(item.file.size / 1024 / 1024).toFixed(2)} MB</strong>` :
                                 `${item.errorMsg || 'ERROR: Format Nama File Tidak Sesuai'}`
                             }
                         </div>
@@ -700,11 +700,6 @@
                     if (response.ok) {
                         const result = await response.json();
                         successCount++;
-                        
-                        // Show compression note if available
-                        if (result.compression_note) {
-                            Notify.info(`📦 ${file.name}: ${result.compression_note}`);
-                        }
                     } else {
                         failedFiles.push(file.name);
                     }
