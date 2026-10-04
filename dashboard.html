@@ -3459,9 +3459,21 @@
                     
                     // Count actual files from API data (without file checks)
                     let actualUploadedCount = 0;
-                    if (inv.invoice_pdf_path || inv.uploaded_file_path) actualUploadedCount++;
-                    if (inv.bukti_bayar_path) actualUploadedCount++;
-                    if (inv.keterangan === 'PPN' && inv.faktur_pajak_path) actualUploadedCount++;
+                    
+                    // Invoice PDF (required for all)
+                    if (inv.invoice_pdf_path || inv.uploaded_file_path) {
+                        actualUploadedCount++;
+                    }
+                    
+                    // Bukti Bayar (required for all)
+                    if (inv.bukti_bayar_path) {
+                        actualUploadedCount++;
+                    }
+                    
+                    // Faktur Pajak (only if PPN and file exists)
+                    if (inv.keterangan === 'PPN' && inv.faktur_pajak_path) {
+                        actualUploadedCount++;
+                    }
                     
                     const statusText = `${actualUploadedCount}/${requiredCount}`;
                     const isDarkMode = document.documentElement.getAttribute('data-dark-mode') === 'true';
@@ -3504,7 +3516,7 @@
                             <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${formatCurrency(inv.total_jumlah_jual)}</td>
                             <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${inv.keterangan || '-'}</td>
                             <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle; text-align: center;">
-                                <button style="background: none; border: none; cursor: pointer; color: #7f8c8d; font-size: 20px; padding: 8px 12px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 4px;" disabled title="File info not loaded during sort">
+                                <button onclick="toggleActionMenu(event, '${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #7f8c8d; font-size: 20px; padding: 8px 12px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'; this.style.color='#2c3e50';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#7f8c8d';" title="Aksi">
                                     ⋮
                                 </button>
                             </td>
