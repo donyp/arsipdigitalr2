@@ -425,6 +425,20 @@
             border-color: var(--color-border-dark);
         }
 
+        .header-actions .btn-secondary {
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
         .btn-danger {
             background: var(--gradient-danger);
             color: white;
@@ -975,8 +989,8 @@
                 <p>🔍 Monitor dan analisis semua aktivitas sistem untuk compliance dan security</p>
             </div>
             <div class="header-actions">
-                <button class="theme-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
-                    <i class="fas fa-moon"></i>
+                <button class="btn btn-secondary" onclick="goBack()" title="Back to Dashboard" style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-arrow-left"></i> Back
                 </button>
             </div>
         </div>
@@ -1131,14 +1145,33 @@
     <div class="modal" id="detailModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Audit Log Detail</h2>
-                <button class="modal-close" onclick="closeDetailModal()">×</button>
+                <h2>📋 Audit Log Detail</h2>
+                <button class="modal-close" onclick="closeDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body" id="detailContent"></div>
+            <div style="padding-top: 20px; border-top: 1px solid var(--color-border); margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeDetailModal()" style="width: 100%; justify-content: center;">
+                    <i class="fas fa-arrow-left"></i> Back to Logs
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
+        // ============================================================
+        // NAVIGATION FUNCTIONS
+        // ============================================================
+        function goBack() {
+            // Try to go back to previous page, otherwise go to dashboard
+            if (document.referrer && document.referrer.includes(window.location.origin)) {
+                window.history.back();
+            } else {
+                window.location.href = '/dashboard.html';
+            }
+        }
+
         // ============================================================
         // DARK MODE TOGGLE
         // ============================================================
@@ -1294,7 +1327,7 @@
                     <td><span class="operation-badge ${operationClass}">${log.operation}</span></td>
                     <td><span class="badge ${severityClass}">${log.severity || 'info'}</span></td>
                     <td>${log.status_code} ${suspicious}</td>
-                    <td><a class="action-link" onclick="showDetail(${log.id})">View</a></td>
+                    <td><a class="action-link" onclick="showDetail('${log.id}')">View</a></td>
                 </tr>`;
             });
 
