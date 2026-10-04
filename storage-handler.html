@@ -722,17 +722,30 @@
                 return;
             }
 
-            Notify.info(`📥 Starting ${selectedFiles.size} downloads...`);
+            Notify.info(`📥 Preparing ${selectedFiles.size} downloads...`);
             let downloadCount = 0;
             
-            for (const path of selectedFiles) {
-                setTimeout(() => {
-                    const link = document.createElement('a');
-                    link.href = `/api/storage-handler/download/${encodeURIComponent(path)}`;
-                    link.download = path.split('/').pop() || 'download';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+            for (const filePath of selectedFiles) {
+                setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/storage-handler/download-signed/${encodeURIComponent(filePath)}`, {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success && data.url) {
+                                const link = document.createElement('a');
+                                link.href = data.url;
+                                link.download = filePath.split('/').pop() || 'download';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[BulkDownload] Error for', filePath, error);
+                    }
                 }, downloadCount * 300);
                 downloadCount++;
             }
@@ -836,25 +849,44 @@
 
         async function downloadFile(filePath) {
             try {
-                Notify.info('📥 Starting download...');
+                Notify.info('📥 Preparing download...');
                 
+                console.log('[Download] Requesting signed URL for:', filePath);
+                
+                // Request signed URL from backend
+                const response = await fetch(`/api/storage-handler/download-signed/${encodeURIComponent(filePath)}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.success || !data.url) {
+                    throw new Error('Invalid response from server');
+                }
+
+                console.log('[Download] Got signed URL, initiating download');
+                
+                // Use signed URL for direct download
                 const link = document.createElement('a');
-                link.href = `/api/storage-handler/download/${encodeURIComponent(filePath)}`;
+                link.href = data.url;
                 link.download = filePath.split('/').pop() || 'download';
+                link.style.display = 'none';
                 
-                // Trigger download
                 document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
                 
-                // Show success after a short delay
                 setTimeout(() => {
+                    document.body.removeChild(link);
                     Notify.success('✅ Download started successfully');
-                }, 500);
+                }, 100);
                 
             } catch (error) {
-                Notify.error('Failed to download file');
-                console.error('Download error:', error);
+                console.error('[Download] Error:', error);
+                Notify.error('Failed to download: ' + error.message);
             }
         }
 

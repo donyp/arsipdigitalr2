@@ -182,11 +182,11 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
     /**
      * GET /api/storage-handler/download/:path(*)
-     * Download file from R2
+     * Download file from R2 with proper streaming
      */
     app.get('/api/storage-handler/download/*', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
         try {
-            const filePath = req.params[0]; // Get everything after /download/
+            let filePath = req.params[0]; // Get everything after /download/
 
             if (!filePath) {
                 return res.status(400).json({
@@ -195,7 +195,10 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 });
             }
 
-            console.log(`[StorageHandler] Download request: ${filePath}`);
+            // Decode URI component if needed
+            filePath = decodeURIComponent(filePath);
+
+            console.log(`[StorageHandler] Download request for: ${filePath}`);
 
             const command = new GetObjectCommand({
                 Bucket: config.bucketName,
@@ -205,7 +208,7 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             const response = await s3Client.send(command);
             const filename = path.basename(filePath);
             
-            // Determine content type
+            // Determine content type based on extension
             const ext = path.extname(filename).toLowerCase();
             const contentTypeMap = {
                 '.pdf': 'application/pdf',
@@ -218,39 +221,50 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 '.gif': 'image/gif',
                 '.csv': 'text/csv',
                 '.txt': 'text/plain',
-                '.zip': 'application/zip'
+                '.zip': 'application/zip',
+                '.json': 'application/json'
             };
             
             const contentType = contentTypeMap[ext] || response.ContentType || 'application/octet-stream';
+            const contentLength = response.ContentLength || 0;
 
-            // Set response headers
-            res.set({
-                'Content-Type': contentType,
-                'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
-                'Content-Length': response.ContentLength || 0,
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
-            });
+            console.log(`[StorageHandler] Streaming: ${filename} | Type: ${contentType} | Size: ${contentLength} bytes`);
 
-            // Pipe the stream directly
-            if (response.Body && typeof response.Body.pipe === 'function') {
+            // Set all required headers BEFORE piping
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Content-Length', contentLength);
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+            res.setHeader('Accept-Ranges', 'bytes');
+
+            // Handle streaming properly
+            if (response.Body) {
+                // Pipe stream directly to response
                 response.Body.pipe(res);
-            } else if (response.Body) {
-                // Handle if Body is not a stream (e.g., Uint8Array)
-                const buffer = await response.Body.transformToByteArray();
-                res.send(buffer);
-            } else {
-                return res.status(500).json({
-                    success: false,
-                    error: 'No file content in response'
+
+                // Handle stream errors
+                response.Body.on('error', (error) => {
+                    console.error('[StorageHandler] Stream error:', error);
+                    if (!res.headersSent) {
+                        res.status(500).json({ success: false, error: 'Stream error' });
+                    } else {
+                        res.end();
+                    }
                 });
+
+                res.on('error', (error) => {
+                    console.error('[StorageHandler] Response error:', error);
+                });
+
+                console.log(`[StorageHandler] ✅ Download started for: ${filename}`);
+            } else {
+                throw new Error('No file content in response');
             }
 
-            console.log(`[StorageHandler] ✅ Download started: ${filename}`);
-
         } catch (error) {
-            console.error('[StorageHandler] Download error:', error);
+            console.error('[StorageHandler] Download error:', error.message);
             
             if (!res.headersSent) {
                 res.status(500).json({
@@ -259,6 +273,49 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                     message: error.message
                 });
             }
+        }
+    });
+
+    /**
+     * GET /api/storage-handler/download-signed/:path(*)
+     * Alternative: Get signed URL for direct R2 download (more reliable)
+     */
+    app.get('/api/storage-handler/download-signed/*', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+        try {
+            let filePath = req.params[0];
+
+            if (!filePath) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'File path is required'
+                });
+            }
+
+            filePath = decodeURIComponent(filePath);
+
+            console.log(`[StorageHandler] Signed download URL requested for: ${filePath}`);
+
+            const command = new GetObjectCommand({
+                Bucket: config.bucketName,
+                Key: filePath
+            });
+
+            // Generate signed URL valid for 15 minutes
+            const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 900 });
+
+            res.json({
+                success: true,
+                url: signedUrl,
+                expiresIn: 900
+            });
+
+        } catch (error) {
+            console.error('[StorageHandler] Signed download error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to generate download URL',
+                message: error.message
+            });
         }
     });
 
