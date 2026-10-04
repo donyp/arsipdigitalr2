@@ -59,6 +59,7 @@ const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
 const registerSessionEndpoints = require('./session-endpoints');
 const AuditLogger = require('./audit-logger');
+const SessionManager = require('./session-manager');
 const { initializeAutoLogoutScheduler } = require('./scheduled-auto-logout');
 const {
     sanitizeString,
@@ -1513,7 +1514,6 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         }
 
         // Check Concurrent Session Limit (Role-based: super_admin & moderator = 1, admin_zona = 2)
-        const SessionManager = require('./session-manager');
         const sessionManager = new SessionManager(supabase);
         
         const sessionCheck = await sessionManager.canCreateSession(user.id, user.role);
@@ -1584,10 +1584,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-        // Create new session using SessionManager
-        const SessionManager = require('./session-manager');
-        const sessionManager = new SessionManager(supabase);
-        
+        // Create new session using SessionManager (reuse sessionManager from session check above)
         const userAgent = req.headers['user-agent'] || 'Unknown';
         const { ipAddress } = AuditLogger.extractClientInfo(req);
         
@@ -1604,10 +1601,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         console.log(`[LOGIN] ✅ Session created: ${sessionResult.sessionToken.substring(0, 8)}...`);
 
-        // Audit with detailed info
-        const userAgent = req.headers['user-agent'] || 'Unknown';
-        const { ipAddress } = AuditLogger.extractClientInfo(req);
-        
+        // Audit with detailed info (reuse userAgent and ipAddress from above)
         await auditLogger.log({
             userId: user.id,
             userEmail: user.email,
@@ -1691,7 +1685,6 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
         
         // Terminate session if provided
         if (sessionToken) {
-            const SessionManager = require('./session-manager');
             const sessionManager = new SessionManager(supabase);
             await sessionManager.terminateSession(sessionToken);
             console.log(`[LOGOUT] ✅ Session terminated`);
