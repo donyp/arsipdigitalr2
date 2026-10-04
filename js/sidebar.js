@@ -152,6 +152,7 @@
             setTimeout(() => {
                 if (btn.getAttribute('data-expanded') === 'false') {
                     container.style.display = 'none';
+                    container.style.pointerEvents = 'none';
                 }
             }, 350);
         } else {
@@ -186,6 +187,7 @@
                         setTimeout(() => {
                             if (otherBtn.getAttribute('data-expanded') === 'false') {
                                 otherContainer.style.display = 'none';
+                                otherContainer.style.pointerEvents = 'none';
                             }
                         }, 350);
                     }
@@ -195,6 +197,7 @@
             // Expand animation for current dropdown
             // Step 1: Show container but keep it hidden
             container.style.display = 'block';
+            container.style.pointerEvents = 'auto';
             container.style.overflow = 'hidden';
             container.style.maxHeight = '0px';
             container.style.opacity = '0';
@@ -358,6 +361,7 @@
                         overflow: hidden;
                         transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
                         will-change: max-height, opacity;
+                        pointer-events: ${itemIsActive ? 'auto' : 'none'};
                     ">
                         ${childrenHTML}
                     </div>
