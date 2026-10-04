@@ -651,6 +651,52 @@ function startSyncQueueWorker() {
 startSyncQueueWorker();
 
 // ============================================================
+// Get Bucket Capacity Info
+// ============================================================
+
+/**
+ * Get total bucket size by summing all objects
+ * This is the actual capacity used, not a quota
+ * @returns {Promise<Object>} { totalBytes, totalGB, totalMB }
+ */
+async function getBucketSize() {
+    try {
+        let totalSize = 0;
+        let objectCount = 0;
+        let continuationToken = null;
+        let isTruncated = true;
+
+        while (isTruncated) {
+            const command = new ListObjectsV2Command({
+                Bucket: R2Config.bucketName,
+                ContinuationToken: continuationToken
+            });
+
+            const response = await s3Client.send(command);
+            const objects = response.Contents || [];
+
+            for (const obj of objects) {
+                totalSize += obj.Size || 0;
+                objectCount++;
+            }
+
+            isTruncated = response.IsTruncated;
+            continuationToken = response.NextContinuationToken;
+        }
+
+        return {
+            totalBytes: totalSize,
+            totalGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
+            totalMB: (totalSize / 1024 / 1024).toFixed(2),
+            objectCount
+        };
+    } catch (error) {
+        console.error('[R2Storage] Error calculating bucket size:', error.message);
+        throw error;
+    }
+}
+
+// ============================================================
 // Exports
 // ============================================================
 
@@ -677,6 +723,9 @@ module.exports = {
     updateSyncJob,
     processPendingSyncJobs,
     getSyncStatus,
+    
+    // Storage capacity
+    getBucketSize,
     
     // Configuration
     getConfig: () => R2Config,

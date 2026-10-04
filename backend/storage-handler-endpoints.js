@@ -802,6 +802,20 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
             console.log(`[StorageHandler] Stats request for prefix: ${prefix || 'root'}`);
 
+            // Get actual bucket size
+            let bucketSizeInfo = { totalBytes: 0, totalGB: 0 };
+            try {
+                // Only calculate full bucket size if no prefix (root stats)
+                // For prefixed stats, we'll calculate just that prefix
+                if (!prefix) {
+                    bucketSizeInfo = await r2Storage.getBucketSize();
+                    console.log(`[StorageHandler] Bucket actual size: ${bucketSizeInfo.totalGB} GB`);
+                }
+            } catch (err) {
+                console.warn('[StorageHandler] Could not get bucket size:', err.message);
+                bucketSizeInfo = { totalBytes: 0, totalGB: 0 };
+            }
+
             const command = new ListObjectsV2Command({
                 Bucket: config.bucketName,
                 Prefix: prefix
@@ -855,6 +869,10 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 continuationToken = response.NextContinuationToken;
             }
 
+            // Use actual bucket size for capacity if no prefix
+            const capacityBytes = prefix ? (totalSize * 1.2) : (bucketSizeInfo.totalBytes || totalSize);
+            const capacityGB = (capacityBytes / 1024 / 1024 / 1024).toFixed(2);
+
             // Estimate "today used" as recent changes (last 24 hours activity)
             // For now, we'll use upload count as proxy
             const todayUsedGB = Math.max(0, (todayUsedSize / 1024 / 1024 / 1024).toFixed(2));
@@ -870,8 +888,9 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                     totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
                     totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
                     
-                    // Storage quota info
-                    quotaGB: parseInt(process.env.STORAGE_QUOTA_GB || 10),
+                    // Storage capacity - from actual bucket calculation
+                    capacityBytes: Math.floor(capacityBytes),
+                    capacityGB: parseInt(capacityGB),
                     
                     // Today's uploads - return raw bytes
                     todayUploadSize, // bytes

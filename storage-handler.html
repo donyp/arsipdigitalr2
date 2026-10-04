@@ -1076,14 +1076,14 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    // Calculate storage quota usage from API response
+                    // Get actual capacity from API (auto-calculated from R2 bucket)
                     const usedBytes = parseFloat(data.stats.totalSize) || 0;
-                    const quotaGB = data.stats.quotaGB || 10;
-                    const quotaBytes = quotaGB * 1024 * 1024 * 1024;
+                    const capacityGB = data.stats.capacityGB || 10;
+                    const capacityBytes = capacityGB * 1024 * 1024 * 1024;
                     
                     const usedFormatted = formatFileSize(usedBytes);
-                    const quotaFormatted = `${quotaGB} GB`;
-                    const storageDisplay = `${usedFormatted} / ${quotaFormatted}`;
+                    const capacityFormatted = `${capacityGB} GB`;
+                    const storageDisplay = `${usedFormatted} / ${capacityFormatted}`;
                     
                     const todayUpload = formatFileSize(parseFloat(data.stats.todayUploadSize) || 0);
                     const todayUsed = formatFileSize(parseFloat(data.stats.todayUsedSize) || 0);
@@ -1091,7 +1091,7 @@
                     document.getElementById('statTotalSize').textContent = storageDisplay;
                     
                     // Calculate percentage for visual feedback
-                    const usagePercent = ((usedBytes / quotaBytes) * 100).toFixed(1);
+                    const usagePercent = ((usedBytes / capacityBytes) * 100).toFixed(1);
                     document.getElementById('statTotalFiles').textContent = `${data.stats.totalFiles} files (${usagePercent}%)`;
                     
                     // Today's stats
@@ -1101,7 +1101,7 @@
                     document.getElementById('statTodayUsed').textContent = todayUsed;
                     document.getElementById('statTodayUsedCount').textContent = data.stats.todayChangesCount + ' changes';
                     
-                    console.log('[Stats] Used:', usedFormatted, '/ Quota:', quotaFormatted, `(${usagePercent}%)`, '| Today Upload:', todayUpload, '| Today Used:', todayUsed);
+                    console.log('[Stats] Used:', usedFormatted, '/ Capacity:', capacityFormatted, `(${usagePercent}%)`, '| Today Upload:', todayUpload, '| Today Used:', todayUsed);
                     document.getElementById('stats').style.display = 'grid';
                 }
             } catch (error) {
