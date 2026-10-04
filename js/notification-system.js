@@ -51,63 +51,85 @@ class NotificationSystem {
             .notification {
                 pointer-events: all;
                 padding: 16px 20px;
-                border-radius: 8px;
+                border-radius: 12px;
                 font-size: 14px;
                 font-weight: 500;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
                 animation: slideInRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 14px;
                 max-width: 400px;
                 word-wrap: break-word;
-                line-height: 1.4;
+                line-height: 1.5;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                transition: all 0.3s ease;
+            }
+
+            .notification:hover {
+                transform: translateX(-4px);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
             }
 
             .notification.success {
-                background: #d4edda;
-                color: #155724;
-                border: 1px solid #c3e6cb;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.3);
             }
 
             .notification.error {
-                background: #f8d7da;
-                color: #721c24;
-                border: 1px solid #f5c6cb;
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.3);
             }
 
             .notification.warning {
-                background: #fff3cd;
-                color: #856404;
-                border: 1px solid #ffeaa7;
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.3);
             }
 
             .notification.info {
-                background: #d1ecf1;
-                color: #0c5460;
-                border: 1px solid #bee5eb;
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.3);
             }
 
             .notification-icon {
-                font-size: 18px;
+                font-size: 20px;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 24px;
+                height: 24px;
+                background: rgba(255, 255, 255, 0.25);
+                border-radius: 6px;
             }
 
             .notification-close {
                 margin-left: auto;
                 cursor: pointer;
-                font-size: 20px;
+                font-size: 22px;
                 color: inherit;
                 opacity: 0.7;
-                transition: opacity 0.2s;
+                transition: all 0.2s;
                 background: none;
                 border: none;
                 padding: 0;
                 margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                border-radius: 6px;
             }
 
             .notification-close:hover {
                 opacity: 1;
+                background: rgba(255, 255, 255, 0.2);
             }
 
             @keyframes slideInRight {
@@ -156,89 +178,107 @@ class NotificationSystem {
             }
 
             .notification-modal {
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-                padding: 30px;
-                max-width: 400px;
+                background: #ffffff;
+                border-radius: 16px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 1px rgba(0, 0, 0, 0.1);
+                padding: 32px;
+                max-width: 420px;
                 width: 100%;
                 animation: modalSlideIn 0.3s ease-out;
+                border: 1px solid rgba(255, 255, 255, 0.8);
             }
 
             @keyframes modalSlideIn {
                 from {
-                    transform: scale(0.9);
+                    transform: scale(0.92) translateY(20px);
                     opacity: 0;
                 }
                 to {
-                    transform: scale(1);
+                    transform: scale(1) translateY(0);
                     opacity: 1;
                 }
             }
 
             .notification-modal-header {
-                margin-bottom: 16px;
+                margin-bottom: 20px;
             }
 
             .notification-modal-title {
-                font-size: 18px;
+                font-size: 20px;
                 font-weight: 700;
-                color: #333;
+                color: #1f2937;
                 margin: 0;
+                letter-spacing: -0.5px;
             }
 
             .notification-modal-message {
                 font-size: 14px;
-                color: #666;
+                color: #6b7280;
                 margin: 12px 0 0 0;
-                line-height: 1.5;
+                line-height: 1.6;
             }
 
             .notification-modal-actions {
                 display: flex;
-                gap: 12px;
-                margin-top: 24px;
+                gap: 10px;
+                margin-top: 28px;
             }
 
             .notification-modal-btn {
                 flex: 1;
-                padding: 10px 16px;
+                padding: 12px 20px;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-size: 14px;
                 font-weight: 600;
                 cursor: pointer;
-                transition: all 0.2s;
+                transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
                 text-transform: uppercase;
-                letter-spacing: 0.5px;
+                letter-spacing: 0.6px;
             }
 
             .notification-modal-btn-primary {
-                background: #667eea;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 color: white;
             }
 
             .notification-modal-btn-primary:hover {
-                background: #5568d3;
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(102, 126, 234, 0.35);
+            }
+
+            .notification-modal-btn-primary:active {
+                transform: translateY(0);
             }
 
             .notification-modal-btn-secondary {
-                background: #f0f0f0;
-                color: #666;
+                background: #f3f4f6;
+                color: #6b7280;
+                border: 1.5px solid #e5e7eb;
             }
 
             .notification-modal-btn-secondary:hover {
-                background: #e0e0e0;
+                background: #f9fafb;
+                border-color: #d1d5db;
+                transform: translateY(-2px);
+            }
+
+            .notification-modal-btn-secondary:active {
+                transform: translateY(0);
             }
 
             .notification-modal-btn-danger {
-                background: #ff4757;
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
                 color: white;
             }
 
             .notification-modal-btn-danger:hover {
-                background: #ff3838;
+                transform: translateY(-2px);
+                box-shadow: 0 8px 20px rgba(239, 68, 68, 0.35);
+            }
+
+            .notification-modal-btn-danger:active {
+                transform: translateY(0);
             }
 
             /* Mobile responsive */
@@ -253,10 +293,20 @@ class NotificationSystem {
                 .notification {
                     max-width: none;
                     font-size: 13px;
+                    padding: 14px 18px;
                 }
 
                 .notification-modal {
-                    padding: 20px;
+                    padding: 24px;
+                }
+
+                .notification-modal-title {
+                    font-size: 18px;
+                }
+
+                .notification-modal-btn {
+                    padding: 10px 16px;
+                    font-size: 13px;
                 }
             }
         `;
