@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const { updateFileCountDirectly, updateFilePath } = require('./direct-postgres-update');
 const { logSecurityEvent, logWarning, logInfo, logDebug, isDebugMode } = require('./security-logging');
+const { sanitizeString } = require('./input-validators');
 
 try {
     multer = require('multer');
