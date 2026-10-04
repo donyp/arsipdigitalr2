@@ -3460,7 +3460,8 @@
                     // Count actual files from API data (without file checks)
                     let actualUploadedCount = 0;
                     
-                    // Invoice PDF (required for all)
+                    // Invoice PDF (required for all) - count only ONE invoice file
+                    // Check both paths but only increment once (not both)
                     if (inv.invoice_pdf_path || inv.uploaded_file_path) {
                         actualUploadedCount++;
                     }
@@ -3473,6 +3474,12 @@
                     // Faktur Pajak (only if PPN and file exists)
                     if (inv.keterangan === 'PPN' && inv.faktur_pajak_path) {
                         actualUploadedCount++;
+                    }
+                    
+                    // Debug: log file status untuk faktur specific
+                    if (window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1') {
+                        // Optional: uncomment untuk debug - shows file path status
+                        // console.log(`Faktur: ${inv.faktur}, Type: ${inv.keterangan}, Count: ${actualUploadedCount}/${requiredCount}, Paths: invoice_pdf=${!!inv.invoice_pdf_path}, uploaded=${!!inv.uploaded_file_path}, bukti=${!!inv.bukti_bayar_path}, pajak=${!!inv.faktur_pajak_path}`);
                     }
                     
                     const statusText = `${actualUploadedCount}/${requiredCount}`;
