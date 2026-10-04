@@ -499,14 +499,14 @@
 
         // Delete user
         async function deleteUser(userId) {
-            if (!confirm('Hapus user ini?')) return;
-            
-            try {
-                await API.post(`/api/users/${userId}`, null, { method: 'DELETE' });
-                await loadUsers();
-            } catch (err) {
-                Notify.error('Error: ' + err.message);
-            }
+            Notify.confirmDelete('Hapus User', 'Apakah Anda yakin ingin menghapus user ini?', async () => {
+                try {
+                    await API.post(`/api/users/${userId}`, null, { method: 'DELETE' });
+                    await loadUsers();
+                } catch (err) {
+                    Notify.error('Error: ' + err.message);
+                }
+            });
         }
 
         // Close modal

@@ -270,13 +270,14 @@
         }
 
         async function deleteZona(zonaId) {
-            if (!confirm('Hapus zona ini?')) return;
-            try {
-                await API.post(`/api/zonas/${zonaId}`, null, { method: 'DELETE' });
-                await loadData();
-            } catch (err) {
-                Notify.error('Error: ' + err.message);
-            }
+            Notify.confirmDelete('Hapus Zona', 'Apakah Anda yakin ingin menghapus zona ini?', async () => {
+                try {
+                    await API.post(`/api/zonas/${zonaId}`, null, { method: 'DELETE' });
+                    await loadData();
+                } catch (err) {
+                    Notify.error('Error: ' + err.message);
+                }
+            });
         }
 
         function closeZonaModal() {
