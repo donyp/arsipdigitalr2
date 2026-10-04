@@ -147,7 +147,7 @@ async function compressWithPdfLib(inputBuffer, targetSize, documentType) {
 
 /**
  * Compress using Node.js zlib deflate
- * PDF is already compressed, but we can try gzip for additional compression
+ * PDFs already have compression, so even small additional compression is acceptable
  */
 async function compressWithZlib(inputBuffer, targetSize, documentType) {
     return new Promise((resolve, reject) => {
@@ -160,9 +160,9 @@ async function compressWithZlib(inputBuffer, targetSize, documentType) {
             const ratio = compressed.length / inputBuffer.length;
             console.log(`[PDFCompress] Zlib: ${(compressed.length / 1024 / 1024).toFixed(2)} MB (ratio: ${ratio.toFixed(2)}x)`);
 
-            // Zlib is useful but we need to be careful with PDFs
-            // Only return if significant compression achieved
-            if (ratio < 0.95) {
+            // Relaxed threshold: accept any compression >= 2% for PDFs
+            // PDFs are already compressed, small reductions are still valuable
+            if (ratio < 0.98) {
                 resolve({
                     success: true,
                     buffer: compressed,
@@ -170,11 +170,11 @@ async function compressWithZlib(inputBuffer, targetSize, documentType) {
                     compressedSize: compressed.length,
                     ratio,
                     compressed: true,
-                    compressionNote: `📦 Deflated to ${(ratio * 100).toFixed(0)}% of original size`,
+                    compressionNote: `📦 Compressed to ${(ratio * 100).toFixed(1)}% (saved ${((1-ratio) * inputBuffer.length / 1024 / 1024).toFixed(2)}MB)`,
                     isDeflated: true
                 });
             } else {
-                reject(new Error('Zlib compression not effective enough'));
+                reject(new Error('Zlib compression not effective (< 2%)'));
             }
         });
     });
