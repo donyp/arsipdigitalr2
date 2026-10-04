@@ -513,6 +513,15 @@
 
         // Also support DOMContentLoaded for direct page load
         document.addEventListener('DOMContentLoaded', initUsersPage);
+
+        // Listen for profile updates from other pages (e.g., admin zona profile changes)
+        window.addEventListener('profileUpdated', async () => {
+            console.log('Profile update detected, refreshing users table...');
+            if (typeof loadUsers === 'function') {
+                await loadUsers();
+                console.log('Users table refreshed');
+            }
+        });
     </script>
     <script>
         if (typeof initUsersPage === 'function') {

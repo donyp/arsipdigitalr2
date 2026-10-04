@@ -4428,6 +4428,13 @@
                 // Show success message
                 window.showNotification('Profil berhasil diperbarui!', 'success');
 
+                // Refresh profile data cache
+                profileDataLoaded = false;
+                window.preloadProfileData().catch(err => console.warn('Profile refresh error:', err));
+
+                // Broadcast profile update event to other pages/tabs
+                window.dispatchEvent(new Event('profileUpdated'));
+
                 // Restore button
                 document.getElementById('profileSaveBtn').innerHTML = originalText;
 
