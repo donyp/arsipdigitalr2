@@ -517,7 +517,7 @@ function renderValidationResults() {
                 <div style="flex: 1;">
                     <div class="file-item-name">${result.file.name}</div>
                     <div class="file-item-faktur">
-                        Faktur: ${fakturText} ${result.valid ? `| ${konsumenText} | ${nominalText}` : `| ${statusText}`}
+                        Faktur: ${fakturText} ${result.valid ? `| ${konsumenText} | ${nominalText} | ${(result.file.size / 1024 / 1024).toFixed(2)} MB` : `| ${statusText}`}
                     </div>
                 </div>
                 <div class="file-item-status">${status}</div>

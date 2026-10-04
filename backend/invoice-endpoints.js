@@ -2066,11 +2066,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // PRE-CALCULATE COMPRESSION TO GET NOTE FOR RESPONSE
                 let compressionNoteForResponse = null;
                 try {
+                    console.log(`[Invoice PDF] Pre-compressing with limit: 2MB`);
                     const preCompressionResult = await compressPDF(fileBuffer, 'invoice_pdf');
                     compressionNoteForResponse = preCompressionResult?.compressionNote || null;
-                    console.log(`[Invoice PDF] Pre-calculated compression note: ${compressionNoteForResponse}`);
+                    console.log(`[Invoice PDF] Pre-compression success! Note: "${compressionNoteForResponse}", Was compressed: ${preCompressionResult?.compressed}`);
                 } catch (preCompErr) {
-                    console.log(`[Invoice PDF] Pre-compression failed (will retry in background):`, preCompErr.message);
+                    console.error(`[Invoice PDF] Pre-compression failed (will retry in background):`, preCompErr.message);
+                    console.error(`[Invoice PDF] Error stack:`, preCompErr.stack);
                 }
                 
                 // Check if this is a re-upload of same file (path already matches new structure)
@@ -2397,11 +2399,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // PRE-CALCULATE COMPRESSION TO GET NOTE FOR RESPONSE
                     let compressionNoteForResponse = null;
                     try {
+                        console.log(`[Invoice Document] Pre-compressing Faktur Pajak with limit: 1MB`);
                         const preCompressionResult = await compressPDF(fileBuffer, 'faktur_pajak');
                         compressionNoteForResponse = preCompressionResult?.compressionNote || null;
-                        console.log(`[Invoice Document] Pre-calculated compression note: ${compressionNoteForResponse}`);
+                        console.log(`[Invoice Document] Pre-compression success! Note: "${compressionNoteForResponse}", Was compressed: ${preCompressionResult?.compressed}`);
                     } catch (preCompErr) {
-                        console.log(`[Invoice Document] Pre-compression failed (will retry in background):`, preCompErr.message);
+                        console.error(`[Invoice Document] Pre-compression failed (will retry in background):`, preCompErr.message);
+                        console.error(`[Invoice Document] Error stack:`, preCompErr.stack);
                     }
                     
                     // Check if this is a re-upload of same file (path already matches new structure)
@@ -2654,11 +2658,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // PRE-CALCULATE COMPRESSION TO GET NOTE FOR RESPONSE
                     let compressionNoteForResponse = null;
                     try {
+                        console.log(`[Invoice Document] Pre-compressing Bukti Bayar with limit: 1MB`);
                         const preCompressionResult = await compressPDF(fileBuffer, 'bukti_bayar');
                         compressionNoteForResponse = preCompressionResult?.compressionNote || null;
-                        console.log(`[Invoice Document] Pre-calculated compression note: ${compressionNoteForResponse}`);
+                        console.log(`[Invoice Document] Pre-compression success! Note: "${compressionNoteForResponse}", Was compressed: ${preCompressionResult?.compressed}`);
                     } catch (preCompErr) {
-                        console.log(`[Invoice Document] Pre-compression failed (will retry in background):`, preCompErr.message);
+                        console.error(`[Invoice Document] Pre-compression failed (will retry in background):`, preCompErr.message);
+                        console.error(`[Invoice Document] Error stack:`, preCompErr.stack);
                     }
                     
                     // Check if this is a re-upload of same file (path already matches new structure)
