@@ -596,7 +596,12 @@ async function uploadValidFiles() {
                 if (response.ok && result.success) {
                     successCount++;
 
-                    showNotification(`✓ ${fileResult.faktur}`, 'success', 2000);
+                    // Display compression note if available
+                    let compressionMsg = '';
+                    if (result.compression_note) {
+                        compressionMsg = ` | ${result.compression_note}`;
+                    }
+                    showNotification(`✓ ${fileResult.faktur}${compressionMsg}`, 'success', 2000);
                     
                     // Generate WhatsApp message if we have zone data
                     if (result.zona_id && result.tipe && result.konsumen && result.nominal) {

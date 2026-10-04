@@ -698,7 +698,13 @@
                     });
 
                     if (response.ok) {
+                        const result = await response.json();
                         successCount++;
+                        
+                        // Show compression note if available
+                        if (result.compression_note) {
+                            Toast.info(`📦 ${file.name}: ${result.compression_note}`);
+                        }
                     } else {
                         failCount++;
                     }

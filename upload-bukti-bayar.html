@@ -763,6 +763,11 @@
                             throw new Error(`Upload failed for ${file.name}`);
                         }
 
+                        // Show compression note if available
+                        const result = await response.json();
+                        if (result.compression_note) {
+                            Notify.info(`📦 ${file.name}: ${result.compression_note}`);
+                        }
                     }
 
                     Notify.success('✅ Bukti Bayar berhasil diupload!');

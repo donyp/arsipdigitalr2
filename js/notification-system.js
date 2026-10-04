@@ -16,6 +16,13 @@ class NotificationSystem {
      * Initialize notification container
      */
     initializeContainer() {
+        // If body not ready, defer initialization
+        if (!document.body) {
+            console.warn('[Notify] document.body not ready, deferring container initialization');
+            setTimeout(() => this.initializeContainer(), 100);
+            return;
+        }
+
         if (document.getElementById('notification-container')) return;
 
         const container = document.createElement('div');
@@ -31,9 +38,17 @@ class NotificationSystem {
             max-width: 400px;
             pointer-events: none;
         `;
-        document.body.appendChild(container);
-
-        this.container = container;
+        
+        try {
+            document.body.appendChild(container);
+            this.container = container;
+            console.log('[Notify] Container initialized');
+        } catch (error) {
+            console.error('[Notify] Failed to append container:', error);
+            // Try again in next tick
+            setTimeout(() => this.initializeContainer(), 100);
+            return;
+        }
 
         // Add CSS styles
         this.injectStyles();
@@ -551,12 +566,30 @@ class NotificationSystem {
     }
 }
 
-// Global instance
-const Notify = new NotificationSystem();
+// Global instance - initialize only when DOM is ready
+let Notify = null;
+
+function initializeNotifySystem() {
+    if (Notify === null) {
+        Notify = new NotificationSystem();
+        console.log('[Notify] System initialized');
+    }
+    return Notify;
+}
+
+// Initialize on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeNotifySystem();
+    });
+} else {
+    // DOM already loaded
+    initializeNotifySystem();
+}
 
 // Export for use
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = Notify;
+    module.exports = { Notify: () => initializeNotifySystem(), initializeNotifySystem };
 }
 
 
@@ -569,17 +602,18 @@ if (typeof module !== 'undefined' && module.exports) {
 // Override window.alert() - replace with Notify.info()
 const originalAlert = window.alert;
 window.alert = function(message) {
+    const notify = initializeNotifySystem();
     // Detect if it's a success message (has ✓ or success keywords)
     if (message && (message.includes('✓') || message.includes('berhasil') || message.includes('sukses'))) {
-        Notify.success(message);
+        notify.success(message);
     }
     // Detect if it's an error message (has ✕ or error keywords)
     else if (message && (message.includes('✕') || message.includes('error') || message.includes('gagal'))) {
-        Notify.error(message);
+        notify.error(message);
     }
     // Default to info
     else {
-        Notify.info(message || 'Information');
+        notify.info(message || 'Information');
     }
 };
 
@@ -587,9 +621,10 @@ window.alert = function(message) {
 const originalConfirm = window.confirm;
 window.confirm = function(message) {
     return new Promise((resolve) => {
+        const notify = initializeNotifySystem();
         // Detect if it's a delete/destructive action
         if (message && (message.toLowerCase().includes('hapus') || message.toLowerCase().includes('delete'))) {
-            Notify.confirmDelete(
+            notify.confirmDelete(
                 'Confirm Action',
                 message,
                 () => resolve(true),

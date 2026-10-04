@@ -9,6 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const { updateFileCountDirectly, updateFilePath } = require('./direct-postgres-update');
 const { logSecurityEvent, logWarning, logInfo, logDebug, isDebugMode } = require('./security-logging');
+const { compressPDF, COMPRESSION_LIMITS } = require('./pdf-compression');
 
 try {
     multer = require('multer');
@@ -2103,11 +2104,24 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         console.log(`[Invoice PDF BG] Starting upload for faktur: ${faktur}`);
                         let uploadResult = null;
                         let remotePath = null;
+                        let compressionResult = null;
                         
                         try {
-                            console.log(`[Invoice PDF BG] Uploading file buffer (${fileBuffer.length} bytes)`);
+                            console.log(`[Invoice PDF BG] Original file size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
                             
-                            uploadResult = await R2Storage.uploadInvoicePDF(fileBuffer, filename, year, monthName, day, category, location);
+                            // Apply compression
+                            compressionResult = await compressPDF(fileBuffer, 'invoice_pdf');
+                            console.log(`[Invoice PDF BG] Compression result:`, {
+                                was_compressed: compressionResult.compressed,
+                                original_size: compressionResult.originalSize,
+                                compressed_size: compressionResult.compressedSize,
+                                ratio: compressionResult.ratio.toFixed(2),
+                                note: compressionResult.compressionNote
+                            });
+                            
+                            console.log(`[Invoice PDF BG] Uploading file buffer (${compressionResult.buffer.length} bytes)`);
+                            
+                            uploadResult = await R2Storage.uploadInvoicePDF(compressionResult.buffer, filename, year, monthName, day, category, location);
                             
                             console.log(`[Invoice PDF BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
                             
@@ -2146,7 +2160,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     file_type: 'invoice',
                                     file_path: remotePath,
                                     uploaded_at: new Date().toISOString(),
-                                    uploaded_by: req.user.id
+                                    uploaded_by: req.user.id,
+                                    was_compressed: compressionResult?.compressed || false,
+                                    original_size: compressionResult?.originalSize || fileBuffer.length,
+                                    compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                    compression_note: compressionResult?.compressionNote || null
                                 })
                             });
                             
@@ -2171,7 +2189,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         file_type: 'invoice',
                                         file_path: remotePath,
                                         uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
+                                        uploaded_by: req.user.id,
+                                        was_compressed: compressionResult?.compressed || false,
+                                        original_size: compressionResult?.originalSize || fileBuffer.length,
+                                        compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                        compression_note: compressionResult?.compressionNote || null
                                     });
                                 
                                 if (!upsertErr) {
@@ -2394,11 +2416,24 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // OPTIMIZATION: Move upload to background (NON-BLOCKING)
                     const performUpload = async () => {
                         let uploadResult = null;
+                        let compressionResult = null;
                         try {
-                            console.log(`[Invoice Document BG] Uploading FAKTUR PAJAK file buffer (${fileBuffer.length} bytes)`);
+                            console.log(`[Invoice Document BG] Original FAKTUR PAJAK file size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+                            
+                            // Apply compression
+                            compressionResult = await compressPDF(fileBuffer, 'faktur_pajak');
+                            console.log(`[Invoice Document BG] Compression result:`, {
+                                was_compressed: compressionResult.compressed,
+                                original_size: compressionResult.originalSize,
+                                compressed_size: compressionResult.compressedSize,
+                                ratio: compressionResult.ratio.toFixed(2),
+                                note: compressionResult.compressionNote
+                            });
+                            
+                            console.log(`[Invoice Document BG] Uploading FAKTUR PAJAK file buffer (${compressionResult.buffer.length} bytes)`);
                             
                             uploadResult = await R2Storage.uploadDocumentFile(
-                                fileBuffer,
+                                compressionResult.buffer,
                                 finalFilename,
                                 year,
                                 monthName,
@@ -2435,7 +2470,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         file_type: 'faktur_pajak',
                                         file_path: uploadResult.storagePath,
                                         uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
+                                        uploaded_by: req.user.id,
+                                        was_compressed: compressionResult?.compressed || false,
+                                        original_size: compressionResult?.originalSize || fileBuffer.length,
+                                        compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                        compression_note: compressionResult?.compressionNote || null
                                     })
                                 });
                                 
@@ -2461,7 +2500,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                             file_type: 'faktur_pajak',
                                             file_path: uploadResult.storagePath,
                                             uploaded_at: new Date().toISOString(),
-                                            uploaded_by: req.user.id
+                                            uploaded_by: req.user.id,
+                                            was_compressed: compressionResult?.compressed || false,
+                                            original_size: compressionResult?.originalSize || fileBuffer.length,
+                                            compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                            compression_note: compressionResult?.compressionNote || null
                                         });
                                     
                                     if (!upsertErr) {
@@ -2620,11 +2663,24 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // OPTIMIZATION: Move upload to background (NON-BLOCKING)
                     const performUpload = async () => {
                         let uploadResult = null;
+                        let compressionResult = null;
                         try {
-                            console.log(`[Invoice Document BG] Uploading BUKTI BAYAR file buffer (${fileBuffer.length} bytes)`);
+                            console.log(`[Invoice Document BG] Original BUKTI BAYAR file size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
+                            
+                            // Apply compression
+                            compressionResult = await compressPDF(fileBuffer, 'bukti_bayar');
+                            console.log(`[Invoice Document BG] Compression result:`, {
+                                was_compressed: compressionResult.compressed,
+                                original_size: compressionResult.originalSize,
+                                compressed_size: compressionResult.compressedSize,
+                                ratio: compressionResult.ratio.toFixed(2),
+                                note: compressionResult.compressionNote
+                            });
+                            
+                            console.log(`[Invoice Document BG] Uploading BUKTI BAYAR file buffer (${compressionResult.buffer.length} bytes)`);
                             
                             uploadResult = await R2Storage.uploadDocumentFile(
-                                fileBuffer,
+                                compressionResult.buffer,
                                 finalFilename,
                                 year,
                                 monthName,
@@ -2661,7 +2717,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         file_type: 'bukti_bayar',
                                         file_path: uploadResult.storagePath,
                                         uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
+                                        uploaded_by: req.user.id,
+                                        was_compressed: compressionResult?.compressed || false,
+                                        original_size: compressionResult?.originalSize || fileBuffer.length,
+                                        compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                        compression_note: compressionResult?.compressionNote || null
                                     })
                                 });
                                 
@@ -2687,7 +2747,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                             file_type: 'bukti_bayar',
                                             file_path: uploadResult.storagePath,
                                             uploaded_at: new Date().toISOString(),
-                                            uploaded_by: req.user.id
+                                            uploaded_by: req.user.id,
+                                            was_compressed: compressionResult?.compressed || false,
+                                            original_size: compressionResult?.originalSize || fileBuffer.length,
+                                            compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                            compression_note: compressionResult?.compressionNote || null
                                         });
                                     
                                     if (!upsertErr) {
