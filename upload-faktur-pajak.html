@@ -551,36 +551,37 @@
             // Scan and validate files
             const validated = await Promise.all(filesToUpload.map(async (file, idx) => {
                 let filename = file.name.replace(/\.pdf$/i, '').trim();
-                filename = filename.replace(/\.pdf$/i, '').trim();
                 
-                const taxMatch = filename.match(/^tax-(\d+)\s+(.+?)\s+([\d.]+)$/i);
-                const isValid = !!taxMatch;
+                // Extract faktur number - flexible format, just need to find numbers
+                // Look for numbers that could be faktur (at least 10 digits for consistency)
+                const numberMatches = filename.match(/\d{10,}/g);
+                const noFaktur = numberMatches ? numberMatches[0] : null;
+                
+                let isValid = !!noFaktur;
 
                 let info = {
                     file,
                     index: idx,
                     isValid,
-                    filename
+                    filename,
+                    noFaktur: noFaktur || 'UNKNOWN'
                 };
 
-                if (isValid && taxMatch) {
-                    info.noFaktur = taxMatch[1];
-                    info.namaFromFile = taxMatch[2];
-                    info.nominalFromFile = taxMatch[3];
-
+                // If we found a faktur number, validate against database
+                if (isValid && noFaktur) {
                     try {
-                        const res = await fetch(`/api/invoice/check-faktur/${info.noFaktur}`, {
+                        const res = await fetch(`/api/invoice/check-faktur/${noFaktur}`, {
                             headers: { 'Authorization': `Bearer ${API.getToken()}` }
                         });
                         if (res.ok) {
                             const result = await res.json();
                             if (result.exists && result.data) {
-                                info.tokoName = result.data.konsumen || info.namaFromFile;
+                                info.tokoName = result.data.konsumen || 'Unknown';
                                 info.nominal = result.data.total_jumlah_jual || 0;
                                 
                                 if (result.data.faktur_pajak_path) {
                                     try {
-                                        const checkRes = await fetch(`/api/invoice/check-file/${info.noFaktur}/faktur_pajak`, {
+                                        const checkRes = await fetch(`/api/invoice/check-file/${noFaktur}/faktur_pajak`, {
                                             headers: { 'Authorization': `Bearer ${API.getToken()}` }
                                         });
                                         const checkData = await checkRes.json();
@@ -589,7 +590,7 @@
                                             info.isValid = false;
                                             info.errorMsg = 'Faktur Pajak sudah diupload (Duplicate)';
                                         } else {
-                                            // File path in DB but not in GDrive - allow re-upload
+                                            // File path in DB but not in storage - allow re-upload
                                             info.isValid = true;
                                         }
                                     } catch (verifyErr) {
@@ -597,10 +598,24 @@
                                         info.isValid = true;
                                     }
                                 }
+                            } else {
+                                // Faktur tidak ditemukan di database
+                                info.isValid = false;
+                                info.errorMsg = `Faktur ${noFaktur} tidak ditemukan di database`;
                             }
+                        } else {
+                            // API error
+                            info.isValid = false;
+                            info.errorMsg = 'Gagal memeriksa faktur di database';
                         }
                     } catch (e) {
+                        info.isValid = false;
+                        info.errorMsg = 'Error checking faktur: ' + e.message;
                     }
+                } else {
+                    // No faktur number found
+                    info.isValid = false;
+                    info.errorMsg = 'Tidak dapat menemukan nomor faktur dalam nama file';
                 }
 
                 return info;
@@ -619,7 +634,7 @@
 
             // Render file list
             filesContainer.innerHTML = validated.map(item => `
-                <div class="file-item ${item.isValid ? 'valid' : 'invalid'}">
+                <div class="file-item ${item.isValid ? 'valid' : 'invalid'}" data-file-index="${item.index}">
                     <div class="file-item-icon">
                         ${item.isValid ? '✓' : '✗'}
                     </div>
@@ -627,7 +642,7 @@
                         <strong>${item.file.name}</strong>
                         <div class="file-item-info">
                             ${item.isValid ? 
-                                `NO: <strong>${item.noFaktur}</strong> | NAMA: <strong>${item.tokoName || item.namaFromFile || '?'}</strong> | NOMINAL: <strong>${item.nominal ? 'Rp' + item.nominal.toLocaleString('id-ID') : item.nominalFromFile || '?'}</strong> | SIZE: <strong>${(item.file.size / 1024 / 1024).toFixed(2)} MB</strong>` :
+                                `NO: <strong>${item.noFaktur}</strong> | NAMA: <strong>${item.tokoName || '?'}</strong> | NOMINAL: <strong>${item.nominal ? 'Rp' + item.nominal.toLocaleString('id-ID') : '?'}</strong> | SIZE: <strong>${(item.file.size / 1024 / 1024).toFixed(2)} MB</strong>` :
                                 `${item.errorMsg || 'ERROR: Format Nama File Tidak Sesuai'}`
                             }
                         </div>
@@ -665,14 +680,15 @@
         }
 
         btnUpload.addEventListener('click', async () => {
-            const validFiles = filesToUpload.filter(f => {
-                let filename = f.name.replace(/\.pdf$/i, '').trim();
-                filename = filename.replace(/\.pdf$/i, '').trim();
-                return /^tax-(\d+)\s+(.+?)\s+([\d.]+)$/i.test(filename);
+            // Get validated files (those marked as valid from validation scan)
+            const validFiles = filesToUpload.filter((file, idx) => {
+                // Find this file in the validated list by checking if it's in DOM as valid
+                const validItem = document.querySelector(`[data-file-index="${idx}"].file-item.valid`);
+                return !!validItem;
             });
 
             if (validFiles.length === 0) {
-                Notify.error('Tidak ada file valid');
+                Notify.error('Tidak ada file valid untuk diupload');
                 return;
             }
 
