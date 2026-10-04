@@ -9,6 +9,7 @@
     <script src="js/dark-mode-init.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/notification-system.js"></script>
     <style>
         :root {
             --color-bg-primary: #ffffff;
@@ -202,7 +203,7 @@
                 document.getElementById('stat-total-tokos').textContent = currentTokos.length;
                 renderZonasTable();
             } catch (err) {
-                alert('Error: ' + err.message);
+                Notify.error('Error: ' + err.message);
             }
         }
 
@@ -251,7 +252,7 @@
             const deskripsi = document.getElementById('zonaDeskripsi').value;
             const wa_recipient = document.getElementById('zonaWA').value;
             if (!nama) {
-                alert('Nama zona wajib diisi');
+                Notify.error('Nama zona wajib diisi');
                 return;
             }
             try {
@@ -264,7 +265,7 @@
                 closeZonaModal();
                 await loadData();
             } catch (err) {
-                alert('Error: ' + err.message);
+                Notify.error('Error: ' + err.message);
             }
         }
 
@@ -274,7 +275,7 @@
                 await API.post(`/api/zonas/${zonaId}`, null, { method: 'DELETE' });
                 await loadData();
             } catch (err) {
-                alert('Error: ' + err.message);
+                Notify.error('Error: ' + err.message);
             }
         }
 

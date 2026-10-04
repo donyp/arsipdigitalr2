@@ -9,6 +9,7 @@
     <script src="js/dark-mode-init.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="js/notification-system.js"></script>
     <style>
         :root {
             --color-bg-primary: #ffffff;
@@ -608,7 +609,7 @@ ${msg.message || 'N/A'}
                 if (typeof Toast !== 'undefined') {
                     Toast.success('✓ Pesan berhasil disalin ke clipboard');
                 } else {
-                    alert('Pesan berhasil disalin!');
+                    Notify.success('Pesan berhasil disalin!');
                 }
                 
                 // Auto-mark as sent
@@ -621,7 +622,7 @@ ${msg.message || 'N/A'}
                 if (typeof Toast !== 'undefined') {
                     Toast.error('Error: ' + err.message);
                 } else {
-                    alert('Error: ' + err.message);
+                    Notify.error('Error: ' + err.message);
                 }
             }
         }
@@ -637,7 +638,7 @@ ${msg.message || 'N/A'}
                 if (typeof Toast !== 'undefined') {
                     Toast.error('Error: ' + err.message);
                 } else {
-                    alert('Error: ' + err.message);
+                    Notify.error('Error: ' + err.message);
                 }
             }
         }

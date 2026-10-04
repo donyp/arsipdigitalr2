@@ -290,6 +290,7 @@
         }
     </style>
 </head>
+<script src="js/notification-system.js"></script>
 <body class="bg-gray-100">
     <!-- Sidebar -->
     <aside id="sidebar" class="fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-40"></aside>
@@ -1756,7 +1757,7 @@
             const newText = input.value.trim();
             
             if (!newText) {
-                alert('Teks headline tidak boleh kosong!');
+                Notify.error('Teks headline tidak boleh kosong!');
                 return;
             }
             
@@ -1778,11 +1779,11 @@
                 }
                 
                 // Show success message
-                alert('Headline berhasil diperbarui!');
+                Notify.success('Headline berhasil diperbarui!');
                 
                 closeEditHeadlineModal();
             } catch (err) {
-                alert('Gagal menyimpan headline: ' + err.message);
+                Notify.error('Gagal menyimpan headline: ' + err.message);
             }
         }
         

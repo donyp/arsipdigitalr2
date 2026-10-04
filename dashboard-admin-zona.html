@@ -1511,6 +1511,7 @@
         }
     </style>
 </head>
+<script src="js/notification-system.js"></script>
 <body>
     <!-- Apply dark mode immediately if needed -->
     <script>
@@ -4347,7 +4348,7 @@
                     if (typeof toastr !== 'undefined' && toastr.error) {
                         toastr.error('Session expired. Please login again.');
                     } else {
-                        alert('Session expired. Please login again.');
+                        Notify.error('Session expired. Please login again.');
                     }
                     return;
                 }

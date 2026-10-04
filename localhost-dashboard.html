@@ -228,6 +228,7 @@
         }
     </style>
 </head>
+<script src="js/notification-system.js"></script>
 <body>
     <div class="container">
         <div class="header">
@@ -350,7 +351,7 @@
                     <span class="endpoint-url">http://localhost:5000/api/files/:path</span>
                 </div>
                 <div class="endpoint-desc">List files from Terabox</div>
-                <button class="button button-small" onclick="alert('Use: /api/files/ or /api/files/folder')">Info</button>
+                <button class="button button-small" onclick="Notify.info('Use: /api/files/ or /api/files/folder')">Info</button>
             </div>
             
             <div class="endpoint">
@@ -359,7 +360,7 @@
                     <span class="endpoint-url">http://localhost:5000/api/preview/:filePath</span>
                 </div>
                 <div class="endpoint-desc">Preview file from Terabox</div>
-                <button class="button button-small" onclick="alert('File preview endpoint ready')">Info</button>
+                <button class="button button-small" onclick="Notify.info('File preview endpoint ready')">Info</button>
             </div>
             
             <div class="endpoint">
@@ -368,7 +369,7 @@
                     <span class="endpoint-url">http://localhost:5000/api/download/:filePath</span>
                 </div>
                 <div class="endpoint-desc">Download file from Terabox</div>
-                <button class="button button-small" onclick="alert('File download endpoint ready')">Info</button>
+                <button class="button button-small" onclick="Notify.info('File download endpoint ready')">Info</button>
             </div>
         </div>
         
