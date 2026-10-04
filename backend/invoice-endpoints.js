@@ -2175,7 +2175,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                     file_path: remotePath,
                                     uploaded_at: new Date().toISOString(),
                                     uploaded_by: req.user.id
-                                    // Note: compression columns not included - database schema still being updated
+,
+                                        was_compressed: compressionResult?.compressed || false,
+                                        original_size: compressionResult?.originalSize || fileBuffer.length,
+                                        compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                        compression_note: compressionResult?.compressionNote || null
                                 })
                             });
                             
@@ -2201,7 +2205,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         file_path: remotePath,
                                         uploaded_at: new Date().toISOString(),
                                         uploaded_by: req.user.id
-                                        // Note: compression columns not included - database schema still being updated
+,
+                                        was_compressed: compressionResult?.compressed || false,
+                                        original_size: compressionResult?.originalSize || fileBuffer.length,
+                                        compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                        compression_note: compressionResult?.compressionNote || null
                                     });
                                 
                                 if (!upsertErr) {
@@ -2752,7 +2760,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                                         file_path: uploadResult.storagePath,
                                         uploaded_at: new Date().toISOString(),
                                         uploaded_by: req.user.id
-                                        // Note: compression columns not included - database schema still being updated
+,
+                                        was_compressed: compressionResult?.compressed || false,
+                                        original_size: compressionResult?.originalSize || fileBuffer.length,
+                                        compressed_size: compressionResult?.compressedSize || fileBuffer.length,
+                                        compression_note: compressionResult?.compressionNote || null
                                     })
                                 });
                                 
