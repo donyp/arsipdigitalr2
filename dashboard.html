@@ -2507,14 +2507,14 @@
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
-                                        <th id="th-status" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;" onclick="sortTable('status')">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
-                                        <th id="th-tanggal" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;" onclick="sortTable('tanggal')">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
+                                        <th id="th-status" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
+                                        <th id="th-tanggal" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 6%;">Tipe</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
-                                        <th id="th-total" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;" onclick="sortTable('total')">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
+                                        <th id="th-total" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Keterangan</th>
                                         <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Aksi</th>
                                     </tr>
@@ -3460,6 +3460,45 @@
                 totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
                 totalHeader.classList.add(sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
             }
+        }
+        
+        // Setup sort header click handlers using event listeners
+        function setupSortHeaders() {
+            const thStatus = document.getElementById('th-status');
+            const thTanggal = document.getElementById('th-tanggal');
+            const thTotal = document.getElementById('th-total');
+            
+            if (thStatus) {
+                console.log('Attaching click handler to th-status');
+                thStatus.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sortTable('status');
+                });
+            }
+            
+            if (thTanggal) {
+                console.log('Attaching click handler to th-tanggal');
+                thTanggal.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sortTable('tanggal');
+                });
+            }
+            
+            if (thTotal) {
+                console.log('Attaching click handler to th-total');
+                thTotal.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sortTable('total');
+                });
+            }
+        }
+        
+        // Call setupSortHeaders when DOM is ready
+        document.addEventListener('DOMContentLoaded', setupSortHeaders);
+        
+        // Also call immediately in case it's already loaded
+        if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            setupSortHeaders();
         }
     </script>
     <script>
