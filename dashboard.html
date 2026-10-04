@@ -3352,7 +3352,6 @@
         async function sortTable(field) {
             console.log('=== sortTable called ===');
             console.log('field:', field);
-            console.log('currentSortField before:', sortTableState.currentSortField);
             
             const invoiceTableBody = document.getElementById('invoiceTableBody');
             if (!invoiceTableBody) {
@@ -3360,7 +3359,7 @@
                 return;
             }
             
-            // If filtering is active, fetch ALL data (no pagination) for sorting
+            // Get all filter values
             const filterSearch = document.getElementById('filterSearch')?.value || '';
             const filterStatus = document.getElementById('filterStatus')?.value || '';
             const filterToko = document.getElementById('filterToko')?.value || '';
@@ -3368,46 +3367,63 @@
             const filterYear = document.getElementById('filterYear')?.value || '';
             const filterMonth = document.getElementById('filterMonth')?.value || '';
             
+            // Check if ANY filter is active - always fetch ALL data for current month
             const hasActiveFilters = filterSearch || filterStatus || filterToko || filterKeterangan || filterYear || filterMonth;
             
             if (hasActiveFilters) {
-                console.log('Active filters detected - fetching ALL data for sort');
+                console.log('Filters detected - fetching ALL filtered data from selected month/year');
                 try {
-                    // Build query params same as filter logic
+                    // Build query params - MUST match exactly what applyInvoiceFilters sends
                     const params = new URLSearchParams();
+                    
+                    // Non-date filters
                     if (filterToko) params.append('toko', filterToko);
                     if (filterKeterangan) params.append('keterangan', filterKeterangan);
                     if (filterSearch) params.append('search', filterSearch);
                     
-                    // Handle Year and Month filtering
+                    // Handle Year and Month filtering - MUST match applyInvoiceFilters logic exactly
+                    // This ensures we sort ONLY data from the selected month/year, not all invoices
                     if (filterYear && filterMonth) {
+                        // Both year and month selected
                         const dateFromValue = `${filterYear}-${String(filterMonth).padStart(2, '0')}-01`;
                         const dateToObj = new Date(parseInt(filterYear), parseInt(filterMonth), 0);
                         const dateToValue = `${filterYear}-${String(filterMonth).padStart(2, '0')}-${dateToObj.getDate()}`;
                         params.append('date_from', dateFromValue);
                         params.append('date_to', dateToValue);
+                        console.log(`Date range: ${dateFromValue} to ${dateToValue}`);
                     } else if (filterYear) {
+                        // Only year selected
                         const dateFromValue = `${filterYear}-01-01`;
                         const dateToValue = `${filterYear}-12-31`;
                         params.append('date_from', dateFromValue);
                         params.append('date_to', dateToValue);
+                        console.log(`Date range: ${dateFromValue} to ${dateToValue}`);
                     } else if (filterMonth) {
-                        const currentYear = new Date().getFullYear();
-                        const dateFromValue = `${currentYear}-${String(filterMonth).padStart(2, '0')}-01`;
-                        const dateToObj = new Date(currentYear, parseInt(filterMonth), 0);
-                        const dateToValue = `${currentYear}-${String(filterMonth).padStart(2, '0')}-${dateToObj.getDate()}`;
+                        // Only month selected - use SAVED state year (from localStorage)
+                        let yearToUse = window.invoiceFilterState?.year;
+                        if (!yearToUse) {
+                            yearToUse = new Date().getFullYear();
+                        }
+                        const dateFromValue = `${yearToUse}-${String(filterMonth).padStart(2, '0')}-01`;
+                        const dateToObj = new Date(parseInt(yearToUse), parseInt(filterMonth), 0);
+                        const dateToValue = `${yearToUse}-${String(filterMonth).padStart(2, '0')}-${dateToObj.getDate()}`;
                         params.append('date_from', dateFromValue);
                         params.append('date_to', dateToValue);
+                        console.log(`Date range (month only): ${dateFromValue} to ${dateToValue}`);
                     }
                     
-                    // Fetch ALL data without pagination limit
+                    // Fetch ALL data without pagination limit for the filtered month
                     params.append('limit', 10000);  // Get up to 10000 records
                     params.append('offset', 0);
                     
                     const token = localStorage.getItem('jwt_token') || localStorage.getItem('authToken');
                     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
                     
-                    const response = await fetch(`${window.CONFIG?.API_URL || 'http://localhost:3000'}/api/invoice/list?${params.toString()}`, {
+                    const apiUrl = window.CONFIG?.API_URL || 'http://localhost:3000';
+                    const url = `${apiUrl}/api/invoice/list?${params.toString()}`;
+                    console.log('Fetching filtered data from:', url);
+                    
+                    const response = await fetch(url, {
                         method: 'GET',
                         headers: headers
                     });
@@ -3415,6 +3431,8 @@
                     if (response.ok) {
                         const result = await response.json();
                         const allData = result.data || [];
+                        
+                        console.log(`Fetched ${allData.length} records matching filters`);
                         
                         // Clear table body
                         invoiceTableBody.innerHTML = '';
@@ -3441,24 +3459,25 @@
                             `;
                             invoiceTableBody.appendChild(row);
                         });
-                        
-                        console.log(`Fetched ${allData.length} records for sorting with filters`);
                     } else {
-                        console.error('Failed to fetch data for sort with filters');
+                        console.error('Failed to fetch filtered data for sort');
+                        return;
                     }
                 } catch (err) {
-                    console.error('Error fetching data for sort:', err);
+                    console.error('Error fetching filtered data for sort:', err);
+                    return;
                 }
+            } else {
+                // No filters at all - just sort current page locally
+                console.log('No filters - sorting current page data');
             }
             
-            // Toggle direction for same field
+            // Set sort direction
             if (sortTableState.currentSortField === field) {
                 sortTableState.sortDirection[field] = sortTableState.sortDirection[field] === 'asc' ? 'desc' : 'asc';
-                console.log('Same field - toggling direction to:', sortTableState.sortDirection[field]);
             } else {
                 sortTableState.sortDirection[field] = 'asc';
                 sortTableState.currentSortField = field;
-                console.log('New field - set direction to asc, currentSortField to:', field);
             }
             
             // Get all rows from table
@@ -3470,12 +3489,9 @@
                 let aValue, bValue;
                 
                 if (field === 'status') {
-                    // Extract status count and total
-                    // Format: "0/3" or "2/2" → extract numerator and denominator
                     const aStatusText = a.cells[0].textContent.trim();
                     const bStatusText = b.cells[0].textContent.trim();
                     
-                    // Parse "X/Y" format
                     const aMatch = aStatusText.match(/(\d+)\/(\d+)/);
                     const bMatch = bStatusText.match(/(\d+)\/(\d+)/);
                     
@@ -3484,29 +3500,20 @@
                     const bCount = bMatch ? parseInt(bMatch[1]) : 0;
                     const bTotal = bMatch ? parseInt(bMatch[2]) : 0;
                     
-                    // Calculate percentage: completed/total
-                    // This handles both 3/3 and 2/2 equally
                     aValue = aTotal > 0 ? (aCount / aTotal) * 1000 + aCount : 0;
                     bValue = bTotal > 0 ? (bCount / bTotal) * 1000 + bCount : 0;
                 } else if (field === 'tanggal') {
-                    // Extract date from cell (format: DD/MM/YYYY)
                     const aTanggal = a.cells[1].textContent.trim();
                     const bTanggal = b.cells[1].textContent.trim();
                     aValue = new Date(aTanggal.split('/').reverse().join('-'));
                     bValue = new Date(bTanggal.split('/').reverse().join('-'));
                 } else if (field === 'total') {
-                    // Extract total as number from Indonesian format "Rp 13.186.950"
-                    // Indonesian format: dots (.) = thousands separator, comma (,) = decimal
-                    // Total column is at index 7 (0=Status, 1=Tanggal, 2=No Faktur, 3=Status Bayar, 4=Tipe, 5=Nama Konsumen, 6=Nama Toko, 7=Total)
                     const aText = a.cells[7].textContent.trim();
                     const bText = b.cells[7].textContent.trim();
                     
-                    // Extract only digits and dots/commas
                     const aNumStr = aText.replace(/[^\d.,]/g, '');
                     const bNumStr = bText.replace(/[^\d.,]/g, '');
                     
-                    // Convert Indonesian format to number:
-                    // Remove all dots (thousands separator), keep last comma if present (decimal)
                     aValue = parseFloat(aNumStr.replace(/\./g, '').replace(',', '.')) || 0;
                     bValue = parseFloat(bNumStr.replace(/\./g, '').replace(',', '.')) || 0;
                 }
