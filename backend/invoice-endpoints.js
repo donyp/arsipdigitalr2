@@ -1123,16 +1123,19 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 search
             } = req.body;
 
+            console.log('[Invoice Scan] Batch scan request received');
+
             // SECURITY: Cek zona ownership jika ada zona_id di body
             if (req.body.zona_id) {
-                if (!enforceZoneOwnership(req, res, req.body.zona_id)) return;
+                if (!enforceZoneOwnership(req, res, req.body.zona_id)) {
+                    return;
+                }
             }
-
-            console.log('[Invoice Scan] Starting batch R2 scan for filtered invoices...');
             
+            // Build query
             let query = supabase
                 .from('invoice_file_list')
-                .select('faktur, keterangan, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path');
+                .select('faktur');
             
             // Auto-filter by zona for admin_zona users
             if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
@@ -1152,53 +1155,52 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     query = query.or(`faktur.ilike.%${sanitizedSearch}%,konsumen.ilike.%${sanitizedSearch}%`);
                 }
             }
-            
-            const { data: invoices, error } = await query;
-            
-            if (error) {
-                console.error('[Invoice Scan] Error fetching filtered invoices:', error);
-                return res.status(500).json({ error: 'Failed to fetch invoices for scanning' });
-            }
-            
-            console.log(`[Invoice Scan] Scanning R2 for ${invoices.length} invoices...`);
-            
-            // Scan R2 for each invoice (this is the expensive part)
-            const scanResults = [];
-            let scannedCount = 0;
-            
-            for (const inv of invoices) {
-                try {
-                    const filesUploaded = await updateFilesUploadedCount(supabase, inv.faktur, R2Storage);
-                    scannedCount++;
-                    
-                    scanResults.push({
-                        faktur: inv.faktur,
-                        files_uploaded_count: filesUploaded
-                    });
-                    
-                    // Log progress every 10 invoices
-                    if (scannedCount % 10 === 0) {
-                        console.log(`[Invoice Scan] Progress: ${scannedCount}/${invoices.length} invoices scanned`);
-                    }
-                } catch (err) {
-                    console.error(`[Invoice Scan] Error scanning ${inv.faktur}:`, err.message);
-                    scanResults.push({
-                        faktur: inv.faktur,
-                        files_uploaded_count: inv.files_uploaded_count || 0,
-                        error: err.message
-                    });
-                }
-            }
-            
-            console.log(`[Invoice Scan] Completed: ${scannedCount} invoices scanned`);
-            
+
+            // RETURN IMMEDIATELY - don't block on R2 scan
+            console.log('[Invoice Scan] Returning immediately, scanning in background...');
             res.json({
                 success: true,
-                scannedCount,
-                results: scanResults,
-                _completedAt: new Date().toISOString()
+                message: 'Background scan started',
+                _startedAt: new Date().toISOString()
             });
-            
+
+            // ==== NOW DO THE SCAN IN THE BACKGROUND (don't await) ====
+            (async () => {
+                try {
+                    const { data: invoices, error } = await query;
+                    
+                    if (error) {
+                        console.error('[Invoice Scan BG] Error fetching invoices:', error);
+                        return;
+                    }
+
+                    if (!invoices || invoices.length === 0) {
+                        console.log('[Invoice Scan BG] No invoices to scan');
+                        return;
+                    }
+                    
+                    console.log(`[Invoice Scan BG] Scanning R2 for ${invoices.length} invoices in background...`);
+                    
+                    let scannedCount = 0;
+                    for (const inv of invoices) {
+                        try {
+                            await updateFilesUploadedCount(supabase, inv.faktur, R2Storage);
+                            scannedCount++;
+                            
+                            if (scannedCount % 10 === 0) {
+                                console.log(`[Invoice Scan BG] Progress: ${scannedCount}/${invoices.length}`);
+                            }
+                        } catch (err) {
+                            console.error(`[Invoice Scan BG] Error scanning ${inv.faktur}:`, err.message);
+                        }
+                    }
+                    
+                    console.log(`[Invoice Scan BG] Completed: ${scannedCount}/${invoices.length} invoices scanned`);
+                } catch (err) {
+                    console.error('[Invoice Scan BG] Background scan error:', err.message);
+                }
+            })();
+
         } catch (error) {
             console.error('[Invoice Scan] Error:', error);
             res.status(500).json({ error: 'Scan failed', details: error.message });
