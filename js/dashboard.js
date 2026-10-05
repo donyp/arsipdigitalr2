@@ -4403,8 +4403,6 @@ async function startInvoiceBackgroundScan() {
  */
 async function triggerBatchR2Scan(status, toko, keterangan, year, month, search) {
     try {
-        console.log('[Frontend] Triggering batch R2 scan for filtered invoices...');
-        
         const token = API.getToken() || localStorage.getItem('jwt_token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
         headers['Content-Type'] = 'application/json';
@@ -4447,23 +4445,17 @@ async function triggerBatchR2Scan(status, toko, keterangan, year, month, search)
             body: JSON.stringify(scanRequest)
         }).then(response => {
             if (!response.ok) {
-                console.warn('[Frontend] R2 scan request failed:', response.status);
                 return;
             }
             return response.json();
         }).then(result => {
-            console.log('[Frontend] R2 scan completed:', {
-                scannedCount: result?.scannedCount,
-                timestamp: result?._completedAt
-            });
+            // Background scan completed silently
         }).catch(err => {
             // Silently fail - don't interrupt user
-            console.warn('[Frontend] R2 scan error (non-blocking):', err.message);
         });
         
     } catch (error) {
         // Silently fail - don't interrupt user
-        console.warn('[Frontend] Failed to trigger R2 scan:', error.message);
     }
 }
 

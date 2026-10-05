@@ -408,10 +408,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             try {
                 const { filename, data, summary } = req.body;
                 
-                console.log(`[Invoice API] Excel data upload by ${req.user?.name} (ID: ${req.user?.id})`);
-                console.log(`[Invoice API] Received ${data?.length || 0} pre-parsed rows`);
-                console.log(`[Invoice API] User authenticated:`, !!req.user);
-                
                 if (!data || !Array.isArray(data) || data.length === 0) {
                     return res.status(400).json({ 
                         error: 'No data provided',
@@ -439,16 +435,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Continue anyway, batch is optional
                 }
                 
-                // DEBUG: Log first few rows to check data structure
-                console.log('[Invoice API] Raw data sample (first 3):');
-                data.slice(0, 3).forEach((row, idx) => {
-                    console.log(`  Row ${idx}: faktur=${row.faktur}, toko="${row.toko}", konsumen="${row.konsumen}"`);
-                });
-                
                 // BULK CHECK: Get all existing fakturs in one query
                 const fakturs = data.map(item => item.faktur).filter(Boolean);
-                console.log(`[Invoice API] Checking ${fakturs.length} fakturs for duplicates...`);
-                console.log(`[Invoice API] Sample fakturs:`, fakturs.slice(0, 5));
                 
                 if (fakturs.length === 0) {
                     console.warn('[Invoice API] ?? WARNING: No fakturs found in data!');
@@ -460,8 +448,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     .in('faktur', fakturs);
                 
                 const existingFakturs = new Set((existingInvoices || []).map(inv => inv.faktur));
-                console.log(`[Invoice API] Found ${existingFakturs.size} existing fakturs`);
-                console.log(`[Invoice API] Sample existing:`, Array.from(existingFakturs).slice(0, 5));
                 
                 // BULK INSERT: Insert all invoices one-by-one to handle duplicates
                 const invoicesToInsert = await Promise.all(data.map(async (item) => {
@@ -536,9 +522,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 // BULK INSERT - one shot, let DB handle duplicates via constraint
                 if (invoicesToInsert.length > 0) {
-                    console.log('[Invoice API] Bulk inserting', invoicesToInsert.length, 'invoices...');
-                    console.log('[Invoice API] Sample toko values:', invoicesToInsert.slice(0, 3).map(i => `"${i.toko}"`).join(', '));
-                    
                     const { data: inserted, error: insertError } = await supabase
                         .from('invoice_file_list')
                         .insert(invoicesToInsert);
@@ -856,12 +839,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     user_id: req.user.id,
                     action: 'upload_excel',
                     context: `Uploaded ${req.file.originalname}: ${processedCount} processed, ${duplicateCount} duplicates, ${failedCount} failed`
-                });
-                
-                console.log('[Invoice API] Upload complete:', {
-                    processed: processedCount,
-                    duplicates: duplicateCount,
-                    failed: failedCount
                 });
                 
                 res.json({
