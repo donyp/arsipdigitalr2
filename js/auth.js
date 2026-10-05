@@ -141,7 +141,8 @@ async function logout() {
     if (result.isConfirmed) {
         try {
             // Fire-and-forget: Log logout for audit trail (don't wait for response)
-            API.post('/api/auth/logout', { session_id: API.getSessionId() }).catch(() => {
+            const sessionToken = localStorage.getItem('sessionToken');
+            API.post('/api/auth/logout', { sessionToken: sessionToken }).catch(() => {
                 // Silent fail - we're logging out anyway
             });
         } catch (_) {
