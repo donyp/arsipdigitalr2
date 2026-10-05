@@ -10,7 +10,7 @@ const SESSION_DURATION_HOURS = 24;
 // Role-based session limits
 const SESSION_LIMITS = {
     super_admin: 1,      // Super admin: max 1 session
-    moderator: 2,        // Moderator: max 2 sessions (increased for development)
+    moderator: 1,        // Moderator: max 1 session
     admin_zona: 2,       // Admin zona: max 2 sessions
     operator: 2,         // Operator: max 2 sessions
     viewer: 2            // Viewer: max 2 sessions
