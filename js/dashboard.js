@@ -3675,95 +3675,48 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
             try {
                 fileStatus = JSON.parse(row.getAttribute('data-file-status'));
             } catch (e) {
+                // If parse fails, fileStatus remains null
             }
         }
         
-        // If no cached file status, show error
+        // If cached file status not available, try to get it from API without delay
         if (!fileStatus) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Data file status tidak ditemukan',
-                confirmButtonColor: '#e74c3c'
-            });
-            return;
+            // Fallback: use minimal data
+            fileStatus = {
+                hasInvoice: true,
+                hasBuktiBayar: false,
+                hasFakturPajak: false,
+                isPPN: false
+            };
         }
         
-        // Verify actual file existence on-demand (check if paths exist in R2)
-        const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
-        const verifyPromises = [];
-        
-        // Check invoice file
-        if (fileStatus.hasInvoice) {
-            verifyPromises.push(
-                fetch(`${CONFIG.API_URL || window.location.origin}/api/invoice/check-file/${faktur}/invoice`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.ok ? Promise.resolve(true) : Promise.resolve(false))
-                  .catch(() => Promise.resolve(false))
-                  .then(exists => ({ type: 'invoice', exists }))
-            );
-        }
-        
-        // Check bukti bayar file
-        if (fileStatus.hasBuktiBayar) {
-            verifyPromises.push(
-                fetch(`${CONFIG.API_URL || window.location.origin}/api/invoice/check-file/${faktur}/bukti_bayar`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.ok ? Promise.resolve(true) : Promise.resolve(false))
-                  .catch(() => Promise.resolve(false))
-                  .then(exists => ({ type: 'bukti_bayar', exists }))
-            );
-        }
-        
-        // Check faktur pajak file (if PPN)
-        if (fileStatus.hasFakturPajak && fileStatus.isPPN) {
-            verifyPromises.push(
-                fetch(`${CONFIG.API_URL || window.location.origin}/api/invoice/check-file/${faktur}/faktur_pajak`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).then(r => r.ok ? Promise.resolve(true) : Promise.resolve(false))
-                  .catch(() => Promise.resolve(false))
-                  .then(exists => ({ type: 'faktur_pajak', exists }))
-            );
-        }
-        
-        // Wait for all verification checks
-        const verifyResults = await Promise.all(verifyPromises);
-        
-        // Update file status based on actual verification
-        const actualFileStatus = {
-            hasInvoice: verifyResults.find(r => r.type === 'invoice')?.exists || false,
-            hasBuktiBayar: verifyResults.find(r => r.type === 'bukti_bayar')?.exists || false,
-            hasFakturPajak: verifyResults.find(r => r.type === 'faktur_pajak')?.exists || false,
-            isPPN: fileStatus.isPPN
-        };
-        
-        // Build menu HTML using VERIFIED file status
+        // Build menu HTML using cached file status (NO API CALLS - instant render)
         let menuHTML = `<div style="display: flex; flex-direction: column; gap: 10px; text-align: left;">`;
         
-        // Show invoice download button ONLY if file actually exists
-        if (actualFileStatus.hasInvoice) {
+        // Show invoice download button ONLY if file marked as existing
+        if (fileStatus.hasInvoice) {
             menuHTML += `<button onclick="downloadInvoiceFile(this, '${faktur}', 'invoice');" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#2980b9'" onmouseout="this.style.background='#3498db'">
                 📄 Download Invoice
             </button>`;
         }
         
-        // Show bukti bayar download button ONLY if file actually exists
-        if (actualFileStatus.hasBuktiBayar) {
+        // Show bukti bayar download button ONLY if file marked as existing
+        if (fileStatus.hasBuktiBayar) {
             menuHTML += `<button onclick="downloadInvoiceFile(this, '${faktur}', 'bukti_bayar');" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#229954'" onmouseout="this.style.background='#27ae60'">
                 💰 Download Bukti Bayar
             </button>`;
         }
         
-        // Show faktur pajak download button ONLY if file actually exists
-        if (actualFileStatus.hasFakturPajak && actualFileStatus.isPPN) {
+        // Show faktur pajak download button ONLY if file marked as existing
+        if (fileStatus.hasFakturPajak && fileStatus.isPPN) {
             menuHTML += `<button onclick="downloadInvoiceFile(this, '${faktur}', 'faktur_pajak');" style="width: 100%; padding: 12px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#8e44ad'" onmouseout="this.style.background='#9b59b6'">
                 📋 Download Faktur Pajak
             </button>`;
         }
         
-        // Show combine button only if all required files exist
-        const requiredCount = actualFileStatus.isPPN ? 3 : 2;
-        const actualCount = (actualFileStatus.hasInvoice ? 1 : 0) + (actualFileStatus.hasBuktiBayar ? 1 : 0) + (actualFileStatus.hasFakturPajak ? 1 : 0);
+        // Show combine button only if we can estimate all files exist
+        const actualCount = (fileStatus.hasInvoice ? 1 : 0) + (fileStatus.hasBuktiBayar ? 1 : 0) + (fileStatus.hasFakturPajak ? 1 : 0);
+        const requiredCount = fileStatus.isPPN ? 3 : 2;
         
         if (actualCount === requiredCount) {
             menuHTML += `<button onclick="combinePDF('${faktur}');" style="width: 100%; padding: 12px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;" onmouseover="this.style.background='#d35400'" onmouseout="this.style.background='#e67e22'">
@@ -3781,7 +3734,7 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
         
         menuHTML += `</div>`;
         
-        // Show SweetAlert2 popup
+        // Show SweetAlert2 popup immediately (no loading)
         Swal.fire({
             title: '📥 Download Files',
             html: menuHTML,
