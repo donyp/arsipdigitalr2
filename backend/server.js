@@ -1219,7 +1219,7 @@ console.log('  âœ“ Backup creation, listing, verification');
 // Support Ticketing System Endpoints
 // ============================================================
 console.log('[INIT] Registering Support Ticketing endpoints...');
-registerSupportEndpoints(app, supabase, authenticateToken, authorizeRole, upload);
+registerSupportEndpoints(app, supabase, authenticateToken, authorizeRole, upload, auditLogger);
 console.log('[INIT] Support Ticketing endpoints registered âœ…');
 console.log('  âœ“ Ticket CRUD, messaging, attachments, status management');
 console.log('  ? Backup restoration & deletion with audit log');

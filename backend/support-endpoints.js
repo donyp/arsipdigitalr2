@@ -2,8 +2,9 @@
 // Support Ticketing System - API Endpoints
 // ============================================
 
-module.exports = function registerSupportEndpoints(app, supabase, authenticateToken, authorizeRole, upload) {
+module.exports = function registerSupportEndpoints(app, supabase, authenticateToken, authorizeRole, upload, auditLogger) {
     const crypto = require('crypto');
+    const AuditLogger = require('./audit-logger');
 
     // Generate ticket number: #ANKA[3 random digits]
     function generateTicketNumber() {
@@ -271,8 +272,31 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
     // ============================================
     app.post('/api/support/tickets', authenticateToken, async (req, res) => {
         try {
+            const startTime = Date.now();
+            
             // Moderator and Super Admin cannot create tickets
             if (req.user.role === 'moderator' || req.user.role === 'super_admin') {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Create Ticket - Permission Denied',
+                    resourceType: 'ticket',
+                    resourceId: null,
+                    resourceName: null,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: '/api/support/tickets',
+                    requestMethod: 'POST',
+                    statusCode: 403,
+                    responseMessage: null,
+                    errorMessage: 'Moderators and Super Admins cannot create tickets',
+                    isSuspicious: true,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(403).json({ error: 'Moderators and Super Admins cannot create tickets' });
             }
 
@@ -280,6 +304,27 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
 
             // Validate required fields
             if (!subject || !description || !zona_id) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Create Ticket - Invalid Parameters',
+                    resourceType: 'ticket',
+                    resourceId: null,
+                    resourceName: null,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: '/api/support/tickets',
+                    requestMethod: 'POST',
+                    statusCode: 400,
+                    responseMessage: null,
+                    errorMessage: 'Missing required fields',
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(400).json({ error: 'Missing required fields' });
             }
 
@@ -311,6 +356,37 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 description: 'Ticket created'
             });
 
+            const totalTime = Date.now() - startTime;
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: zona_id,
+                action: 'Create Ticket',
+                resourceType: 'ticket',
+                resourceId: ticket.id,
+                resourceName: ticketNumber,
+                operation: 'CREATE',
+                details: {
+                    ticketNumber: ticketNumber,
+                    subject: subject,
+                    category: category || 'General',
+                    priority: priority || 'Medium',
+                    description: description.substring(0, 100),
+                    creationTime: totalTime
+                },
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/support/tickets',
+                requestMethod: 'POST',
+                statusCode: 200,
+                responseMessage: `Ticket ${ticketNumber} created successfully`,
+                errorMessage: null,
+                isSuspicious: false,
+                severity: 'info'
+            }).catch(() => {});
+
             res.json({
                 success: true,
                 ticket: ticket,
@@ -318,6 +394,27 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             });
         } catch (error) {
             console.error('[Support] Error creating ticket:', error);
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Create Ticket - Server Error',
+                resourceType: 'ticket',
+                resourceId: null,
+                resourceName: null,
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/support/tickets',
+                requestMethod: 'POST',
+                statusCode: 500,
+                responseMessage: null,
+                errorMessage: error.message,
+                isSuspicious: false,
+                severity: 'error'
+            }).catch(() => {});
             res.status(500).json({ error: error.message });
         }
     });
@@ -329,10 +426,64 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
         try {
             const { id } = req.params;
             const { status } = req.body;
+            const startTime = Date.now();
 
             const validStatuses = ['Open', 'Answered', 'Resolved', 'Closed'];
             if (!validStatuses.includes(status)) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Update Ticket Status - Invalid Status',
+                    resourceType: 'ticket',
+                    resourceId: id,
+                    resourceName: id,
+                    operation: 'UPDATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/support/tickets/${id}/status`,
+                    requestMethod: 'PUT',
+                    statusCode: 400,
+                    responseMessage: null,
+                    errorMessage: `Invalid status: ${status}`,
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(400).json({ error: 'Invalid status' });
+            }
+
+            // Get current ticket to log old status
+            const { data: oldTicket, error: fetchError } = await supabase
+                .from('support_tickets')
+                .select('id, ticket_number, status')
+                .eq('id', id)
+                .single();
+            
+            if (fetchError || !oldTicket) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Update Ticket Status - Ticket Not Found',
+                    resourceType: 'ticket',
+                    resourceId: id,
+                    resourceName: id,
+                    operation: 'UPDATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/support/tickets/${id}/status`,
+                    requestMethod: 'PUT',
+                    statusCode: 404,
+                    responseMessage: null,
+                    errorMessage: 'Ticket not found',
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
+                return res.status(404).json({ error: 'Ticket not found' });
             }
 
             const updateData = {
@@ -361,10 +512,39 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 ticket_id: id,
                 user_id: req.user.userId,
                 action: 'status_changed',
-                old_value: 'Open',
+                old_value: oldTicket.status,
                 new_value: status,
                 description: `Status changed to ${status}`
             });
+
+            const totalTime = Date.now() - startTime;
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Update Ticket Status',
+                resourceType: 'ticket',
+                resourceId: id,
+                resourceName: oldTicket.ticket_number,
+                operation: 'UPDATE',
+                details: {
+                    ticketNumber: oldTicket.ticket_number,
+                    oldStatus: oldTicket.status,
+                    newStatus: status,
+                    updateTime: totalTime
+                },
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/support/tickets/${id}/status`,
+                requestMethod: 'PUT',
+                statusCode: 200,
+                responseMessage: `Ticket status updated to ${status}`,
+                errorMessage: null,
+                isSuspicious: false,
+                severity: 'info'
+            }).catch(() => {});
 
             res.json({
                 success: true,
@@ -373,6 +553,27 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             });
         } catch (error) {
             console.error('[Support] Error updating ticket status:', error);
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Update Ticket Status - Server Error',
+                resourceType: 'ticket',
+                resourceId: req.params.id,
+                resourceName: req.params.id,
+                operation: 'UPDATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/support/tickets/${req.params.id}/status`,
+                requestMethod: 'PUT',
+                statusCode: 500,
+                responseMessage: null,
+                errorMessage: error.message,
+                isSuspicious: false,
+                severity: 'error'
+            }).catch(() => {});
             res.status(500).json({ error: error.message });
         }
     });
@@ -384,24 +585,88 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
         try {
             const { id: ticketId } = req.params;
             const { message, is_internal = false } = req.body;
+            const startTime = Date.now();
 
             if (!message || message.trim().length === 0) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Add Ticket Message - Empty Message',
+                    resourceType: 'ticket',
+                    resourceId: ticketId,
+                    resourceName: ticketId,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/support/tickets/${ticketId}/messages`,
+                    requestMethod: 'POST',
+                    statusCode: 400,
+                    responseMessage: null,
+                    errorMessage: 'Message cannot be empty',
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(400).json({ error: 'Message cannot be empty' });
             }
 
             // Check ticket exists and user has access
             const { data: ticket, error: ticketError } = await supabase
                 .from('support_tickets')
-                .select('id, user_id, status')
+                .select('id, user_id, status, ticket_number')
                 .eq('id', ticketId)
                 .single();
 
             if (ticketError || !ticket) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Add Ticket Message - Ticket Not Found',
+                    resourceType: 'ticket',
+                    resourceId: ticketId,
+                    resourceName: ticketId,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/support/tickets/${ticketId}/messages`,
+                    requestMethod: 'POST',
+                    statusCode: 404,
+                    responseMessage: null,
+                    errorMessage: 'Ticket not found',
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(404).json({ error: 'Ticket not found' });
             }
 
             // Internal notes only for moderator/super_admin
             if (is_internal && req.user.role !== 'moderator' && req.user.role !== 'super_admin') {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Add Ticket Message - Permission Denied',
+                    resourceType: 'ticket',
+                    resourceId: ticketId,
+                    resourceName: ticket.ticket_number,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/support/tickets/${ticketId}/messages`,
+                    requestMethod: 'POST',
+                    statusCode: 403,
+                    responseMessage: null,
+                    errorMessage: 'Only moderators can add internal notes',
+                    isSuspicious: true,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(403).json({ error: 'Only moderators can add internal notes' });
             }
 
@@ -420,7 +685,7 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             if (insertError) throw insertError;
 
             // Update ticket status if moderator is responding
-            if (!is_internal && req.user.role === 'moderator' || req.user.role === 'super_admin') {
+            if (!is_internal && (req.user.role === 'moderator' || req.user.role === 'super_admin')) {
                 if (ticket.status === 'Open') {
                     await supabase
                         .from('support_tickets')
@@ -429,12 +694,62 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 }
             }
 
+            const totalTime = Date.now() - startTime;
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Add Ticket Message',
+                resourceType: 'ticket',
+                resourceId: ticketId,
+                resourceName: ticket.ticket_number,
+                operation: 'CREATE',
+                details: {
+                    ticketNumber: ticket.ticket_number,
+                    messageLength: message.length,
+                    isInternal: is_internal,
+                    addTime: totalTime
+                },
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/support/tickets/${ticketId}/messages`,
+                requestMethod: 'POST',
+                statusCode: 200,
+                responseMessage: 'Message added successfully',
+                errorMessage: null,
+                isSuspicious: false,
+                severity: 'info'
+            }).catch(() => {});
+
             res.json({
                 success: true,
                 message: newMessage
             });
         } catch (error) {
             console.error('[Support] Error adding message:', error);
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Add Ticket Message - Server Error',
+                resourceType: 'ticket',
+                resourceId: req.params.id,
+                resourceName: req.params.id,
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/support/tickets/${req.params.id}/messages`,
+                requestMethod: 'POST',
+                statusCode: 500,
+                responseMessage: null,
+                errorMessage: error.message,
+                isSuspicious: false,
+                severity: 'error'
+            }).catch(() => {});
             res.status(500).json({ error: error.message });
         }
     });
