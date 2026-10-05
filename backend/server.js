@@ -585,6 +585,10 @@ app.get('/zona/ticket', (req, res) => {
     }
 });
 
+app.get('/audit-logs', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'audit-logs-dashboard.html'));
+});
+
 // Generic page router
 app.get('/:page', (req, res, next) => {
     const page = req.params.page;
