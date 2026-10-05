@@ -2843,11 +2843,11 @@ async function renderInvoiceTable(invoices) {
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/invoice?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                        .then(d => ({ type: 'invoice', exists: d.exists }))
+                    }).then(r => r.ok ? r.json() : { exists: false, fileCount: { uploaded: 0 } }).catch(() => ({ exists: false, fileCount: { uploaded: 0 } }))
+                        .then(d => ({ type: 'invoice', exists: d.exists, fileCount: d.fileCount }))
                 );
             } else {
-                checkPromises.push(Promise.resolve({ type: 'invoice', exists: false }));
+                checkPromises.push(Promise.resolve({ type: 'invoice', exists: false, fileCount: { uploaded: 0 } }));
             }
             
             // Check bukti bayar
@@ -2855,11 +2855,11 @@ async function renderInvoiceTable(invoices) {
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/bukti_bayar?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                        .then(d => ({ type: 'bukti_bayar', exists: d.exists }))
+                    }).then(r => r.ok ? r.json() : { exists: false, fileCount: { uploaded: 0 } }).catch(() => ({ exists: false, fileCount: { uploaded: 0 } }))
+                        .then(d => ({ type: 'bukti_bayar', exists: d.exists, fileCount: d.fileCount }))
                 );
             } else {
-                checkPromises.push(Promise.resolve({ type: 'bukti_bayar', exists: false }));
+                checkPromises.push(Promise.resolve({ type: 'bukti_bayar', exists: false, fileCount: { uploaded: 0 } }));
             }
             
             // Check faktur pajak (only for PPN)
@@ -2867,21 +2867,33 @@ async function renderInvoiceTable(invoices) {
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/faktur_pajak?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                        .then(d => ({ type: 'faktur_pajak', exists: d.exists }))
+                    }).then(r => r.ok ? r.json() : { exists: false, fileCount: { uploaded: 0 } }).catch(() => ({ exists: false, fileCount: { uploaded: 0 } }))
+                        .then(d => ({ type: 'faktur_pajak', exists: d.exists, fileCount: d.fileCount }))
                 );
             } else if (isPPN) {
-                checkPromises.push(Promise.resolve({ type: 'faktur_pajak', exists: false }));
+                checkPromises.push(Promise.resolve({ type: 'faktur_pajak', exists: false, fileCount: { uploaded: 0 } }));
             }
         
         // Wait for ALL parallel checks
         const results = await Promise.all(checkPromises);
         
-        // Process results
+        // Use fileCount from backend (source of truth) instead of summing individual files
+        // The backend already scans R2 and provides the accurate count
+        if (results.length > 0 && results[0].fileCount && results[0].fileCount.uploaded !== undefined) {
+            actualUploadedCount = results[0].fileCount.uploaded;
+        } else {
+            // Fallback: manually count if fileCount not available
+            results.forEach(res => {
+                if (res.exists) {
+                    actualUploadedCount++;
+                }
+            });
+        }
+        
+        // Process results for individual file status
         let invoiceExists = false, buktiExists = false, fakturExists = false;
         results.forEach(res => {
             if (res.exists) {
-                actualUploadedCount++;
                 if (res.type === 'invoice') {
                     invoiceExists = true;
                     buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'invoice')" style="background: #3498db; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Invoice">📄</button>`);
