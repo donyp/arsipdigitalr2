@@ -1566,8 +1566,6 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         
         console.log(`[LOGIN] ✅ Session check passed - ${user.role}: ${sessionCheck.activeCount}/${sessionCheck.maxAllowed} active sessions`);
 
-        if (sessionError) console.error("[SESSION] Check Error:", sessionError);
-
         // Note: Session limit check removed to allow multiple login attempts
         // Session management will be handled at logout/timeout
         // if (user.role === 'admin_zona' && activeSessions && activeSessions.length >= 2) {
