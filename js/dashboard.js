@@ -2828,84 +2828,66 @@ async function renderInvoiceTable(invoices) {
             tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;"><div style="display: flex; flex-direction: column; align-items: center; gap: 12px;"><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><div style="width: 2rem; height: 2rem; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; animation: spinLoader 1s linear infinite;"></div><span style="color: #7f8c8d;">' + msg + '</span></div></td></tr>';
         }
     
-        // Check ALL files in batch FIRST before rendering - PARALLEL BATCH
+        // Use pre-calculated file counts from backend instead of checking each file
         const batchWithFileStatus = await Promise.all(batchInvoices.map(async (inv) => {
-            let actualUploadedCount = 0;
             const isPPN = inv.keterangan === 'PPN';
             const requiredCount = isPPN ? 3 : 2;
-            const buttons = [];
             
-            // Run file checks for all file types
+            // Use files_uploaded_count from backend (already accurate from R2 sync)
+            const actualUploadedCount = inv.files_uploaded_count || 0;
+            
+            // For action menu, we still need to know which specific files exist
+            // Make file checks only for files that have DB paths
             const checkPromises = [];
-        
-            // Check invoice PDF
+            
             if (inv.invoice_pdf_path || inv.uploaded_file_path) {
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/invoice?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false, fileCount: { uploaded: 0 } }).catch(() => ({ exists: false, fileCount: { uploaded: 0 } }))
-                        .then(d => ({ type: 'invoice', exists: d.exists, fileCount: d.fileCount }))
+                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
+                        .then(d => ({ type: 'invoice', exists: d.exists }))
                 );
-            } else {
-                checkPromises.push(Promise.resolve({ type: 'invoice', exists: false, fileCount: { uploaded: 0 } }));
             }
             
-            // Check bukti bayar
             if (inv.bukti_bayar_path) {
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/bukti_bayar?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false, fileCount: { uploaded: 0 } }).catch(() => ({ exists: false, fileCount: { uploaded: 0 } }))
-                        .then(d => ({ type: 'bukti_bayar', exists: d.exists, fileCount: d.fileCount }))
+                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
+                        .then(d => ({ type: 'bukti_bayar', exists: d.exists }))
                 );
-            } else {
-                checkPromises.push(Promise.resolve({ type: 'bukti_bayar', exists: false, fileCount: { uploaded: 0 } }));
             }
             
-            // Check faktur pajak (only for PPN)
             if (isPPN && inv.faktur_pajak_path) {
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/faktur_pajak?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false, fileCount: { uploaded: 0 } }).catch(() => ({ exists: false, fileCount: { uploaded: 0 } }))
-                        .then(d => ({ type: 'faktur_pajak', exists: d.exists, fileCount: d.fileCount }))
+                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
+                        .then(d => ({ type: 'faktur_pajak', exists: d.exists }))
                 );
-            } else if (isPPN) {
-                checkPromises.push(Promise.resolve({ type: 'faktur_pajak', exists: false, fileCount: { uploaded: 0 } }));
             }
         
-        // Wait for ALL parallel checks
-        const results = await Promise.all(checkPromises);
-        
-        // Use fileCount from backend (source of truth) instead of summing individual files
-        // The backend already scans R2 and provides the accurate count
-        if (results.length > 0 && results[0].fileCount && results[0].fileCount.uploaded !== undefined) {
-            actualUploadedCount = results[0].fileCount.uploaded;
-        } else {
-            // Fallback: manually count if fileCount not available
+            // Wait for checks (but use pre-calculated count for display)
+            const results = await Promise.all(checkPromises);
+            
+            // Build individual file status for action menu
+            let invoiceExists = false, buktiExists = false, fakturExists = false;
+            const buttons = [];
+            
             results.forEach(res => {
                 if (res.exists) {
-                    actualUploadedCount++;
+                    if (res.type === 'invoice') {
+                        invoiceExists = true;
+                        buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'invoice')" style="background: #3498db; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Invoice">📄</button>`);
+                    } else if (res.type === 'bukti_bayar') {
+                        buktiExists = true;
+                        buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'bukti_bayar')" style="background: #27ae60; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Bukti Bayar">💰</button>`);
+                    } else if (res.type === 'faktur_pajak') {
+                        fakturExists = true;
+                        buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'faktur_pajak')" style="background: #9b59b6; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Faktur Pajak">📋</button>`);
+                    }
                 }
             });
-        }
-        
-        // Process results for individual file status
-        let invoiceExists = false, buktiExists = false, fakturExists = false;
-        results.forEach(res => {
-            if (res.exists) {
-                if (res.type === 'invoice') {
-                    invoiceExists = true;
-                    buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'invoice')" style="background: #3498db; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Invoice">📄</button>`);
-                } else if (res.type === 'bukti_bayar') {
-                    buktiExists = true;
-                    buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'bukti_bayar')" style="background: #27ae60; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Bukti Bayar">💰</button>`);
-                } else if (res.type === 'faktur_pajak') {
-                    fakturExists = true;
-                    buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'faktur_pajak')" style="background: #9b59b6; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Faktur Pajak">📋</button>`);
-                }
-            }
-        });
         
         // Store file status for popup usage later
         const fileStatus = {
