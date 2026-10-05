@@ -1146,15 +1146,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     const { data: invoices, error } = await query;
                     
                     if (error) {
-                        // Log error for debugging
                         console.error('[Invoice Scan BG] Error fetching invoices:', error.message);
                         return;
                     }
 
                     if (!invoices || invoices.length === 0) {
-                        // No invoices to scan - this is OK
+                        console.log('[Invoice Scan BG] No invoices to scan (count: ' + (invoices ? invoices.length : 'null') + ')');
                         return;
                     }
+                    
+                    console.log('[Invoice Scan BG] Starting R2 scan for ' + invoices.length + ' invoices');
                     
                     // Start background R2 scan
                     let scannedCount = 0;
@@ -1163,12 +1164,14 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             await updateFilesUploadedCount(supabase, inv.faktur, R2Storage);
                             scannedCount++;
                         } catch (err) {
-                            // Silently skip errors for individual invoices
+                            console.error('[Invoice Scan BG] Error scanning ' + inv.faktur + ':', err.message);
                         }
                     }
+                    
+                    console.log('[Invoice Scan BG] Completed: ' + scannedCount + ' invoices scanned');
                 } catch (err) {
-                    // Background scan failed - log for debugging
                     console.error('[Invoice Scan BG] Background scan error:', err.message);
+                    console.error('[Invoice Scan BG] Stack:', err.stack);
                 }
             })();
 
