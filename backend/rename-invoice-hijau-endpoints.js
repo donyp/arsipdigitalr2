@@ -261,7 +261,8 @@ async function extractTextViaOCR(pdfBuffer) {
     }
 }
 
-module.exports = (app, supabase) => {
+module.exports = (app, supabase, auditLogger) => {
+    const AuditLogger = require('./audit-logger');
     // ============================================
     // GET /api/invoice/rename-invoice-hijau/status
     // Check if PDF processing is ready
@@ -473,6 +474,35 @@ module.exports = (app, supabase) => {
                     console.log(`[Rename Invoice Hijau] Extracted No. Invoice: ${noInvoice}`);
                     console.log(`[Rename Invoice Hijau] New filename: ${renamedFileName}`);
 
+                    // Log successful rename extraction
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user?.userId || null,
+                        userEmail: req.user?.email || null,
+                        userRole: req.user?.role || null,
+                        zonaId: req.user?.zona_id || null,
+                        action: 'Extract Invoice Number - Success',
+                        resourceType: 'invoice_rename',
+                        resourceId: noInvoice,
+                        resourceName: renamedFileName,
+                        operation: 'UPDATE',
+                        details: {
+                            originalFileName: fileName,
+                            newFileName: renamedFileName,
+                            extractedInvoiceNumber: noInvoice,
+                            fileSizeBytes: fileData.length
+                        },
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: '/api/invoice/rename-invoice-hijau',
+                        requestMethod: 'POST',
+                        statusCode: 200,
+                        responseMessage: 'Invoice number extracted successfully',
+                        errorMessage: null,
+                        isSuspicious: false,
+                        severity: 'info'
+                    }).catch(() => {});
+
                     // Return success with extracted data
                     sendResponse(200, {
                         success: true,
@@ -485,6 +515,34 @@ module.exports = (app, supabase) => {
 
                 } catch (err) {
                     console.error('[Rename Invoice Hijau] Processing error:', err.message, err.stack);
+                    
+                    // Log error
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user?.userId || null,
+                        userEmail: req.user?.email || null,
+                        userRole: req.user?.role || null,
+                        zonaId: req.user?.zona_id || null,
+                        action: 'Extract Invoice Number - Processing Error',
+                        resourceType: 'invoice_rename',
+                        resourceId: null,
+                        resourceName: fileName || 'unknown',
+                        operation: 'UPDATE',
+                        details: {
+                            originalFileName: fileName,
+                            fileSizeBytes: fileData?.length || 0
+                        },
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: '/api/invoice/rename-invoice-hijau',
+                        requestMethod: 'POST',
+                        statusCode: 500,
+                        responseMessage: null,
+                        errorMessage: err.message,
+                        isSuspicious: false,
+                        severity: 'error'
+                    }).catch(() => {});
+                    
                     return sendResponse(500, { 
                         error: 'Error processing PDF: ' + err.message 
                     });
@@ -496,6 +554,30 @@ module.exports = (app, supabase) => {
 
         } catch (error) {
             console.error('[Rename Invoice Hijau] Endpoint error:', error.message, error.stack);
+            
+            // Log endpoint error
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user?.userId || null,
+                userEmail: req.user?.email || null,
+                userRole: req.user?.role || null,
+                zonaId: req.user?.zona_id || null,
+                action: 'Extract Invoice Number - Endpoint Error',
+                resourceType: 'invoice_rename',
+                resourceId: null,
+                resourceName: 'unknown',
+                operation: 'UPDATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/invoice/rename-invoice-hijau',
+                requestMethod: 'POST',
+                statusCode: 500,
+                responseMessage: null,
+                errorMessage: error.message,
+                isSuspicious: false,
+                severity: 'error'
+            }).catch(() => {});
+            
             sendResponse(500, { error: 'Server error', details: error.message });
         }
     });
@@ -507,13 +589,34 @@ module.exports = (app, supabase) => {
     app.post('/api/invoice/failed-rename', async (req, res) => {
         try {
             const { originalFilename, errorReason, fileSizeBytes, notes } = req.body;
-            const userId = req.user?.id;
+            const userId = req.user?.id || req.user?.userId;
             
             if (!userId) {
                 return res.status(401).json({ error: 'Unauthorized - no user token' });
             }
             
             if (!originalFilename || !errorReason) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: userId,
+                    userEmail: req.user?.email || null,
+                    userRole: req.user?.role || null,
+                    zonaId: req.user?.zona_id || null,
+                    action: 'Log Failed Rename - Invalid Parameters',
+                    resourceType: 'invoice_rename',
+                    resourceId: originalFilename || 'unknown',
+                    resourceName: originalFilename || 'unknown',
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: '/api/invoice/failed-rename',
+                    requestMethod: 'POST',
+                    statusCode: 400,
+                    responseMessage: null,
+                    errorMessage: 'Missing required fields',
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(400).json({ error: 'Missing required fields' });
             }
 
@@ -532,14 +635,86 @@ module.exports = (app, supabase) => {
 
             if (error) {
                 console.error('[Failed Rename] Database error:', error);
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: userId,
+                    userEmail: req.user?.email || null,
+                    userRole: req.user?.role || null,
+                    zonaId: req.user?.zona_id || null,
+                    action: 'Log Failed Rename - Database Error',
+                    resourceType: 'invoice_rename',
+                    resourceId: originalFilename,
+                    resourceName: originalFilename,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: '/api/invoice/failed-rename',
+                    requestMethod: 'POST',
+                    statusCode: 500,
+                    responseMessage: null,
+                    errorMessage: error.message,
+                    isSuspicious: false,
+                    severity: 'error'
+                }).catch(() => {});
                 return res.status(500).json({ error: 'Failed to log attempt: ' + error.message });
             }
 
             console.log('[Failed Rename] Logged successfully:', data);
+            
+            // Log successful failed-rename logging (meta logging)
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: userId,
+                userEmail: req.user?.email || null,
+                userRole: req.user?.role || null,
+                zonaId: req.user?.zona_id || null,
+                action: 'Log Failed Rename Attempt',
+                resourceType: 'invoice_rename',
+                resourceId: originalFilename,
+                resourceName: originalFilename,
+                operation: 'CREATE',
+                details: {
+                    originalFilename: originalFilename,
+                    errorReason: errorReason,
+                    fileSizeBytes: fileSizeBytes || 0,
+                    notes: notes || null
+                },
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/invoice/failed-rename',
+                requestMethod: 'POST',
+                statusCode: 200,
+                responseMessage: 'Failed rename attempt logged successfully',
+                errorMessage: null,
+                isSuspicious: false,
+                severity: 'info'
+            }).catch(() => {});
+            
             res.json({ success: true, data });
 
         } catch (err) {
             console.error('[Failed Rename] Error:', err.message);
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user?.userId || null,
+                userEmail: req.user?.email || null,
+                userRole: req.user?.role || null,
+                zonaId: req.user?.zona_id || null,
+                action: 'Log Failed Rename - Server Error',
+                resourceType: 'invoice_rename',
+                resourceId: req.body?.originalFilename || 'unknown',
+                resourceName: req.body?.originalFilename || 'unknown',
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/invoice/failed-rename',
+                requestMethod: 'POST',
+                statusCode: 500,
+                responseMessage: null,
+                errorMessage: err.message,
+                isSuspicious: false,
+                severity: 'error'
+            }).catch(() => {});
             res.status(500).json({ error: err.message });
         }
     });
@@ -676,21 +851,87 @@ module.exports = (app, supabase) => {
             
             if (!token) {
                 console.warn('[Failed Rename] No token provided');
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: null,
+                    userEmail: null,
+                    userRole: null,
+                    zonaId: null,
+                    action: 'Delete Failed Rename - No Token',
+                    resourceType: 'invoice_rename',
+                    resourceId: req.params.id,
+                    resourceName: req.params.id,
+                    operation: 'DELETE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/failed-rename/${req.params.id}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 401,
+                    responseMessage: null,
+                    errorMessage: 'Unauthorized - missing token',
+                    isSuspicious: true,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(401).json({ error: 'Unauthorized - missing token' });
             }
             
             // Decode token untuk dapatkan user info
             let userIdFromToken = null;
+            let userEmail = null;
             try {
                 const jwt = require('jsonwebtoken');
                 const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change-this-to-a-very-long-random-string');
                 userIdFromToken = decoded.userId || decoded.id;
+                userEmail = decoded.email || null;
             } catch (err) {
                 console.error('[Failed Rename] Token decode error:', err.message);
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: null,
+                    userEmail: null,
+                    userRole: null,
+                    zonaId: null,
+                    action: 'Delete Failed Rename - Invalid Token',
+                    resourceType: 'invoice_rename',
+                    resourceId: req.params.id,
+                    resourceName: req.params.id,
+                    operation: 'DELETE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/failed-rename/${req.params.id}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 401,
+                    responseMessage: null,
+                    errorMessage: 'Invalid token',
+                    isSuspicious: true,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(401).json({ error: 'Invalid token' });
             }
             
             if (!userIdFromToken) {
+                console.warn('[Failed Rename] No user ID in token');
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: null,
+                    userEmail: userEmail,
+                    userRole: null,
+                    zonaId: null,
+                    action: 'Delete Failed Rename - No User ID',
+                    resourceType: 'invoice_rename',
+                    resourceId: req.params.id,
+                    resourceName: req.params.id,
+                    operation: 'DELETE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/failed-rename/${req.params.id}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 401,
+                    responseMessage: null,
+                    errorMessage: 'Invalid token - no user ID',
+                    isSuspicious: true,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(401).json({ error: 'Invalid token - no user ID' });
             }
 
@@ -706,14 +947,80 @@ module.exports = (app, supabase) => {
 
             if (error) {
                 console.error('[Failed Rename] Database error:', error);
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: userIdFromToken,
+                    userEmail: userEmail,
+                    userRole: null,
+                    zonaId: null,
+                    action: 'Delete Failed Rename - Database Error',
+                    resourceType: 'invoice_rename',
+                    resourceId: id,
+                    resourceName: id,
+                    operation: 'DELETE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/failed-rename/${id}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 500,
+                    responseMessage: null,
+                    errorMessage: error.message,
+                    isSuspicious: false,
+                    severity: 'error'
+                }).catch(() => {});
                 return res.status(500).json({ error: 'Failed to delete: ' + error.message });
             }
 
             console.log('[Failed Rename] Deleted successfully');
+            
+            // Log successful deletion
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: userIdFromToken,
+                userEmail: userEmail,
+                userRole: null,
+                zonaId: null,
+                action: 'Delete Failed Rename Attempt',
+                resourceType: 'invoice_rename',
+                resourceId: id,
+                resourceName: id,
+                operation: 'DELETE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/invoice/failed-rename/${id}`,
+                requestMethod: 'DELETE',
+                statusCode: 200,
+                responseMessage: 'Failed rename attempt deleted successfully',
+                errorMessage: null,
+                isSuspicious: false,
+                severity: 'info'
+            }).catch(() => {});
+            
             res.json({ success: true });
 
         } catch (err) {
             console.error('[Failed Rename] Error:', err.message);
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: null,
+                userEmail: null,
+                userRole: null,
+                zonaId: null,
+                action: 'Delete Failed Rename - Server Error',
+                resourceType: 'invoice_rename',
+                resourceId: req.params.id,
+                resourceName: req.params.id,
+                operation: 'DELETE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/invoice/failed-rename/${req.params.id}`,
+                requestMethod: 'DELETE',
+                statusCode: 500,
+                responseMessage: null,
+                errorMessage: err.message,
+                isSuspicious: false,
+                severity: 'error'
+            }).catch(() => {});
             res.status(500).json({ error: err.message });
         }
     });

@@ -1201,7 +1201,7 @@ app.use('/api', sessionManagement);
 app.use('/api', faqEndpoints);
 app.use('/api', notificationEndpoints);
 renameFakturEndpoints(app, supabase);
-renameInvoiceHijauEndpoints(app, supabase);
+renameInvoiceHijauEndpoints(app, supabase, auditLogger);
 pdfToCsvEndpoints(app, authenticateToken);
 console.log('[INIT] Phase 2 feature endpoints registered âœ…');
 console.log('  âœ“ Session Management & Device Tracking');
