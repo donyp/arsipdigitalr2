@@ -4453,12 +4453,55 @@ app.get('/api/users/names', authenticateToken, async (req, res) => {
 app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) => {
     // Permission check: allow super_admin and moderator only
     if (req.user.role !== 'super_admin' && req.user.role !== 'moderator') {
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Create User - Permission Denied',
+            resourceType: 'user',
+            resourceId: req.body.email || 'unknown',
+            resourceName: req.body.email || 'unknown',
+            operation: 'CREATE',
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: '/api/users',
+            requestMethod: 'POST',
+            statusCode: 403,
+            responseMessage: null,
+            errorMessage: 'Akses ditolak - insufficient permissions',
+            isSuspicious: true,
+            severity: 'warning'
+        }).catch(() => {});
         return res.status(403).json({ error: 'Akses ditolak' });
     }
     try {
         const { email, username, password, name, role, zona_id, toko_id, permissions } = req.body;
+        const startTime = Date.now();
 
         if (!email || !password || !name || !role) {
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Create User - Invalid Parameters',
+                resourceType: 'user',
+                resourceId: email || 'unknown',
+                resourceName: email || 'unknown',
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/users',
+                requestMethod: 'POST',
+                statusCode: 400,
+                responseMessage: null,
+                errorMessage: 'Email, password, nama, dan role wajib diisi',
+                isSuspicious: false,
+                severity: 'warning'
+            }).catch(() => {});
             return res.status(400).json({ error: 'Email, password, nama, dan role wajib diisi.' });
         }
 
@@ -4467,6 +4510,27 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
         if (username) {
             const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
             if (!usernameRegex.test(username)) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Create User - Invalid Username',
+                    resourceType: 'user',
+                    resourceId: email,
+                    resourceName: email,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: '/api/users',
+                    requestMethod: 'POST',
+                    statusCode: 400,
+                    responseMessage: null,
+                    errorMessage: 'Username harus 3-20 karakter',
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
                 return res.status(400).json({ error: 'Username harus 3-20 karakter, hanya huruf, angka, underscore, dash.' });
             }
             finalUsername = username.toLowerCase().trim();
@@ -4480,6 +4544,27 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
                     .single();
                 
                 if (existingUsername) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: req.user.zona_id || null,
+                        action: 'Create User - Duplicate Username',
+                        resourceType: 'user',
+                        resourceId: email,
+                        resourceName: email,
+                        operation: 'CREATE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: '/api/users',
+                        requestMethod: 'POST',
+                        statusCode: 400,
+                        responseMessage: null,
+                        errorMessage: `Username ${finalUsername} sudah digunakan`,
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(400).json({ error: 'Username sudah digunakan.' });
                 }
             } catch (err) {
@@ -4494,6 +4579,27 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
         // Check duplicate Email
         const { data: existing } = await supabase.from('users').select('id').eq('email', email.toLowerCase().trim()).single();
         if (existing) {
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Create User - Duplicate Email',
+                resourceType: 'user',
+                resourceId: email,
+                resourceName: email,
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/users',
+                requestMethod: 'POST',
+                statusCode: 400,
+                responseMessage: null,
+                errorMessage: `Email ${email} sudah digunakan`,
+                isSuspicious: false,
+                severity: 'warning'
+            }).catch(() => {});
             return res.status(400).json({ error: 'Email sudah digunakan.' });
         }
 
@@ -4519,15 +4625,64 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
 
         if (error) throw error;
 
-        await supabase.from('audit_logs').insert({
-            user_id: req.user.userId,
+        const totalTime = Date.now() - startTime;
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        
+        // Log successful user creation with detailed information
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
             action: 'Create User',
-            context: `Created user ${email} with role ${role}`
-        });
+            resourceType: 'user',
+            resourceId: user.id,
+            resourceName: email,
+            operation: 'CREATE',
+            details: {
+                newUserEmail: email,
+                newUserRole: role,
+                newUserName: name,
+                newUserUsername: finalUsername || null,
+                newUserZonaId: zona_id || null,
+                newUserActive: true,
+                creationTime: totalTime
+            },
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: '/api/users',
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: 'User created successfully',
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        }).catch(() => {});
 
         res.json({ success: true, user });
     } catch (err) {
         console.error('Create User Error:', err);
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Create User - Server Error',
+            resourceType: 'user',
+            resourceId: req.body.email || 'unknown',
+            resourceName: req.body.email || 'unknown',
+            operation: 'CREATE',
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: '/api/users',
+            requestMethod: 'POST',
+            statusCode: 500,
+            responseMessage: null,
+            errorMessage: err.message,
+            isSuspicious: false,
+            severity: 'error'
+        }).catch(() => {});
         res.status(500).json({ error: 'Gagal membuat user: ' + err.message });
     }
 });
@@ -4760,6 +4915,27 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     const isAdmin = req.user.role === 'super_admin' || req.user.role === 'moderator';
     
     if (!isOwnProfile && !isAdmin) {
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Update User - Permission Denied',
+            resourceType: 'user',
+            resourceId: userId,
+            resourceName: userId,
+            operation: 'UPDATE',
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: `/api/users/${userId}`,
+            requestMethod: 'PUT',
+            statusCode: 403,
+            responseMessage: null,
+            errorMessage: 'Akses ditolak - insufficient permissions',
+            isSuspicious: true,
+            severity: 'warning'
+        }).catch(() => {});
         return res.status(403).json({ error: 'Akses ditolak' });
     }
     try {
@@ -4961,10 +5137,64 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
 app.delete('/api/users/:id', authenticateToken, requirePermission('manage_users'), async (req, res) => {
     try {
         const userIdToDelete = req.params.id;
+        const startTime = Date.now();
 
         // Prevent self-deletion
         if (userIdToDelete === req.user.userId) {
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Delete User - Self Deletion Attempt',
+                resourceType: 'user',
+                resourceId: userIdToDelete,
+                resourceName: userIdToDelete,
+                operation: 'DELETE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/users/${userIdToDelete}`,
+                requestMethod: 'DELETE',
+                statusCode: 400,
+                responseMessage: null,
+                errorMessage: 'Anda tidak dapat menghapus akun Anda sendiri',
+                isSuspicious: true,
+                severity: 'warning'
+            }).catch(() => {});
             return res.status(400).json({ error: 'Anda tidak dapat menghapus akun Anda sendiri.' });
+        }
+
+        // Get user info before deletion for audit trail
+        const { data: userToDelete, error: fetchError } = await supabase
+            .from('users')
+            .select('id, email, name, role, zona_id, is_active')
+            .eq('id', userIdToDelete)
+            .single();
+        
+        if (fetchError || !userToDelete) {
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Delete User - Not Found',
+                resourceType: 'user',
+                resourceId: userIdToDelete,
+                resourceName: userIdToDelete,
+                operation: 'DELETE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: `/api/users/${userIdToDelete}`,
+                requestMethod: 'DELETE',
+                statusCode: 404,
+                responseMessage: null,
+                errorMessage: 'User not found',
+                isSuspicious: false,
+                severity: 'warning'
+            }).catch(() => {});
+            return res.status(404).json({ error: 'User tidak ditemukan.' });
         }
 
         const { error } = await supabase
@@ -4974,15 +5204,63 @@ app.delete('/api/users/:id', authenticateToken, requirePermission('manage_users'
 
         if (error) throw error;
 
-        await supabase.from('audit_logs').insert({
-            user_id: req.user.userId,
-            action: 'Delete User Permanent',
-            context: `Permanently deleted user ${userIdToDelete}`
-        });
+        const totalTime = Date.now() - startTime;
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        
+        // Log successful user deletion with detailed information
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Delete User',
+            resourceType: 'user',
+            resourceId: userIdToDelete,
+            resourceName: userToDelete.email,
+            operation: 'DELETE',
+            details: {
+                deletedUserEmail: userToDelete.email,
+                deletedUserName: userToDelete.name,
+                deletedUserRole: userToDelete.role,
+                deletedUserZonaId: userToDelete.zona_id || null,
+                deletedUserStatus: userToDelete.is_active,
+                deletionTime: totalTime
+            },
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: `/api/users/${userIdToDelete}`,
+            requestMethod: 'DELETE',
+            statusCode: 200,
+            responseMessage: 'User deleted successfully',
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        }).catch(() => {});
 
         res.json({ success: true, message: 'User berhasil dihapus secara permanen.' });
     } catch (err) {
         console.error('Delete User Error:', err);
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Delete User - Server Error',
+            resourceType: 'user',
+            resourceId: req.params.id,
+            resourceName: req.params.id,
+            operation: 'DELETE',
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: `/api/users/${req.params.id}`,
+            requestMethod: 'DELETE',
+            statusCode: 500,
+            responseMessage: null,
+            errorMessage: err.message,
+            isSuspicious: false,
+            severity: 'error'
+        }).catch(() => {});
         res.status(500).json({ error: 'Gagal menghapus user: ' + err.message });
     }
 });

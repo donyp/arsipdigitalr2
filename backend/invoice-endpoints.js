@@ -1351,23 +1351,49 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
         async (req, res) => {
             try {
                 const { faktur } = req.params;
+                const startTime = Date.now();
                 
                 console.log(`[Invoice API] Delete request for faktur: ${faktur}`);
                 
                 // Get invoice data to get file paths
                 const { data: invoice, error: fetchError } = await supabase
                     .from('invoice_file_list')
-                    .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path')
+                    .select('*')
                     .eq('faktur', faktur)
                     .single();
                 
                 if (fetchError) {
                     console.warn(`[Invoice API] Invoice not found: ${faktur}`);
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: null,
+                        action: 'Delete Invoice - Not Found',
+                        resourceType: 'invoice',
+                        resourceId: faktur,
+                        resourceName: faktur,
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/${faktur}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 404,
+                        responseMessage: null,
+                        errorMessage: 'Invoice not found',
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(404).json({ error: 'Invoice not found' });
                 }
                 
+                // SECURITY: Verifikasi user boleh akses invoice ini berdasarkan zona_id
+                if (!enforceZoneOwnership(req, res, invoice.zona_id)) return;
+                
                 // Delete files from Google Drive if they exist
                 const filesToDelete = [];
+                const deleteErrors = [];
                 
                 if (invoice.invoice_pdf_path) {
                     filesToDelete.push({
@@ -1395,9 +1421,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     try {
                         console.log(`[Invoice API] Deleting ${file.name}: ${file.path}`);
                         await R2Storage.deleteFile(file.path);
-                        console.log(`[Invoice API] ? Deleted ${file.name}`);
+                        console.log(`[Invoice API] ✓ Deleted ${file.name}`);
                     } catch (deleteErr) {
                         console.warn(`[Invoice API] Warning: Failed to delete ${file.name}:`, deleteErr.message);
+                        deleteErrors.push({
+                            file: file.name,
+                            error: deleteErr.message
+                        });
                         // Continue deleting other files even if one fails
                     }
                 }
@@ -1410,26 +1440,99 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 if (dbError) {
                     console.error('[Invoice API] Delete error:', dbError);
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: invoice.zona_id,
+                        action: 'Delete Invoice - Database Failure',
+                        resourceType: 'invoice',
+                        resourceId: faktur,
+                        resourceName: faktur,
+                        operation: 'DELETE',
+                        details: {
+                            filesDeleted: filesToDelete.length - deleteErrors.length,
+                            filesFailedToDelete: deleteErrors.length,
+                            errors: deleteErrors
+                        },
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/${faktur}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 500,
+                        responseMessage: null,
+                        errorMessage: 'Failed to delete invoice from database',
+                        isSuspicious: false,
+                        severity: 'error'
+                    }).catch(() => {});
                     return res.status(500).json({ error: 'Failed to delete invoice from database' });
                 }
                 
-                console.log(`[Invoice API] ? Invoice ${faktur} deleted successfully`);
+                const totalTime = Date.now() - startTime;
+                console.log(`[Invoice API] ✓ Invoice ${faktur} deleted successfully in ${totalTime}ms`);
                 
-                // Log to audit
-                await supabase.from('audit_logs').insert({
-                    user_id: req.user.id,
-                    action: 'delete_invoice',
-                    context: `Deleted invoice ${faktur} with ${filesToDelete.length} files from Google Drive`
-                });
+                // Log to audit trail with detailed information
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: invoice.zona_id,
+                    action: 'Delete Invoice',
+                    resourceType: 'invoice',
+                    resourceId: faktur,
+                    resourceName: faktur,
+                    operation: 'DELETE',
+                    details: {
+                        filesDeleted: filesToDelete.length,
+                        filesFailedToDelete: deleteErrors.length,
+                        deletionErrors: deleteErrors.length > 0 ? deleteErrors : null,
+                        invoiceAmount: invoice.amount || null,
+                        invoiceStatus: invoice.status,
+                        deletionTime: totalTime
+                    },
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/${faktur}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 200,
+                    responseMessage: 'Invoice and files deleted successfully',
+                    errorMessage: null,
+                    isSuspicious: false,
+                    severity: 'info'
+                }).catch(() => {});
                 
                 res.json({ 
                     success: true,
                     message: `Invoice ${faktur} and ${filesToDelete.length} files deleted`,
-                    filesDeleted: filesToDelete.length
+                    filesDeleted: filesToDelete.length,
+                    filesFailedToDelete: deleteErrors.length
                 });
                 
             } catch (error) {
                 console.error('[Invoice API] Delete error:', error);
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user?.userId || null,
+                    userEmail: req.user?.email || null,
+                    userRole: req.user?.role || null,
+                    zonaId: null,
+                    action: 'Delete Invoice - Server Error',
+                    resourceType: 'invoice',
+                    resourceId: req.params.faktur,
+                    resourceName: req.params.faktur,
+                    operation: 'DELETE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/${req.params.faktur}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 500,
+                    responseMessage: null,
+                    errorMessage: error.message,
+                    isSuspicious: false,
+                    severity: 'error'
+                }).catch(() => {});
                 res.status(500).json({ error: 'Server error: ' + error.message });
             }
         }
@@ -1444,6 +1547,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
         async (req, res) => {
             try {
                 const { batchId } = req.params;
+                const startTime = Date.now();
                 
                 // Get batch info first
                 const { data: batch, error: batchError } = await supabase
@@ -1453,6 +1557,27 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     .single();
                 
                 if (batchError || !batch) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user?.userId || null,
+                        userEmail: req.user?.email || null,
+                        userRole: req.user?.role || null,
+                        zonaId: null,
+                        action: 'Delete Invoice Batch - Not Found',
+                        resourceType: 'invoice_batch',
+                        resourceId: batchId,
+                        resourceName: batchId,
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/batch/${batchId}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 404,
+                        responseMessage: null,
+                        errorMessage: 'Batch not found',
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(404).json({ error: 'Batch not found' });
                 }
                 
@@ -1464,6 +1589,27 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 if (countError) {
                     console.error('[Invoice API] Count error:', countError);
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: null,
+                        action: 'Delete Invoice Batch - Count Error',
+                        resourceType: 'invoice_batch',
+                        resourceId: batchId,
+                        resourceName: batch.filename,
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/batch/${batchId}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 500,
+                        responseMessage: null,
+                        errorMessage: 'Failed to count invoices in batch',
+                        isSuspicious: false,
+                        severity: 'error'
+                    }).catch(() => {});
                     return res.status(500).json({ error: 'Failed to count invoices' });
                 }
                 
@@ -1475,6 +1621,31 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 if (deleteError) {
                     console.error('[Invoice API] Batch delete error:', deleteError);
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: null,
+                        action: 'Delete Invoice Batch - Deletion Failed',
+                        resourceType: 'invoice_batch',
+                        resourceId: batchId,
+                        resourceName: batch.filename,
+                        operation: 'DELETE',
+                        details: {
+                            invoiceCount: count,
+                            batchStatus: batch.status
+                        },
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/batch/${batchId}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 500,
+                        responseMessage: null,
+                        errorMessage: 'Failed to delete batch invoices',
+                        isSuspicious: false,
+                        severity: 'error'
+                    }).catch(() => {});
                     return res.status(500).json({ error: 'Failed to delete batch invoices' });
                 }
                 
@@ -1483,16 +1654,41 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     .from('excel_upload_batches')
                     .update({ 
                         status: 'deleted',
-                        error_log: `Deleted by ${req.user.name} at ${new Date().toISOString()}`
+                        error_log: `Deleted by ${req.user.email} at ${new Date().toISOString()}`
                     })
                     .eq('id', batchId);
                 
-                // Log to audit
-                await supabase.from('audit_logs').insert({
-                    user_id: req.user.id,
-                    action: 'delete_invoice_batch',
-                    context: `Deleted batch ${batch.filename} with ${count} invoices`
-                });
+                const totalTime = Date.now() - startTime;
+                console.log(`[Invoice API] ✓ Batch ${batchId} with ${count} invoices deleted successfully in ${totalTime}ms`);
+                
+                // Log to audit trail with detailed information
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: null,
+                    action: 'Delete Invoice Batch',
+                    resourceType: 'invoice_batch',
+                    resourceId: batchId,
+                    resourceName: batch.filename,
+                    operation: 'DELETE',
+                    details: {
+                        invoicesDeleted: count,
+                        batchStatus: batch.status,
+                        uploadedAt: batch.created_at,
+                        deletionTime: totalTime
+                    },
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/batch/${batchId}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 200,
+                    responseMessage: 'Batch and invoices deleted successfully',
+                    errorMessage: null,
+                    isSuspicious: false,
+                    severity: 'info'
+                }).catch(() => {});
                 
                 res.json({ 
                     success: true,
@@ -1502,6 +1698,27 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
             } catch (error) {
                 console.error('[Invoice API] Batch delete error:', error);
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user?.userId || null,
+                    userEmail: req.user?.email || null,
+                    userRole: req.user?.role || null,
+                    zonaId: null,
+                    action: 'Delete Invoice Batch - Server Error',
+                    resourceType: 'invoice_batch',
+                    resourceId: req.params.batchId,
+                    resourceName: req.params.batchId,
+                    operation: 'DELETE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/batch/${req.params.batchId}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 500,
+                    responseMessage: null,
+                    errorMessage: error.message,
+                    isSuspicious: false,
+                    severity: 'error'
+                }).catch(() => {});
                 res.status(500).json({ error: 'Server error' });
             }
         }
@@ -3861,13 +4078,56 @@ function addClearFileEndpoint(app, supabase, createAuth) {
         async (req, res) => {
             try {
                 const { faktur, fileType } = req.params;
+                const startTime = Date.now();
                 
                 if (!faktur || !fileType) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user?.userId || null,
+                        userEmail: req.user?.email || null,
+                        userRole: req.user?.role || null,
+                        zonaId: null,
+                        action: 'Clear Invoice File - Invalid Parameters',
+                        resourceType: 'invoice_file',
+                        resourceId: faktur || 'unknown',
+                        resourceName: faktur || 'unknown',
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/clear-file/${faktur}/${fileType}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 400,
+                        responseMessage: null,
+                        errorMessage: 'Faktur and fileType are required',
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(400).json({ error: 'Faktur and fileType are required' });
                 }
                 
                 const validTypes = ['invoice_pdf', 'bukti_bayar', 'faktur_pajak'];
                 if (!validTypes.includes(fileType)) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user?.userId || null,
+                        userEmail: req.user?.email || null,
+                        userRole: req.user?.role || null,
+                        zonaId: null,
+                        action: 'Clear Invoice File - Invalid File Type',
+                        resourceType: 'invoice_file',
+                        resourceId: faktur,
+                        resourceName: faktur,
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/clear-file/${faktur}/${fileType}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 400,
+                        responseMessage: null,
+                        errorMessage: `Invalid fileType: ${fileType}`,
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(400).json({ 
                         error: `Invalid fileType. Must be one of: ${validTypes.join(', ')}` 
                     });
@@ -3881,8 +4141,32 @@ function addClearFileEndpoint(app, supabase, createAuth) {
                     .single();
                 
                 if (queryErr || !invoice) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: null,
+                        action: 'Clear Invoice File - Invoice Not Found',
+                        resourceType: 'invoice_file',
+                        resourceId: faktur,
+                        resourceName: faktur,
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/clear-file/${faktur}/${fileType}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 404,
+                        responseMessage: null,
+                        errorMessage: 'Invoice not found',
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(404).json({ error: `Invoice not found: ${faktur}` });
                 }
+                
+                // SECURITY: Verifikasi user boleh akses invoice ini berdasarkan zona_id
+                if (!enforceZoneOwnership(req, res, invoice.zona_id)) return;
                 
                 // Map fileType to column names
                 const pathColumn = fileType === 'invoice_pdf' ? 'invoice_pdf_path' :
@@ -3896,6 +4180,27 @@ function addClearFileEndpoint(app, supabase, createAuth) {
                 const oldPath = invoice[pathColumn];
                 
                 if (!oldPath) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: invoice.zona_id,
+                        action: 'Clear Invoice File - File Not Found',
+                        resourceType: 'invoice_file',
+                        resourceId: faktur,
+                        resourceName: `${faktur} - ${fileType}`,
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/clear-file/${faktur}/${fileType}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 400,
+                        responseMessage: null,
+                        errorMessage: `File path not found for ${fileType}`,
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(400).json({ 
                         error: `File path not found for ${fileType}` 
                     });
@@ -3914,6 +4219,27 @@ function addClearFileEndpoint(app, supabase, createAuth) {
                 
                 if (updateErr) {
                     console.error(`[ClearFile] Update error:`, updateErr);
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: invoice.zona_id,
+                        action: 'Clear Invoice File - Update Failed',
+                        resourceType: 'invoice_file',
+                        resourceId: faktur,
+                        resourceName: `${faktur} - ${fileType}`,
+                        operation: 'DELETE',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/clear-file/${faktur}/${fileType}`,
+                        requestMethod: 'DELETE',
+                        statusCode: 500,
+                        responseMessage: null,
+                        errorMessage: 'Failed to clear file path',
+                        isSuspicious: false,
+                        severity: 'error'
+                    }).catch(() => {});
                     return res.status(500).json({ error: 'Failed to clear file path' });
                 }
                 
@@ -3937,7 +4263,38 @@ function addClearFileEndpoint(app, supabase, createAuth) {
                     console.warn(`[ClearFile] Failed to update count:`, countErr);
                 }
                 
-                console.log(`[ClearFile] ? Cleared ${fileType} for faktur ${faktur}. New count: ${uploadedCount}`);
+                const totalTime = Date.now() - startTime;
+                console.log(`[ClearFile] ✓ Cleared ${fileType} for faktur ${faktur}. New count: ${uploadedCount} in ${totalTime}ms`);
+                
+                // Log to audit trail with detailed information
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: invoice.zona_id,
+                    action: `Clear Invoice File - ${fileType === 'invoice_pdf' ? 'Invoice PDF' : fileType === 'bukti_bayar' ? 'Bukti Bayar' : 'Faktur Pajak'}`,
+                    resourceType: 'invoice_file',
+                    resourceId: faktur,
+                    resourceName: `${faktur} - ${fileType}`,
+                    operation: 'DELETE',
+                    details: {
+                        fileType: fileType,
+                        removedPath: oldPath,
+                        newFilesUploadedCount: uploadedCount,
+                        filesRequiredCount: invoice.files_required_count,
+                        clearanceTime: totalTime
+                    },
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/clear-file/${faktur}/${fileType}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 200,
+                    responseMessage: 'File cleared successfully',
+                    errorMessage: null,
+                    isSuspicious: false,
+                    severity: 'info'
+                }).catch(() => {});
                 
                 res.json({
                     success: true,
@@ -3950,6 +4307,27 @@ function addClearFileEndpoint(app, supabase, createAuth) {
                 
             } catch (error) {
                 console.error('[ClearFile] Error:', error);
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user?.userId || null,
+                    userEmail: req.user?.email || null,
+                    userRole: req.user?.role || null,
+                    zonaId: null,
+                    action: 'Clear Invoice File - Server Error',
+                    resourceType: 'invoice_file',
+                    resourceId: req.params.faktur,
+                    resourceName: req.params.faktur,
+                    operation: 'DELETE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/invoice/clear-file/${req.params.faktur}/${req.params.fileType}`,
+                    requestMethod: 'DELETE',
+                    statusCode: 500,
+                    responseMessage: null,
+                    errorMessage: error.message,
+                    isSuspicious: false,
+                    severity: 'error'
+                }).catch(() => {});
                 res.status(500).json({ error: 'Server error', details: error.message });
             }
         }
