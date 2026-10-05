@@ -567,6 +567,39 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     })
                     .eq('id', batchId);
                 
+                // Log to audit trail
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: null,
+                    action: 'Upload Invoice Batch (Excel Data)',
+                    resourceType: 'invoice_batch',
+                    resourceId: batchId,
+                    resourceName: filename || `Batch ${batchId}`,
+                    operation: 'CREATE',
+                    details: {
+                        filename: filename,
+                        totalReceived: data.length,
+                        processed: processedCount,
+                        duplicates: duplicateCount,
+                        failed: failedCount,
+                        batchId: batchId
+                    },
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: '/api/invoice/upload-excel-data',
+                    requestMethod: 'POST',
+                    statusCode: 200,
+                    responseMessage: `Uploaded ${processedCount} invoices`,
+                    errorMessage: failedCount > 0 ? `${failedCount} failed, ${duplicateCount} duplicates` : null,
+                    isSuspicious: false,
+                    severity: 'info'
+                }).catch(err => {
+                    console.warn('[Invoice API] Audit log failed:', err.message);
+                });
+                
                 res.json({
                     success: true,
                     batchId,
@@ -3133,6 +3166,27 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Invoice Download] DB query took ${queryTime}ms`);
                 
                 if (queryError || !invoice) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user?.userId || null,
+                        userEmail: req.user?.email || null,
+                        userRole: req.user?.role || null,
+                        zonaId: null,
+                        action: 'Download Invoice - Not Found',
+                        resourceType: 'invoice_file',
+                        resourceId: faktur,
+                        resourceName: faktur,
+                        operation: 'READ',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/download-file/${faktur}/${fileType}`,
+                        requestMethod: 'GET',
+                        statusCode: 404,
+                        responseMessage: null,
+                        errorMessage: 'Invoice not found',
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(404).json({ error: `Invoice not found: ${faktur}` });
                 }
 
@@ -3157,6 +3211,27 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 }
                 
                 if (!filePath) {
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: invoice.zona_id,
+                        action: `Download ${fileType} - File Not Uploaded`,
+                        resourceType: 'invoice_file',
+                        resourceId: faktur,
+                        resourceName: `${faktur} - ${fileType}`,
+                        operation: 'READ',
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/download-file/${faktur}/${fileType}`,
+                        requestMethod: 'GET',
+                        statusCode: 404,
+                        responseMessage: null,
+                        errorMessage: `${fileType} file not uploaded`,
+                        isSuspicious: false,
+                        severity: 'warning'
+                    }).catch(() => {});
                     return res.status(404).json({ 
                         error: `File not uploaded yet`,
                         fileType: fileType,
@@ -3231,7 +3306,39 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     
                     const totalTime = Date.now() - startTime;
                     const source = fromCache ? 'CACHE' : 'RCLONE';
-                    console.log(`[Invoice Download] ? Complete in ${totalTime}ms (${source})`);
+                    console.log(`[Invoice Download] ✅ Complete in ${totalTime}ms (${source})`);
+                    
+                    // Log to audit trail
+                    const { ipAddress } = AuditLogger.extractClientInfo(req);
+                    await auditLogger.log({
+                        userId: req.user.userId,
+                        userEmail: req.user.email,
+                        userRole: req.user.role,
+                        zonaId: invoice.zona_id,
+                        action: `Download ${fileType === 'invoice' ? 'Invoice PDF' : fileType === 'bukti_bayar' ? 'Bukti Bayar' : 'Faktur Pajak'}`,
+                        resourceType: 'invoice_file',
+                        resourceId: faktur,
+                        resourceName: `${faktur} - ${fileType}`,
+                        operation: 'READ',
+                        details: {
+                            fileType: fileType,
+                            filePath: filePath,
+                            fileSize: fileBuffer.length,
+                            source: source,
+                            downloadTime: totalTime
+                        },
+                        ipAddress: ipAddress,
+                        userAgent: req.headers['user-agent'] || 'Unknown',
+                        requestPath: `/api/invoice/download-file/${faktur}/${fileType}`,
+                        requestMethod: 'GET',
+                        statusCode: 200,
+                        responseMessage: 'File downloaded successfully',
+                        errorMessage: null,
+                        isSuspicious: false,
+                        severity: 'info'
+                    }).catch(err => {
+                        console.warn('[Invoice Download] Audit log failed:', err.message);
+                    });
                     
                 } catch (downloadErr) {
                     console.error(`[Invoice Download] Download error:`, downloadErr.message);
