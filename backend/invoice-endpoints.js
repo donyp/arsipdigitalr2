@@ -977,18 +977,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             console.log(`[Invoice List] Returned ${data?.length || 0} invoices (total: ${count})`);
             
-            // Map data to include file count based on ACTUAL R2 scan (not stale DB paths)
-            const enrichedData = await Promise.all(data.map(async (inv) => {
-                // IMPORTANT: Always scan R2 for accurate count (don't trust DB columns)
-                // DB paths can be stale/incorrect from failed uploads - R2 is the source of truth
-                const accurateCount = await updateFilesUploadedCount(supabase, inv.faktur, R2Storage).catch(() => inv.files_uploaded_count || 0);
+            // Map data to include file count
+            // IMPORTANT: Use cached database count, not live R2 scans (expensive operation)
+            // R2 scans happen only when user filters by month (via dedicated endpoint: /api/invoice/scan-filtered)
+            const enrichedData = data.map(inv => {
+                // Use cached count from database
+                const filesUploaded = inv.files_uploaded_count || 0;
                 
-                // Use accurate count from R2 scan
-                const filesUploaded = accurateCount;
-                
-                // Debug logging for test fakturs
+                // Debug logging for test fakturs only
                 if (inv.faktur && (inv.faktur === '835100311020926004' || inv.faktur === '835100311010926025')) {
-                    console.log(`[Invoice List] Invoice ${inv.faktur} ACCURATE count from R2:`, {
+                    console.log(`[Invoice List] Invoice ${inv.faktur} CACHED count:`, {
                         files_uploaded_count: filesUploaded,
                         db_invoice_path: inv.invoice_pdf_path ? '✓' : '✗',
                         db_bukti_path: inv.bukti_bayar_path ? '✓' : '✗',
@@ -1004,7 +1002,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     files_uploaded_count: filesUploaded,
                     files_required_count: filesRequired
                 };
-            }));
+            });
             
             // ============================================
             // Calculate aggregated stats from ALL data (not just this page)
@@ -1107,6 +1105,103 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             console.error('[Invoice API] List error:', error);
             console.error('[Invoice API] Stack:', error.stack);
             res.status(500).json({ error: 'Server error', details: error.message });
+        }
+    });
+
+    // ============================================
+    // POST /api/invoice/scan-filtered
+    // Batch scan R2 for filtered invoices (called from frontend when user applies filters)
+    // This is expensive, so only call when needed (not on initial page load)
+    // ============================================
+    app.post('/api/invoice/scan-filtered', createAuth(), async (req, res) => {
+        try {
+            const { 
+                toko, 
+                keterangan,
+                date_from,
+                date_to,
+                search
+            } = req.body;
+
+            // SECURITY: Cek zona ownership jika ada zona_id di body
+            if (req.body.zona_id) {
+                if (!enforceZoneOwnership(req, res, req.body.zona_id)) return;
+            }
+
+            console.log('[Invoice Scan] Starting batch R2 scan for filtered invoices...');
+            
+            let query = supabase
+                .from('invoice_file_list')
+                .select('faktur, keterangan, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path');
+            
+            // Auto-filter by zona for admin_zona users
+            if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
+                const userZonaId = parseInt(req.user.zona_id) || req.user.zona_id;
+                query = query.eq('zona_id', userZonaId);
+            }
+            
+            // Apply same filters as invoice list endpoint
+            if (toko) query = query.eq('toko', toko);
+            if (keterangan) query = query.eq('keterangan', keterangan);
+            if (date_from) query = query.gte('tanggal', date_from);
+            if (date_to) query = query.lte('tanggal', date_to);
+            
+            if (search) {
+                const sanitizedSearch = sanitizeString(search.trim());
+                if (sanitizedSearch && sanitizedSearch.length > 0) {
+                    query = query.or(`faktur.ilike.%${sanitizedSearch}%,konsumen.ilike.%${sanitizedSearch}%`);
+                }
+            }
+            
+            const { data: invoices, error } = await query;
+            
+            if (error) {
+                console.error('[Invoice Scan] Error fetching filtered invoices:', error);
+                return res.status(500).json({ error: 'Failed to fetch invoices for scanning' });
+            }
+            
+            console.log(`[Invoice Scan] Scanning R2 for ${invoices.length} invoices...`);
+            
+            // Scan R2 for each invoice (this is the expensive part)
+            const scanResults = [];
+            let scannedCount = 0;
+            
+            for (const inv of invoices) {
+                try {
+                    const filesUploaded = await updateFilesUploadedCount(supabase, inv.faktur, R2Storage);
+                    scannedCount++;
+                    
+                    scanResults.push({
+                        faktur: inv.faktur,
+                        files_uploaded_count: filesUploaded
+                    });
+                    
+                    // Log progress every 10 invoices
+                    if (scannedCount % 10 === 0) {
+                        console.log(`[Invoice Scan] Progress: ${scannedCount}/${invoices.length} invoices scanned`);
+                    }
+                } catch (err) {
+                    console.error(`[Invoice Scan] Error scanning ${inv.faktur}:`, err.message);
+                    scanResults.push({
+                        faktur: inv.faktur,
+                        files_uploaded_count: inv.files_uploaded_count || 0,
+                        error: err.message
+                    });
+                }
+            }
+            
+            console.log(`[Invoice Scan] Completed: ${scannedCount} invoices scanned`);
+            
+            res.json({
+                success: true,
+                scannedCount,
+                results: scanResults,
+                _completedAt: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            console.error('[Invoice Scan] Error:', error);
+            res.status(500).json({ error: 'Scan failed', details: error.message });
         }
     });
     

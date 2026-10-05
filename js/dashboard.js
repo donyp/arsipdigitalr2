@@ -3968,9 +3968,11 @@ async function applyInvoiceFilters() {
         saveInvoiceFilterState();
         
         
-        // Start filtered background scan (async, don't wait)
-        invoiceBackgroundScanStarted = false; // Reset so scan runs
-        startInvoiceBackgroundScan();
+        // Trigger R2 batch scan for filtered invoices (async, don't wait)
+        // Only scan when user applies filters to avoid expensive operations on initial load
+        if (status || toko || keterangan || year || month || search) {
+            triggerBatchR2Scan(status, toko, keterangan, year, month, search);
+        }
         
         
         const token = API.getToken() || localStorage.getItem('jwt_token');
@@ -4390,6 +4392,78 @@ async function startInvoiceBackgroundScan() {
         
     } catch (error) {
         // Don't show error to user - this is background task
+    }
+}
+
+/**
+ * Trigger batch R2 scan for filtered invoices
+ * This is called when user applies filters (e.g., selects a month)
+ * Scans R2 for accurate file counts WITHOUT blocking the UI
+ * Results are silently cached in the browser
+ */
+async function triggerBatchR2Scan(status, toko, keterangan, year, month, search) {
+    try {
+        console.log('[Frontend] Triggering batch R2 scan for filtered invoices...');
+        
+        const token = API.getToken() || localStorage.getItem('jwt_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        headers['Content-Type'] = 'application/json';
+        
+        // Build request body with same filters as the list query
+        const scanRequest = {
+            toko: toko || undefined,
+            keterangan: keterangan || undefined,
+            search: search || undefined
+        };
+        
+        // Add date range if year/month are selected
+        if (year && month) {
+            const dateFromValue = `${year}-${String(month).padStart(2, '0')}-01`;
+            const dateToObj = new Date(parseInt(year), parseInt(month), 0);
+            const dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
+            scanRequest.date_from = dateFromValue;
+            scanRequest.date_to = dateToValue;
+        } else if (year) {
+            scanRequest.date_from = `${year}-01-01`;
+            scanRequest.date_to = `${year}-12-31`;
+        } else if (month) {
+            const currentYear = new Date().getFullYear();
+            const dateFromValue = `${currentYear}-${String(month).padStart(2, '0')}-01`;
+            const dateToObj = new Date(currentYear, parseInt(month), 0);
+            const dateToValue = `${currentYear}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
+            scanRequest.date_from = dateFromValue;
+            scanRequest.date_to = dateToValue;
+        }
+        
+        // Remove undefined values
+        Object.keys(scanRequest).forEach(key => {
+            if (scanRequest[key] === undefined) delete scanRequest[key];
+        });
+        
+        // Send scan request to backend (fire and forget)
+        fetch(`${CONFIG.API_URL}/api/invoice/scan-filtered`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(scanRequest)
+        }).then(response => {
+            if (!response.ok) {
+                console.warn('[Frontend] R2 scan request failed:', response.status);
+                return;
+            }
+            return response.json();
+        }).then(result => {
+            console.log('[Frontend] R2 scan completed:', {
+                scannedCount: result?.scannedCount,
+                timestamp: result?._completedAt
+            });
+        }).catch(err => {
+            // Silently fail - don't interrupt user
+            console.warn('[Frontend] R2 scan error (non-blocking):', err.message);
+        });
+        
+    } catch (error) {
+        // Silently fail - don't interrupt user
+        console.warn('[Frontend] Failed to trigger R2 scan:', error.message);
     }
 }
 
