@@ -961,12 +961,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             // Map data to include file count based on actual file paths (source of truth)
             const enrichedData = data.map(inv => {
-                let filesUploaded = 0;
-                
-                // Count based on file PATH columns (these are updated when files are uploaded)
-                if (inv.invoice_pdf_path) filesUploaded++;
-                if (inv.bukti_bayar_path) filesUploaded++;
-                if (inv.faktur_pajak_path) filesUploaded++;
+                // Use files_uploaded_count from database (already synced with R2)
+                // This is more accurate than counting DB paths
+                const filesUploaded = inv.files_uploaded_count || 0;
                 
                 // Debug logging for invoice 835100311020926004
                 if (inv.faktur === '835100311020926004') {
@@ -974,14 +971,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         invoice_pdf_path: inv.invoice_pdf_path,
                         bukti_bayar_path: inv.bukti_bayar_path,
                         faktur_pajak_path: inv.faktur_pajak_path,
-                        filesUploaded,
-                        db_files_uploaded_count: inv.files_uploaded_count
+                        files_uploaded_count: filesUploaded
                     });
-                }
-                
-                // If no file paths but database has a count, use that
-                if (filesUploaded === 0 && inv.files_uploaded_count) {
-                    filesUploaded = inv.files_uploaded_count;
                 }
                 
                 const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
