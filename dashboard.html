@@ -3566,7 +3566,15 @@
                     })(),
                     tanggalValue: (() => {
                         const text = row.cells[1].textContent.trim();
-                        return new Date(text.split('/').reverse().join('-'));
+                        // Parse date from DD/MM/YY format
+                        const parts = text.split('/');
+                        if (parts.length === 3) {
+                            const day = parts[0];
+                            const month = parts[1];
+                            const year = '20' + parts[2]; // Convert YY to YYYY
+                            return new Date(`${year}-${month}-${day}`);
+                        }
+                        return new Date(0); // Fallback for invalid dates
                     })(),
                     totalValue: (() => {
                         const text = row.cells[7].textContent.trim();
