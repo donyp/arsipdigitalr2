@@ -977,19 +977,22 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             console.log(`[Invoice List] Returned ${data?.length || 0} invoices (total: ${count})`);
             
-            // Map data to include file count based on actual file paths (source of truth)
-            const enrichedData = data.map(inv => {
-                // Use files_uploaded_count from database (already synced with R2)
-                // This is more accurate than counting DB paths
-                const filesUploaded = inv.files_uploaded_count || 0;
+            // Map data to include file count based on ACTUAL R2 scan (not stale DB paths)
+            const enrichedData = await Promise.all(data.map(async (inv) => {
+                // IMPORTANT: Always scan R2 for accurate count (don't trust DB columns)
+                // DB paths can be stale/incorrect from failed uploads - R2 is the source of truth
+                const accurateCount = await updateFilesUploadedCount(supabase, inv.faktur, R2Storage).catch(() => inv.files_uploaded_count || 0);
                 
-                // Debug logging for all invoices (not just 835100311020926004)
+                // Use accurate count from R2 scan
+                const filesUploaded = accurateCount;
+                
+                // Debug logging for test fakturs
                 if (inv.faktur && (inv.faktur === '835100311020926004' || inv.faktur === '835100311010926025')) {
-                    console.log(`[Invoice List] Invoice ${inv.faktur} file paths:`, {
-                        invoice_pdf_path: inv.invoice_pdf_path,
-                        bukti_bayar_path: inv.bukti_bayar_path,
-                        faktur_pajak_path: inv.faktur_pajak_path,
-                        files_uploaded_count: filesUploaded
+                    console.log(`[Invoice List] Invoice ${inv.faktur} ACCURATE count from R2:`, {
+                        files_uploaded_count: filesUploaded,
+                        db_invoice_path: inv.invoice_pdf_path ? '✓' : '✗',
+                        db_bukti_path: inv.bukti_bayar_path ? '✓' : '✗',
+                        db_faktur_path: inv.faktur_pajak_path ? '✓' : '✗'
                     });
                 }
                 
@@ -1001,7 +1004,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     files_uploaded_count: filesUploaded,
                     files_required_count: filesRequired
                 };
-            });
+            }));
             
             // ============================================
             // Calculate aggregated stats from ALL data (not just this page)
