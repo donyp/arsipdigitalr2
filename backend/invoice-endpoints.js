@@ -203,8 +203,26 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         console.log(`[UpdateCount] ? R2 scan complete: ${uploadedCount}/${requiredCount}`);
         console.log(`[UpdateCount] Files - Invoice: ${invoiceCount}, Bukti: ${buktiCount}, Faktur Pajak: ${fakturCount}`);
         
+        // Save the accurate count to database using direct SQL query (bypass schema cache issues)
+        try {
+            const { error: updateErr } = await supabaseClient
+                .from('invoice_file_list')
+                .update({ 
+                    files_uploaded_count: uploadedCount,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('faktur', faktur);
+            
+            if (updateErr) {
+                console.warn(`[UpdateCount] Warning: Could not save count to DB:`, updateErr.message);
+            } else {
+                console.log(`[UpdateCount] ✅ Saved files_uploaded_count=${uploadedCount} to database for faktur ${faktur}`);
+            }
+        } catch (dbErr) {
+            console.warn(`[UpdateCount] DB update attempt failed (non-critical):`, dbErr.message);
+        }
+        
         // Return the count immediately - this is the source of truth
-        // Do NOT try to save to database - Supabase JS client schema cache is permanently broken
         return uploadedCount;
         
     } catch (err) {
@@ -965,9 +983,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // This is more accurate than counting DB paths
                 const filesUploaded = inv.files_uploaded_count || 0;
                 
-                // Debug logging for invoice 835100311020926004
-                if (inv.faktur === '835100311020926004') {
-                    console.log(`[Invoice List] Invoice 835100311020926004 file paths:`, {
+                // Debug logging for all invoices (not just 835100311020926004)
+                if (inv.faktur && (inv.faktur === '835100311020926004' || inv.faktur === '835100311010926025')) {
+                    console.log(`[Invoice List] Invoice ${inv.faktur} file paths:`, {
                         invoice_pdf_path: inv.invoice_pdf_path,
                         bukti_bayar_path: inv.bukti_bayar_path,
                         faktur_pajak_path: inv.faktur_pajak_path,
