@@ -1134,7 +1134,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             }
 
             // RETURN IMMEDIATELY - don't block on R2 scan
-            console.log('[Invoice Scan] Returning immediately, scanning in background...');
             res.json({
                 success: true,
                 message: 'Background scan started',
@@ -1147,33 +1146,28 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     const { data: invoices, error } = await query;
                     
                     if (error) {
-                        console.error('[Invoice Scan BG] Error fetching invoices:', error);
+                        // Log error for debugging
+                        console.error('[Invoice Scan BG] Error fetching invoices:', error.message);
                         return;
                     }
 
                     if (!invoices || invoices.length === 0) {
-                        console.log('[Invoice Scan BG] No invoices to scan');
+                        // No invoices to scan - this is OK
                         return;
                     }
                     
-                    console.log(`[Invoice Scan BG] Scanning R2 for ${invoices.length} invoices in background...`);
-                    
+                    // Start background R2 scan
                     let scannedCount = 0;
                     for (const inv of invoices) {
                         try {
                             await updateFilesUploadedCount(supabase, inv.faktur, R2Storage);
                             scannedCount++;
-                            
-                            if (scannedCount % 10 === 0) {
-                                console.log(`[Invoice Scan BG] Progress: ${scannedCount}/${invoices.length}`);
-                            }
                         } catch (err) {
-                            console.error(`[Invoice Scan BG] Error scanning ${inv.faktur}:`, err.message);
+                            // Silently skip errors for individual invoices
                         }
                     }
-                    
-                    console.log(`[Invoice Scan BG] Completed: ${scannedCount}/${invoices.length} invoices scanned`);
                 } catch (err) {
+                    // Background scan failed - log for debugging
                     console.error('[Invoice Scan BG] Background scan error:', err.message);
                 }
             })();

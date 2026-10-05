@@ -4445,13 +4445,16 @@ async function triggerBatchR2Scan(status, toko, keterangan, year, month, search)
             body: JSON.stringify(scanRequest)
         }).then(response => {
             if (!response.ok) {
+                console.warn('[R2Scan] Request failed:', response.status);
                 return;
             }
             return response.json();
         }).then(result => {
-            // Background scan completed silently
+            if (result && result.success) {
+                console.log('[R2Scan] Background scan initiated');
+            }
         }).catch(err => {
-            // Silently fail - don't interrupt user
+            console.warn('[R2Scan] Request error:', err.message);
         });
         
     } catch (error) {
