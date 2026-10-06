@@ -10,6 +10,7 @@ const fs = require('fs');
 const { updateFileCountDirectly, updateFilePath } = require('./direct-postgres-update');
 const { logSecurityEvent, logWarning, logInfo, logDebug, isDebugMode } = require('./security-logging');
 const { sanitizeString } = require('./input-validators');
+const AuditLogger = require('./audit-logger');
 
 try {
     multer = require('multer');
@@ -232,6 +233,9 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
 }
 
 function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
+
+    // Initialize audit logger for this endpoint
+    const auditLogger = new AuditLogger(supabase);
 
     // ============================================================
     // SECURITY: Authorization ownership check helper
@@ -3518,16 +3522,13 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     res.setHeader('Content-Length', fileBuffer.length);
                     res.setHeader('Cache-Control', 'public, max-age=3600'); // Browser cache 1 hour
                     
-                    // Send file
-                    res.send(fileBuffer);
-                    
+                    // Log to audit trail BEFORE sending response
                     const totalTime = Date.now() - startTime;
                     const source = fromCache ? 'CACHE' : 'RCLONE';
-                    console.log(`[Invoice Download] ✅ Complete in ${totalTime}ms (${source})`);
-                    
-                    // Log to audit trail
                     const { ipAddress } = AuditLogger.extractClientInfo(req);
-                    await auditLogger.log({
+                    
+                    // Fire-and-forget audit logging (don't await, don't block response)
+                    auditLogger.log({
                         userId: req.user.userId,
                         userEmail: req.user.email,
                         userRole: req.user.role,
@@ -3556,6 +3557,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     }).catch(err => {
                         console.warn('[Invoice Download] Audit log failed:', err.message);
                     });
+                    
+                    // Send file (this completes the response)
+                    console.log(`[Invoice Download] ✅ Complete in ${totalTime}ms (${source})`);
+                    res.send(fileBuffer);
                     
                 } catch (downloadErr) {
                     console.error(`[Invoice Download] Download error:`, downloadErr.message);

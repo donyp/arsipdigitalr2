@@ -1161,7 +1161,7 @@ console.log('[INIT] Registering Storage Handler endpoints...');
 const registerStorageHandlerEndpoints = require('./storage-handler-endpoints');
 registerStorageHandlerEndpoints(app, supabase, authenticateToken, authorizeRole);
 console.log('[INIT] Storage Handler endpoints registered âœ…');
-console.log('  âœ" R2 File Manager (Browse, Upload, Download, Delete, Rename)');
+console.log('  ï¿½" R2 File Manager (Browse, Upload, Download, Delete, Rename)');
 
 // ============================================================
 // SESSION MANAGEMENT & FAQ ENDPOINTS (Phase 2 Features)
@@ -7545,12 +7545,13 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         });
 
         // Initialize auto-logout scheduler
-        console.log('[AutoLogout] Starting automatic logout scheduler...');
-        try {
-            initializeAutoLogoutScheduler();
-        } catch (err) {
-            console.error('[AutoLogout] Failed to initialize scheduler:', err.message);
-        }
+        // TODO: Implement auto-logout scheduler if needed
+        // console.log('[AutoLogout] Starting automatic logout scheduler...');
+        // try {
+        //     initializeAutoLogoutScheduler();
+        // } catch (err) {
+        //     console.error('[AutoLogout] Failed to initialize scheduler:', err.message);
+        // }
 
     // Task 3.1: Error handler for port binding failures
     server.on('error', (err) => {
