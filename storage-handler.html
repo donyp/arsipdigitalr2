@@ -406,7 +406,7 @@
         <div class="header">
             <div>
                 <h1><i class="fas fa-folder-open"></i> Storage Handler</h1>
-                <p>≡ƒôª File Manager untuk Cloudflare R2 Storage</p>
+                <p><i class="fas fa-info-circle"></i> File Manager untuk Cloudflare R2 Storage</p>
             </div>
             <button class="btn btn-secondary" onclick="goBack()">
                 <i class="fas fa-arrow-left"></i> Back
@@ -416,19 +416,19 @@
         <!-- Stats -->
         <div class="stats" id="stats" style="display: none;">
             <div class="stat-card">
-                <div class="stat-icon">≡ƒôª</div>
+                <div class="stat-icon"><i class="fas fa-database"></i></div>
                 <div class="stat-label">Total Size</div>
                 <div class="stat-value" id="statTotalSize">-</div>
                 <div class="stat-subvalue" id="statTotalFiles">- files</div>
             </div>
             <div class="stat-card success">
-                <div class="stat-icon">≡ƒôñ</div>
+                <div class="stat-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                 <div class="stat-label">Today Upload</div>
                 <div class="stat-value" id="statTodayUpload">-</div>
                 <div class="stat-subvalue" id="statTodayUploadCount">- files</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">≡ƒôÑ</div>
+                <div class="stat-icon"><i class="fas fa-chart-pie"></i></div>
                 <div class="stat-label">Today Used</div>
                 <div class="stat-value" id="statTodayUsed">-</div>
                 <div class="stat-subvalue" id="statTodayUsedCount">- changes</div>
@@ -458,7 +458,7 @@
         </div>
 
         <!-- Bulk Actions Toolbar (hidden by default) -->
-        <div class="toolbar" id="bulkActionsToolbar" style="display: none; background: rgba(59, 130, 246, 0.1); border-color: var(--color-info);">
+        <div class="toolbar" id="bulkActionsToolbar" style="display: none; background: rgba(59, 130, 246, 0.1); border-color: var(--color-info); position: relative; z-index: 50;">
             <div style="flex: 1;">
                 <span id="bulkSelectedCount" style="font-weight: 600;">0 selected</span>
             </div>
@@ -494,8 +494,8 @@
     <div class="modal" id="uploadModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>≡ƒôñ Upload Files</h2>
-                <button class="modal-close" onclick="closeUploadModal()">Γ£ò</button>
+                <h2><i class="fas fa-cloud-upload-alt"></i> Upload Files</h2>
+                <button class="modal-close" onclick="closeUploadModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="file-upload-zone" id="uploadZone">
                 <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: var(--color-info); margin-bottom: 16px; display: block;"></i>
@@ -514,8 +514,8 @@
     <div class="modal" id="createFolderModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>≡ƒôü Create Folder</h2>
-                <button class="modal-close" onclick="closeCreateFolderModal()">Γ£ò</button>
+                <h2><i class="fas fa-folder-plus"></i> Create Folder</h2>
+                <button class="modal-close" onclick="closeCreateFolderModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="form-group">
                 <label class="form-label">Folder Name</label>
@@ -531,8 +531,8 @@
     <div class="modal" id="renameModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Γ£Å∩╕Å Rename</h2>
-                <button class="modal-close" onclick="closeRenameModal()">Γ£ò</button>
+                <h2><i class="fas fa-edit"></i> Rename</h2>
+                <button class="modal-close" onclick="closeRenameModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="form-group">
                 <label class="form-label">New Name</label>
@@ -548,8 +548,8 @@
     <div class="modal" id="previewModal">
         <div class="modal-content" style="max-width: 90vw;">
             <div class="modal-header">
-                <h2>≡ƒæü∩╕Å Preview</h2>
-                <button class="modal-close" onclick="closePreviewModal()">Γ£ò</button>
+                <h2><i class="fas fa-image"></i> Preview</h2>
+                <button class="modal-close" onclick="closePreviewModal()"><i class="fas fa-times"></i></button>
             </div>
             <div id="previewContent"></div>
         </div>
@@ -740,7 +740,7 @@
             
             // If > 5 files, create ZIP
             if (fileCount > 5) {
-                Notify.info(`≡ƒôª Preparing ZIP with ${fileCount} files...`);
+                Notify.info(`<i class="fas fa-database"></i> Preparing ZIP with ${fileCount} files...`);
                 
                 try {
                     const response = await fetch('/api/storage-handler/download-bulk', {
@@ -765,7 +765,7 @@
                         window.location.href = data.url;
                         
                         setTimeout(() => {
-                            Notify.success(`Γ£à ZIP downloading (${data.filesIncluded} files${data.filesFailed > 0 ? `, ${data.filesFailed} failed` : ''})`);
+                            Notify.success(`✓ ZIP downloading (${data.filesIncluded} files${data.filesFailed > 0 ? `, ${data.filesFailed} failed` : ''})`);
                             clearSelection();
                         }, 500);
                     } else {
@@ -780,7 +780,7 @@
             }
 
             // If <= 5 files, individual downloads
-            Notify.info(`≡ƒôÑ Starting ${fileCount} downloads...`);
+            Notify.info(`<i class="fas fa-chart-pie"></i> Starting ${fileCount} downloads...`);
             
             try {
                 const response = await fetch('/api/storage-handler/download-bulk', {
@@ -811,7 +811,7 @@
                     }
 
                     setTimeout(() => {
-                        Notify.success(`Γ£à ${fileCount} files started downloading`);
+                        Notify.success(`✓ ${fileCount} files started downloading`);
                         clearSelection();
                     }, downloadCount * 500 + 800);
                 } else {
@@ -853,7 +853,7 @@
                         } catch (error) {}
                     }
 
-                    Notify.success(`Γ£à Deleted ${deleted}/${paths.length} items`);
+                    Notify.success(`✓ Deleted ${deleted}/${paths.length} items`);
                     clearSelection();
                     refreshBrowser();
                 }
@@ -903,7 +903,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    Notify.success(`Γ£à Uploaded ${data.uploaded} file(s)`);
+                    Notify.success(`✓ Uploaded ${data.uploaded} file(s)`);
                     closeUploadModal();
                     refreshBrowser();
                 } else {
@@ -918,7 +918,7 @@
 
         async function downloadFile(filePath) {
             try {
-                Notify.info('≡ƒôÑ Preparing download...');
+                Notify.info('<i class="fas fa-chart-pie"></i> Preparing download...');
                 
                 console.log('[Download] Requesting signed URL for:', filePath);
                 
@@ -944,7 +944,7 @@
                 window.location.href = data.url;
                 
                 setTimeout(() => {
-                    Notify.success('Γ£à Download started - check your downloads folder');
+                    Notify.success('✓ Download started - check your downloads folder');
                 }, 500);
                 
             } catch (error) {
@@ -967,7 +967,7 @@
 
                     const data = await response.json();
                     if (data.success) {
-                        Notify.success('Γ£à Deleted');
+                        Notify.success('✓ Deleted');
                         refreshBrowser();
                     } else throw new Error(data.error);
                 } catch (error) {
@@ -1006,7 +1006,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    Notify.success('Γ£à Renamed');
+                    Notify.success('✓ Renamed');
                     closeRenameModal();
                     refreshBrowser();
                 } else throw new Error(data.error);
@@ -1042,7 +1042,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    Notify.success('Γ£à Folder created');
+                    Notify.success('✓ Folder created');
                     closeCreateFolderModal();
                     refreshBrowser();
                 } else throw new Error(data.error);
