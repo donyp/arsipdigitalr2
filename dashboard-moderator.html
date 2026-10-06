@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moderator Dashboard | Arsip Digital ANKA</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
+    
+    <!-- Dark Mode Init -->
+    <script src="js/dark-mode-init.js"></script>
+    
+    <!-- Tailwind & Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        * {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        /* ========== ANIMATIONS ========== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.9) translateY(-10px);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ========== MODERN DOWNLOAD POPUP STYLES ========== */
+        .modern-download-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .modern-download-overlay.hidden {
+            display: none !important;
+        }
+
+        .modern-download-popup {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 520px;
+            box-shadow: 
+                0 20px 60px rgba(0, 0, 0, 0.2),
+                0 0 1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        .modern-download-popup.dark {
+            background: #1e293b;
+            border: 1px solid rgba(71, 85, 105, 0.4);
+        }
+
+        /* POPUP HEADER */
+        .modern-popup-header {
+            padding: 32px 32px 24px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+        }
+
+        .modern-popup-header.dark {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+        }
+
+        .modern-popup-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 2px solid #93c5fd;
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+        }
+
+        .modern-popup-icon.dark {
+            background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+            border: 2px solid #3b82f6;
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.25);
+        }
+
+        .modern-popup-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .modern-popup-title.dark {
+            color: #f1f5f9;
+        }
+
+        .modern-popup-subtitle {
+            font-size: 14px;
+            color: #64748b;
+            margin: 8px 0 0 0;
+            font-weight: 500;
+        }
+
+        .modern-popup-subtitle.dark {
+            color: #cbd5e1;
+        }
+
+        /* POPUP BODY */
+        .modern-popup-body {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* ========== DOWNLOAD BUTTONS ========== */
+        .modern-download-btn {
+            padding: 16px 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            color: white;
+            text-decoration: none;
+            min-height: 56px;
+        }
+
+        .modern-download-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+            animation: shimmer 2.5s infinite;
+            animation-play-state: paused;
+        }
+
+        .modern-download-btn:hover::before {
+            animation-play-state: running;
+        }
+
+        .modern-download-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .modern-download-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .modern-download-btn.btn-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .modern-btn-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .modern-btn-icon {
+            font-size: 24px;
+            min-width: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: slideIn 0.4s ease;
+        }
+
+        .modern-btn-label {
+            flex: 1;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .modern-btn-name {
+            font-weight: 800;
+            font-size: 15px;
+        }
+
+        .modern-btn-hint {
+            font-size: 12px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .modern-btn-arrow {
+            font-size: 18px;
+            opacity: 0.85;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modern-download-btn:hover .modern-btn-arrow {
+            transform: translateX(4px);
+        }
+
+        /* BUTTON COLOR VARIANTS */
+        .modern-btn-invoice {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+        }
+
+        .modern-btn-invoice:hover {
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.45);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+
+        .modern-btn-bukti {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+        }
+
+        .modern-btn-bukti:hover {
+            box-shadow: 0 12px 40px rgba(16, 185, 129, 0.45);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .modern-btn-faktur {
+            background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+        }
+
+        .modern-btn-faktur:hover {
+            box-shadow: 0 12px 40px rgba(168, 85, 247, 0.45);
+            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
+        }
+
+        .modern-btn-combine {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+            margin-top: 12px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .modern-btn-combine:hover {
+            box-shadow: 0 12px 40px rgba(245, 158, 11, 0.45);
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        }
+
+        /* POPUP FOOTER */
+        .modern-popup-footer {
+            padding: 0 32px 20px;
+        }
+
+        .modern-popup-close-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #1e293b;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modern-popup-close-btn:hover {
+            background: linear-gradient(135deg, #cbd5e1 0%, #b0bcc4 100%);
+            transform: translateY(-2px);
+        }
+
+        .modern-popup-close-btn.dark {
+            background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+            color: #cbd5e1;
+        }
+
+        .modern-popup-close-btn.dark:hover {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        /* SPINNER */
+        .modern-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 640px) {
+            .modern-download-popup {
+                width: 95%;
+                max-width: 450px;
+                border-radius: 16px;
+            }
+
+            .modern-popup-header {
+                padding: 24px 20px 18px;
+            }
+
+            .modern-popup-body {
+                padding: 24px 20px;
+                gap: 12px;
+            }
+
+            .modern-popup-footer {
+                padding: 0 20px 16px;
+            }
+
+            .modern-popup-title {
+                font-size: 22px;
+            }
+
+            .modern-popup-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 28px;
+                margin-bottom: 14px;
+            }
+
+            .modern-download-btn {
+                padding: 14px 14px;
+                font-size: 14px;
+                min-height: 52px;
+            }
+
+            .modern-btn-icon {
+                font-size: 20px;
+                min-width: 28px;
+            }
+        }
+
+        /* DARK MODE */
+        html.dark-mode .modern-popup-header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        }
+
+        html.dark-mode .modern-popup-title {
+            color: #f1f5f9;
+        }
+
+        html.dark-mode .modern-popup-subtitle {
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar will be injected here -->
+        <div id="sidebar"></div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="flex-1">
+            <!-- Dashboard Content -->
+            <div class="p-6 md:p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 min-h-screen">
+                <div class="max-w-7xl mx-auto">
+                    <!-- Header -->
+                    <div class="mb-8">
+                        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                            <i class="fas fa-gavel mr-3 text-blue-500"></i>Moderator Dashboard
+                        </h1>
+                        <p class="text-gray-600 dark:text-gray-400 text-lg">Kelola dan monitor semua file arsip sistem</p>
+                    </div>
+
+                    <!-- Sample Table with Three-dot Menu -->
+                    <div class="rounded-lg bg-white dark:bg-gray-800 shadow-md overflow-hidden">
+                        <div class="p-6">
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                                <i class="fas fa-table mr-2 text-blue-500"></i>Recent Files
+                            </h2>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">File Name</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Type</th>
+                                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Date</th>
+                                            <th class="text-center py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                            <td class="py-4 px-4 text-gray-900 dark:text-white">Invoice April 2024</td>
+                                            <td class="py-4 px-4 text-gray-600 dark:text-gray-400">
+                                                <span class="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-full text-sm font-medium">PDF</span>
+                                            </td>
+                                            <td class="py-4 px-4 text-gray-600 dark:text-gray-400">2024-04-15</td>
+                                            <td class="py-4 px-4 text-center">
+                                                <button onclick="showModernDownloadPopup('INV-2024-001')" title="Download options" class="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
+                                                    <i class="fas fa-ellipsis-v text-lg"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                            <td class="py-4 px-4 text-gray-900 dark:text-white">Bukti Bayar Mei 2024</td>
+                                            <td class="py-4 px-4 text-gray-600 dark:text-gray-400">
+                                                <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 rounded-full text-sm font-medium">PDF</span>
+                                            </td>
+                                            <td class="py-4 px-4 text-gray-600 dark:text-gray-400">2024-05-10</td>
+                                            <td class="py-4 px-4 text-center">
+                                                <button onclick="showModernDownloadPopup('BYR-2024-002')" title="Download options" class="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
+                                                    <i class="fas fa-ellipsis-v text-lg"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                            <td class="py-4 px-4 text-gray-900 dark:text-white">Faktur Pajak Juni 2024</td>
+                                            <td class="py-4 px-4 text-gray-600 dark:text-gray-400">
+                                                <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 rounded-full text-sm font-medium">PDF</span>
+                                            </td>
+                                            <td class="py-4 px-4 text-gray-600 dark:text-gray-400">2024-06-05</td>
+                                            <td class="py-4 px-4 text-center">
+                                                <button onclick="showModernDownloadPopup('FKT-2024-003')" title="Download options" class="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors">
+                                                    <i class="fas fa-ellipsis-v text-lg"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modern Download Popup Modal -->
+    <div id="modernDownloadOverlay" class="hidden modern-download-overlay" onclick="closeModernDownloadPopup(event)">
+        <div class="modern-download-popup" id="modernDownloadPopup" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="modern-popup-header">
+                <div class="modern-popup-icon">📥</div>
+                <h2 class="modern-popup-title">Download Files</h2>
+                <p class="modern-popup-subtitle">Select the file you want to download</p>
+            </div>
+
+            <!-- Body -->
+            <div class="modern-popup-body" id="modernPopupBodyContent">
+                <!-- Buttons will be inserted here -->
+            </div>
+
+            <!-- Footer -->
+            <div class="modern-popup-footer">
+                <button onclick="closeModernDownloadPopup()" class="modern-popup-close-btn">
+                    <i class="fas fa-times mr-2"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/sidebar.js"></script>
+    <script>
+        // Load sidebar
+        window.loadSidebar?.();
+
+        // Show modern download popup when clicking three-dot menu
+        function showModernDownloadPopup(fileId) {
+            const overlay = document.getElementById('modernDownloadOverlay');
+            const popup = document.getElementById('modernDownloadPopup');
+            const bodyContent = document.getElementById('modernPopupBodyContent');
+            const header = popup.querySelector('.modern-popup-header');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+
+            // Sample files data based on fileId
+            const fileData = {
+                'INV-2024-001': [
+                    { name: 'Invoice April 2024', type: 'invoice', icon: '📄', hint: 'PDF Invoice' },
+                    { name: 'Bukti Bayar April', type: 'bukti_bayar', icon: '💰', hint: 'Payment Proof' }
+                ],
+                'BYR-2024-002': [
+                    { name: 'Bukti Bayar Mei 2024', type: 'bukti_bayar', icon: '💰', hint: 'Payment Proof' },
+                    { name: 'Faktur Pajak PPN', type: 'faktur_pajak', icon: '📋', hint: 'Tax Invoice' }
+                ],
+                'FKT-2024-003': [
+                    { name: 'Faktur Pajak Juni 2024', type: 'faktur_pajak', icon: '📋', hint: 'Tax Invoice' },
+                    { name: 'Invoice Juni 2024', type: 'invoice', icon: '📄', hint: 'PDF Invoice' },
+                    { name: 'Bukti Bayar Juni', type: 'bukti_bayar', icon: '💰', hint: 'Payment Proof' }
+                ]
+            };
+
+            const files = fileData[fileId] || [];
+
+            // Build file buttons
+            let buttonsHTML = '';
+
+            files.forEach((file) => {
+                const btnClass = file.type === 'invoice' ? 'modern-btn-invoice' 
+                               : file.type === 'bukti_bayar' ? 'modern-btn-bukti'
+                               : file.type === 'faktur_pajak' ? 'modern-btn-faktur'
+                               : 'modern-btn-invoice';
+
+                buttonsHTML += `
+                    <button class="modern-download-btn ${btnClass}" onclick="downloadModernFile(this, '${fileId}', '${file.type}')">
+                        <div class="modern-btn-content">
+                            <div class="modern-btn-icon">${file.icon}</div>
+                            <div class="modern-btn-label">
+                                <span class="modern-btn-name">${file.name}</span>
+                                <span class="modern-btn-hint">${file.hint}</span>
+                            </div>
+                            <div class="modern-btn-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                    </button>
+                `;
+            });
+
+            // Add combine button if multiple files
+            if (files.length >= 2) {
+                buttonsHTML += `
+                    <button class="modern-download-btn modern-btn-combine" onclick="downloadModernFile(this, '${fileId}', 'combined')">
+                        <div class="modern-btn-content">
+                            <div class="modern-btn-icon">📦</div>
+                            <div class="modern-btn-label">
+                                <span class="modern-btn-name">Combine All Files</span>
+                                <span class="modern-btn-hint">Download as single PDF</span>
+                            </div>
+                            <div class="modern-btn-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                        </div>
+                    </button>
+                `;
+            }
+
+            bodyContent.innerHTML = buttonsHTML;
+            
+            // Update popup styling for dark mode
+            const title = popup.querySelector('.modern-popup-title');
+            const subtitle = popup.querySelector('.modern-popup-subtitle');
+            const icon = popup.querySelector('.modern-popup-icon');
+            const closeBtn = popup.querySelector('.modern-popup-close-btn');
+
+            if (isDarkMode) {
+                popup.classList.add('dark');
+                header.classList.add('dark');
+                title.classList.add('dark');
+                subtitle.classList.add('dark');
+                icon.classList.add('dark');
+                closeBtn.classList.add('dark');
+            } else {
+                popup.classList.remove('dark');
+                header.classList.remove('dark');
+                title.classList.remove('dark');
+                subtitle.classList.remove('dark');
+                icon.classList.remove('dark');
+                closeBtn.classList.remove('dark');
+            }
+
+            overlay.classList.remove('hidden');
+        }
+
+        // Close popup
+        function closeModernDownloadPopup(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('modernDownloadOverlay').classList.add('hidden');
+        }
+
+        // Download file handler
+        async function downloadModernFile(btn, fileId, fileType) {
+            btn.classList.add('btn-loading');
+            const originalContent = btn.querySelector('.modern-btn-content').innerHTML;
+            btn.querySelector('.modern-btn-content').innerHTML = '<div class="modern-spinner"></div>';
+
+            try {
+                // Simulate download delay
+                await new Promise(resolve => setTimeout(resolve, 1500));
+
+                // In production, trigger actual download
+                const fileName = fileType === 'combined' ? 'combined_files.pdf' 
+                               : fileType === 'invoice' ? 'invoice.pdf'
+                               : fileType === 'bukti_bayar' ? 'bukti_bayar.pdf'
+                               : 'faktur_pajak.pdf';
+
+                console.log(`Downloading: ${fileName} from ${fileId}`);
+
+                // Close popup
+                closeModernDownloadPopup();
+
+                // Show success message
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Download Berhasil',
+                        text: `${fileName} berhasil diunduh`,
+                        timer: 2500,
+                        timerProgressBar: true,
+                        showConfirmButton: false,
+                        background: document.body.classList.contains('dark-mode') ? '#1e293b' : '#ffffff',
+                        color: document.body.classList.contains('dark-mode') ? '#f1f5f9' : '#1e293b'
+                    });
+                }
+            } catch (error) {
+                console.error('Download error:', error);
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Download Gagal',
+                        text: 'Silakan coba lagi nanti',
+                        background: document.body.classList.contains('dark-mode') ? '#1e293b' : '#ffffff',
+                        color: document.body.classList.contains('dark-mode') ? '#f1f5f9' : '#1e293b'
+                    });
+                }
+            } finally {
+                btn.classList.remove('btn-loading');
+                btn.querySelector('.modern-btn-content').innerHTML = originalContent;
+            }
+        }
+
+        // Keyboard shortcut to close popup
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModernDownloadPopup();
+            }
+        });
+    </script>
+</body>
+</html>
