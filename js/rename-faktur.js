@@ -53,6 +53,11 @@ function initRenameFakturPage() {
     freshFileInput.addEventListener('change', (e) => {
         handleFiles(e.target.files);
     });
+
+    // Load recent history on page init
+    loadLatestHistory().catch(err => {
+        console.warn('[Rename Faktur] Failed to load history on init:', err.message);
+    });
 }
 
 // Initialize on page load or SPA navigation

@@ -198,7 +198,6 @@
             // Expand animation for current dropdown
             // Step 1: Show container but keep it hidden
             container.style.display = 'block';
-            container.style.pointerEvents = 'auto';
             container.style.overflow = 'hidden';
             container.style.maxHeight = '0px';
             container.style.opacity = '0';
@@ -206,10 +205,13 @@
             // Step 2: Force browser to apply the initial state
             void container.offsetHeight;
             
-            // Step 3: Set transition AFTER initial state is applied
+            // Step 3: Enable pointer events BEFORE animation starts (fix for dropdown items not clickable)
+            container.style.pointerEvents = 'auto';
+            
+            // Step 4: Set transition AFTER initial state is applied
             container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
             
-            // Step 4: Use requestAnimationFrame to ensure transition is ready
+            // Step 5: Use requestAnimationFrame to ensure transition is ready
             requestAnimationFrame(() => {
                 // Get the full height of content
                 const fullHeight = container.scrollHeight;
