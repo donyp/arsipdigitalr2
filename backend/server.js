@@ -1651,6 +1651,10 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         // POST /api/logout Ã¢â‚¬â€ Terminate session
         app.post('/api/logout', authenticateToken, async (req, res) => {
             try {
+                const { session_id } = req.body;
+                if (session_id) {
+                    await supabase.from('user_sessions').delete().eq('session_token', session_id);
+                }
                 res.json({ success: true });
             } catch (err) {
                 res.status(500).json({ error: err.message });
@@ -6994,6 +6998,22 @@ app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
 // START & CLEANUP
 // ============================================================
 
+// ---- Session Cleanup (Every 1 hour, remove sessions older than 24h) ----
+setInterval(async () => {
+    try {
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const { error } = await supabase
+            .from('user_sessions')
+            .delete()
+            .lt('last_activity', yesterday);
+        if (error) console.error('[CLEANUP] Session Error:', error.message);
+        else console.log('[CLEANUP] Stale sessions cleared.');
+    } catch (err) {
+        console.error('[CLEANUP] Fatal Error:', err);
+    }
+}, 60 * 60 * 1000);
+
+
 // ============================================================
 // FLEET MANAGEMENT SYSTEM
 // ============================================================
@@ -7639,9 +7659,273 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // POST /api/auth/force-logout - Force logout all active sessions (for scheduled auto-logout)
 app.post('/api/auth/force-logout', authenticateToken, authorizeRole('super_admin'), async (req, res) => {
+    try {
+        const { reason = 'Automatic daily logout' } = req.body;
+        
+        // Invalidate all active sessions
+        const { error } = await supabase
+            .from('user_sessions')
+            .update({ is_active: false, revoked_at: new Date().toISOString() })
+            .eq('is_active', true);
 
+        if (error) throw error;
 
+        // Log this action
+        await supabase.from('audit_logs').insert({
+            user_id: req.user?.userId || null,
+            action: 'Force Logout All Sessions',
+            context: JSON.stringify({ reason, timestamp: new Date().toISOString() })
+        });
 
+        res.json({ 
+            success: true, 
+            message: 'All sessions invalidated',
+            reason: reason
+        });
+    } catch (err) {
+        console.error('[FORCE_LOGOUT] Error:', err);
+        res.status(500).json({ error: 'Failed to force logout sessions: ' + err.message });
+    }
+});
+
+// ============================================================
+// ADMIN: Manual Cleanup Stale Sessions
+// ============================================================
+
+// POST /api/admin/cleanup-stale-sessions - Force cleanup all expired sessions (admin only)
+app.post('/api/admin/cleanup-stale-sessions', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        console.log('[ADMIN] Starting cleanup of stale sessions...');
+        
+        // Execute cleanup function
+        const { error: cleanupError } = await supabase.rpc('cleanup_expired_sessions');
+        
+        if (cleanupError) {
+            console.error('[ADMIN] Cleanup error:', cleanupError);
+            return res.status(500).json({ error: 'Cleanup failed: ' + cleanupError.message });
+        }
+        
+        // Get count of remaining active sessions
+        const { data: activeSessions, error: countError } = await supabase
+            .from('user_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_active', true)
+            .gt('expires_at', new Date().toISOString());
+        
+        const activeCount = activeSessions ? activeSessions.length : 0;
+        
+        console.log(`[ADMIN] ✅ Cleanup completed - ${activeCount} active sessions remaining`);
+        
+        // Log the admin action
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Admin: Cleanup Stale Sessions',
+            resourceType: 'system',
+            resourceId: 'sessions',
+            resourceName: 'user_sessions table',
+            operation: 'DELETE',
+            details: {
+                activeSessionsRemaining: activeCount
+            },
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: '/api/admin/cleanup-stale-sessions',
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: 'Stale sessions cleaned up successfully',
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        }).catch(() => {});
+        
+        res.json({
+            success: true,
+            message: 'Stale sessions cleaned up successfully',
+            activeSessionsRemaining: activeCount
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Cleanup error:', err);
+        res.status(500).json({ error: 'Cleanup failed: ' + err.message });
+    }
+});
+
+// POST /api/admin/force-logout-user/:userId - Force logout specific user (admin only)
+app.post('/api/admin/force-logout-user/:userId', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'userId is required' });
+        }
+        
+        console.log(`[ADMIN] Force logging out user: ${userId}`);
+        
+        // Get user info first
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('email, name')
+            .eq('id', userId)
+            .single();
+        
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Terminate all sessions
+        const { error: terminateError } = await supabase
+            .from('user_sessions')
+            .update({ is_active: false })
+            .eq('user_id', userId)
+            .eq('is_active', true);
+        
+        if (terminateError) {
+            console.error('[ADMIN] Force logout error:', terminateError);
+            return res.status(500).json({ error: 'Force logout failed: ' + terminateError.message });
+        }
+        
+        console.log(`[ADMIN] ✅ Force logged out user: ${user.email}`);
+        
+        // Log the admin action
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Admin: Force Logout User',
+            resourceType: 'user_session',
+            resourceId: userId,
+            resourceName: user.email,
+            operation: 'DELETE',
+            details: {
+                targetUserEmail: user.email,
+                targetUserName: user.name
+            },
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: `/api/admin/force-logout-user/${userId}`,
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: `User ${user.email} logged out successfully`,
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        }).catch(() => {});
+        
+        res.json({
+            success: true,
+            message: `User ${user.email} logged out successfully`,
+            user: { id: userId, email: user.email, name: user.name }
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Force logout error:', err);
+        res.status(500).json({ error: 'Force logout failed: ' + err.message });
+    }
+});
+
+// GET /api/admin/list-user-sessions - List all active sessions (admin only)
+app.get('/api/admin/list-user-sessions', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        console.log('[ADMIN] Fetching all active sessions...');
+        
+        // Get all active sessions with user details
+        const { data: sessions, error: sessError } = await supabase
+            .from('user_sessions')
+            .select(`
+                *,
+                users:user_id (id, name, email, role)
+            `)
+            .eq('is_active', true)
+            .gt('expires_at', new Date().toISOString())
+            .order('last_activity', { ascending: false });
+        
+        if (sessError) {
+            console.error('[ADMIN] Error fetching sessions:', sessError);
+            return res.status(500).json({ error: 'Failed to fetch sessions: ' + sessError.message });
+        }
+        
+        // Transform data for frontend
+        const transformedSessions = (sessions || []).map(sess => ({
+            id: sess.id,
+            session_token: sess.session_token,
+            user_id: sess.user_id,
+            user_name: sess.users?.name || 'Unknown',
+            user_email: sess.users?.email || 'Unknown',
+            user_role: sess.users?.role || 'Unknown',
+            created_at: sess.created_at,
+            expires_at: sess.expires_at,
+            last_activity: sess.last_activity,
+            is_active: sess.is_active,
+            ip_address: sess.ip_address,
+            user_agent: sess.user_agent
+        }));
+        
+        console.log(`[ADMIN] ✅ Found ${transformedSessions.length} active sessions`);
+        
+        res.json({
+            success: true,
+            count: transformedSessions.length,
+            sessions: transformedSessions
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Error listing sessions:', err);
+        res.status(500).json({ error: 'Failed to list sessions: ' + err.message });
+    }
+});
+
+// GET /api/admin/user-sessions/:userId - Get sessions for specific user (admin only)
+app.get('/api/admin/user-sessions/:userId', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        console.log(`[ADMIN] Fetching sessions for user: ${userId}`);
+        
+        // Get user info
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, name, email, role')
+            .eq('id', userId)
+            .single();
+        
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Get all sessions for this user (including inactive)
+        const { data: sessions, error: sessError } = await supabase
+            .from('user_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        
+        if (sessError) {
+            console.error('[ADMIN] Error fetching user sessions:', sessError);
+            return res.status(500).json({ error: 'Failed to fetch sessions: ' + sessError.message });
+        }
+        
+        console.log(`[ADMIN] ✅ Found ${sessions?.length || 0} sessions for ${user.email}`);
+        
+        res.json({
+            success: true,
+            user_id: user.id,
+            user_name: user.name,
+            user_email: user.email,
+            user_role: user.role,
+            sessions: sessions || []
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Error getting user sessions:', err);
+        res.status(500).json({ error: 'Failed to get user sessions: ' + err.message });
+    }
+});
 
 // GET /api/auth/check-logout-time - Check if user should be logged out (called by frontend)
 app.get('/api/auth/check-logout-time', authenticateToken, async (req, res) => {
