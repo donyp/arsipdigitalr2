@@ -2,10 +2,9 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Session Management | Arsip Digital ANKA</title>
-    <!-- DARK MODE - Apply immediately to prevent flash -->
     <script>
         (function() {
             if (localStorage.getItem('dark_mode_enabled') === 'true') {
@@ -18,11 +17,15 @@
     <style>
         :root {
             --color-bg-primary: #ffffff;
-            --color-bg-secondary: #f5f7fa;
-            --color-bg-tertiary: #ffffff;
-            --color-text-primary: #1f2937;
-            --color-text-secondary: #6b7280;
-            --color-border: #e5e7eb;
+            --color-bg-secondary: #f8fafc;
+            --color-bg-tertiary: #f1f5f9;
+            --color-text-primary: #0f172a;
+            --color-text-secondary: #475569;
+            --color-border: #e2e8f0;
+            --color-accent: #3b82f6;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-danger: #ef4444;
         }
         
         html[data-dark-mode="true"] {
@@ -34,60 +37,50 @@
             --color-border: #475569;
         }
         
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             background: var(--color-bg-primary);
             color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             transition: background 0.3s, color 0.3s;
         }
-        
-        html[data-dark-mode="true"] .bg-white {
-            background-color: var(--color-bg-secondary) !important;
-            color: var(--color-text-primary);
-        }
-        
-        html[data-dark-mode="true"] .bg-gray-50 {
-            background-color: var(--color-bg-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-gray-800,
-        html[data-dark-mode="true"] .text-gray-900 {
-            color: var(--color-text-primary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-gray-500,
-        html[data-dark-mode="true"] .text-gray-600 {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] .text-gray-400 {
-            color: var(--color-text-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] .border-gray-200,
-        html[data-dark-mode="true"] .border-gray-100 {
-            border-color: var(--color-border) !important;
-        }
-        
-        html[data-dark-mode="true"] .border-b {
-            border-color: var(--color-border) !important;
-        }
-        
-        html[data-dark-mode="true"] .bg-gray-100 {
-            background-color: var(--color-bg-secondary) !important;
-        }
-        
-        html[data-dark-mode="true"] table tbody tr:hover {
-            background-color: var(--color-bg-tertiary) !important;
-        }
-        
-        html, body {
-            zoom: 0.8;
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-in-out;
         }
 
-        .pulse-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
@@ -95,10 +88,266 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        .stat-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--color-accent);
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--color-accent), #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .session-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .session-card:hover {
+            border-color: var(--color-accent);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            transform: translateX(4px);
+        }
+
+        html[data-dark-mode="true"] .session-card:hover {
+            box-shadow: 0 8px 16px rgba(255, 255, 255, 0.1);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--color-success);
+        }
+
+        .status-at-limit {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--color-warning);
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--color-danger);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            border-top-color: var(--color-accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--color-bg-primary);
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+            float: right;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--color-text-primary);
+            transform: rotate(90deg);
+        }
+
+        .header-section {
+            margin-bottom: 40px;
+        }
+
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--color-accent), #06b6d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: var(--color-text-secondary);
+        }
+
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+            box-shadow: 0 12px 32px rgba(59, 130, 246, 0.4);
+        }
+
+        .role-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .role-super_admin {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--color-danger);
+        }
+
+        .role-moderator {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a855f7;
+        }
+
+        .role-admin_zona {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--color-accent);
+        }
+
+        .role-user {
+            background: rgba(148, 163, 184, 0.2);
+            color: #64748b;
+        }
+
+        html, body {
+            zoom: 0.8;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Apply dark mode if enabled -->
     <script>
         if (localStorage.getItem('dark_mode_enabled') === 'true') {
             document.documentElement.setAttribute('data-dark-mode', 'true');
@@ -110,112 +359,87 @@
 
     <!-- Main Content -->
     <div id="main-content" class="ml-64 p-8">
-        <div class="container mx-auto">
-            <!-- Header -->
-            <div class="mb-8">
-                <div class="flex items-center justify-between mb-2">
-                    <h1 class="text-3xl font-bold text-gray-900" id="page-title">Session Management</h1>
-                    <button onclick="refreshSessions()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2">
-                        <i class="fas fa-sync-alt"></i> <span>Refresh</span>
-                    </button>
-                </div>
-                <p class="text-gray-600">Kelola dan monitor active sessions untuk semua pengguna</p>
+        <!-- Header -->
+        <div class="header-section fade-in">
+            <h1 class="header-title">🔐 Session Management</h1>
+            <p class="header-subtitle">Monitor and manage active user sessions in real-time</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid-stats fade-in" style="animation-delay: 0.1s">
+            <div class="stat-card">
+                <div style="font-size: 2rem; margin-bottom: 12px;">📊</div>
+                <div style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 8px;">Total Sessions</div>
+                <div class="stat-value" id="total-sessions">-</div>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-600 text-sm">Total Active Sessions</p>
-                            <p class="text-3xl font-bold text-gray-900" id="total-sessions">-</p>
-                        </div>
-                        <i class="fas fa-wifi text-blue-500 text-4xl opacity-20"></i>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-600 text-sm">Online Users</p>
-                            <p class="text-3xl font-bold text-gray-900" id="online-users">-</p>
-                        </div>
-                        <i class="fas fa-users text-green-500 text-4xl opacity-20"></i>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-600 text-sm">At Limit</p>
-                            <p class="text-3xl font-bold text-gray-900" id="at-limit-users">-</p>
-                        </div>
-                        <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl opacity-20"></i>
-                    </div>
-                </div>
+            <div class="stat-card">
+                <div style="font-size: 2rem; margin-bottom: 12px;">👥</div>
+                <div style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 8px;">Online Users</div>
+                <div class="stat-value" id="online-users">-</div>
             </div>
 
-            <!-- Sessions Table -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="p-6 border-b border-gray-200">
-                    <h2 class="text-xl font-bold text-gray-900">Active Sessions by User</h2>
-                </div>
+            <div class="stat-card">
+                <div style="font-size: 2rem; margin-bottom: 12px;">⚠️</div>
+                <div style="font-size: 0.9rem; color: var(--color-text-secondary); margin-bottom: 8px;">At Limit</div>
+                <div class="stat-value" id="at-limit-users">-</div>
+            </div>
+        </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">User</th>
-                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Email</th>
-                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Role</th>
-                                <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600">Active Sessions</th>
-                                <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600">Last Activity</th>
-                                <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sessions-tbody">
-                            <tr>
-                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                                    <i class="fas fa-spinner fa-spin"></i> Loading sessions...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <!-- Sessions List -->
+        <div style="background: var(--color-bg-secondary); border-radius: 16px; border: 1px solid var(--color-border); overflow: hidden; fade-in" style="animation-delay: 0.2s">
+            <div style="padding: 24px; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 4px;">Active Users</h2>
+                    <p style="color: var(--color-text-secondary); font-size: 0.9rem;">Manage sessions by user</p>
                 </div>
+                <button id="refresh-btn-top" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
 
-            <!-- Session Details Modal -->
-            <div id="session-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto">
-                    <div class="sticky top-0 bg-white p-6 border-b border-gray-200 flex justify-between items-center">
-                        <h3 class="text-xl font-bold text-gray-900" id="modal-title">Session Details</h3>
-                        <button onclick="closeSessionModal()" class="text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
+            <div style="padding: 24px;" id="sessions-container">
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-inbox"></i>
                     </div>
-                    <div id="modal-content" class="p-6"></div>
-                </div>
-            </div>
-
-            <!-- Confirm Dialog -->
-            <div id="confirm-dialog" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
-                    <div class="p-6">
-                        <h3 class="text-lg font-bold text-gray-900 mb-4" id="confirm-title">Confirm Action</h3>
-                        <p class="text-gray-600 mb-6" id="confirm-message">Are you sure?</p>
-                        <div class="flex gap-3 justify-end">
-                            <button onclick="closeConfirmDialog()" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-                                Cancel
-                            </button>
-                            <button id="confirm-btn" onclick="executeConfirmedAction()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
-                                Yes, Force Logout
-                            </button>
-                        </div>
-                    </div>
+                    <p>Loading sessions...</p>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Session Details Modal -->
+    <div id="session-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button onclick="closeSessionModal()" class="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 id="modal-title" style="font-size: 1.5rem; font-weight: 700; margin-bottom: 24px;">Session Details</h3>
+            <div id="modal-content" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <!-- Confirm Dialog -->
+    <div id="confirm-dialog" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 id="confirm-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 12px;">Confirm Action</h3>
+            <p id="confirm-message" style="color: var(--color-text-secondary); margin-bottom: 24px; line-height: 1.6;"></p>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button onclick="closeConfirmDialog()" class="btn" style="background: var(--color-bg-tertiary); color: var(--color-text-primary);">
+                    Cancel
+                </button>
+                <button id="confirm-btn" onclick="executeConfirmedAction()" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt"></i> Force Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Refresh Button -->
+    <button class="refresh-btn" onclick="refreshSessions()" title="Refresh sessions">
+        <i class="fas fa-sync-alt"></i>
+    </button>
 
     <!-- Scripts -->
     <script src="js/auth.js"></script>
@@ -223,16 +447,16 @@
     <script>
         let pendingAction = null;
 
-        // Load sessions on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadSidebar();
             refreshSessions();
-            setInterval(refreshSessions, 30000); // Auto-refresh every 30 seconds
+            document.getElementById('refresh-btn-top').addEventListener('click', refreshSessions);
+            setInterval(refreshSessions, 30000);
         });
 
         async function refreshSessions() {
             try {
-                const token = localStorage.getItem('jwt_token');  // FIXED: use 'jwt_token' not 'token'
+                const token = localStorage.getItem('jwt_token');
                 if (!token) {
                     window.location.href = '/login';
                     return;
@@ -244,7 +468,7 @@
 
                 if (!response.ok) {
                     if (response.status === 401) {
-                        localStorage.removeItem('token');
+                        localStorage.removeItem('jwt_token');
                         window.location.href = '/login';
                         return;
                     }
@@ -256,32 +480,33 @@
                 updateStats(data.sessions || []);
 
             } catch (err) {
-                console.error('Error refreshing sessions:', err);
-                document.getElementById('sessions-tbody').innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-red-500">
-                            <i class="fas fa-exclamation-circle"></i> Error loading sessions: ${err.message}
-                        </td>
-                    </tr>
+                console.error('Error:', err);
+                document.getElementById('sessions-container').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-exclamation-circle"></i>
+                        </div>
+                        <p>Error loading sessions</p>
+                    </div>
                 `;
             }
         }
 
         function renderSessions(sessions) {
-            const tbody = document.getElementById('sessions-tbody');
+            const container = document.getElementById('sessions-container');
             
             if (!sessions || sessions.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-inbox"></i> No active sessions
-                        </td>
-                    </tr>
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <p>No active sessions</p>
+                    </div>
                 `;
                 return;
             }
 
-            // Group by user
             const groupedByUser = {};
             sessions.forEach(session => {
                 const userId = session.user_id;
@@ -296,27 +521,16 @@
                     };
                 }
                 groupedByUser[userId].sessions.push(session);
-                
-                // Track latest activity
                 const activityTime = new Date(session.last_activity || session.created_at);
                 if (!groupedByUser[userId].last_activity || activityTime > new Date(groupedByUser[userId].last_activity)) {
                     groupedByUser[userId].last_activity = session.last_activity || session.created_at;
                 }
             });
 
-            tbody.innerHTML = Object.values(groupedByUser).map(user => {
+            container.innerHTML = Object.values(groupedByUser).map((user, idx) => {
                 const sessionCount = user.sessions.length;
-                const roleColors = {
-                    'super_admin': 'bg-red-100 text-red-800',
-                    'admin_zona': 'bg-blue-100 text-blue-800',
-                    'moderator': 'bg-purple-100 text-purple-800',
-                    'user': 'bg-gray-100 text-gray-800'
-                };
-                const roleColor = roleColors[user.user_role] || 'bg-gray-100 text-gray-800';
-                
                 const sessionLimit = user.user_role === 'moderator' || user.user_role === 'super_admin' ? 1 : 2;
                 const isAtLimit = sessionCount >= sessionLimit;
-                const rowBg = isAtLimit ? 'bg-yellow-50' : '';
 
                 const lastActivityTime = new Date(user.last_activity);
                 const now = new Date();
@@ -326,60 +540,52 @@
                 else if (diffMinutes >= 60) activityStr = `${Math.floor(diffMinutes/60)}h ago`;
 
                 return `
-                    <tr class="${rowBg} border-b border-gray-200 hover:bg-gray-50 transition">
-                        <td class="px-6 py-4">
-                            <div class="font-semibold text-gray-900">${user.user_name}</div>
-                        </td>
-                        <td class="px-6 py-4 text-gray-600">${user.user_email}</td>
-                        <td class="px-6 py-4">
-                            <span class="px-3 py-1 text-xs font-semibold rounded-full ${roleColor}">
-                                ${user.user_role}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-center">
-                            <div class="flex items-center justify-center gap-2">
-                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${isAtLimit ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'} font-bold text-sm">
-                                    ${sessionCount}
+                    <div class="session-card slide-in" style="animation-delay: ${idx * 0.05}s">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--color-accent), #06b6d4); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.1rem;">
+                                    ${user.user_name.charAt(0).toUpperCase()}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; color: var(--color-text-primary);">${user.user_name}</div>
+                                    <div style="font-size: 0.85rem; color: var(--color-text-secondary);">${user.user_email}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                                <span class="role-badge role-${user.user_role}">${user.user_role}</span>
+                                <span class="status-badge ${isAtLimit ? 'status-at-limit' : 'status-active'}">
+                                    <i class="fas ${isAtLimit ? 'fa-exclamation-triangle' : 'fa-check-circle'}"></i>
+                                    ${sessionCount}/${sessionLimit} sessions
                                 </span>
-                                ${isAtLimit ? `<span class="text-xs text-yellow-600">/ ${sessionLimit}</span>` : ''}
+                                <span style="font-size: 0.85rem; color: var(--color-text-secondary);">
+                                    <i class="fas fa-history"></i> ${activityStr}
+                                </span>
                             </div>
-                        </td>
-                        <td class="px-6 py-4 text-center text-sm text-gray-600">
-                            ${activityStr}
-                        </td>
-                        <td class="px-6 py-4">
-                            <div class="flex justify-center gap-2">
-                                <button onclick="showSessionDetails('${user.user_id}')" class="text-blue-600 hover:text-blue-900 hover:underline text-sm" title="View details">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                <button onclick="confirmForceLogout('${user.user_id}', '${user.user_email}')" class="text-red-600 hover:text-red-900 hover:underline text-sm" title="Force logout all sessions">
-                                    <i class="fas fa-sign-out-alt"></i> Force Logout
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="showSessionDetails('${user.user_id}')" class="btn btn-sm" style="background: var(--color-bg-tertiary); color: var(--color-accent);">
+                                <i class="fas fa-eye"></i> Details
+                            </button>
+                            <button onclick="confirmForceLogout('${user.user_id}', '${user.user_email}')" class="btn btn-sm btn-danger">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </button>
+                        </div>
+                    </div>
                 `;
             }).join('');
         }
 
         function updateStats(sessions) {
             if (!sessions) sessions = [];
-
-            // Total sessions
             document.getElementById('total-sessions').textContent = sessions.length;
 
-            // Unique online users
             const uniqueUsers = new Set(sessions.map(s => s.user_id));
             document.getElementById('online-users').textContent = uniqueUsers.size;
 
-            // Users at session limit
             const groupedByUser = {};
             sessions.forEach(session => {
                 if (!groupedByUser[session.user_id]) {
-                    groupedByUser[session.user_id] = {
-                        count: 0,
-                        role: session.user_role
-                    };
+                    groupedByUser[session.user_id] = { count: 0, role: session.user_role };
                 }
                 groupedByUser[session.user_id].count++;
             });
@@ -394,77 +600,63 @@
 
         async function showSessionDetails(userId) {
             try {
-                const token = localStorage.getItem('jwt_token');  // FIXED
+                const token = localStorage.getItem('jwt_token');
                 const response = await fetch(`/api/admin/user-sessions/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) throw new Error('Failed to fetch session details');
-
+                if (!response.ok) throw new Error('Failed');
                 const data = await response.json();
-                const sessions = data.sessions || [];
 
-                let html = `
-                    <div class="space-y-4">
-                        <div>
-                            <p class="text-sm text-gray-600">User: <strong>${data.user_name}</strong></p>
-                            <p class="text-sm text-gray-600">Email: <strong>${data.user_email}</strong></p>
-                        </div>
-                        <div class="border-t pt-4">
-                `;
-
-                sessions.forEach((sess, idx) => {
+                let html = `<div style="space-y: 16px;">`;
+                data.sessions.forEach((sess, idx) => {
                     const expiresAt = new Date(sess.expires_at);
                     const createdAt = new Date(sess.created_at);
-                    const lastActivity = sess.last_activity ? new Date(sess.last_activity) : null;
-                    
                     const isExpired = expiresAt < new Date();
                     const timeLeft = Math.round((expiresAt - new Date()) / 1000 / 60);
 
                     html += `
-                        <div class="p-3 bg-gray-50 rounded mb-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-semibold text-sm">Session ${idx + 1}</span>
-                                <span class="text-xs px-2 py-1 rounded ${sess.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
-                                    ${sess.is_active ? 'Active' : 'Inactive'}
+                        <div style="background: var(--color-bg-tertiary); padding: 16px; border-radius: 8px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                <span style="font-weight: 700; font-size: 0.95rem;">Session ${idx + 1}</span>
+                                <span class="status-badge ${sess.is_active ? 'status-active' : 'status-at-limit'}" style="font-size: 0.75rem;">
+                                    ${sess.is_active ? '🟢 Active' : '🔴 Inactive'}
                                 </span>
                             </div>
-                            <div class="text-xs text-gray-600 space-y-1">
-                                <p><strong>Token:</strong> ${sess.session_token.substring(0, 16)}...</p>
-                                <p><strong>Created:</strong> ${createdAt.toLocaleString('id-ID')}</p>
-                                <p><strong>Expires:</strong> ${expiresAt.toLocaleString('id-ID')} ${isExpired ? '(Expired)' : `(${timeLeft} min left)`}</p>
-                                ${lastActivity ? `<p><strong>Last Activity:</strong> ${lastActivity.toLocaleString('id-ID')}</p>` : ''}
+                            <div style="font-size: 0.85rem; color: var(--color-text-secondary); space-y: 8px; line-height: 1.6;">
+                                <div><strong>Token:</strong> ${sess.session_token.substring(0, 20)}...</div>
+                                <div><strong>Created:</strong> ${createdAt.toLocaleString('id-ID')}</div>
+                                <div><strong>Expires:</strong> ${expiresAt.toLocaleString('id-ID')} ${isExpired ? '(Expired)' : `(${timeLeft} min left)`}</div>
                             </div>
                         </div>
                     `;
                 });
+                html += `</div>`;
 
-                html += `</div></div>`;
-
-                document.getElementById('modal-title').textContent = `Sessions for ${data.user_name}`;
+                document.getElementById('modal-title').textContent = `Sessions - ${data.user_name}`;
                 document.getElementById('modal-content').innerHTML = html;
-                document.getElementById('session-modal').classList.remove('hidden');
+                document.getElementById('session-modal').classList.add('active');
 
             } catch (err) {
-                alert('Error loading session details: ' + err.message);
+                alert('Error loading session details');
             }
         }
 
         function closeSessionModal() {
-            document.getElementById('session-modal').classList.add('hidden');
+            document.getElementById('session-modal').classList.remove('active');
         }
 
         function confirmForceLogout(userId, userEmail) {
-            document.getElementById('confirm-title').textContent = 'Force Logout User?';
+            document.getElementById('confirm-title').textContent = 'Force Logout?';
             document.getElementById('confirm-message').textContent = 
-                `Are you sure you want to force logout all sessions for ${userEmail}? They will need to login again.`;
+                `You're about to logout all sessions for ${userEmail}. They'll need to login again.`;
             
             pendingAction = { type: 'forceLogout', userId, userEmail };
-            document.getElementById('confirm-dialog').classList.remove('hidden');
+            document.getElementById('confirm-dialog').classList.add('active');
         }
 
         function closeConfirmDialog() {
-            document.getElementById('confirm-dialog').classList.add('hidden');
+            document.getElementById('confirm-dialog').classList.remove('active');
             pendingAction = null;
         }
 
@@ -472,7 +664,7 @@
             if (!pendingAction) return;
 
             try {
-                const token = localStorage.getItem('jwt_token');  // FIXED
+                const token = localStorage.getItem('jwt_token');
                 const { userId, userEmail } = pendingAction;
 
                 const response = await fetch(`/api/admin/force-logout-user/${userId}`, {
@@ -488,20 +680,13 @@
                     throw new Error(error.error || 'Force logout failed');
                 }
 
-                const result = await response.json();
-                
                 closeConfirmDialog();
-                alert(`✅ Force logged out ${userEmail} successfully. All their sessions have been terminated.`);
+                alert(`✅ Successfully logged out ${userEmail}`);
                 refreshSessions();
 
             } catch (err) {
                 alert('❌ Error: ' + err.message);
             }
-        }
-
-        // Apply dark mode
-        if (localStorage.getItem('dark_mode_enabled') === 'true') {
-            document.documentElement.setAttribute('data-dark-mode', 'true');
         }
 
         function toggleDarkMode() {
@@ -511,8 +696,8 @@
         }
 
         function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('token');
+            if (confirm('Logout?')) {
+                localStorage.removeItem('jwt_token');
                 window.location.href = '/login';
             }
         }
