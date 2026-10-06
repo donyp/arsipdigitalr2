@@ -232,7 +232,7 @@
 
         async function refreshSessions() {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('jwt_token');  // FIXED: use 'jwt_token' not 'token'
                 if (!token) {
                     window.location.href = '/login';
                     return;
@@ -394,7 +394,7 @@
 
         async function showSessionDetails(userId) {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('jwt_token');  // FIXED
                 const response = await fetch(`/api/admin/user-sessions/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -472,7 +472,7 @@
             if (!pendingAction) return;
 
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('jwt_token');  // FIXED
                 const { userId, userEmail } = pendingAction;
 
                 const response = await fetch(`/api/admin/force-logout-user/${userId}`, {
