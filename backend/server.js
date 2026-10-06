@@ -1167,7 +1167,6 @@ console.log('  âœ" R2 File Manager (Browse, Upload, Download, Delete, Rename)'
 // SESSION MANAGEMENT & FAQ ENDPOINTS (Phase 2 Features)
 // ============================================================
 console.log('[INIT] Registering Phase 2 feature endpoints...');
-const sessionManagement = require('./session-management');
 const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
 const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
