@@ -757,14 +757,15 @@
 
                 <div class="form-group">
                     <label class="form-label">Jenis Dokumen *</label>
-                    <select class="form-select" id="documentType" required>
+                    <select class="form-select" id="documentType" required onchange="updateDocumentForm()">
                         <option value="">-- Pilih Jenis --</option>
-                        <option value="KIR">KIR (Kendaraan Bermotor)</option>
+                        <option value="KIR">KIR (Uji Kendaraan)</option>
                         <option value="PAJAK_STNK">PAJAK & STNK</option>
-                        <option value="PLAT">PLAT</option>
+                        <option value="PLAT">PLAT (Nomor Plat)</option>
                     </select>
                 </div>
 
+                <!-- COMMON FIELDS -->
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Tanggal Penerbitan *</label>
@@ -776,6 +777,81 @@
                     </div>
                 </div>
 
+                <!-- KIR SPECIFIC FIELDS -->
+                <div id="kirFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Nomor Uji KIR</label>
+                            <input type="text" class="form-input" id="kirNumber" placeholder="Misal: KIR-12345678">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lokasi Uji</label>
+                            <input type="text" class="form-input" id="kirLocation" placeholder="Misal: Polda Metro Jakarta">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Hasil Uji</label>
+                        <select class="form-select" id="kirResult">
+                            <option value="">-- Pilih Hasil --</option>
+                            <option value="LULUS">Lulus</option>
+                            <option value="TIDAK_LULUS">Tidak Lulus</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- PAJAK STNK SPECIFIC FIELDS -->
+                <div id="pajakFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Nomor STNK</label>
+                            <input type="text" class="form-input" id="stnkNumber" placeholder="Misal: 1234567890">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nomor Pajak</label>
+                            <input type="text" class="form-input" id="pajakNumber" placeholder="Misal: PKH-12345">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Pokok Pajak (Rp)</label>
+                            <input type="number" class="form-input" id="pokok" step="1000" placeholder="Misal: 500000">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Denda (Rp)</label>
+                            <input type="number" class="form-input" id="denda" step="1000" placeholder="Misal: 50000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Total Pajak (Rp)</label>
+                        <input type="number" class="form-input" id="totalPajak" step="1000" placeholder="Otomatis terhitung" readonly>
+                    </div>
+                </div>
+
+                <!-- PLAT SPECIFIC FIELDS -->
+                <div id="platFields" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Nomor Plat Lama</label>
+                            <input type="text" class="form-input" id="platLama" placeholder="Misal: B 1111 AAA">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nomor Plat Baru</label>
+                            <input type="text" class="form-input" id="platBaru" placeholder="Misal: B 2222 BBB">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jenis Perubahan</label>
+                        <select class="form-select" id="platJenisPerubahan">
+                            <option value="">-- Pilih Jenis --</option>
+                            <option value="PINDAH_WILAYAH">Pindah Wilayah</option>
+                            <option value="RUSAK">Plat Rusak</option>
+                            <option value="HILANG">Plat Hilang</option>
+                            <option value="KOREKSI_DATA">Koreksi Data</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- COMMON FIELDS (cont) -->
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Nomor Dokumen</label>
@@ -788,7 +864,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Catatan</label>
+                    <label class="form-label">Catatan Tambahan</label>
                     <textarea class="form-textarea" id="documentNotes"></textarea>
                 </div>
 
@@ -1363,8 +1439,42 @@
             document.getElementById('documentModalTitle').textContent = 'Tambah Dokumen';
             document.getElementById('documentForm').reset();
             document.getElementById('documentVehicle').value = vehicleId;
+            document.getElementById('documentType').value = '';
+            updateDocumentForm(); // Initialize form fields
             document.getElementById('documentForm').dataset.mode = 'add';
             document.getElementById('documentModal').classList.add('active');
+        }
+
+        function updateDocumentForm() {
+            const docType = document.getElementById('documentType').value;
+            
+            // Hide all specific fields
+            document.getElementById('kirFields').style.display = 'none';
+            document.getElementById('pajakFields').style.display = 'none';
+            document.getElementById('platFields').style.display = 'none';
+            
+            // Show relevant fields based on document type
+            if (docType === 'KIR') {
+                document.getElementById('kirFields').style.display = 'block';
+                document.getElementById('documentNumber').placeholder = 'Nomor Uji KIR';
+            } else if (docType === 'PAJAK_STNK') {
+                document.getElementById('pajakFields').style.display = 'block';
+                document.getElementById('documentNumber').placeholder = 'Nomor Pajak/STNK';
+                
+                // Auto-calculate total pajak
+                document.getElementById('pokok').addEventListener('change', calculateTotalPajak);
+                document.getElementById('denda').addEventListener('change', calculateTotalPajak);
+            } else if (docType === 'PLAT') {
+                document.getElementById('platFields').style.display = 'block';
+                document.getElementById('documentNumber').placeholder = 'Nomor Referensi Perubahan Plat';
+            }
+        }
+
+        function calculateTotalPajak() {
+            const pokok = parseFloat(document.getElementById('pokok').value) || 0;
+            const denda = parseFloat(document.getElementById('denda').value) || 0;
+            const total = pokok + denda;
+            document.getElementById('totalPajak').value = total.toLocaleString('id-ID');
         }
 
         function closeDocumentModal() {
@@ -1374,16 +1484,43 @@
         async function saveDocument(event) {
             event.preventDefault();
 
-            const formData = {
+            const docType = document.getElementById('documentType').value;
+            const baseData = {
                 vehicle_id: document.getElementById('documentVehicle').value,
                 plate_number: vehicles.find(v => v.id === document.getElementById('documentVehicle').value)?.plate_number || '',
-                document_type: document.getElementById('documentType').value,
+                document_type: docType,
                 issue_date: document.getElementById('documentIssueDate').value,
                 expiration_date: document.getElementById('documentExpiryDate').value,
                 document_number: document.getElementById('documentNumber').value || null,
                 issued_by: document.getElementById('documentIssuedBy').value || null,
                 notes: document.getElementById('documentNotes').value || null
             };
+
+            // Add type-specific notes
+            let typeSpecificNotes = '';
+            
+            if (docType === 'KIR') {
+                const kirNum = document.getElementById('kirNumber').value;
+                const kirLoc = document.getElementById('kirLocation').value;
+                const kirResult = document.getElementById('kirResult').value;
+                typeSpecificNotes = `KIR Details - Nomor: ${kirNum}, Lokasi: ${kirLoc}, Hasil: ${kirResult}`;
+            } else if (docType === 'PAJAK_STNK') {
+                const stnk = document.getElementById('stnkNumber').value;
+                const pajak = document.getElementById('pajakNumber').value;
+                const pokok = document.getElementById('pokok').value;
+                const denda = document.getElementById('denda').value;
+                typeSpecificNotes = `PAJAK Details - STNK: ${stnk}, Pajak: ${pajak}, Pokok: ${pokok}, Denda: ${denda}`;
+            } else if (docType === 'PLAT') {
+                const platLama = document.getElementById('platLama').value;
+                const platBaru = document.getElementById('platBaru').value;
+                const jenisPerubahan = document.getElementById('platJenisPerubahan').value;
+                typeSpecificNotes = `PLAT Details - Lama: ${platLama}, Baru: ${platBaru}, Jenis: ${jenisPerubahan}`;
+            }
+
+            // Combine notes
+            if (typeSpecificNotes) {
+                baseData.notes = baseData.notes ? `${baseData.notes}\n\n${typeSpecificNotes}` : typeSpecificNotes;
+            }
 
             try {
                 const response = await fetch('/api/fleet/documents', {
@@ -1392,7 +1529,7 @@
                         'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(baseData)
                 });
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
