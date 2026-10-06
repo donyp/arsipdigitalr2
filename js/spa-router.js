@@ -156,6 +156,15 @@ class SPARouter {
             // Separate inline scripts from external scripts in pageScripts array
             const inlineScripts = pageScripts.filter(s => !s.src);
             const externalScripts = pageScripts.filter(s => s.src);
+            
+            // Remove any old page-specific inline scripts to prevent redeclaration errors
+            const oldInlineScripts = document.querySelectorAll('script[data-spa-inline-script][data-page]');
+            oldInlineScripts.forEach(script => {
+                if (script.getAttribute('data-page') !== path) {
+                    script.remove();
+                }
+            });
+            
             // Execute external scripts first (if needed)
             for (const scriptData of externalScripts) {
                 // Skip external scripts that are already loaded (avoid redeclaration)
@@ -191,7 +200,7 @@ class SPARouter {
                 
                 // For truly global app scripts (config, api, auth, utils, etc), DON'T reload them
                 // These load once on first page and persist
-                const globalAppScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js', 'sidebar.js', 'spa-page-handler.js', 'global-announcement.js'];
+                const globalAppScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js', 'sidebar.js', 'spa-page-handler.js', 'global-announcement.js', 'dashboard.js'];
                 if (globalAppScripts.some(name => scriptPath.includes(name))) {
                     continue;
                 }
@@ -215,10 +224,13 @@ class SPARouter {
                 try {
                     const newScript = document.createElement('script');
                     newScript.textContent = scriptData.textContent;
+                    newScript.setAttribute('data-spa-inline-script', 'true');
+                    newScript.setAttribute('data-page', path);
                     document.body.appendChild(newScript);
                     // Wait for script to fully execute before next one
                     await new Promise(resolve => setTimeout(resolve, 50));
                 } catch (e) {
+                    console.warn('[SPA] Inline script error:', e.message);
                 }
             }
 
