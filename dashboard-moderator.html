@@ -618,18 +618,45 @@
                                : file.type === 'faktur_pajak' ? 'modern-btn-faktur'
                                : 'modern-btn-invoice';
 
+                const bgGradient = file.type === 'invoice' ? 'linear-gradient(135deg, #3498db, #2980b9)' 
+                                 : file.type === 'bukti_bayar' ? 'linear-gradient(135deg, #27ae60, #229954)'
+                                 : file.type === 'faktur_pajak' ? 'linear-gradient(135deg, #9b59b6, #8e44ad)'
+                                 : 'linear-gradient(135deg, #3498db, #2980b9)';
+
+                const shadowColor = file.type === 'invoice' ? 'rgba(52, 152, 219, 0.2)' 
+                                  : file.type === 'bukti_bayar' ? 'rgba(39, 174, 96, 0.2)'
+                                  : file.type === 'faktur_pajak' ? 'rgba(155, 89, 182, 0.2)'
+                                  : 'rgba(52, 152, 219, 0.2)';
+
+                const shadowColorHover = file.type === 'invoice' ? 'rgba(52, 152, 219, 0.35)' 
+                                       : file.type === 'bukti_bayar' ? 'rgba(39, 174, 96, 0.35)'
+                                       : file.type === 'faktur_pajak' ? 'rgba(155, 89, 182, 0.35)'
+                                       : 'rgba(52, 152, 219, 0.35)';
+
                 buttonsHTML += `
-                    <button class="modern-download-btn ${btnClass}" onclick="downloadModernFile(this, '${fileId}', '${file.type}')">
-                        <div class="modern-btn-content">
-                            <div class="modern-btn-icon">${file.icon}</div>
-                            <div class="modern-btn-label">
-                                <span class="modern-btn-name">${file.name}</span>
-                                <span class="modern-btn-hint">${file.hint}</span>
-                            </div>
-                            <div class="modern-btn-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </div>
+                    <button class="modern-download-btn ${btnClass}" data-faktur="${fileId}" data-type="${file.type}"
+                            style="
+                                width: 100%; 
+                                padding: 12px 14px; 
+                                background: ${bgGradient};
+                                color: white; 
+                                border: none; 
+                                border-radius: 8px; 
+                                cursor: pointer; 
+                                font-weight: 600; 
+                                font-size: 13px; 
+                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                box-shadow: 0 2px 8px ${shadowColor};
+                            " 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px ${shadowColorHover}';" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px ${shadowColor}';"
+                            onclick="downloadModernFile(this, '${fileId}', '${file.type}')">
+                        <i class="fas fa-${file.type === 'invoice' ? 'file-pdf' : file.type === 'bukti_bayar' ? 'receipt' : 'file-invoice-dollar'}" style="font-size: 18px; min-width: 24px; text-align: center;"></i>
+                        <span style="flex: 1; text-align: left;">${file.name}</span>
+                        <i class="fas fa-arrow-down-to-line" style="font-size: 14px; opacity: 0.8;"></i>
                     </button>
                 `;
             });
@@ -637,17 +664,32 @@
             // Add combine button if multiple files
             if (files.length >= 2) {
                 buttonsHTML += `
-                    <button class="modern-download-btn modern-btn-combine" onclick="downloadModernFile(this, '${fileId}', 'combined')">
-                        <div class="modern-btn-content">
-                            <div class="modern-btn-icon">📦</div>
-                            <div class="modern-btn-label">
-                                <span class="modern-btn-name">Combine All Files</span>
-                                <span class="modern-btn-hint">Download as single PDF</span>
-                            </div>
-                            <div class="modern-btn-arrow">
-                                <i class="fas fa-arrow-right"></i>
-                            </div>
-                        </div>
+                    <button class="modern-download-btn modern-btn-combine" data-faktur="${fileId}"
+                            style="
+                                width: 100%; 
+                                padding: 12px 14px; 
+                                background: linear-gradient(135deg, #e67e22, #d35400);
+                                color: white; 
+                                border: none; 
+                                border-radius: 8px; 
+                                cursor: pointer; 
+                                font-weight: 600; 
+                                font-size: 13px; 
+                                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                box-shadow: 0 2px 8px rgba(230, 126, 34, 0.2);
+                                margin-top: 8px;
+                                border-top: 1px solid rgba(255, 255, 255, 0.15);
+                                padding-top: 20px;
+                            " 
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(230, 126, 34, 0.35)';" 
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(230, 126, 34, 0.2)';"
+                            onclick="downloadModernFile(this, '${fileId}', 'combined')">
+                        <i class="fas fa-cube" style="font-size: 18px; min-width: 24px; text-align: center;"></i>
+                        <span style="flex: 1; text-align: left;">Gabung Semua (${files.length}/2)</span>
+                        <i class="fas fa-arrow-down-to-line" style="font-size: 14px; opacity: 0.8;"></i>
                     </button>
                 `;
             }
