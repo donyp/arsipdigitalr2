@@ -1528,6 +1528,14 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
         // Check Concurrent Session Limit (Role-based: super_admin & moderator = 1, admin_zona = 2)
         const sessionManager = new SessionManager(supabase);
         
+        // IMPORTANT: Force cleanup stale sessions BEFORE checking limit
+        try {
+            await supabase.rpc('cleanup_expired_sessions');
+            console.log('[LOGIN] ✅ Cleanup expired sessions executed');
+        } catch (cleanupErr) {
+            console.warn('[LOGIN] Warning: Cleanup failed (non-blocking):', cleanupErr.message);
+        }
+        
         const sessionCheck = await sessionManager.canCreateSession(user.id, user.role);
         
         if (!sessionCheck.allowed) {
@@ -7783,6 +7791,147 @@ app.post('/api/auth/force-logout', authenticateToken, authorizeRole('super_admin
     } catch (err) {
         console.error('[FORCE_LOGOUT] Error:', err);
         res.status(500).json({ error: 'Failed to force logout sessions: ' + err.message });
+    }
+});
+
+// ============================================================
+// ADMIN: Manual Cleanup Stale Sessions
+// ============================================================
+
+// POST /api/admin/cleanup-stale-sessions - Force cleanup all expired sessions (admin only)
+app.post('/api/admin/cleanup-stale-sessions', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        console.log('[ADMIN] Starting cleanup of stale sessions...');
+        
+        // Execute cleanup function
+        const { error: cleanupError } = await supabase.rpc('cleanup_expired_sessions');
+        
+        if (cleanupError) {
+            console.error('[ADMIN] Cleanup error:', cleanupError);
+            return res.status(500).json({ error: 'Cleanup failed: ' + cleanupError.message });
+        }
+        
+        // Get count of remaining active sessions
+        const { data: activeSessions, error: countError } = await supabase
+            .from('user_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('is_active', true)
+            .gt('expires_at', new Date().toISOString());
+        
+        const activeCount = activeSessions ? activeSessions.length : 0;
+        
+        console.log(`[ADMIN] ✅ Cleanup completed - ${activeCount} active sessions remaining`);
+        
+        // Log the admin action
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Admin: Cleanup Stale Sessions',
+            resourceType: 'system',
+            resourceId: 'sessions',
+            resourceName: 'user_sessions table',
+            operation: 'DELETE',
+            details: {
+                activeSessionsRemaining: activeCount
+            },
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: '/api/admin/cleanup-stale-sessions',
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: 'Stale sessions cleaned up successfully',
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        }).catch(() => {});
+        
+        res.json({
+            success: true,
+            message: 'Stale sessions cleaned up successfully',
+            activeSessionsRemaining: activeCount
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Cleanup error:', err);
+        res.status(500).json({ error: 'Cleanup failed: ' + err.message });
+    }
+});
+
+// POST /api/admin/force-logout-user/:userId - Force logout specific user (admin only)
+app.post('/api/admin/force-logout-user/:userId', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'userId is required' });
+        }
+        
+        console.log(`[ADMIN] Force logging out user: ${userId}`);
+        
+        // Get user info first
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('email, name')
+            .eq('id', userId)
+            .single();
+        
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Terminate all sessions
+        const { error: terminateError } = await supabase
+            .from('user_sessions')
+            .update({ is_active: false })
+            .eq('user_id', userId)
+            .eq('is_active', true);
+        
+        if (terminateError) {
+            console.error('[ADMIN] Force logout error:', terminateError);
+            return res.status(500).json({ error: 'Force logout failed: ' + terminateError.message });
+        }
+        
+        console.log(`[ADMIN] ✅ Force logged out user: ${user.email}`);
+        
+        // Log the admin action
+        const { ipAddress } = AuditLogger.extractClientInfo(req);
+        await auditLogger.log({
+            userId: req.user.userId,
+            userEmail: req.user.email,
+            userRole: req.user.role,
+            zonaId: req.user.zona_id || null,
+            action: 'Admin: Force Logout User',
+            resourceType: 'user_session',
+            resourceId: userId,
+            resourceName: user.email,
+            operation: 'DELETE',
+            details: {
+                targetUserEmail: user.email,
+                targetUserName: user.name
+            },
+            ipAddress: ipAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            requestPath: `/api/admin/force-logout-user/${userId}`,
+            requestMethod: 'POST',
+            statusCode: 200,
+            responseMessage: `User ${user.email} logged out successfully`,
+            errorMessage: null,
+            isSuspicious: false,
+            severity: 'info'
+        }).catch(() => {});
+        
+        res.json({
+            success: true,
+            message: `User ${user.email} logged out successfully`,
+            user: { id: userId, email: user.email, name: user.name }
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Force logout error:', err);
+        res.status(500).json({ error: 'Force logout failed: ' + err.message });
     }
 });
 
