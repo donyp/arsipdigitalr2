@@ -18,7 +18,7 @@ GROUP BY u.id, u.email, u.name;
 
 -- Step 2: CLEAR - Inactivate semua active moderator sessions
 UPDATE user_sessions
-SET is_active = FALSE, updated_at = NOW()
+SET is_active = FALSE
 WHERE user_id IN (SELECT id FROM users WHERE role = 'moderator')
     AND is_active = TRUE;
 

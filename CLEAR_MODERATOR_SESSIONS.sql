@@ -86,8 +86,7 @@ WHERE user_id IN (SELECT id FROM users WHERE role = 'moderator')
 
 -- Step 4b: EXECUTE - Clear semua active sessions moderator
 UPDATE user_sessions
-SET is_active = FALSE,
-    updated_at = NOW()
+SET is_active = FALSE
 WHERE user_id IN (SELECT id FROM users WHERE role = 'moderator')
     AND is_active = TRUE;
 
@@ -115,8 +114,7 @@ GROUP BY u.id, u.email;
 
 -- Step 5b: Clear hanya untuk moderator tertentu
 UPDATE user_sessions
-SET is_active = FALSE,
-    updated_at = NOW()
+SET is_active = FALSE
 WHERE user_id = (SELECT id FROM users WHERE email = 'moderator@example.com')  -- ← UBAH EMAIL INI
     AND is_active = TRUE;
 
@@ -147,15 +145,14 @@ WHERE user_id IN (SELECT id FROM users WHERE role = 'moderator')
 
 -- Step 6b: Clear sessions
 UPDATE user_sessions
-SET is_active = FALSE,
-    updated_at = NOW()
+SET is_active = FALSE
 WHERE user_id IN (SELECT id FROM users WHERE role = 'moderator')
     AND is_active = TRUE;
 
 -- Step 6c: Show backup data
 SELECT 
     *,
-    (expires_at - created_at) as session_duration_hours
+    (expires_at - created_at) as session_duration
 FROM cleared_sessions_backup
 ORDER BY cleared_at DESC;
 
@@ -173,25 +170,17 @@ WITH moderator_data AS (
         name
     FROM users 
     WHERE email = 'moderator'  -- ← UBAH INI
-),
-sessions_before AS (
-    SELECT COUNT(*) as before_count
-    FROM user_sessions
-    WHERE user_id IN (SELECT id FROM moderator_data)
-        AND is_active = TRUE
 )
 UPDATE user_sessions
 SET 
-    is_active = FALSE,
-    updated_at = NOW()
+    is_active = FALSE
 WHERE user_id IN (SELECT id FROM moderator_data)
     AND is_active = TRUE
 RETURNING 
     user_id,
     session_token,
     created_at,
-    expires_at,
-    updated_at;
+    expires_at;
 
 -- ============================================
 -- OPTION 8: DELETE (Nuclear Option)
@@ -215,8 +204,7 @@ SELECT
     SUM(CASE WHEN us.is_active = TRUE THEN 1 ELSE 0 END) as active,
     SUM(CASE WHEN us.is_active = FALSE THEN 1 ELSE 0 END) as inactive,
     MIN(us.created_at) as oldest_session,
-    MAX(us.created_at) as newest_session,
-    ROUND(AVG(EXTRACT(EPOCH FROM (us.expires_at - us.created_at))/3600)::numeric, 2) as avg_session_hours
+    MAX(us.created_at) as newest_session
 FROM users u
 LEFT JOIN user_sessions us ON u.id = us.user_id
 WHERE u.role = 'moderator'
