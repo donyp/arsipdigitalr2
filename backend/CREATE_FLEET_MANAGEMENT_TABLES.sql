@@ -33,12 +33,6 @@ CREATE TABLE IF NOT EXISTS vehicle_documents (
     document_number VARCHAR(100),
     issued_by VARCHAR(100),
     document_file_path TEXT,
-    days_until_expiration INTEGER GENERATED ALWAYS AS (
-        EXTRACT(DAY FROM (expiration_date::timestamp - NOW()))::INTEGER
-    ) STORED,
-    is_expired BOOLEAN GENERATED ALWAYS AS (
-        expiration_date < CURRENT_DATE
-    ) STORED,
     renewal_status VARCHAR(50) DEFAULT 'PENDING' CHECK (renewal_status IN ('PENDING', 'IN_PROGRESS', 'RENEWED', 'EXPIRED')),
     renewal_date DATE,
     notes TEXT,
@@ -94,8 +88,6 @@ COMMENT ON COLUMN vehicles.is_active IS 'Status kendaraan aktif/non-aktif';
 
 COMMENT ON TABLE vehicle_documents IS 'Dokumen penting kendaraan dengan tracking tanggal expired';
 COMMENT ON COLUMN vehicle_documents.document_type IS 'Tipe dokumen: KIR, PAJAK_STNK, PLAT';
-COMMENT ON COLUMN vehicle_documents.days_until_expiration IS 'Jumlah hari sampai dokumen expired (auto-calculated)';
-COMMENT ON COLUMN vehicle_documents.is_expired IS 'Status dokumen sudah expired atau belum (auto-calculated)';
 COMMENT ON COLUMN vehicle_documents.renewal_status IS 'Status perpanjangan dokumen';
 
 COMMENT ON TABLE vehicle_maintenance IS 'History pemeliharaan dan perbaikan kendaraan';

@@ -86,11 +86,14 @@ router.get('/vehicles/:id', authenticateToken, async (req, res) => {
 
         if (docsError || mainError) throw docsError || mainError;
 
+        // Calculate document status
+        const docsWithStatus = calculateDocumentStatus(documents || []);
+
         res.json({
             success: true,
             data: {
                 vehicle,
-                documents: documents || [],
+                documents: docsWithStatus,
                 maintenance: maintenance || [],
                 documentStats: calculateDocumentStats(documents || [])
             }
@@ -219,16 +222,25 @@ router.get('/documents/expiring', authenticateToken, async (req, res) => {
             .select('*, vehicles(plate_number, vehicle_name, vehicle_type)')
             .gte('expiration_date', new Date().toISOString().split('T')[0])
             .lte('expiration_date', new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
-            .eq('is_expired', false)
             .order('expiration_date', { ascending: true });
 
         if (error) throw error;
 
+        // Calculate status on backend
+        const docsWithStatus = (data || []).map(doc => {
+            const daysUntil = Math.floor((new Date(doc.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
+            return {
+                ...doc,
+                days_until_expiration: daysUntil,
+                is_expired: new Date(doc.expiration_date) < new Date()
+            };
+        }).filter(doc => !doc.is_expired && doc.days_until_expiration > 0);
+
         res.json({
             success: true,
-            data: data || [],
-            count: data?.length || 0,
-            warning: `${data?.length || 0} dokumen akan expired dalam ${daysNum} hari ke depan`
+            data: docsWithStatus || [],
+            count: docsWithStatus?.length || 0,
+            warning: `${docsWithStatus?.length || 0} dokumen akan expired dalam ${daysNum} hari ke depan`
         });
     } catch (error) {
         console.error('[Fleet] Error getting expiring documents:', error);
@@ -248,16 +260,25 @@ router.get('/documents/expired', authenticateToken, async (req, res) => {
             .from('vehicle_documents')
             .select('*, vehicles(plate_number, vehicle_name, vehicle_type)')
             .lt('expiration_date', new Date().toISOString().split('T')[0])
-            .eq('is_expired', true)
             .order('expiration_date', { ascending: true });
 
         if (error) throw error;
 
+        // Calculate status on backend
+        const expiredDocs = (data || []).map(doc => {
+            const daysUntil = Math.floor((new Date(doc.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
+            return {
+                ...doc,
+                days_until_expiration: daysUntil,
+                is_expired: new Date(doc.expiration_date) < new Date()
+            };
+        }).filter(doc => doc.is_expired);
+
         res.json({
             success: true,
-            data: data || [],
-            count: data?.length || 0,
-            warning: `⚠️ ${data?.length || 0} dokumen sudah expired!`
+            data: expiredDocs || [],
+            count: expiredDocs?.length || 0,
+            warning: `⚠️ ${expiredDocs?.length || 0} dokumen sudah expired!`
         });
     } catch (error) {
         console.error('[Fleet] Error getting expired documents:', error);
@@ -546,12 +567,24 @@ router.delete('/maintenance/:id', authenticateToken, authorizeRole('super_admin'
 // HELPER FUNCTIONS
 // ============================================================
 
+function calculateDocumentStatus(documents) {
+    return (documents || []).map(doc => {
+        const daysUntil = Math.floor((new Date(doc.expiration_date) - new Date()) / (1000 * 60 * 60 * 24));
+        return {
+            ...doc,
+            days_until_expiration: daysUntil,
+            is_expired: daysUntil < 0
+        };
+    });
+}
+
 function calculateDocumentStats(documents) {
+    const docsWithStatus = calculateDocumentStatus(documents);
     const stats = {
-        total: documents.length,
-        expired: documents.filter(d => d.is_expired).length,
-        expiring_soon: documents.filter(d => !d.is_expired && d.days_until_expiration <= 30 && d.days_until_expiration > 0).length,
-        valid: documents.filter(d => !d.is_expired && d.days_until_expiration > 30).length
+        total: docsWithStatus.length,
+        expired: docsWithStatus.filter(d => d.is_expired).length,
+        expiring_soon: docsWithStatus.filter(d => !d.is_expired && d.days_until_expiration <= 30 && d.days_until_expiration > 0).length,
+        valid: docsWithStatus.filter(d => !d.is_expired && d.days_until_expiration > 30).length
     };
     return stats;
 }
