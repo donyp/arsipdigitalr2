@@ -1180,14 +1180,13 @@ const createAuth = (allowedRoles = null) => {
 };
 
 // Register audit endpoints
-registerAuditEndpoints(app, supabase, createAuth, auditLogger);
+registerAuditEndpoints(app, supabase, authenticateToken, authorizeRole);
 console.log('[INIT] Audit endpoints registered ✅');
 
 const { addFakturPajakRenameEndpoints } = require('./faktur-pajak-rename-endpoints');
 const renameFakturEndpoints = require('./rename-faktur-endpoints');
 const renameInvoiceHijauEndpoints = require('./rename-invoice-hijau-endpoints');
 const pdfToCsvEndpoints = require('./pdf-to-csv-endpoints');
-app.use('/api', sessionManagement);
 app.use('/api', faqEndpoints);
 app.use('/api', notificationEndpoints);
 renameFakturEndpoints(app, supabase);
