@@ -7545,7 +7545,7 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         // Fleet Management Routes
         // ============================================================
         const fleetRoutes = require('./fleet-management-endpoints');
-        fleetRoutes.initializeSupabase(supabase);
+        fleetRoutes.initializeSupabase(supabase, JWT_SECRET);
         app.use('/api/fleet', fleetRoutes.router);
 
         const server = app.listen(PORT, HOST, () => {

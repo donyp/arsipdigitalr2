@@ -5,16 +5,93 @@
 
 const express = require('express');
 const router = express.Router();
-
-// Middleware untuk authentikasi dan otorisasi
-const { authenticateToken, authorizeRole } = require('./server');
+const jwt = require('jsonwebtoken');
 
 // Import supabase client dari server.js
 let supabase;
+let JWT_SECRET; // Will be set during initialization
 
 // Initialize supabase dari server.js
-function initializeSupabase(supabaseClient) {
+function initializeSupabase(supabaseClient, jwtSecret) {
     supabase = supabaseClient;
+    JWT_SECRET = jwtSecret;
+}
+
+// ============================================================
+// MIDDLEWARE (Local definitions to avoid circular dependency)
+// ============================================================
+
+/**
+ * Authentication Middleware
+ * Verifies JWT token and loads user from database
+ */
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = (authHeader && authHeader.split(' ')[1]);
+
+    if (!token) {
+        return res.status(401).json({ error: 'Token tidak ditemukan. Silakan login.' });
+    }
+
+    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ error: 'Token tidak valid atau sudah expired.' });
+        }
+        
+        try {
+            // Query database for authoritative user role
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('id, email, role, zona_id, permissions, is_active')
+                .eq('id', decoded.sub || decoded.userId)
+                .single();
+            
+            if (error || !user) {
+                return res.status(403).json({ error: 'Token tidak valid - user tidak ditemukan.' });
+            }
+
+            // Check if user is active
+            if (user.is_active === false) {
+                return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan.' });
+            }
+
+            // Use DATABASE role (authoritative source)
+            decoded.role = user.role;
+            decoded.zona_id = user.zona_id;
+            decoded.permissions = user.permissions || [];
+            
+            req.user = decoded;
+            next();
+        } catch (err) {
+            return res.status(403).json({ error: 'Authentication verification failed.' });
+        }
+    });
+}
+
+/**
+ * RBAC Middleware – restrict routes to specific roles
+ */
+function authorizeRole(...allowedRoles) {
+    return (req, res, next) => {
+        console.log('[RBAC] User role check:', {
+            userRole: req.user?.role,
+            allowedRoles,
+            hasUser: !!req.user,
+            isAllowed: allowedRoles.includes(req.user?.role)
+        });
+        
+        if (!req.user || !allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ 
+                error: 'Anda tidak memiliki akses ke fitur ini.',
+                debug: {
+                    userRole: req.user?.role,
+                    allowedRoles,
+                    path: req.path
+                }
+            });
+        }
+        next();
+    };
 }
 
 // ============================================================
