@@ -1130,6 +1130,30 @@
             loadFiles(currentPath);
             loadStats();
         }
+
+            // Expose all functions to global scope AFTER they are defined
+            window.goBack = goBack;
+            window.navigateToFolder = navigateToFolder;
+            window.toggleFileSelect = toggleFileSelect;
+            window.selectAllToggle = selectAllToggle;
+            window.clearSelection = clearSelection;
+            window.bulkDownload = bulkDownload;
+            window.bulkMove = bulkMove;
+            window.bulkDelete = bulkDelete;
+            window.downloadFile = downloadFile;
+            window.deleteItem = deleteItem;
+            window.openRenameModal = openRenameModal;
+            window.closeRenameModal = closeRenameModal;
+            window.confirmRename = confirmRename;
+            window.openUploadModal = openUploadModal;
+            window.closeUploadModal = closeUploadModal;
+            window.openCreateFolderModal = openCreateFolderModal;
+            window.closeCreateFolderModal = closeCreateFolderModal;
+            window.createFolder = createFolder;
+            window.refreshBrowser = refreshBrowser;
+            window.loadFiles = loadFiles;
+            window.loadStats = loadStats;
+            window.setupEventListeners = setupEventListeners;
         
         } // End if (typeof window._storageHandlerLoaded === 'undefined')
     </script>
