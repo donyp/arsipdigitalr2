@@ -1022,8 +1022,8 @@ function authenticateToken(req, res, next) {
 
             // --- SESSION VALIDITY CHECK (for moderator/super_admin only) ---
             // Only check on non-login endpoints to avoid redirect loops
-            const isLoginEndpoint = req.path === '/api/auth/login' || req.path === '/api/auth/logout';
-            if (!isLoginEndpoint && (user.role === 'moderator' || user.role === 'super_admin')) {
+            const isAuthEndpoint = req.path === '/api/auth/login' || req.path === '/api/auth/logout' || req.path === '/api/auth/me';
+            if (!isAuthEndpoint && (user.role === 'moderator' || user.role === 'super_admin')) {
                 try {
                     const { data: activeSessions } = await supabase
                         .from('user_sessions')
