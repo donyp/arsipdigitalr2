@@ -409,10 +409,11 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 6px 10px;
+            padding: 6px 12px;
             border-radius: 6px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
+            white-space: nowrap;
         }
 
         .doc-badge.valid {
@@ -1329,6 +1330,7 @@
                 const docsHtml = docs.slice(0, 3).map(d => {
                     let status = 'valid';
                     let icon = 'check-circle';
+                    let docLabel = d.document_type.replace('_', ' ');
                     if (d.is_expired) {
                         status = 'expired';
                         icon = 'times-circle';
@@ -1336,7 +1338,7 @@
                         status = 'expiring';
                         icon = 'exclamation-circle';
                     }
-                    return `<span class="doc-badge ${status}" title="${d.document_type}"><i class="fas fa-${icon}"></i></span>`;
+                    return `<span class="doc-badge ${status}" title="${d.document_type}"><i class="fas fa-${icon}"></i> ${docLabel}</span>`;
                 }).join('');
 
                 html += `
