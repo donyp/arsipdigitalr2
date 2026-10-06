@@ -57,6 +57,7 @@
         { href: '/whatsapp-messages', label: 'Notify Zona', icon: '<i class="fas fa-bell"></i>' },
         { href: '/support-dashboard', label: 'Support', icon: '<i class="fas fa-headset"></i>' },
         { href: '/audit-logs', label: 'Audit Logs', icon: '<i class="fas fa-shield-alt"></i>' },
+        { href: '/session-management', label: 'Session Management', icon: '<i class="fas fa-wifi"></i>' },
         { href: '/storage-handler', label: 'Storage Handler', icon: '<i class="fas fa-folder-open"></i>' },
         
         {

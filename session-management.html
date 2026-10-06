@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management | Arsip Digital ANKA</title>
+    <!-- DARK MODE - Apply immediately to prevent flash -->
+    <script>
+        (function() {
+            if (localStorage.getItem('dark_mode_enabled') === 'true') {
+                document.documentElement.setAttribute('data-dark-mode', 'true');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --color-bg-primary: #ffffff;
+            --color-bg-secondary: #f5f7fa;
+            --color-bg-tertiary: #ffffff;
+            --color-text-primary: #1f2937;
+            --color-text-secondary: #6b7280;
+            --color-border: #e5e7eb;
+        }
+        
+        html[data-dark-mode="true"] {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-bg-tertiary: #334155;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-border: #475569;
+        }
+        
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        html[data-dark-mode="true"] .bg-white {
+            background-color: var(--color-bg-secondary) !important;
+            color: var(--color-text-primary);
+        }
+        
+        html[data-dark-mode="true"] .bg-gray-50 {
+            background-color: var(--color-bg-primary) !important;
+        }
+        
+        html[data-dark-mode="true"] .text-gray-800,
+        html[data-dark-mode="true"] .text-gray-900 {
+            color: var(--color-text-primary) !important;
+        }
+        
+        html[data-dark-mode="true"] .text-gray-500,
+        html[data-dark-mode="true"] .text-gray-600 {
+            color: var(--color-text-secondary) !important;
+        }
+        
+        html[data-dark-mode="true"] .text-gray-400 {
+            color: var(--color-text-secondary) !important;
+        }
+        
+        html[data-dark-mode="true"] .border-gray-200,
+        html[data-dark-mode="true"] .border-gray-100 {
+            border-color: var(--color-border) !important;
+        }
+        
+        html[data-dark-mode="true"] .border-b {
+            border-color: var(--color-border) !important;
+        }
+        
+        html[data-dark-mode="true"] .bg-gray-100 {
+            background-color: var(--color-bg-secondary) !important;
+        }
+        
+        html[data-dark-mode="true"] table tbody tr:hover {
+            background-color: var(--color-bg-tertiary) !important;
+        }
+        
+        html, body {
+            zoom: 0.8;
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Apply dark mode if enabled -->
+    <script>
+        if (localStorage.getItem('dark_mode_enabled') === 'true') {
+            document.documentElement.setAttribute('data-dark-mode', 'true');
+        }
+    </script>
+
+    <!-- Sidebar -->
+    <div id="sidebar"></div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="ml-64 p-8">
+        <div class="container mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-2">
+                    <h1 class="text-3xl font-bold text-gray-900" id="page-title">Session Management</h1>
+                    <button onclick="refreshSessions()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2">
+                        <i class="fas fa-sync-alt"></i> <span>Refresh</span>
+                    </button>
+                </div>
+                <p class="text-gray-600">Kelola dan monitor active sessions untuk semua pengguna</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Total Active Sessions</p>
+                            <p class="text-3xl font-bold text-gray-900" id="total-sessions">-</p>
+                        </div>
+                        <i class="fas fa-wifi text-blue-500 text-4xl opacity-20"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">Online Users</p>
+                            <p class="text-3xl font-bold text-gray-900" id="online-users">-</p>
+                        </div>
+                        <i class="fas fa-users text-green-500 text-4xl opacity-20"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-600 text-sm">At Limit</p>
+                            <p class="text-3xl font-bold text-gray-900" id="at-limit-users">-</p>
+                        </div>
+                        <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl opacity-20"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions Table -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900">Active Sessions by User</h2>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">User</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Email</th>
+                                <th class="px-6 py-3 text-left text-sm font-semibold text-gray-600">Role</th>
+                                <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600">Active Sessions</th>
+                                <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600">Last Activity</th>
+                                <th class="px-6 py-3 text-center text-sm font-semibold text-gray-600">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sessions-tbody">
+                            <tr>
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading sessions...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Session Details Modal -->
+            <div id="session-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-96 overflow-y-auto">
+                    <div class="sticky top-0 bg-white p-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-xl font-bold text-gray-900" id="modal-title">Session Details</h3>
+                        <button onclick="closeSessionModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div id="modal-content" class="p-6"></div>
+                </div>
+            </div>
+
+            <!-- Confirm Dialog -->
+            <div id="confirm-dialog" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-lg shadow-lg max-w-md w-full">
+                    <div class="p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4" id="confirm-title">Confirm Action</h3>
+                        <p class="text-gray-600 mb-6" id="confirm-message">Are you sure?</p>
+                        <div class="flex gap-3 justify-end">
+                            <button onclick="closeConfirmDialog()" class="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button id="confirm-btn" onclick="executeConfirmedAction()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                                Yes, Force Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/auth.js"></script>
+    <script src="js/sidebar.js"></script>
+    <script>
+        let pendingAction = null;
+
+        // Load sessions on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSidebar();
+            refreshSessions();
+            setInterval(refreshSessions, 30000); // Auto-refresh every 30 seconds
+        });
+
+        async function refreshSessions() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const response = await fetch('/api/admin/list-user-sessions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        localStorage.removeItem('token');
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Failed to fetch sessions');
+                }
+
+                const data = await response.json();
+                renderSessions(data.sessions || []);
+                updateStats(data.sessions || []);
+
+            } catch (err) {
+                console.error('Error refreshing sessions:', err);
+                document.getElementById('sessions-tbody').innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-red-500">
+                            <i class="fas fa-exclamation-circle"></i> Error loading sessions: ${err.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderSessions(sessions) {
+            const tbody = document.getElementById('sessions-tbody');
+            
+            if (!sessions || sessions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-inbox"></i> No active sessions
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Group by user
+            const groupedByUser = {};
+            sessions.forEach(session => {
+                const userId = session.user_id;
+                if (!groupedByUser[userId]) {
+                    groupedByUser[userId] = {
+                        user_id: userId,
+                        user_name: session.user_name,
+                        user_email: session.user_email,
+                        user_role: session.user_role,
+                        sessions: [],
+                        last_activity: null
+                    };
+                }
+                groupedByUser[userId].sessions.push(session);
+                
+                // Track latest activity
+                const activityTime = new Date(session.last_activity || session.created_at);
+                if (!groupedByUser[userId].last_activity || activityTime > new Date(groupedByUser[userId].last_activity)) {
+                    groupedByUser[userId].last_activity = session.last_activity || session.created_at;
+                }
+            });
+
+            tbody.innerHTML = Object.values(groupedByUser).map(user => {
+                const sessionCount = user.sessions.length;
+                const roleColors = {
+                    'super_admin': 'bg-red-100 text-red-800',
+                    'admin_zona': 'bg-blue-100 text-blue-800',
+                    'moderator': 'bg-purple-100 text-purple-800',
+                    'user': 'bg-gray-100 text-gray-800'
+                };
+                const roleColor = roleColors[user.user_role] || 'bg-gray-100 text-gray-800';
+                
+                const sessionLimit = user.user_role === 'moderator' || user.user_role === 'super_admin' ? 1 : 2;
+                const isAtLimit = sessionCount >= sessionLimit;
+                const rowBg = isAtLimit ? 'bg-yellow-50' : '';
+
+                const lastActivityTime = new Date(user.last_activity);
+                const now = new Date();
+                const diffMinutes = Math.floor((now - lastActivityTime) / 60000);
+                let activityStr = 'Just now';
+                if (diffMinutes > 0 && diffMinutes < 60) activityStr = `${diffMinutes}m ago`;
+                else if (diffMinutes >= 60) activityStr = `${Math.floor(diffMinutes/60)}h ago`;
+
+                return `
+                    <tr class="${rowBg} border-b border-gray-200 hover:bg-gray-50 transition">
+                        <td class="px-6 py-4">
+                            <div class="font-semibold text-gray-900">${user.user_name}</div>
+                        </td>
+                        <td class="px-6 py-4 text-gray-600">${user.user_email}</td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 text-xs font-semibold rounded-full ${roleColor}">
+                                ${user.user_role}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${isAtLimit ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'} font-bold text-sm">
+                                    ${sessionCount}
+                                </span>
+                                ${isAtLimit ? `<span class="text-xs text-yellow-600">/ ${sessionLimit}</span>` : ''}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center text-sm text-gray-600">
+                            ${activityStr}
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex justify-center gap-2">
+                                <button onclick="showSessionDetails('${user.user_id}')" class="text-blue-600 hover:text-blue-900 hover:underline text-sm" title="View details">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button onclick="confirmForceLogout('${user.user_id}', '${user.user_email}')" class="text-red-600 hover:text-red-900 hover:underline text-sm" title="Force logout all sessions">
+                                    <i class="fas fa-sign-out-alt"></i> Force Logout
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateStats(sessions) {
+            if (!sessions) sessions = [];
+
+            // Total sessions
+            document.getElementById('total-sessions').textContent = sessions.length;
+
+            // Unique online users
+            const uniqueUsers = new Set(sessions.map(s => s.user_id));
+            document.getElementById('online-users').textContent = uniqueUsers.size;
+
+            // Users at session limit
+            const groupedByUser = {};
+            sessions.forEach(session => {
+                if (!groupedByUser[session.user_id]) {
+                    groupedByUser[session.user_id] = {
+                        count: 0,
+                        role: session.user_role
+                    };
+                }
+                groupedByUser[session.user_id].count++;
+            });
+
+            const atLimitCount = Object.values(groupedByUser).filter(user => {
+                const limit = user.role === 'moderator' || user.role === 'super_admin' ? 1 : 2;
+                return user.count >= limit;
+            }).length;
+            
+            document.getElementById('at-limit-users').textContent = atLimitCount;
+        }
+
+        async function showSessionDetails(userId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/admin/user-sessions/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to fetch session details');
+
+                const data = await response.json();
+                const sessions = data.sessions || [];
+
+                let html = `
+                    <div class="space-y-4">
+                        <div>
+                            <p class="text-sm text-gray-600">User: <strong>${data.user_name}</strong></p>
+                            <p class="text-sm text-gray-600">Email: <strong>${data.user_email}</strong></p>
+                        </div>
+                        <div class="border-t pt-4">
+                `;
+
+                sessions.forEach((sess, idx) => {
+                    const expiresAt = new Date(sess.expires_at);
+                    const createdAt = new Date(sess.created_at);
+                    const lastActivity = sess.last_activity ? new Date(sess.last_activity) : null;
+                    
+                    const isExpired = expiresAt < new Date();
+                    const timeLeft = Math.round((expiresAt - new Date()) / 1000 / 60);
+
+                    html += `
+                        <div class="p-3 bg-gray-50 rounded mb-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-sm">Session ${idx + 1}</span>
+                                <span class="text-xs px-2 py-1 rounded ${sess.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}">
+                                    ${sess.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-600 space-y-1">
+                                <p><strong>Token:</strong> ${sess.session_token.substring(0, 16)}...</p>
+                                <p><strong>Created:</strong> ${createdAt.toLocaleString('id-ID')}</p>
+                                <p><strong>Expires:</strong> ${expiresAt.toLocaleString('id-ID')} ${isExpired ? '(Expired)' : `(${timeLeft} min left)`}</p>
+                                ${lastActivity ? `<p><strong>Last Activity:</strong> ${lastActivity.toLocaleString('id-ID')}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+
+                document.getElementById('modal-title').textContent = `Sessions for ${data.user_name}`;
+                document.getElementById('modal-content').innerHTML = html;
+                document.getElementById('session-modal').classList.remove('hidden');
+
+            } catch (err) {
+                alert('Error loading session details: ' + err.message);
+            }
+        }
+
+        function closeSessionModal() {
+            document.getElementById('session-modal').classList.add('hidden');
+        }
+
+        function confirmForceLogout(userId, userEmail) {
+            document.getElementById('confirm-title').textContent = 'Force Logout User?';
+            document.getElementById('confirm-message').textContent = 
+                `Are you sure you want to force logout all sessions for ${userEmail}? They will need to login again.`;
+            
+            pendingAction = { type: 'forceLogout', userId, userEmail };
+            document.getElementById('confirm-dialog').classList.remove('hidden');
+        }
+
+        function closeConfirmDialog() {
+            document.getElementById('confirm-dialog').classList.add('hidden');
+            pendingAction = null;
+        }
+
+        async function executeConfirmedAction() {
+            if (!pendingAction) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                const { userId, userEmail } = pendingAction;
+
+                const response = await fetch(`/api/admin/force-logout-user/${userId}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Force logout failed');
+                }
+
+                const result = await response.json();
+                
+                closeConfirmDialog();
+                alert(`✅ Force logged out ${userEmail} successfully. All their sessions have been terminated.`);
+                refreshSessions();
+
+            } catch (err) {
+                alert('❌ Error: ' + err.message);
+            }
+        }
+
+        // Apply dark mode
+        if (localStorage.getItem('dark_mode_enabled') === 'true') {
+            document.documentElement.setAttribute('data-dark-mode', 'true');
+        }
+
+        function toggleDarkMode() {
+            const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+            localStorage.setItem('dark_mode_enabled', !isDarkMode);
+            window.location.reload();
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+            }
+        }
+    </script>
+</body>
+</html>

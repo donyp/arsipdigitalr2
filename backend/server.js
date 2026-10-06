@@ -589,6 +589,10 @@ app.get('/audit-logs', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'audit-logs-dashboard.html'));
 });
 
+app.get('/session-management', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'session-management.html'));
+});
+
 // Generic page router
 app.get('/:page', (req, res, next) => {
     const page = req.params.page;
@@ -7932,6 +7936,104 @@ app.post('/api/admin/force-logout-user/:userId', authenticateToken, requirePermi
     } catch (err) {
         console.error('[ADMIN] Force logout error:', err);
         res.status(500).json({ error: 'Force logout failed: ' + err.message });
+    }
+});
+
+// GET /api/admin/list-user-sessions - List all active sessions (admin only)
+app.get('/api/admin/list-user-sessions', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        console.log('[ADMIN] Fetching all active sessions...');
+        
+        // Get all active sessions with user details
+        const { data: sessions, error: sessError } = await supabase
+            .from('user_sessions')
+            .select(`
+                *,
+                users:user_id (id, name, email, role)
+            `)
+            .eq('is_active', true)
+            .gt('expires_at', new Date().toISOString())
+            .order('last_activity', { ascending: false });
+        
+        if (sessError) {
+            console.error('[ADMIN] Error fetching sessions:', sessError);
+            return res.status(500).json({ error: 'Failed to fetch sessions: ' + sessError.message });
+        }
+        
+        // Transform data for frontend
+        const transformedSessions = (sessions || []).map(sess => ({
+            id: sess.id,
+            session_token: sess.session_token,
+            user_id: sess.user_id,
+            user_name: sess.users?.name || 'Unknown',
+            user_email: sess.users?.email || 'Unknown',
+            user_role: sess.users?.role || 'Unknown',
+            created_at: sess.created_at,
+            expires_at: sess.expires_at,
+            last_activity: sess.last_activity,
+            is_active: sess.is_active,
+            ip_address: sess.ip_address,
+            user_agent: sess.user_agent
+        }));
+        
+        console.log(`[ADMIN] ✅ Found ${transformedSessions.length} active sessions`);
+        
+        res.json({
+            success: true,
+            count: transformedSessions.length,
+            sessions: transformedSessions
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Error listing sessions:', err);
+        res.status(500).json({ error: 'Failed to list sessions: ' + err.message });
+    }
+});
+
+// GET /api/admin/user-sessions/:userId - Get sessions for specific user (admin only)
+app.get('/api/admin/user-sessions/:userId', authenticateToken, requirePermission('manage_users'), async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        console.log(`[ADMIN] Fetching sessions for user: ${userId}`);
+        
+        // Get user info
+        const { data: user, error: userError } = await supabase
+            .from('users')
+            .select('id, name, email, role')
+            .eq('id', userId)
+            .single();
+        
+        if (userError || !user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Get all sessions for this user (including inactive)
+        const { data: sessions, error: sessError } = await supabase
+            .from('user_sessions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+        
+        if (sessError) {
+            console.error('[ADMIN] Error fetching user sessions:', sessError);
+            return res.status(500).json({ error: 'Failed to fetch sessions: ' + sessError.message });
+        }
+        
+        console.log(`[ADMIN] ✅ Found ${sessions?.length || 0} sessions for ${user.email}`);
+        
+        res.json({
+            success: true,
+            user_id: user.id,
+            user_name: user.name,
+            user_email: user.email,
+            user_role: user.role,
+            sessions: sessions || []
+        });
+        
+    } catch (err) {
+        console.error('[ADMIN] Error getting user sessions:', err);
+        res.status(500).json({ error: 'Failed to get user sessions: ' + err.message });
     }
 });
 
