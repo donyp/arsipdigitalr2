@@ -740,7 +740,7 @@
             
             // If > 5 files, create ZIP
             if (fileCount > 5) {
-                Notify.info(`<i class="fas fa-database"></i> Preparing ZIP with ${fileCount} files...`);
+                Notify.info(`📦 Preparing ZIP with ${fileCount} files...`);
                 
                 try {
                     const response = await fetch('/api/storage-handler/download-bulk', {
@@ -780,7 +780,7 @@
             }
 
             // If <= 5 files, individual downloads
-            Notify.info(`<i class="fas fa-chart-pie"></i> Starting ${fileCount} downloads...`);
+            Notify.info(`📥 Starting ${fileCount} downloads...`);
             
             try {
                 const response = await fetch('/api/storage-handler/download-bulk', {
@@ -918,7 +918,7 @@
 
         async function downloadFile(filePath) {
             try {
-                Notify.info('<i class="fas fa-chart-pie"></i> Preparing download...');
+                Notify.info('📥 Preparing download...');
                 
                 console.log('[Download] Requesting signed URL for:', filePath);
                 
