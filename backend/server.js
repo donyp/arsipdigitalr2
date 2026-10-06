@@ -1,5 +1,5 @@
-﻿// ============================================================
-// Pusat Arsip Anka Backend â€” JWT Auth + R2 Storage
+// ============================================================
+// Pusat Arsip Anka Backend — JWT Auth + R2 Storage
 // ============================================================
 
 // Load environment variables FIRST (before using them)
@@ -131,8 +131,8 @@ console.log('================================================');
 console.log('[CONFIG] Reading environment variables...');
 console.log(`[CONFIG] PORT: ${process.env.PORT || `default ${DEFAULT_PORT}`}`);
 console.log(`[CONFIG] NODE_ENV: ${process.env.NODE_ENV || 'not set'}`);
-console.log(`[CONFIG] SUPABASE_URL: ${process.env.SUPABASE_URL ? 'SET (' + process.env.SUPABASE_URL.substring(0, 20) + '...)' : 'âŒ NOT SET'}`);
-console.log(`[CONFIG] SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'âŒ NOT SET'}`);
+console.log(`[CONFIG] SUPABASE_URL: ${process.env.SUPABASE_URL ? 'SET (' + process.env.SUPABASE_URL.substring(0, 20) + '...)' : '❌ NOT SET'}`);
+console.log(`[CONFIG] SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : '❌ NOT SET'}`);
 console.log('[CONFIG] Environment configuration loaded.\n');
 
 // ============================================================
@@ -208,7 +208,7 @@ app.use((req, res, next) => {
 });
 
 // ============================================================
-// SECURITY: HTTPS Enforcement (redirect HTTP â†’ HTTPS)
+// SECURITY: HTTPS Enforcement (redirect HTTP → HTTPS)
 // ============================================================
 app.use((req, res, next) => {
     if (process.env.NODE_ENV === 'production') {
@@ -290,7 +290,7 @@ app.use((req, res, next) => {
     // Enable XSS protection in older browsers
     res.setHeader('X-XSS-Protection', '1; mode=block');
 
-    // HSTS â€” paksa HTTPS selama 1 tahun, termasuk subdomain
+    // HSTS — paksa HTTPS selama 1 tahun, termasuk subdomain
     if (process.env.NODE_ENV === 'production') {
         res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
@@ -305,7 +305,7 @@ app.use((req, res, next) => {
         res.setHeader('Expires', '0');
     }
 
-    // Content Security Policy â€” cegah XSS & injection
+    // Content Security Policy — cegah XSS & injection
     // 'unsafe-inline' diperlukan untuk styling inline di frontend yang ada
     // Allow CDN untuk Tailwind CSS, SheetJS, dan analytics
     res.setHeader('Content-Security-Policy', [
@@ -717,7 +717,7 @@ app.get('/api/preview/:filePath(*)', async (req, res) => {
         console.log('[PREVIEW] Serving demo PDF (Google Drive preview requires OAuth setup)');
         
         const samplePdfContent = `%PDF-1.1
-%Ã¢Ã£ÃÃ“
+%âãÏÓ
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
 endobj
@@ -846,7 +846,7 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
     fileFilter: (req, file, cb) => {
-        // Sanitasi nama file â€” cegah path traversal
+        // Sanitasi nama file — cegah path traversal
         file.originalname = sanitizeFilename(file.originalname);
 
         if (file.mimetype === 'application/pdf') {
@@ -911,7 +911,7 @@ if (ENABLE_CHUNKED_UPLOAD) {
     console.log('[ChunkedUpload] ??  Disabled (set ENABLE_CHUNKED_UPLOAD=true to enable)');
 }
 
-// JWT Secret â€” WAJIB diset via environment variable, tidak boleh ada fallback hardcoded
+// JWT Secret — WAJIB diset via environment variable, tidak boleh ada fallback hardcoded
 if (!process.env.JWT_SECRET) {
     console.error('[FATAL] JWT_SECRET environment variable tidak ditemukan!');
     console.error('[FATAL] Set JWT_SECRET di Railway/environment sebelum deploy.');
@@ -1041,7 +1041,7 @@ function authenticateToken(req, res, next) {
 
 
 /**
- * RBAC Middleware â€“ restrict routes to specific roles.
+ * RBAC Middleware – restrict routes to specific roles.
  */
 
 function authorizeRole(...allowedRoles) {
@@ -1152,7 +1152,7 @@ async function notifyModerators(title, message, link = null) {
 // Features: System Health & Monitoring, Data Quality, Comments, FAQ
 console.log('[INIT] Registering Phase 1 feature endpoints...');
 registerFeatureEndpoints(app, supabase, authenticateToken, authorizeRole);
-console.log('[INIT] Phase 1 feature endpoints registered âœ…');
+console.log('[INIT] Phase 1 feature endpoints registered ✅');
 
 // ============================================================
 // STORAGE HANDLER ENDPOINTS (Cloudflare R2 File Manager)
@@ -1160,8 +1160,8 @@ console.log('[INIT] Phase 1 feature endpoints registered âœ…');
 console.log('[INIT] Registering Storage Handler endpoints...');
 const registerStorageHandlerEndpoints = require('./storage-handler-endpoints');
 registerStorageHandlerEndpoints(app, supabase, authenticateToken, authorizeRole);
-console.log('[INIT] Storage Handler endpoints registered âœ…');
-console.log('  âœ" R2 File Manager (Browse, Upload, Download, Delete, Rename)');
+console.log('[INIT] Storage Handler endpoints registered ✅');
+console.log('  �" R2 File Manager (Browse, Upload, Download, Delete, Rename)');
 
 // ============================================================
 // SESSION MANAGEMENT & FAQ ENDPOINTS (Phase 2 Features)
@@ -1181,7 +1181,7 @@ const createAuth = (allowedRoles = null) => {
 
 // Register audit endpoints
 registerAuditEndpoints(app, supabase, authenticateToken, authorizeRole);
-console.log('[INIT] Audit endpoints registered ✅');
+console.log('[INIT] Audit endpoints registered ?');
 
 const { addFakturPajakRenameEndpoints } = require('./faktur-pajak-rename-endpoints');
 const renameFakturEndpoints = require('./rename-faktur-endpoints');
@@ -1192,25 +1192,25 @@ app.use('/api', notificationEndpoints);
 renameFakturEndpoints(app, supabase);
 renameInvoiceHijauEndpoints(app, supabase, auditLogger);
 pdfToCsvEndpoints(app, authenticateToken);
-console.log('[INIT] Phase 2 feature endpoints registered âœ…');
-console.log('  âœ“ Session Management & Device Tracking');
-console.log('  âœ“ FAQ Knowledge Base');
+console.log('[INIT] Phase 2 feature endpoints registered ✅');
+
+console.log('  ✓ FAQ Knowledge Base');
 
 // ============================================================
 // DATABASE BACKUP MANAGEMENT ENDPOINTS
 // ============================================================
 console.log('[INIT] Registering Backup Management endpoints...');
 registerBackupEndpoints(app, supabase, authenticateToken, authorizeRole);
-console.log('[INIT] Backup Management endpoints registered âœ…');
-console.log('  âœ“ Backup creation, listing, verification');
+console.log('[INIT] Backup Management endpoints registered ✅');
+console.log('  ✓ Backup creation, listing, verification');
 
 // ============================================================
 // Support Ticketing System Endpoints
 // ============================================================
 console.log('[INIT] Registering Support Ticketing endpoints...');
 registerSupportEndpoints(app, supabase, authenticateToken, authorizeRole, upload, auditLogger);
-console.log('[INIT] Support Ticketing endpoints registered âœ…');
-console.log('  âœ“ Ticket CRUD, messaging, attachments, status management');
+console.log('[INIT] Support Ticketing endpoints registered ✅');
+console.log('  ✓ Ticket CRUD, messaging, attachments, status management');
 console.log('  ? Backup restoration & deletion with audit log');
 console.log('  ? Automatic retention policy enforcement');
 
@@ -1219,20 +1219,20 @@ console.log('  ? Automatic retention policy enforcement');
 // ============================================================
 console.log('[INIT] Registering Logging & Monitoring endpoints...');
 registerLoggingEndpoints(app, supabase, authenticateToken, authorizeRole);
-console.log('[INIT] Logging & Monitoring endpoints registered âœ…');
-console.log('  âœ“ Log retrieval and filtering');
-console.log('  âœ“ System health and metrics monitoring');
-console.log('  âœ“ Automatic log rotation and cleanup');
+console.log('[INIT] Logging & Monitoring endpoints registered ✅');
+console.log('  ✓ Log retrieval and filtering');
+console.log('  ✓ System health and metrics monitoring');
+console.log('  ✓ Automatic log rotation and cleanup');
 
 // ============================================================
 // AUDIT LOGGING ENDPOINTS (Phase 2 - Moderator Monitoring)
 // ============================================================
 console.log('[INIT] Registering Audit Logging endpoints...');
 registerAuditEndpoints(app, supabase, authenticateToken, authorizeRole);
-console.log('[INIT] Audit Logging endpoints registered âœ…');
-console.log('  âœ“ Audit log retrieval with filtering');
-console.log('  âœ“ Suspicious activity detection');
-console.log('  âœ“ CSV export for compliance');
+console.log('[INIT] Audit Logging endpoints registered ✅');
+console.log('  ✓ Audit log retrieval with filtering');
+console.log('  ✓ Suspicious activity detection');
+console.log('  ✓ CSV export for compliance');
 
 // ============================================================
 // INVOICE SYSTEM ENDPOINTS (Phase 3 Features)
@@ -1249,10 +1249,10 @@ registerInvoiceEndpoints(app, supabase, createInvoiceAuth, R2Storage);
 addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, R2Storage);
 addClearFileEndpoint(app, supabase, createInvoiceAuth);
 addFakturPajakRenameEndpoints(app, supabase, createInvoiceAuth);
-console.log('[INIT] Invoice System endpoints registered âœ…');
-console.log('  âœ“ Excel Upload & Parsing');
-console.log('  âœ“ Invoice List & Statistics');
-console.log('  âœ“ PDF Upload & Auto-matching');
+console.log('[INIT] Invoice System endpoints registered ✅');
+console.log('  ✓ Excel Upload & Parsing');
+console.log('  ✓ Invoice List & Statistics');
+console.log('  ✓ PDF Upload & Auto-matching');
 
 // ============================================================
 // MULTER ERROR HANDLER (Middleware)
@@ -1575,7 +1575,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     }
 });
 
-// POST /api/auth/verify-admin â€” quick check for admin bypass during maintenance
+// POST /api/auth/verify-admin — quick check for admin bypass during maintenance
 app.post('/api/auth/verify-admin', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -1600,7 +1600,7 @@ app.post('/api/auth/verify-admin', async (req, res) => {
     }
 });
 
-// POST /api/auth/logout (stateless Ã¢â‚¬â€ just for audit logging)
+// POST /api/auth/logout (stateless â€” just for audit logging)
 app.post('/api/auth/logout', authenticateToken, async (req, res) => {
     try {
         // Log audit
@@ -1633,7 +1633,7 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/auth/me Ã¢â‚¬â€ get current user info
+// GET /api/auth/me â€” get current user info
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const { data: user, error } = await supabase
@@ -1649,7 +1649,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 
         res.json({ user });
 
-        // POST /api/logout Ã¢â‚¬â€ Terminate session
+        // POST /api/logout â€” Terminate session
         app.post('/api/logout', authenticateToken, async (req, res) => {
             try {
                 const { session_id } = req.body;
@@ -1670,7 +1670,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 // FILES ENDPOINTS
 // ============================================================
 
-// GET /api/files Ã¢â‚¬â€ list files (auto-filtered by zona for admin_zona)
+// GET /api/files â€” list files (auto-filtered by zona for admin_zona)
 app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
     try {
         if (LOG_LEVEL === "debug") console.log(`[/api/files] User role: ${req.user.role}, zona_id: ${req.user.zona_id}`);
@@ -1830,7 +1830,7 @@ async function enrichTokoData(files) {
     if (tokos) {
         tokos.forEach(t => {
             tokoMap[t.id] = t;
-            if (LOG_LEVEL === 'debug') console.log('[enrichTokoData] Mapped toko:', t.id, 'â†’', t.nama);
+            if (LOG_LEVEL === 'debug') console.log('[enrichTokoData] Mapped toko:', t.id, '→', t.nama);
         });
     }
     
@@ -1879,7 +1879,7 @@ app.get('/api/diagnostic/all-tokos', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/files/trash â€” list deleted files
+// GET /api/files/trash — list deleted files
 app.get('/api/files/trash', authenticateToken, requirePermission('restore_trash'), async (req, res) => {
     try {
         let query = supabase
@@ -1929,7 +1929,7 @@ app.get('/api/files/trash', authenticateToken, requirePermission('restore_trash'
 });
 
 
-// GET /api/toko â€” list tokos (filtered by zona)
+// GET /api/toko — list tokos (filtered by zona)
 app.get('/api/toko', authenticateToken, async (req, res) => {
     try {
         let query = supabase.from('toko').select('id, nama, zona_id').order('nama', { ascending: true });
@@ -2061,7 +2061,7 @@ async function streamFileDownload(req, res) {
         const isCompressed = file.storage_path && file.storage_path.endsWith('.gz');
         
         if (isCompressed) {
-            console.log(`[Download] ðŸ“‚ Decompressing: ${file.nama_file}`);
+            console.log(`[Download] 📂 Decompressing: ${file.nama_file}`);
             
             // Convert stream to buffer for decompression
             const chunks = [];
@@ -2072,9 +2072,9 @@ async function streamFileDownload(req, res) {
                     const decompressResult = await compression.decompressIfNeeded(compressedBuffer, file.nama_file);
                     
                     if (decompressResult.wasCompressed) {
-                        console.log(`[Download] âœ… Decompression successful: ${(decompressResult.data.length / 1024 / 1024).toFixed(2)}MB`);
+                        console.log(`[Download] ✅ Decompression successful: ${(decompressResult.data.length / 1024 / 1024).toFixed(2)}MB`);
                     } else {
-                        console.log(`[Download] â„¹ï¸  File not gzipped, serving as-is`);
+                        console.log(`[Download] ℹ️  File not gzipped, serving as-is`);
                     }
                     
                     res.setHeader('Content-Type', 'application/octet-stream');
@@ -2114,7 +2114,7 @@ async function streamFileDownload(req, res) {
     }
 }
 
-// GET /api/files/:id/download â€” download file
+// GET /api/files/:id/download — download file
 app.get('/api/files/:id/download', authenticateToken, streamFileDownload);
 
 // Alias for sequential download (1-3 files) used by frontend
@@ -2125,7 +2125,7 @@ app.get('/api/files/download/:id', authenticateToken, (req, res, next) => {
     return streamFileDownload(req, res, next);
 });
 
-// GET /api/files/:id/view â€” inline preview (PDF in iframe)
+// GET /api/files/:id/view — inline preview (PDF in iframe)
 app.get('/api/files/:id/view', authenticateToken, async (req, res) => {
     try {
         console.log('[Files:View] Starting preview request for ID:', req.params.id);
@@ -2173,7 +2173,7 @@ app.get('/api/files/:id/view', authenticateToken, async (req, res) => {
             const isCompressed = file.storage_path && file.storage_path.endsWith('.gz');
             
             if (isCompressed) {
-                console.log(`[Files:View] ðŸ“‚ Decompressing PDF: ${file.nama_file}`);
+                console.log(`[Files:View] 📂 Decompressing PDF: ${file.nama_file}`);
                 
                 // Buffer the entire stream for decompression
                 const chunks = [];
@@ -2184,7 +2184,7 @@ app.get('/api/files/:id/view', authenticateToken, async (req, res) => {
                         const decompressResult = await compression.decompressIfNeeded(compressedBuffer, file.nama_file);
                         
                         if (decompressResult.wasCompressed) {
-                            console.log(`[Files:View] âœ… Decompression successful for preview`);
+                            console.log(`[Files:View] ✅ Decompression successful for preview`);
                         }
                         
                         res.setHeader('Content-Type', 'application/pdf');
@@ -2209,7 +2209,7 @@ app.get('/api/files/:id/view', authenticateToken, async (req, res) => {
                 res.setHeader('Content-Disposition', 'inline; filename="' + file.nama_file + '"');
                 res.setHeader('Cache-Control', 'no-cache');
                 
-                console.log('[Files:View] âœ… Streaming PDF (uncompressed):', file.nama_file);
+                console.log('[Files:View] ✅ Streaming PDF (uncompressed):', file.nama_file);
                 
                 // Handle stream errors
                 fileStream.on('error', (err) => {
@@ -2667,7 +2667,7 @@ app.get('/api/share/:token', async (req, res) => {
     }
 });
 
-// GET /api/files/check-duplicate â€” Background check for filename existence
+// GET /api/files/check-duplicate — Background check for filename existence
 app.get('/api/files/check-duplicate', authenticateToken, async (req, res) => {
     try {
         const { name, zona_id } = req.query;
@@ -3137,7 +3137,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, fileOp
 
             if (anomalyFiles && anomalyFiles.length > 0) {
                 finalStatus = 'Unread (Anomali)';
-                console.warn(`âš ï¸ [FRAUD DETECTION] Anomaly detected! Duplicate nominal Rp${finalNominal} for Toko ID ${toko_id} within 24h.`);
+                console.warn(`⚠️ [FRAUD DETECTION] Anomaly detected! Duplicate nominal Rp${finalNominal} for Toko ID ${toko_id} within 24h.`);
             }
         }
 
@@ -3180,11 +3180,11 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, fileOp
                     compressionMetadata = compressionResult.metadata;
                     
                     if (!compressionResult.skipped && compressionMetadata) {
-                        console.log(`[ChunkedBackgroundUpload] ðŸ“¦ Compression applied:`);
-                        console.log(`[ChunkedBackgroundUpload] Original: ${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB â†’ Compressed: ${(uploadBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+                        console.log(`[ChunkedBackgroundUpload] 📦 Compression applied:`);
+                        console.log(`[ChunkedBackgroundUpload] Original: ${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB → Compressed: ${(uploadBuffer.length / 1024 / 1024).toFixed(2)}MB`);
                         console.log(`[ChunkedBackgroundUpload] Savings: ${compressionMetadata.spaceSavingsPercent}% (${(compressionMetadata.spaceSavings / 1024 / 1024).toFixed(2)}MB)`);
                     } else if (compressionResult.skipped) {
-                        console.log(`[ChunkedBackgroundUpload] â­ï¸  Compression skipped: ${compressionMetadata.compressionDecision}`);
+                        console.log(`[ChunkedBackgroundUpload] ⏭️  Compression skipped: ${compressionMetadata.compressionDecision}`);
                     }
                 } catch (compErr) {
                     console.error(`[ChunkedBackgroundUpload] Compression error (falling back to uncompressed): ${compErr.message}`);
@@ -3212,7 +3212,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, fileOp
                 });
 
                 if (uploadState.success) {
-                    console.log(`[ChunkedBackgroundUpload] âœ… SUCCESS for ${req.file.originalname}`);
+                    console.log(`[ChunkedBackgroundUpload] ✅ SUCCESS for ${req.file.originalname}`);
                     console.log(`[ChunkedBackgroundUpload] Stats:`, {
                         totalChunks: uploadState.totalChunks,
                         uploadedChunks: uploadState.uploadedChunks,
@@ -3273,7 +3273,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, fileOp
             context: `Uploaded ${req.file.originalname} to ${storagePath}`
         });
 
-        // [DISABLED] WA Notification â€” replaced by manual copy-paste system via /api/batches
+        // [DISABLED] WA Notification — replaced by manual copy-paste system via /api/batches
 
         res.json({
             success: true,
@@ -3288,7 +3288,7 @@ app.post('/api/files/upload', authenticateToken, requireUploadPermission, fileOp
 });
 
 // ============================================================
-// POST /api/files/upload-piutang â€” Upload PIUTANG files
+// POST /api/files/upload-piutang — Upload PIUTANG files
 // ============================================================
 app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission, fileOpsLimiter, upload.single('file'), requirePdfMagic, validateUploadBody, async (req, res) => {
     try {
@@ -3313,7 +3313,7 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
         const parsedTokoId = toko_id ? parseInt(toko_id) : null;
         if (isDebugMode()) logDebug('[PIUTANG]', 'Parsed toko_id', { parsedTokoId });
 
-        // Extract nominal from filename (e.g., "1.520.000.pdf" â†’ "1.520.000")
+        // Extract nominal from filename (e.g., "1.520.000.pdf" → "1.520.000")
         const nominal = req.file.originalname.replace(/\.[^/.]+$/, "").trim();
 
         // Validate that nominal is not empty
@@ -3337,7 +3337,7 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
                 .single();
             
             if (tokoData) {
-                // Convert toko name to kode format (e.g., "Balaraja" â†’ "balaraja")
+                // Convert toko name to kode format (e.g., "Balaraja" → "balaraja")
                 const tokoKode = tokoData.nama.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                 storagePath = `ARSIP ANKA/${defaultZonaCode}/toko-${tokoKode}/BUKTI PIUTANG/${req.file.originalname}`;
                 console.log(`[PIUTANG Storage] With toko: ${storagePath}`);
@@ -3435,11 +3435,11 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
                     compressionMetadata = compressionResult.metadata;
                     
                     if (!compressionResult.skipped && compressionMetadata) {
-                        console.log(`[PIUTANG ChunkedBackground] ðŸ“¦ Compression applied:`);
-                        console.log(`[PIUTANG ChunkedBackground] Original: ${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB â†’ Compressed: ${(uploadBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+                        console.log(`[PIUTANG ChunkedBackground] 📦 Compression applied:`);
+                        console.log(`[PIUTANG ChunkedBackground] Original: ${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB → Compressed: ${(uploadBuffer.length / 1024 / 1024).toFixed(2)}MB`);
                         console.log(`[PIUTANG ChunkedBackground] Savings: ${compressionMetadata.spaceSavingsPercent}% (${(compressionMetadata.spaceSavings / 1024 / 1024).toFixed(2)}MB)`);
                     } else if (compressionResult.skipped) {
-                        console.log(`[PIUTANG ChunkedBackground] â­ï¸  Compression skipped: ${compressionMetadata.compressionDecision}`);
+                        console.log(`[PIUTANG ChunkedBackground] ⏭️  Compression skipped: ${compressionMetadata.compressionDecision}`);
                     }
                 } catch (compErr) {
                     console.error(`[PIUTANG ChunkedBackground] Compression error (falling back to uncompressed): ${compErr.message}`);
@@ -3466,7 +3466,7 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
                 });
 
                 if (uploadState.success) {
-                    console.log(`[PIUTANG ChunkedBackground] âœ… SUCCESS for ${req.file.originalname}`);
+                    console.log(`[PIUTANG ChunkedBackground] ✅ SUCCESS for ${req.file.originalname}`);
                     console.log(`[PIUTANG ChunkedBackground] Stats:`, {
                         totalChunks: uploadState.totalChunks,
                         uploadedChunks: uploadState.uploadedChunks,
@@ -3509,7 +3509,7 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
             context: `Uploaded ${req.file.originalname} (Nominal: ${nominal})`
         });
 
-        console.log(`[PIUTANG] âœ… Upload successful:`, req.file.originalname);
+        console.log(`[PIUTANG] ✅ Upload successful:`, req.file.originalname);
 
         res.status(200).json({
             success: true,
@@ -3525,7 +3525,7 @@ app.post('/api/files/upload-piutang', authenticateToken, requireUploadPermission
 });
 
 // ============================================================
-// GET /api/admin/missing-files â€” Get list of files marked as missing
+// GET /api/admin/missing-files — Get list of files marked as missing
 // ============================================================
 app.get('/api/admin/missing-files', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
@@ -3558,7 +3558,7 @@ app.get('/api/admin/missing-files', authenticateToken, authorizeRole('super_admi
 });
 
 // ============================================================
-// POST /api/admin/scan-missing-files â€” Manual trigger to scan for missing files
+// POST /api/admin/scan-missing-files — Manual trigger to scan for missing files
 // ============================================================
 app.post('/api/admin/scan-missing-files', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
@@ -3611,7 +3611,7 @@ app.post('/api/admin/scan-missing-files', authenticateToken, authorizeRole('supe
             }
         }
         
-        console.log(`[Scan Missing] âœ“ Scanned ${checkedCount}, found ${missingCount} missing`);
+        console.log(`[Scan Missing] ✓ Scanned ${checkedCount}, found ${missingCount} missing`);
         
         res.json({
             status: 'success',
@@ -3630,7 +3630,7 @@ app.post('/api/admin/scan-missing-files', authenticateToken, authorizeRole('supe
 });
 
 // ============================================================
-// DELETE /api/admin/missing-files/:id â€” Delete a missing file from database
+// DELETE /api/admin/missing-files/:id — Delete a missing file from database
 // ============================================================
 app.delete('/api/admin/missing-files/:id', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
@@ -3646,7 +3646,7 @@ app.delete('/api/admin/missing-files/:id', authenticateToken, authorizeRole('sup
         
         if (error) throw error;
         
-        console.log(`[Delete Missing] âœ“ Deleted missing file: ${id}`);
+        console.log(`[Delete Missing] ✓ Deleted missing file: ${id}`);
         
         res.json({
             status: 'success',
@@ -3665,7 +3665,7 @@ app.delete('/api/admin/missing-files/:id', authenticateToken, authorizeRole('sup
 // Update History Endpoints
 // ============================================================
 
-// GET /api/update-history â€” Get all published updates
+// GET /api/update-history — Get all published updates
 app.get('/api/update-history', authenticateToken, async (req, res) => {
     try {
         const { data: updates, error } = await supabase
@@ -3719,7 +3719,7 @@ app.get('/api/update-history', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/update-history â€” Create new update (moderator/super_admin only)
+// POST /api/update-history — Create new update (moderator/super_admin only)
 app.post('/api/update-history', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { version, type, title, description, category, severity, impact_areas, requires_action, is_breaking_change, status } = req.body;
@@ -3751,7 +3751,7 @@ app.post('/api/update-history', authenticateToken, authorizeRole('super_admin', 
         
         if (error) throw error;
         
-        console.log(`[Update History] âœ… Created: ${type} - ${title}`);
+        console.log(`[Update History] ✅ Created: ${type} - ${title}`);
         
         res.json({
             status: 'success',
@@ -3766,7 +3766,7 @@ app.post('/api/update-history', authenticateToken, authorizeRole('super_admin', 
     }
 });
 
-// DELETE /api/update-history/:id â€” Delete update (moderator/super_admin only)
+// DELETE /api/update-history/:id — Delete update (moderator/super_admin only)
 app.delete('/api/update-history/:id', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -3778,7 +3778,7 @@ app.delete('/api/update-history/:id', authenticateToken, authorizeRole('super_ad
         
         if (error) throw error;
         
-        console.log(`[Update History] âœ… Deleted: ${id}`);
+        console.log(`[Update History] ✅ Deleted: ${id}`);
         
         res.json({
             status: 'success',
@@ -3797,7 +3797,7 @@ app.delete('/api/update-history/:id', authenticateToken, authorizeRole('super_ad
 // UPDATE HISTORY ITEMS API
 // ============================================================
 
-// GET /api/update-history-items/:updateId â€” Get all items for an update
+// GET /api/update-history-items/:updateId — Get all items for an update
 app.get('/api/update-history-items/:updateId', authenticateToken, async (req, res) => {
     try {
         const { updateId } = req.params;
@@ -3824,7 +3824,7 @@ app.get('/api/update-history-items/:updateId', authenticateToken, async (req, re
     }
 });
 
-// POST /api/update-history-items â€” Create new item (moderator/super_admin only)
+// POST /api/update-history-items — Create new item (moderator/super_admin only)
 app.post('/api/update-history-items', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { update_id, item_number, type, title, description } = req.body;
@@ -3856,7 +3856,7 @@ app.post('/api/update-history-items', authenticateToken, authorizeRole('super_ad
             throw error;
         }
 
-        console.log(`[Create Item] âœ… Created: id=${item.id}, update_id=${update_id}`);
+        console.log(`[Create Item] ✅ Created: id=${item.id}, update_id=${update_id}`);
 
         res.json({
             status: 'success',
@@ -3871,7 +3871,7 @@ app.post('/api/update-history-items', authenticateToken, authorizeRole('super_ad
     }
 });
 
-// DELETE /api/update-history-items/:id â€” Delete item (moderator/super_admin only)
+// DELETE /api/update-history-items/:id — Delete item (moderator/super_admin only)
 app.delete('/api/update-history-items/:id', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { id } = req.params;
@@ -3883,7 +3883,7 @@ app.delete('/api/update-history-items/:id', authenticateToken, authorizeRole('su
 
         if (error) throw error;
 
-        console.log(`[Update History Items] âœ… Deleted: ${id}`);
+        console.log(`[Update History Items] ✅ Deleted: ${id}`);
 
         res.json({
             status: 'success',
@@ -3943,7 +3943,7 @@ app.delete('/api/files/:id', authenticateToken, sensitiveOpsLimiter, async (req,
                 // Delete from local storage first (quick)
                 try {
                     await LocalStorage.deleteFile(file.storage_path);
-                    console.log(`[Delete] âœ… Deleted from local storage: ${file.nama_file}`);
+                    console.log(`[Delete] ✅ Deleted from local storage: ${file.nama_file}`);
                 } catch (localErr) {
                     console.warn(`[Delete] Local delete warning: ${localErr.message}`);
                 }
@@ -3951,7 +3951,7 @@ app.delete('/api/files/:id', authenticateToken, sensitiveOpsLimiter, async (req,
                 // Delete from Google Drive (may take time, but user waits)
                 try {
                     await R2Storage.deleteFile(file.storage_path);
-                    console.log(`[Delete] âœ… Deleted from Google Drive: ${file.nama_file}`);
+                    console.log(`[Delete] ✅ Deleted from Google Drive: ${file.nama_file}`);
                 } catch (gdriveErr) {
                     console.error(`[Delete] Google Drive delete error: ${gdriveErr.message}`);
                     throw gdriveErr; // Throw to prevent success response if GDrive delete fails
@@ -4117,7 +4117,7 @@ app.post('/api/files/bulk-trash-delete', authenticateToken, requirePermission('h
     }
 });
 
-// PUT /api/files/:id/restore â€” Restricted to Admin/Moderator
+// PUT /api/files/:id/restore — Restricted to Admin/Moderator
 app.put('/api/files/:id/restore', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
 
@@ -4327,7 +4327,7 @@ app.get('/api/users', async (req, res) => {
     }
 });
 
-// GET /api/users/names?ids=id1,id2,id3 â€” Get user names by IDs for badges
+// GET /api/users/names?ids=id1,id2,id3 — Get user names by IDs for badges
 app.get('/api/users/names', authenticateToken, async (req, res) => {
     try {
         const { ids } = req.query;
@@ -4356,7 +4356,7 @@ app.get('/api/users/names', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/users Ã¢â‚¬â€ create user
+// POST /api/users â€” create user
 app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) => {
     // Permission check: allow super_admin and moderator only
     if (req.user.role !== 'super_admin' && req.user.role !== 'moderator') {
@@ -4787,7 +4787,7 @@ app.post('/api/admin/recreate-admin-zona-users', authenticateToken, authorizeRol
                 // SECURITY FIX: DO NOT return password in response
                 // Instead, log it to server console ONLY (admin must save it separately)
                 console.log(`[ADMIN] INITIAL PASSWORD FOR ${email}: ${randomPassword}`);
-                console.warn(`[ADMIN] âš ï¸  SAVE THIS PASSWORD SECURELY: User must be given password through SECURE CHANNEL (email, SMS, in-person), NOT via API response`);
+                console.warn(`[ADMIN] ⚠️  SAVE THIS PASSWORD SECURELY: User must be given password through SECURE CHANNEL (email, SMS, in-person), NOT via API response`);
                 
                 newUsers.push({
                     id: user.id,
@@ -4814,7 +4814,7 @@ app.post('/api/admin/recreate-admin-zona-users', authenticateToken, authorizeRol
     }
 });
 
-// PUT /api/users/:id Ã¢â‚¬â€ update user
+// PUT /api/users/:id â€” update user
 app.put('/api/users/:id', authenticateToken, async (req, res) => {
     // Permission check: allow users to update their own profile, or super_admin/moderator to update anyone
     const userId = req.params.id;
@@ -5040,7 +5040,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE /api/users/:id Ã¢â‚¬â€ Permanent Delete
+// DELETE /api/users/:id â€” Permanent Delete
 app.delete('/api/users/:id', authenticateToken, requirePermission('manage_users'), async (req, res) => {
     try {
         const userIdToDelete = req.params.id;
@@ -5176,7 +5176,7 @@ app.delete('/api/users/:id', authenticateToken, requirePermission('manage_users'
 // OPERATIONAL FEATURES (Broadcast & Stats)
 // ============================================================
 
-// POST /api/broadcasts â€” Send broadcast (Admin only)
+// POST /api/broadcasts — Send broadcast (Admin only)
 app.post('/api/broadcasts', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { content, target_zona_id } = req.body;
@@ -5200,7 +5200,7 @@ app.post('/api/broadcasts', authenticateToken, authorizeRole('super_admin', 'mod
     }
 });
 
-// GET /api/broadcasts â€” Fetch all broadcasts
+// GET /api/broadcasts — Fetch all broadcasts
 app.get('/api/broadcasts', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -5216,7 +5216,7 @@ app.get('/api/broadcasts', authenticateToken, authorizeRole('super_admin', 'mode
 });
 
 
-// DELETE /api/broadcasts/:id â€” Delete broadcast
+// DELETE /api/broadcasts/:id — Delete broadcast
 app.delete('/api/broadcasts/:id', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { error } = await supabase
@@ -5254,7 +5254,7 @@ app.get('/api/broadcasts/latest', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/system/sync-gdrive â€” Sync Google Drive files to database
+// POST /api/system/sync-gdrive — Sync Google Drive files to database
 app.post('/api/system/sync-gdrive', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         console.log('[Sync] Starting Google Drive to Database sync...');
@@ -5527,7 +5527,7 @@ app.get('/api/system/health', authenticateToken, async (req, res) => {
     res.status(200).json({ success: true, health });
 });
 
-// GET /api/system/maintenance â€” Get current system status (Public, no auth required)
+// GET /api/system/maintenance — Get current system status (Public, no auth required)
 app.get('/api/system/maintenance', async (req, res) => {
     try {
         const status = await getMaintenanceStatus();
@@ -5539,7 +5539,7 @@ app.get('/api/system/maintenance', async (req, res) => {
     }
 });
 
-// HEAD /api/system/maintenance â€” Allow HEAD requests (some clients send HEAD before GET)
+// HEAD /api/system/maintenance — Allow HEAD requests (some clients send HEAD before GET)
 app.head('/api/system/maintenance', async (req, res) => {
     try {
         const status = await getMaintenanceStatus();
@@ -5549,7 +5549,7 @@ app.head('/api/system/maintenance', async (req, res) => {
     }
 });
 
-// POST/PUT /api/system/maintenance â€” Toggle maintenance mode (Admin only)
+// POST/PUT /api/system/maintenance — Toggle maintenance mode (Admin only)
 app.post('/api/system/maintenance', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     handleMaintenanceUpdate(req, res);
 });
@@ -5622,7 +5622,7 @@ async function handleMaintenanceUpdate(req, res) {
 
             // Global notification: visible to every authenticated user regardless of role/zone.
             await createNotification({
-                title: 'âœ… Perbaikan Selesai',
+                title: '✅ Perbaikan Selesai',
                 message: notificationMessage,
                 type: 'success',
                 link: 'dashboard.html'
@@ -5650,7 +5650,7 @@ app.get('/api/debug/fix-sizes', authenticateToken, authorizeRole('super_admin'),
     }
 });
 
-// GET /api/stats/gdrive â€” live file count from Google Drive via rclone (cached 5 min per scope)
+// GET /api/stats/gdrive — live file count from Google Drive via rclone (cached 5 min per scope)
 const { execFile } = require('child_process');
 const RCLONE_BIN   = process.env.RCLONE_BIN    || require('path').resolve(__dirname, '..', 'rclone');
 const RCLONE_CONF  = process.env.RCLONE_CONFIG_PATH  || require('path').resolve(__dirname, '..', 'rclone.conf');
@@ -5716,7 +5716,7 @@ app.get('/api/stats/alist', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/stats/storage â€” storage usage statistics (UPDATED: Google Drive real stats)
+// GET /api/stats/storage — storage usage statistics (UPDATED: Google Drive real stats)
 app.get('/api/stats/storage', authenticateToken, async (req, res) => {
     try {
         console.log('[STATS] Fetching storage stats for user:', req.user.userId);
@@ -5775,14 +5775,14 @@ app.get('/api/stats/storage', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/stats/chart â€” Invoice Analytics (Zone-Aware)
+// GET /api/stats/chart — Invoice Analytics (Zone-Aware)
 app.get('/api/stats/chart', authenticateToken, async (req, res) => {
     try {
         const chartData = {};
         const isZoneAdmin = req.user.role === 'admin_zona';
         const userZonaId = req.user.zona_id;
 
-        // 1. Fetch zones â€” admin_zona only gets their own zone
+        // 1. Fetch zones — admin_zona only gets their own zone
         let zonaQuery = supabase.from('zonas').select('id, nama').order('kode');
         if (isZoneAdmin && userZonaId) {
             zonaQuery = zonaQuery.eq('id', userZonaId);
@@ -5794,7 +5794,7 @@ app.get('/api/stats/chart', authenticateToken, async (req, res) => {
             }
         }
 
-        // 2. Fetch INVOICE files â€” filtered by zone for admin_zona
+        // 2. Fetch INVOICE files — filtered by zone for admin_zona
         let fileQuery = supabase
             .from('files')
             .select('total_jual, category, nama_file, zona_id, zonas(nama)')
@@ -5850,7 +5850,7 @@ app.get('/api/stats/chart', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/files/:id/dispute â€” Admin Zona flags invoice as incorrect (Revision Request)
+// POST /api/files/:id/dispute — Admin Zona flags invoice as incorrect (Revision Request)
 app.post('/api/files/:id/dispute', authenticateToken, async (req, res) => {
     try {
         const { reason, note } = req.body;
@@ -5903,7 +5903,7 @@ app.post('/api/files/:id/dispute', authenticateToken, async (req, res) => {
         // 5. Notify Moderators
         await createNotification({
             role: 'moderator',
-            title: 'ðŸ“£ Request Revisi Baru',
+            title: '📣 Request Revisi Baru',
             message: `Zona ${req.user.zona_id || '-'} meminta revisi berkas: ${file.nama_file}`,
             type: 'request',
             link: 'requests.html'
@@ -6008,7 +6008,7 @@ app.post('/api/files/upload-chunked', authenticateToken, requireUploadPermission
 
         // If upload successful, create file record in database
         if (uploadState.success) {
-            console.log(`[ChunkedUpload] âœ… Upload successful, creating DB record`);
+            console.log(`[ChunkedUpload] ✅ Upload successful, creating DB record`);
 
             // Create database record (same as regular upload)
             const { data: fileRecord, error: dbError } = await supabase.from('files').insert({
@@ -6067,7 +6067,7 @@ app.post('/api/files/upload-chunked', authenticateToken, requireUploadPermission
 // BATCH UPLOAD HISTORY & NOTICE SYSTEM
 // ============================================================
 
-// POST /api/batches â€” Create a new batch session
+// POST /api/batches — Create a new batch session
 app.post('/api/batches', authenticateToken, requireUploadPermission, async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -6088,7 +6088,7 @@ app.post('/api/batches', authenticateToken, requireUploadPermission, async (req,
     }
 });
 
-// PUT /api/batches/:id â€” Update batch counters
+// PUT /api/batches/:id — Update batch counters
 app.put('/api/batches/:id', authenticateToken, async (req, res) => {
     try {
         const { total_files, success_files } = req.body;
@@ -6104,7 +6104,7 @@ app.put('/api/batches/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/batches â€” List recent batches with dynamic counts from files table
+// GET /api/batches — List recent batches with dynamic counts from files table
 app.get('/api/batches', authenticateToken, async (req, res) => {
     try {
         // Fetch batches
@@ -6157,7 +6157,7 @@ app.get('/api/batches', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/batches/:id/details â€” Get files in a batch, grouped by zona
+// GET /api/batches/:id/details — Get files in a batch, grouped by zona
 app.get('/api/batches/:id/details', authenticateToken, async (req, res) => {
     try {
         const { data: files, error } = await supabase
@@ -6206,7 +6206,7 @@ app.get('/api/zonas', authenticateToken, async (req, res) => {
     res.json({ zonas: data });
 });
 
-// POST /api/zonas â€” Create new zone
+// POST /api/zonas — Create new zone
 app.post('/api/zonas', authenticateToken, requirePermission('manage_zonas'), async (req, res) => {
     try {
         const { nama, wa_recipient } = req.body;
@@ -6227,7 +6227,7 @@ app.post('/api/zonas', authenticateToken, requirePermission('manage_zonas'), asy
     }
 });
 
-// PUT /api/zonas/:id Ã¢â‚¬â€ Update zone settings
+// PUT /api/zonas/:id â€” Update zone settings
 app.put('/api/zonas/:id', authenticateToken, requirePermission('manage_zonas'), async (req, res) => {
     try {
         const { nama, wa_recipient } = req.body;
@@ -6244,7 +6244,7 @@ app.put('/api/zonas/:id', authenticateToken, requirePermission('manage_zonas'), 
 });
 
 
-// POST /api/toko Ã¢â‚¬â€ Create new shop
+// POST /api/toko â€” Create new shop
 app.post('/api/toko', authenticateToken, requirePermission('manage_toko'), async (req, res) => {
     try {
         const { kode, nama, zona_id } = req.body;
@@ -6265,7 +6265,7 @@ app.post('/api/toko', authenticateToken, requirePermission('manage_toko'), async
     }
 });
 
-// PUT /api/toko/:id Ã¢â‚¬â€ Update shop
+// PUT /api/toko/:id â€” Update shop
 app.put('/api/toko/:id', authenticateToken, requirePermission('manage_toko'), async (req, res) => {
     try {
         const { kode, nama, zona_id } = req.body;
@@ -6281,7 +6281,7 @@ app.put('/api/toko/:id', authenticateToken, requirePermission('manage_toko'), as
     }
 });
 
-// DELETE /api/toko/:id Ã¢â‚¬â€ Delete shop
+// DELETE /api/toko/:id â€” Delete shop
 app.delete('/api/toko/:id', authenticateToken, requirePermission('manage_toko'), async (req, res) => {
     try {
         // Check if shop still has files linked
@@ -6313,7 +6313,7 @@ app.delete('/api/toko/:id', authenticateToken, requirePermission('manage_toko'),
 // MEDIA CATEGORIES ENDPOINTS (Super Admin only)
 // ============================================================
 
-// GET /api/media-categories Ã¢â‚¬â€ list all categories
+// GET /api/media-categories â€” list all categories
 app.get('/api/media-categories', authenticateToken, async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -6328,7 +6328,7 @@ app.get('/api/media-categories', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/media-categories Ã¢â‚¬â€ create new category
+// POST /api/media-categories â€” create new category
 app.post('/api/media-categories', authenticateToken, requirePermission('manage_media_ads'), async (req, res) => {
     try {
         const { nama, emoji, deskripsi, warna } = req.body;
@@ -6340,7 +6340,7 @@ app.post('/api/media-categories', authenticateToken, requirePermission('manage_m
             .from('media_categories')
             .insert({
                 nama: slug,
-                emoji: emoji || 'Ã°Å¸â€œÂ',
+                emoji: emoji || 'ðŸ“',
                 deskripsi: deskripsi || '',
                 warna: warna || 'gray'
             })
@@ -6362,7 +6362,7 @@ app.post('/api/media-categories', authenticateToken, requirePermission('manage_m
         await supabase.from('audit_logs').insert({
             user_id: req.user.userId,
             action: 'Create Media Category',
-            context: `Created category: ${slug} (${emoji || 'Ã°Å¸â€œÂ'})`
+            context: `Created category: ${slug} (${emoji || 'ðŸ“'})`
         });
 
         res.json({ success: true, category: data });
@@ -6372,7 +6372,7 @@ app.post('/api/media-categories', authenticateToken, requirePermission('manage_m
     }
 });
 
-// DELETE /api/media-categories/:id Ã¢â‚¬â€ delete category
+// DELETE /api/media-categories/:id â€” delete category
 app.delete('/api/media-categories/:id', authenticateToken, requirePermission('manage_media_ads'), async (req, res) => {
     try {
         const { error } = await supabase
@@ -6473,7 +6473,7 @@ setInterval(async () => {
             }
         }
         
-        console.log(`[Background Task] âœ“ Checked ${checkedCount} files, found ${missingCount} missing`);
+        console.log(`[Background Task] ✓ Checked ${checkedCount} files, found ${missingCount} missing`);
     } catch (err) {
         console.error('[Background Task] Sync failed:', err);
     }
@@ -6643,7 +6643,7 @@ app.post('/api/requests', authenticateToken, async (req, res) => {
         // Notify Moderators
         await createNotification({
             role: 'moderator',
-            title: 'ðŸ“„ Request Dokumen Baru',
+            title: '📄 Request Dokumen Baru',
             message: `Admin Zona ${req.user.zona_id || '-'} meminta dokumen: ${pesan.substring(0, 50)}${pesan.length > 50 ? '...' : ''}`,
             type: 'request',
             link: 'requests.html'
@@ -6731,7 +6731,7 @@ app.put('/api/requests/:id', authenticateToken, async (req, res) => {
         if (request && request.user_id) {
             await createNotification({
                 user_id: request.user_id,
-                title: 'âœ… Request Dokumen Diupdate',
+                title: '✅ Request Dokumen Diupdate',
                 message: `Status permintaan Anda telah diubah menjadi "${status}".`,
                 type: status === 'Selesai' ? 'success' : 'info',
                 link: 'requests.html'
@@ -6785,7 +6785,7 @@ app.post('/api/bugs', authenticateToken, async (req, res) => {
         // Notify Moderators
         await createNotification({
             role: 'moderator',
-            title: 'ðŸ› Laporan Bug Baru',
+            title: '🐛 Laporan Bug Baru',
             message: `Zona ${req.user.zona_id || '-'} melaporkan bug: ${tipe}`,
             type: 'error',
             link: 'bugs.html'
@@ -6838,7 +6838,7 @@ app.put('/api/bugs/:id', authenticateToken, async (req, res) => {
         try {
             const { data: bugData } = await supabase.from('bug_reports').select('user_id').eq('id', req.params.id).single();
             if (bugData && bugData.user_id) {
-                await createNotification({ user_id: bugData.user_id, title: 'ðŸ”„ Status Bug Diperbarui', message: 'Laporan bug Anda kini berstatus "' + status + '".', type: 'info' });
+                await createNotification({ user_id: bugData.user_id, title: '🔄 Status Bug Diperbarui', message: 'Laporan bug Anda kini berstatus "' + status + '".', type: 'info' });
             }
         } catch (ne) { }
 
@@ -6864,7 +6864,7 @@ app.delete('/api/bugs/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/bugs/upload â€” Upload bug screenshot
+// POST /api/bugs/upload — Upload bug screenshot
 app.post('/api/bugs/upload', authenticateToken, uploadMediaMulter.single('file'), async (req, res) => {
     try {
         if (!req.file) return res.status(400).json({ error: 'Tidak ada file.' });
@@ -6879,7 +6879,7 @@ app.post('/api/bugs/upload', authenticateToken, uploadMediaMulter.single('file')
     }
 });
 
-// GET /api/bugs/view â€” View bug screenshot (proxied stream)
+// GET /api/bugs/view — View bug screenshot (proxied stream)
 app.get('/api/bugs/view', authenticateToken, async (req, res) => {
     try {
         const storagePath = req.query.path;
@@ -7129,13 +7129,13 @@ const HOST = '0.0.0.0';
 const PORT = Number(process.env.PORT) || 5000;
 
 // Task 3.4: Log startup intent before binding
-console.log(`ðŸš€ Backend starting on port ${PORT}`);
+console.log(`🚀 Backend starting on port ${PORT}`);
 
-// Initialize startup sequence: Alist â†’ Rclone â†’ Node.js Server
+// Initialize startup sequence: Alist → Rclone → Node.js Server
 // (async () => {
 //     try {
 //         // Stage 1: Initialize Alist service (Task 2.1)
-//         console.log('[Backend] ðŸš€ Starting initialization sequence...');
+//         console.log('[Backend] 🚀 Starting initialization sequence...');
 //         console.log('[Stage 1] Initializing Alist service...');
         
 //         const alistResult = await initializeAlist();
@@ -7143,22 +7143,22 @@ console.log(`ðŸš€ Backend starting on port ${PORT}`);
 //             console.error(alistResult.message);
 //             process.exit(1);
 //         }
-//         console.log('[Stage 1] âœ… Alist service ready');
+//         console.log('[Stage 1] ✅ Alist service ready');
 
 //         // Stage 2: Initialize storage credentials (Task 2.3)
 //         console.log('[Stage 2] Initializing storage credentials...');
 //         try {
 //             const result = await R2Storage.initializeRcloneCredentials();
 //             if (result.success) {
-//                 console.log(`âœ… Storage credentials loaded from ${result.source}`);
+//                 console.log(`✅ Storage credentials loaded from ${result.source}`);
 //             } else {
-//                 console.warn(`âš ï¸ Storage credentials unavailable (using defaults): ${result.message}`);
+//                 console.warn(`⚠️ Storage credentials unavailable (using defaults): ${result.message}`);
 //             }
 //         } catch (err) {
-//             console.error(`âŒ Credential initialization error:`, err.message);
-//             console.warn('â„¹ï¸ Continuing with default fallback credentials...');
+//             console.error(`❌ Credential initialization error:`, err.message);
+//             console.warn('ℹ️ Continuing with default fallback credentials...');
 //         }
-//         console.log('[Stage 2] âœ… Storage credentials initialized');
+//         console.log('[Stage 2] ✅ Storage credentials initialized');
 
 //         // Stage 3: Start Node.js server
 //         console.log('[Stage 3] Starting Node.js backend server...');
@@ -7448,16 +7448,16 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         
         try {
             R2Storage.validateConfig();
-            console.log('[Startup] âœ… Cloudflare R2 configuration valid');
+            console.log('[Startup] ✅ Cloudflare R2 configuration valid');
         } catch (error) {
-            console.error('[Startup] âŒ R2 configuration error:', error.message);
+            console.error('[Startup] ❌ R2 configuration error:', error.message);
             process.exit(1);
         }
         
         const PORT = Number(process.env.PORT) || 5000;
         console.log('\n[Express] Starting Express server on port ' + PORT + '...\n');
         
-        console.log('[Express] âœ… Storage: Cloudflare R2 - S3-compatible API');
+        console.log('[Express] ✅ Storage: Cloudflare R2 - S3-compatible API');
         
         // ================================================================
         // Register Chunked Upload Endpoints (Feature-Flagged)
@@ -7474,7 +7474,7 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
             });
             
             app.use('/api/files', chunkUploadMulter.single('chunk'), chunkedRouter);
-            console.log('[ChunkedUpload] âœ… Routes registered: /api/files/{init,chunk,status,complete,abort,metrics}');
+            console.log('[ChunkedUpload] ✅ Routes registered: /api/files/{init,chunk,status,complete,abort,metrics}');
         }
         
         const HOST = process.env.HOST || '0.0.0.0';
@@ -7535,9 +7535,9 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
 
         const server = app.listen(PORT, HOST, () => {
             // Task 3.4: Log successful port binding
-            console.log(`âœ… Backend listening on port ${PORT}`);
-            console.log(`âœ… External access: http://localhost:${PORT}`);
-            console.log(`ðŸš€ Pusat Arsip Anka Backend v2.1 running on http://localhost:${PORT}`);
+            console.log(`✅ Backend listening on port ${PORT}`);
+            console.log(`✅ External access: http://localhost:${PORT}`);
+            console.log(`🚀 Pusat Arsip Anka Backend v2.1 running on http://localhost:${PORT}`);
             console.log(`   Auth: JWT (${JWT_EXPIRES_IN} expiry)`);
             console.log(`   Storage: Cloudflare R2`);
             console.log(`   DB: Supabase PostgreSQL`);
@@ -7600,22 +7600,22 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
 
     // Handle process termination signals gracefully
     process.on('SIGTERM', () => {
-        console.log('ðŸ“‹ SIGTERM signal received: closing HTTP server');
+        console.log('📋 SIGTERM signal received: closing HTTP server');
         server.close(() => {
-            console.log('âœ… HTTP server closed');
+            console.log('✅ HTTP server closed');
             process.exit(0);
         });
     });
 
     process.on('SIGINT', () => {
-        console.log('ðŸ“‹ SIGINT signal received: closing HTTP server');
+        console.log('📋 SIGINT signal received: closing HTTP server');
         server.close(() => {
-            console.log('âœ… HTTP server closed');
+            console.log('✅ HTTP server closed');
             process.exit(0);
         });
     });
     } catch (err) {
-        console.error('[Backend] âŒ Initialization failed:', err.message);
+        console.error('[Backend] ❌ Initialization failed:', err.message);
         if (err.stack) {
             console.error('[Backend] Stack trace:', err.stack);
         }
@@ -7630,7 +7630,7 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
 
 // Handle uncaught synchronous errors
 process.on('uncaughtException', (err) => {
-    console.error('âŒ UNCAUGHT EXCEPTION (Synchronous Error):');
+    console.error('❌ UNCAUGHT EXCEPTION (Synchronous Error):');
     console.error(`   Message: ${err.message}`);
     console.error(`   Stack: ${err.stack}`);
     if (err.filename) console.error(`   File: ${err.filename}:${err.lineno}:${err.colno}`);
@@ -7640,7 +7640,7 @@ process.on('uncaughtException', (err) => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('âŒ UNHANDLED PROMISE REJECTION:');
+    console.error('❌ UNHANDLED PROMISE REJECTION:');
     console.error(`   Reason: ${reason instanceof Error ? reason.message : reason}`);
     if (reason instanceof Error) {
         console.error(`   Stack: ${reason.stack}`);
@@ -7715,7 +7715,7 @@ app.post('/api/admin/cleanup-stale-sessions', authenticateToken, requirePermissi
         
         const activeCount = activeSessions ? activeSessions.length : 0;
         
-        console.log(`[ADMIN] ✅ Cleanup completed - ${activeCount} active sessions remaining`);
+        console.log(`[ADMIN] ? Cleanup completed - ${activeCount} active sessions remaining`);
         
         // Log the admin action
         const { ipAddress } = AuditLogger.extractClientInfo(req);
@@ -7789,7 +7789,7 @@ app.post('/api/admin/force-logout-user/:userId', authenticateToken, requirePermi
             return res.status(500).json({ error: 'Force logout failed: ' + terminateError.message });
         }
         
-        console.log(`[ADMIN] ✅ Force logged out user: ${user.email}`);
+        console.log(`[ADMIN] ? Force logged out user: ${user.email}`);
         
         // Log the admin action
         const { ipAddress } = AuditLogger.extractClientInfo(req);
@@ -7867,7 +7867,7 @@ app.get('/api/admin/list-user-sessions', authenticateToken, requirePermission('m
             user_agent: sess.user_agent
         }));
         
-        console.log(`[ADMIN] ✅ Found ${transformedSessions.length} active sessions`);
+        console.log(`[ADMIN] ? Found ${transformedSessions.length} active sessions`);
         
         res.json({
             success: true,
@@ -7911,7 +7911,7 @@ app.get('/api/admin/user-sessions/:userId', authenticateToken, requirePermission
             return res.status(500).json({ error: 'Failed to fetch sessions: ' + sessError.message });
         }
         
-        console.log(`[ADMIN] ✅ Found ${sessions?.length || 0} sessions for ${user.email}`);
+        console.log(`[ADMIN] ? Found ${sessions?.length || 0} sessions for ${user.email}`);
         
         res.json({
             success: true,
