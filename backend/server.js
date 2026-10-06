@@ -1020,6 +1020,29 @@ function authenticateToken(req, res, next) {
 
             req.user = decoded;
 
+            // --- SESSION VALIDITY CHECK ---
+            // For users with moderator/admin roles, verify they still have active session
+            // This ensures force-logout actually kicks them out
+            if (user.role === 'moderator' || user.role === 'super_admin' || user.role === 'admin_zona') {
+                const { data: activeSessions } = await supabase
+                    .from('user_sessions')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', user.id)
+                    .eq('is_active', true)
+                    .gt('expires_at', new Date().toISOString());
+                
+                if (!activeSessions || activeSessions.length === 0) {
+                    logSecurityEvent('[AUTH]', 'Token rejected - no active sessions found', { 
+                        userId: user.id,
+                        email: user.email
+                    });
+                    return res.status(403).json({ 
+                        error: 'Session telah diakhiri. Silakan login kembali.',
+                        code: 'SESSION_TERMINATED'
+                    });
+                }
+            }
+
             // --- MAINTENANCE MODE ENFORCEMENT ---
             const sys = await getMaintenanceStatus();
             if (sys && sys.isMaintenance && user.role === 'admin_zona') {

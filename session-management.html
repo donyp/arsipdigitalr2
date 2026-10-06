@@ -467,7 +467,15 @@
                 });
 
                 if (!response.ok) {
-                    if (response.status === 401) {
+                    if (response.status === 401 || response.status === 403) {
+                        const data = await response.json();
+                        if (data.code === 'SESSION_TERMINATED') {
+                            // User was force-logged out
+                            localStorage.removeItem('jwt_token');
+                            alert('Your session has been terminated. Please login again.');
+                            window.location.href = '/login';
+                            return;
+                        }
                         localStorage.removeItem('jwt_token');
                         window.location.href = '/login';
                         return;
