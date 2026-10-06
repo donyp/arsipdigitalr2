@@ -548,10 +548,6 @@ app.get('/fleet', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'fleet-dashboard.html'));
 });
 
-app.get('/fleet-documents-list', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'fleet-documents-list.html'));
-});
-
 app.get('/fleet-dashboard', (req, res) => {
     res.redirect(301, '/fleet');
 });

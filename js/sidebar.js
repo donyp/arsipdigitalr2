@@ -58,17 +58,7 @@
         { href: '/support-dashboard', label: 'Support', icon: '<i class="fas fa-headset"></i>' },
         { href: '/audit-logs', label: 'Audit Logs', icon: '<i class="fas fa-shield-alt"></i>' },
         { href: '/storage-handler', label: 'Storage Handler', icon: '<i class="fas fa-folder-open"></i>' },
-        
-        {
-            isDropdown: true,
-            id: 'dd-fleet',
-            label: 'Fleet Management',
-            icon: '<i class="fas fa-truck"></i>',
-            children: [
-                { href: '/fleet', label: 'Dashboard', icon: '<i class="fas fa-tachometer-alt"></i>' },
-                { href: '/fleet-documents-list', label: 'Daftar Dokumen', icon: '<i class="fas fa-file-alt"></i>' },
-            ]
-        },
+        { href: '/fleet', label: 'Fleet Management', icon: '<i class="fas fa-truck"></i>' },
         
         {
             isDropdown: true,
