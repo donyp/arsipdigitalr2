@@ -1001,22 +1001,31 @@
 
         async function loadDocuments() {
             try {
-                const response = await fetch('/api/fleet/documents/expired', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
-                });
+                // Load ALL documents from each vehicle, not just expired/expiring
+                allDocuments = [];
+                
+                for (const vehicle of vehicles) {
+                    try {
+                        const response = await fetch(`/api/fleet/vehicles/${vehicle.id}`, {
+                            headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
+                        });
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-                const expiredData = await response.json();
-
-                // Also get expiring documents
-                const expiringResponse = await fetch('/api/fleet/documents/expiring?days=30', {
-                    headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
-                });
-
-                const expiringData = expiringResponse.ok ? await expiringResponse.json() : { data: [] };
-
-                allDocuments = [...(expiredData.data || []), ...(expiringData.data || [])];
+                        if (response.ok) {
+                            const vehicleData = await response.json();
+                            if (vehicleData.data && vehicleData.data.documents) {
+                                // Add vehicle info to each document for easy reference
+                                const docsWithVehicleInfo = vehicleData.data.documents.map(doc => ({
+                                    ...doc,
+                                    vehicle_name: vehicle.vehicle_name,
+                                    plate_number: vehicle.plate_number
+                                }));
+                                allDocuments.push(...docsWithVehicleInfo);
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`Error loading documents for vehicle ${vehicle.id}:`, error);
+                    }
+                }
             } catch (error) {
                 console.error('Error loading documents:', error);
             }
