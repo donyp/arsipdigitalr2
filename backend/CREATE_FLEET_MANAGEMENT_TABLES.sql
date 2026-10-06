@@ -71,7 +71,6 @@ CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(vehicle_type);
 CREATE INDEX IF NOT EXISTS idx_vehicle_documents_vehicle_id ON vehicle_documents(vehicle_id);
 CREATE INDEX IF NOT EXISTS idx_vehicle_documents_plate_number ON vehicle_documents(plate_number);
 CREATE INDEX IF NOT EXISTS idx_vehicle_documents_expiration_date ON vehicle_documents(expiration_date);
-CREATE INDEX IF NOT EXISTS idx_vehicle_documents_is_expired ON vehicle_documents(is_expired);
 CREATE INDEX IF NOT EXISTS idx_vehicle_documents_type ON vehicle_documents(document_type);
 CREATE INDEX IF NOT EXISTS idx_vehicle_documents_renewal_status ON vehicle_documents(renewal_status);
 
