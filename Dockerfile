@@ -36,12 +36,11 @@ COPY *.md ./
 # Copy backend application
 COPY backend ./backend
 COPY start.sh ./
-COPY generate-rclone-config.js ./
 
 # Copy rclone.conf if it exists (will be generated at runtime if missing)
 COPY rclone.conf* ./
 
-# Ensure scripts are executable
+# Ensure start script is executable
 RUN chmod +x /app/start.sh
 
 # Create data directories
@@ -77,5 +76,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Note: Alist service disabled in this build to prevent Railway build failures
 # Storage uses rclone (Google Drive) instead
 
-# Start application
-CMD ["node", "/app/backend/server.js"]
+# Start application via start.sh script
+CMD ["/app/start.sh"]
