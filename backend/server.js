@@ -1652,6 +1652,11 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         console.log(`[LOGIN] ✅ Session created: ${sessionResult.sessionToken.substring(0, 8)}...`);
 
+        // Auto-terminate old sessions for limit=1 users (moderator, super_admin)
+        // Do this AFTER new session is created to avoid race conditions
+        sessionManager.autoTerminateOldSessions(user.id, user.role, sessionResult.sessionId)
+            .catch(err => console.warn('[LOGIN] Auto-terminate warning:', err.message));
+
         // Audit with detailed info (reuse userAgent and ipAddress from above)
         await auditLogger.log({
             userId: user.id,

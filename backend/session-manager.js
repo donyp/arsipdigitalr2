@@ -32,7 +32,6 @@ class SessionManager {
 
     /**
      * Check if user can create new session (role-based limits)
-     * For users with limit=1 (super_admin, moderator), auto-terminate old sessions
      * Returns { allowed: boolean, reason?: string, activeCount?: number, maxAllowed?: number }
      */
     async canCreateSession(userId, userRole) {
@@ -54,51 +53,74 @@ class SessionManager {
             const activeCount = data || 0;
             console.log(`[SessionManager] User ${userId} (${userRole}) has ${activeCount}/${maxSessions} active sessions`);
 
-            // AUTO-TERMINATE old sessions if user has limit=1 (moderator, super_admin)
-            if (maxSessions === 1 && activeCount > 0) {
-                console.log(`[SessionManager] Auto-terminating old sessions for ${userRole} (limit=1)`);
-                try {
-                    const { error: terminateError } = await this.supabase
-                        .from('user_sessions')
-                        .update({ is_active: false })
-                        .eq('user_id', userId)
-                        .eq('is_active', true);
-                    
-                    if (!terminateError) {
-                        console.log(`[SessionManager] ✅ Auto-terminated all old sessions for user ${userId}`);
-                    }
-                } catch (err) {
-                    console.warn(`[SessionManager] Warning: Could not terminate old sessions:`, err.message);
-                    // Continue anyway
-                }
-            }
-
             if (activeCount >= maxSessions) {
-                // Check again after termination
-                const { data: newCount } = await this.supabase.rpc('count_active_sessions', {
-                    p_user_id: userId
-                });
+                const reason = maxSessions === 1 
+                    ? `Anda hanya boleh login dari 1 perangat sekaligus. Silakan logout dari perangat lain terlebih dahulu.`
+                    : `Maksimal ${maxSessions} sesi login bersamaan. Anda sudah memiliki ${activeCount} sesi aktif. Silakan logout dari perangat lain terlebih dahulu.`;
                 
-                const finalCount = newCount || 0;
-                
-                if (finalCount >= maxSessions) {
-                    const reason = maxSessions === 1 
-                        ? `Anda hanya boleh login dari 1 perangat sekaligus. Silakan logout dari perangat lain terlebih dahulu.`
-                        : `Maksimal ${maxSessions} sesi login bersamaan. Anda sudah memiliki ${finalCount} sesi aktif. Silakan logout dari perangat lain terlebih dahulu.`;
-                    
-                    return {
-                        allowed: false,
-                        reason,
-                        activeCount: finalCount,
-                        maxAllowed: maxSessions
-                    };
-                }
+                return {
+                    allowed: false,
+                    reason,
+                    activeCount,
+                    maxAllowed: maxSessions
+                };
             }
 
             return { allowed: true, activeCount, maxAllowed: maxSessions };
         } catch (err) {
             console.error('[SessionManager] Exception checking sessions:', err);
             return { allowed: true }; // Fail open
+        }
+    }
+
+    /**
+     * Auto-terminate old sessions for limit=1 users (after successful session creation)
+     * Used for moderator/super_admin who can only have 1 active session
+     */
+    async autoTerminateOldSessions(userId, userRole, newSessionId) {
+        try {
+            const maxSessions = SESSION_LIMITS[userRole] || DEFAULT_LIMIT;
+            
+            // Only auto-terminate for limit=1 users
+            if (maxSessions !== 1) {
+                return;
+            }
+
+            // Get all active sessions for this user
+            const { data: sessions, error } = await this.supabase
+                .from('user_sessions')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('is_active', true)
+                .gt('expires_at', new Date().toISOString());
+
+            if (error) {
+                console.warn('[SessionManager] Warning: Could not get sessions for cleanup:', error.message);
+                return;
+            }
+
+            // Terminate all EXCEPT the new session
+            const sessionIdsToTerminate = sessions
+                .filter(s => s.id !== newSessionId)
+                .map(s => s.id);
+
+            if (sessionIdsToTerminate.length > 0) {
+                console.log(`[SessionManager] Auto-terminating ${sessionIdsToTerminate.length} old session(s) for user ${userId}`);
+                
+                const { error: terminateError } = await this.supabase
+                    .from('user_sessions')
+                    .update({ is_active: false })
+                    .in('id', sessionIdsToTerminate);
+                
+                if (!terminateError) {
+                    console.log(`[SessionManager] ✅ Auto-terminated ${sessionIdsToTerminate.length} old session(s) for user ${userId}`);
+                } else {
+                    console.warn('[SessionManager] Warning: Could not terminate old sessions:', terminateError.message);
+                }
+            }
+        } catch (err) {
+            console.warn('[SessionManager] Exception during auto-terminate:', err.message);
+            // Don't fail the login process
         }
     }
 
