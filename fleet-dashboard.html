@@ -236,6 +236,10 @@
             transform: translateY(-2px);
         }
 
+        .vehicle-card-clickable {
+            cursor: pointer;
+        }
+
         .vehicle-header {
             display: flex;
             justify-content: space-between;
@@ -864,10 +868,79 @@
         </div>
     </div>
 
+    <!-- Vehicle Detail Modal -->
+    <div class="modal" id="vehicleDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 id="detailVehicleName"></h2>
+                    <p style="font-size: 14px; color: var(--color-text-secondary); margin-top: 4px;" id="detailVehiclePlate"></p>
+                </div>
+                <button class="modal-close" onclick="closeVehicleDetail()">&times;</button>
+            </div>
+            
+            <div style="padding: 24px;">
+                <!-- Vehicle Information -->
+                <div style="margin-bottom: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-info-circle"></i> Informasi Kendaraan
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                        <div>
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--color-text-tertiary); font-weight: 600; margin-bottom: 6px;">Tipe Kendaraan</div>
+                            <div style="font-size: 14px; color: var(--color-text-primary); font-weight: 500;" id="detailVehicleType"></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--color-text-tertiary); font-weight: 600; margin-bottom: 6px;">Merek & Model</div>
+                            <div style="font-size: 14px; color: var(--color-text-primary); font-weight: 500;" id="detailVehicleBrand"></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--color-text-tertiary); font-weight: 600; margin-bottom: 6px;">Tahun Produksi</div>
+                            <div style="font-size: 14px; color: var(--color-text-primary); font-weight: 500;" id="detailVehicleYear"></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--color-text-tertiary); font-weight: 600; margin-bottom: 6px;">Warna</div>
+                            <div style="font-size: 14px; color: var(--color-text-primary); font-weight: 500;" id="detailVehicleColor"></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--color-text-tertiary); font-weight: 600; margin-bottom: 6px;">Nomor Mesin</div>
+                            <div style="font-size: 14px; color: var(--color-text-primary); font-weight: 500;" id="detailVehicleEngine"></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 12px; text-transform: uppercase; color: var(--color-text-tertiary); font-weight: 600; margin-bottom: 6px;">Nomor Rangka</div>
+                            <div style="font-size: 14px; color: var(--color-text-primary); font-weight: 500;" id="detailVehicleChassis"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Documents Section -->
+                <div style="margin-bottom: 24px;">
+                    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-file-contract"></i> Dokumen Kendaraan
+                    </h3>
+                    <div id="detailDocumentsContainer" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Documents will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Document Statistics -->
+                <div>
+                    <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-chart-pie"></i> Ringkasan Status Dokumen
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;" id="detailDocStatsContainer">
+                        <!-- Stats will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="js/notification-system.js"></script>
     <script>
         let vehicles = [];
         let allDocuments = [];
+        let currentDetailVehicle = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
@@ -1402,8 +1475,106 @@
         }
 
         function viewVehicleDetails(vehicleId) {
-            // TODO: Open detailed vehicle view with all documents and maintenance history
-            console.log('View vehicle details:', vehicleId);
+            const vehicle = vehicles.find(v => v.id === vehicleId);
+            if (!vehicle) return;
+
+            currentDetailVehicle = vehicle;
+
+            // Set header
+            document.getElementById('detailVehicleName').textContent = vehicle.vehicle_name;
+            document.getElementById('detailVehiclePlate').textContent = vehicle.plate_number;
+
+            // Set vehicle info
+            document.getElementById('detailVehicleType').textContent = vehicle.vehicle_type || '-';
+            document.getElementById('detailVehicleBrand').textContent = vehicle.brand_model || '-';
+            document.getElementById('detailVehicleYear').textContent = vehicle.year_manufacture || '-';
+            document.getElementById('detailVehicleColor').textContent = vehicle.color || '-';
+            document.getElementById('detailVehicleEngine').textContent = vehicle.engine_number || '-';
+            document.getElementById('detailVehicleChassis').textContent = vehicle.chassis_number || '-';
+
+            // Get documents for this vehicle
+            const vehicleDocs = allDocuments.filter(d => d.vehicle_id === vehicleId);
+
+            // Render documents
+            const docsContainer = document.getElementById('detailDocumentsContainer');
+            if (vehicleDocs.length === 0) {
+                docsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: var(--color-bg-secondary); border-radius: 8px; color: var(--color-text-tertiary);">
+                        <i class="fas fa-file" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                        Belum ada dokumen terdaftar
+                    </div>
+                `;
+            } else {
+                docsContainer.innerHTML = vehicleDocs.map(doc => {
+                    let statusClass = 'valid';
+                    let statusLabel = '✅ Masih Berlaku';
+                    let statusColor = 'var(--color-success)';
+
+                    if (doc.is_expired) {
+                        statusClass = 'expired';
+                        statusLabel = '❌ Kadaluarsa';
+                        statusColor = 'var(--color-error)';
+                    } else if (doc.days_until_expiration <= 30) {
+                        statusClass = 'expiring';
+                        statusLabel = `⚠️ Akan Expired (${doc.days_until_expiration} hari)`;
+                        statusColor = 'var(--color-warning)';
+                    }
+
+                    const docTypeLabel = {
+                        'KIR': '🔍 KIR',
+                        'PAJAK_STNK': '💰 PAJAK STNK',
+                        'PLAT': '🏷️ PLAT'
+                    }[doc.document_type] || doc.document_type;
+
+                    return `
+                        <div style="background: var(--color-bg-secondary); padding: 16px; border-radius: 8px; border-left: 4px solid ${statusColor};">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                <div>
+                                    <strong>${docTypeLabel}</strong>
+                                    <div style="font-size: 12px; color: var(--color-text-secondary); margin-top: 4px;">
+                                        Nomor: ${doc.document_number || 'N/A'}
+                                    </div>
+                                </div>
+                                <span class="status-badge ${statusClass}">${statusLabel}</span>
+                            </div>
+                            <div style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.6;">
+                                <div>📅 Berlaku: ${new Date(doc.issue_date).toLocaleDateString('id-ID')} - ${new Date(doc.expiration_date).toLocaleDateString('id-ID')}</div>
+                                <div>🏛️ Diterbitkan oleh: ${doc.issued_by || 'N/A'}</div>
+                                ${doc.renewal_status ? `<div>📋 Status perpanjangan: ${doc.renewal_status}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render statistics
+            const statsContainer = document.getElementById('detailDocStatsContainer');
+            const validDocs = vehicleDocs.filter(d => !d.is_expired && d.days_until_expiration > 30).length;
+            const expiringDocs = vehicleDocs.filter(d => !d.is_expired && d.days_until_expiration <= 30 && d.days_until_expiration > 0).length;
+            const expiredDocs = vehicleDocs.filter(d => d.is_expired).length;
+
+            statsContainer.innerHTML = `
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 16px; border-radius: 8px; text-align: center; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--color-success);">${validDocs}</div>
+                    <div style="font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; margin-top: 4px;">Masih Berlaku</div>
+                </div>
+                <div style="background: rgba(245, 158, 11, 0.1); padding: 16px; border-radius: 8px; text-align: center; border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--color-warning);">${expiringDocs}</div>
+                    <div style="font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; margin-top: 4px;">Akan Expired</div>
+                </div>
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 16px; border-radius: 8px; text-align: center; border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <div style="font-size: 24px; font-weight: 700; color: var(--color-error);">${expiredDocs}</div>
+                    <div style="font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; margin-top: 4px;">Kadaluarsa</div>
+                </div>
+            `;
+
+            // Open modal
+            document.getElementById('vehicleDetailModal').classList.add('active');
+        }
+
+        function closeVehicleDetail() {
+            document.getElementById('vehicleDetailModal').classList.remove('active');
+            currentDetailVehicle = null;
         }
     </script>
 </body>
