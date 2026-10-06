@@ -684,34 +684,38 @@
     <script src="/js/api.js"></script>
     <script src="/js/auth.js"></script>
     <script>
-        let ticketId = null;
-        let ticketData = null;
-        const DEBUG = false; // Set to true for debugging
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (DEBUG) console.log('[Ticket-Detail] Page loaded');
+        // Prevent redeclaration when SPA router reloads the page
+        if (typeof window._supportTicketDetailLoaded === 'undefined') {
+            window._supportTicketDetailLoaded = true;
             
-            const params = new URLSearchParams(window.location.search);
-            ticketId = params.get('id');
-            
-            if (!ticketId) {
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = 'padding: 20px; color: red;';
-                errorDiv.textContent = 'Error: No ticket ID provided';
-                document.body.innerHTML = '';
-                document.body.appendChild(errorDiv);
-                return;
-            }
+            let ticketId = null;
+            let ticketData = null;
+            const DEBUG = false; // Set to true for debugging
 
-            await initAuth();
-            
-            if (!currentUser) {
-                window.location.href = '/login';
-                return;
-            }
+            document.addEventListener('DOMContentLoaded', async () => {
+                if (DEBUG) console.log('[Ticket-Detail] Page loaded');
+                
+                const params = new URLSearchParams(window.location.search);
+                ticketId = params.get('id');
+                
+                if (!ticketId) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = 'padding: 20px; color: red;';
+                    errorDiv.textContent = 'Error: No ticket ID provided';
+                    document.body.innerHTML = '';
+                    document.body.appendChild(errorDiv);
+                    return;
+                }
 
-            await loadTicketDetail();
-        });
+                await initAuth();
+                
+                if (!currentUser) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                await loadTicketDetail();
+            });
 
         async function loadTicketDetail() {
             try {
@@ -1188,6 +1192,8 @@
                 document.getElementById('btnSendReply').disabled = false;
             }
         }
+        
+        } // End if (typeof window._supportTicketDetailLoaded === 'undefined')
     </script>
 </body>
 </html>

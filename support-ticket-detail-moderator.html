@@ -796,33 +796,37 @@
     <script src="js/auth.js"></script>
     <script src="js/sidebar.js"></script>
     <script>
-        let ticketId = null;
-        let ticketData = null;
-
-        document.addEventListener('DOMContentLoaded', async () => {
+        // Prevent redeclaration when SPA router reloads the page
+        if (typeof window._supportTicketDetailModeratorLoaded === 'undefined') {
+            window._supportTicketDetailModeratorLoaded = true;
             
-            // Get ticket ID from URL
-            const params = new URLSearchParams(window.location.search);
-            ticketId = params.get('id');
-            
-            if (!ticketId) {
-                document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: No ticket ID provided</div>';
-                return;
-            }
+            let ticketId = null;
+            let ticketData = null;
 
-            // Initialize auth
-            await initAuth();
-            
-            if (!currentUser) {
-                document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: Not authenticated</div>';
-                return;
-            }
+            document.addEventListener('DOMContentLoaded', async () => {
+                
+                // Get ticket ID from URL
+                const params = new URLSearchParams(window.location.search);
+                ticketId = params.get('id');
+                
+                if (!ticketId) {
+                    document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: No ticket ID provided</div>';
+                    return;
+                }
 
-            // Check if user is moderator/super_admin
-            if (currentUser.role !== 'moderator' && currentUser.role !== 'super_admin') {
-                // Redirect to customer detail page
-                window.location.href = `/support-ticket-detail.html?id=${ticketId}`;
-                return;
+                // Initialize auth
+                await initAuth();
+                
+                if (!currentUser) {
+                    document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: Not authenticated</div>';
+                    return;
+                }
+
+                // Check if user is moderator/super_admin
+                if (currentUser.role !== 'moderator' && currentUser.role !== 'super_admin') {
+                    // Redirect to customer detail page
+                    window.location.href = `/support-ticket-detail.html?id=${ticketId}`;
+                    return;
             }
 
             // Load ticket
@@ -1182,10 +1186,11 @@
                 document.getElementById('btnSendReply').disabled = false;
             }
         }
-
         function reloadTicket() {
             loadTicketDetail();
         }
+        
+        } // End if (typeof window._supportTicketDetailModeratorLoaded === 'undefined')
     </script>
 </body>
 </html>

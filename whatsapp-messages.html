@@ -315,54 +315,58 @@
     <script src="js/sidebar.js"></script>
     <script src="js/spa-page-handler.js"></script>
     <script>
-        let currentMessages = [], currentInvoiceMessages = [];
-        
-        async function initNotifyZonaPage() {
-            await initAuth(); 
-            await loadSidebar('whatsapp-messages.html'); 
-            await loadMessages();
-        }
-        
-        // Run on direct page load
-        document.addEventListener('DOMContentLoaded', initNotifyZonaPage);
-        
-        // For SPA: call directly after page loads (spa-page-handler will trigger this via custom script)
-        // This will be called by the inline script at bottom of page
-        window.initNotifyZona = initNotifyZonaPage;
-
-        async function loadMessages() {
-            try {
-                const invoiceMsgs = await API.get('/api/whatsapp/pending-invoice-messages').catch(() => ({}));
-                
-                
-                // Response is an object with notifications grouped by zona name (from backend)
-                // notifications: { "Zona Name": [{msg1}, {msg2}], "Another Zona": [...] }
-                // Or it could be { notifications: {...}, count: X, ... }
-                
-                let messagesObj = invoiceMsgs.notifications || invoiceMsgs;
-                
-                // Convert grouped object to flat array for rendering
-                // messagesObj is: { "Zona Name": [{...}], "Zona 2": [{...}] }
-                if (messagesObj && typeof messagesObj === 'object' && !Array.isArray(messagesObj)) {
-                    currentInvoiceMessages = [];
-                    Object.entries(messagesObj).forEach(([zonaName, msgs]) => {
-                        if (Array.isArray(msgs)) {
-                            currentInvoiceMessages.push(...msgs);
-                        }
-                    });
-                } else if (Array.isArray(messagesObj)) {
-                    currentInvoiceMessages = messagesObj;
-                } else {
-                    currentInvoiceMessages = [];
-                }
-                
-                renderMessages();
-            } catch (err) {
-                document.getElementById('invoice-messages-body').innerHTML = '<div class="text-center text-gray-500 py-8">Gagal memuat pesan</div>';
+        // Prevent redeclaration when SPA router reloads the page
+        if (typeof window._notifyZonaModuleLoaded === 'undefined') {
+            window._notifyZonaModuleLoaded = true;
+            
+            let currentMessages = [], currentInvoiceMessages = [];
+            
+            async function initNotifyZonaPage() {
+                await initAuth(); 
+                await loadSidebar('whatsapp-messages.html'); 
+                await loadMessages();
             }
-        }
+            
+            // Run on direct page load
+            document.addEventListener('DOMContentLoaded', initNotifyZonaPage);
+            
+            // For SPA: call directly after page loads (spa-page-handler will trigger this via custom script)
+            // This will be called by the inline script at bottom of page
+            window.initNotifyZona = initNotifyZonaPage;
 
-        function renderMessages() {
+            async function loadMessages() {
+                try {
+                    const invoiceMsgs = await API.get('/api/whatsapp/pending-invoice-messages').catch(() => ({}));
+                    
+                    
+                    // Response is an object with notifications grouped by zona name (from backend)
+                    // notifications: { "Zona Name": [{msg1}, {msg2}], "Another Zona": [...] }
+                    // Or it could be { notifications: {...}, count: X, ... }
+                    
+                    let messagesObj = invoiceMsgs.notifications || invoiceMsgs;
+                    
+                    // Convert grouped object to flat array for rendering
+                    // messagesObj is: { "Zona Name": [{...}], "Zona 2": [{...}] }
+                    if (messagesObj && typeof messagesObj === 'object' && !Array.isArray(messagesObj)) {
+                        currentInvoiceMessages = [];
+                        Object.entries(messagesObj).forEach(([zonaName, msgs]) => {
+                            if (Array.isArray(msgs)) {
+                                currentInvoiceMessages.push(...msgs);
+                            }
+                        });
+                    } else if (Array.isArray(messagesObj)) {
+                        currentInvoiceMessages = messagesObj;
+                    } else {
+                        currentInvoiceMessages = [];
+                    }
+                    
+                    renderMessages();
+                } catch (err) {
+                    document.getElementById('invoice-messages-body').innerHTML = '<div class="text-center text-gray-500 py-8">Gagal memuat pesan</div>';
+                }
+            }
+
+            function renderMessages() {
             // Invoice messages ONLY
             const invMsgBody = document.getElementById('invoice-messages-body');
             
@@ -643,8 +647,12 @@ ${msg.message || 'N/A'}
             }
         }
         
+        // Close the guard block
+        } // End if (typeof window._notifyZonaModuleLoaded === 'undefined')
+        
         // SPA Initialization: If this page was loaded via SPA, initNotifyZona will be defined
         // Call it after a small delay to ensure function is defined
+        // This runs OUTSIDE the guard block so it always executes
         setTimeout(() => {
             if (typeof initNotifyZona === 'function') {
                 initNotifyZona().catch(err => console.error('[NotifyZona] Init error:', err));

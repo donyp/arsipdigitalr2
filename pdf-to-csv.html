@@ -393,34 +393,38 @@
     <script src="js/spa-page-handler.js"></script>
 
     <script>
-        let selectedFile = null;
+        // Prevent redeclaration when SPA router reloads the page
+        if (typeof window._pdfToCsvLoaded === 'undefined') {
+            window._pdfToCsvLoaded = true;
+            
+            let selectedFile = null;
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initAuth();
-            if (!currentUser) {
-                window.location.href = '/login.html';
-                return;
-            }
-            await loadSidebar('pdf-to-csv.html');
-            await loadHistory();
-        });
+            // Initialize
+            document.addEventListener('DOMContentLoaded', async () => {
+                await initAuth();
+                if (!currentUser) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                await loadSidebar('pdf-to-csv.html');
+                await loadHistory();
+            });
 
-        // Drop Zone Events
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const convertBtn = document.getElementById('convertBtn');
+            // Drop Zone Events
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('fileInput');
+            const convertBtn = document.getElementById('convertBtn');
 
-        dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('click', () => fileInput.click());
 
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
 
         dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
@@ -752,6 +756,8 @@
             
             container.innerHTML = table;
         }
+        
+        } // End if (typeof window._pdfToCsvLoaded === 'undefined')
     </script>
 </body>
 </html>

@@ -556,33 +556,37 @@
     </div>
 
     <script>
-        let currentPath = '';
-        let currentItems = [];
-        let renameTarget = null;
-        let selectedFiles = new Set();
-        let selectAllActive = false;
+        // Prevent redeclaration when SPA router reloads the page
+        if (typeof window._storageHandlerLoaded === 'undefined') {
+            window._storageHandlerLoaded = true;
+            
+            let currentPath = '';
+            let currentItems = [];
+            let renameTarget = null;
+            let selectedFiles = new Set();
+            let selectAllActive = false;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadFiles(currentPath);
-            loadStats();
-            setupEventListeners();
-            // Refresh stats every 30 seconds for realtime updates
-            setInterval(loadStats, 30000);
-        });
+            document.addEventListener('DOMContentLoaded', () => {
+                loadFiles(currentPath);
+                loadStats();
+                setupEventListeners();
+                // Refresh stats every 30 seconds for realtime updates
+                setInterval(loadStats, 30000);
+            });
 
-        function goBack() { window.history.back(); }
+            function goBack() { window.history.back(); }
 
-        function navigateToFolder(folderPath) {
-            currentPath = folderPath;
-            selectedFiles.clear();
-            selectAllActive = false;
-            loadFiles(folderPath);
-            updateBreadcrumb(folderPath);
-        }
+            function navigateToFolder(folderPath) {
+                currentPath = folderPath;
+                selectedFiles.clear();
+                selectAllActive = false;
+                loadFiles(folderPath);
+                updateBreadcrumb(folderPath);
+            }
 
-        function updateBreadcrumb(path) {
-            const breadcrumb = document.getElementById('breadcrumb');
-            const parts = path.split('/').filter(p => p);
+            function updateBreadcrumb(path) {
+                const breadcrumb = document.getElementById('breadcrumb');
+                const parts = path.split('/').filter(p => p);
             let html = `<span class="breadcrumb-item" onclick="navigateToFolder('')"><i class="fas fa-home"></i> Root</span>`;
             let accumulated = '';
             for (const part of parts) {
@@ -1126,6 +1130,8 @@
             loadFiles(currentPath);
             loadStats();
         }
+        
+        } // End if (typeof window._storageHandlerLoaded === 'undefined')
     </script>
 </body>
 </html>
