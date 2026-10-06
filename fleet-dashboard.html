@@ -217,45 +217,64 @@
         /* VEHICLES LIST */
         .vehicles-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+            grid-auto-rows: 1fr;
         }
 
         .vehicle-card {
             background: var(--color-bg-primary);
             border: 1px solid var(--color-border);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.2s;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .vehicle-card:hover {
             border-color: var(--color-primary);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
-            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+            transform: translateY(-8px);
         }
 
-        .vehicle-card-clickable {
-            cursor: pointer;
+        .vehicle-card-header {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
+            padding: 20px;
+            border-bottom: 1px solid var(--color-border);
+            position: relative;
         }
 
-        .vehicle-header {
+        .vehicle-card-header-top {
             display: flex;
             justify-content: space-between;
-            align-items: start;
+            align-items: flex-start;
             margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        .vehicle-badge-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
         }
 
         .vehicle-badge {
-            display: inline-block;
-            padding: 4px 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
             background: rgba(59, 130, 246, 0.1);
             color: var(--color-primary);
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .vehicle-badge.double {
@@ -263,37 +282,135 @@
             color: #667eea;
         }
 
+        .vehicle-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .vehicle-status-badge.maintenance {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .vehicle-status-badge.inactive {
+            background: rgba(107, 114, 128, 0.1);
+            color: #6b7280;
+        }
+
         .vehicle-plate {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 800;
             color: var(--color-text-primary);
-            margin: 8px 0;
+            margin-bottom: 8px;
             font-family: 'Courier New', monospace;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
         }
 
-        .vehicle-info {
-            font-size: 13px;
+        .vehicle-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 4px;
+        }
+
+        .vehicle-info-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
             color: var(--color-text-secondary);
-            line-height: 1.6;
-            margin: 12px 0;
+            flex-wrap: wrap;
         }
 
-        .vehicle-docs {
+        .vehicle-info-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .vehicle-info-meta-item i {
+            opacity: 0.6;
+        }
+
+        .vehicle-card-body {
+            padding: 16px 20px;
+            flex: 1;
+        }
+
+        .vehicle-docs-summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .doc-summary-item {
+            text-align: center;
+            padding: 12px 8px;
+            background: var(--color-bg-secondary);
+            border-radius: 8px;
+            border-left: 3px solid transparent;
+        }
+
+        .doc-summary-item.valid {
+            border-left-color: var(--color-success);
+        }
+
+        .doc-summary-item.valid .doc-count {
+            color: var(--color-success);
+        }
+
+        .doc-summary-item.expiring {
+            border-left-color: var(--color-warning);
+        }
+
+        .doc-summary-item.expiring .doc-count {
+            color: var(--color-warning);
+        }
+
+        .doc-summary-item.expired {
+            border-left-color: var(--color-error);
+        }
+
+        .doc-summary-item.expired .doc-count {
+            color: var(--color-error);
+        }
+
+        .doc-count {
+            font-size: 18px;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .doc-label {
+            font-size: 10px;
+            color: var(--color-text-tertiary);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .vehicle-documents-badges {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            margin: 12px 0;
-            padding-top: 12px;
-            border-top: 1px solid var(--color-border);
+            margin-bottom: 12px;
         }
 
         .doc-badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 6px 10px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
         }
@@ -311,6 +428,52 @@
         .doc-badge.expired {
             background: rgba(239, 68, 68, 0.1);
             color: var(--color-error);
+        }
+
+        .vehicle-card-footer {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+        }
+
+        .vehicle-card-footer .btn {
+            flex: 1;
+            font-size: 12px;
+            padding: 10px 12px;
+            justify-content: center;
+        }
+
+        .vehicle-card-footer .btn-primary {
+            flex: 1.2;
+        }
+
+        .vehicle-card-clickable {
+            cursor: pointer;
+        }
+
+        .vehicle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .vehicle-info {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+            margin: 12px 0;
+        }
+
+        .vehicle-docs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 12px 0;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
         }
 
         /* DOCUMENTS TABLE */
@@ -561,6 +724,7 @@
         @media (max-width: 768px) {
             .vehicles-grid {
                 grid-template-columns: 1fr;
+                gap: 16px;
             }
 
             .header {
@@ -1155,34 +1319,87 @@
 
             vehicles.forEach(vehicle => {
                 const docs = allDocuments.filter(d => d.vehicle_id === vehicle.id);
-                const docsHtml = docs.map(d => {
+                
+                // Calculate document statistics
+                const validDocs = docs.filter(d => !d.is_expired && d.days_until_expiration > 30).length;
+                const expiringDocs = docs.filter(d => !d.is_expired && d.days_until_expiration <= 30 && d.days_until_expiration > 0).length;
+                const expiredDocs = docs.filter(d => d.is_expired).length;
+                
+                // Build document badges
+                const docsHtml = docs.slice(0, 3).map(d => {
                     let status = 'valid';
-                    if (d.is_expired) status = 'expired';
-                    else if (d.days_until_expiration <= 30) status = 'expiring';
-
-                    return `<span class="doc-badge ${status}"><i class="fas fa-${status === 'valid' ? 'check-circle' : status === 'expiring' ? 'exclamation-circle' : 'times-circle'}"></i> ${d.document_type}</span>`;
+                    let icon = 'check-circle';
+                    if (d.is_expired) {
+                        status = 'expired';
+                        icon = 'times-circle';
+                    } else if (d.days_until_expiration <= 30) {
+                        status = 'expiring';
+                        icon = 'exclamation-circle';
+                    }
+                    return `<span class="doc-badge ${status}" title="${d.document_type}"><i class="fas fa-${icon}"></i></span>`;
                 }).join('');
 
                 html += `
                     <div class="vehicle-card" onclick="viewVehicleDetails('${vehicle.id}')">
-                        <div class="vehicle-header">
-                            <div>
-                                <div class="vehicle-badge ${vehicle.vehicle_type.includes('DOUBLE') ? 'double' : ''}">${vehicle.vehicle_type}</div>
-                                <div class="vehicle-plate">${vehicle.plate_number}</div>
+                        <!-- Header Section -->
+                        <div class="vehicle-card-header">
+                            <div class="vehicle-card-header-top">
+                                <div class="vehicle-badge-group">
+                                    <div class="vehicle-badge ${vehicle.vehicle_type.includes('DOUBLE') ? 'double' : ''}">${vehicle.vehicle_type}</div>
+                                    <div class="vehicle-status-badge"><i class="fas fa-check-circle"></i> Aktif</div>
+                                </div>
+                            </div>
+                            <div class="vehicle-plate">${vehicle.plate_number}</div>
+                            <div class="vehicle-title">${vehicle.vehicle_name}</div>
+                            <div class="vehicle-info-meta">
+                                <div class="vehicle-info-meta-item" title="Merek & Model">
+                                    <i class="fas fa-car"></i> ${vehicle.brand_model || '-'}
+                                </div>
+                                ${vehicle.year_manufacture ? `
+                                    <div class="vehicle-info-meta-item" title="Tahun Produksi">
+                                        <i class="fas fa-calendar"></i> ${vehicle.year_manufacture}
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
-                        <div class="vehicle-info">
-                            <strong>${vehicle.vehicle_name}</strong><br>
-                            ${vehicle.brand_model ? `${vehicle.brand_model}<br>` : ''}
-                            ${vehicle.year_manufacture ? `Tahun: ${vehicle.year_manufacture}` : ''}
+
+                        <!-- Body Section -->
+                        <div class="vehicle-card-body">
+                            <!-- Document Summary -->
+                            <div class="vehicle-docs-summary">
+                                <div class="doc-summary-item valid">
+                                    <div class="doc-count">${validDocs}</div>
+                                    <div class="doc-label">Valid</div>
+                                </div>
+                                <div class="doc-summary-item expiring">
+                                    <div class="doc-count">${expiringDocs}</div>
+                                    <div class="doc-label">Expiring</div>
+                                </div>
+                                <div class="doc-summary-item expired">
+                                    <div class="doc-count">${expiredDocs}</div>
+                                    <div class="doc-label">Expired</div>
+                                </div>
+                            </div>
+
+                            <!-- Document Badges -->
+                            ${docsHtml ? `
+                                <div class="vehicle-documents-badges">
+                                    ${docsHtml}
+                                    ${docs.length > 3 ? `<span style="font-size: 12px; color: var(--color-text-tertiary); align-self: center;">+${docs.length - 3}</span>` : ''}
+                                </div>
+                            ` : '<div style="color: var(--color-text-tertiary); font-size: 12px; text-align: center; padding: 20px 0;">Belum ada dokumen</div>'}
                         </div>
-                        ${docsHtml ? `<div class="vehicle-docs">${docsHtml}</div>` : ''}
-                        <div style="display: flex; gap: 8px; margin-top: 12px;">
-                            <button class="btn btn-secondary" style="flex: 1; justify-content: center;" onclick="event.stopPropagation(); openAddDocumentModal('${vehicle.id}')">
-                                <i class="fas fa-plus"></i> Dokumen
+
+                        <!-- Footer Section -->
+                        <div class="vehicle-card-footer">
+                            <button class="btn btn-primary" onclick="event.stopPropagation(); viewVehicleDetails('${vehicle.id}')">
+                                <i class="fas fa-eye"></i> Lihat Detail
                             </button>
-                            <button class="btn btn-secondary" style="flex: 1; justify-content: center;" onclick="event.stopPropagation(); openAddMaintenanceModal('${vehicle.id}')">
-                                <i class="fas fa-wrench"></i> Service
+                            <button class="btn btn-secondary" onclick="event.stopPropagation(); openAddDocumentModal('${vehicle.id}')" title="Tambah Dokumen">
+                                <i class="fas fa-file-plus"></i>
+                            </button>
+                            <button class="btn btn-secondary" onclick="event.stopPropagation(); openAddMaintenanceModal('${vehicle.id}')" title="Tambah Service">
+                                <i class="fas fa-wrench"></i>
                             </button>
                         </div>
                     </div>
