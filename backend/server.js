@@ -1020,6 +1020,35 @@ function authenticateToken(req, res, next) {
 
             req.user = decoded;
 
+            // --- SESSION VALIDITY CHECK (for moderator/super_admin only) ---
+            // Only check on non-login endpoints to avoid redirect loops
+            const isLoginEndpoint = req.path === '/api/auth/login' || req.path === '/api/auth/logout';
+            if (!isLoginEndpoint && (user.role === 'moderator' || user.role === 'super_admin')) {
+                try {
+                    const { data: activeSessions } = await supabase
+                        .from('user_sessions')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', user.id)
+                        .eq('is_active', true)
+                        .gt('expires_at', new Date().toISOString());
+                    
+                    if (!activeSessions || activeSessions.length === 0) {
+                        logSecurityEvent('[AUTH]', 'Session terminated - no active sessions', { 
+                            userId: user.id,
+                            email: user.email,
+                            path: req.path
+                        });
+                        return res.status(403).json({ 
+                            error: 'Session Anda telah diakhiri. Silakan login kembali.',
+                            code: 'SESSION_TERMINATED'
+                        });
+                    }
+                } catch (err) {
+                    console.warn('[AUTH] Session check error (non-blocking):', err.message);
+                    // Don't block on error, continue
+                }
+            }
+
             // --- MAINTENANCE MODE ENFORCEMENT ---
             const sys = await getMaintenanceStatus();
             if (sys && sys.isMaintenance && user.role === 'admin_zona') {
