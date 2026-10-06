@@ -79,7 +79,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(6px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -93,71 +93,99 @@
 
         .modern-download-popup {
             background: white;
-            border-radius: 20px;
+            border-radius: 24px;
             width: 90%;
-            max-width: 520px;
+            max-width: 560px;
             box-shadow: 
-                0 20px 60px rgba(0, 0, 0, 0.2),
-                0 0 1px rgba(0, 0, 0, 0.1);
+                0 25px 50px rgba(0, 0, 0, 0.25),
+                0 8px 16px rgba(0, 0, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
             overflow: hidden;
             animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            border: 1px solid rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.9);
         }
 
         .modern-download-popup.dark {
-            background: #1e293b;
-            border: 1px solid rgba(71, 85, 105, 0.4);
+            background: #1a1f2e;
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                0 8px 16px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
 
         /* POPUP HEADER */
         .modern-popup-header {
-            padding: 32px 32px 24px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+            padding: 36px 36px 28px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #f8fafc 50%, #f0f4f8 100%);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modern-popup-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent);
+            pointer-events: none;
         }
 
         .modern-popup-header.dark {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            background: linear-gradient(135deg, #1a2332 0%, #1e293b 50%, #16202f 100%);
+            border-bottom: 1px solid rgba(71, 85, 105, 0.4);
         }
 
         .modern-popup-icon {
-            width: 72px;
-            height: 72px;
-            border-radius: 16px;
+            width: 80px;
+            height: 80px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
-            margin-bottom: 20px;
+            font-size: 42px;
+            margin-bottom: 24px;
             background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
             border: 2px solid #93c5fd;
-            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+            box-shadow: 
+                0 12px 24px rgba(59, 130, 246, 0.2),
+                inset 0 1px 2px rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 1;
         }
 
         .modern-popup-icon.dark {
-            background: linear-gradient(135deg, #1e3a8a 0%, #172554 100%);
+            background: linear-gradient(135deg, #0f3460 0%, #1a5490 100%);
             border: 2px solid #3b82f6;
-            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.25);
+            box-shadow: 
+                0 12px 24px rgba(59, 130, 246, 0.3),
+                inset 0 1px 2px rgba(100, 150, 255, 0.3);
         }
 
         .modern-popup-title {
-            font-size: 26px;
-            font-weight: 800;
-            color: #1e293b;
+            font-size: 28px;
+            font-weight: 900;
+            color: #0f172a;
             margin: 0;
-            letter-spacing: -0.5px;
+            letter-spacing: -0.6px;
+            position: relative;
+            z-index: 1;
         }
 
         .modern-popup-title.dark {
-            color: #f1f5f9;
+            color: #f0f9ff;
         }
 
         .modern-popup-subtitle {
-            font-size: 14px;
-            color: #64748b;
-            margin: 8px 0 0 0;
+            font-size: 15px;
+            color: #475569;
+            margin: 10px 0 0 0;
             font-weight: 500;
+            position: relative;
+            z-index: 1;
         }
 
         .modern-popup-subtitle.dark {
@@ -166,19 +194,24 @@
 
         /* POPUP BODY */
         .modern-popup-body {
-            padding: 32px;
+            padding: 36px;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 16px;
+            background: white;
+        }
+
+        .modern-popup-body.dark {
+            background: #1a1f2e;
         }
 
         /* ========== DOWNLOAD BUTTONS ========== */
         .modern-download-btn {
-            padding: 16px 18px;
+            padding: 18px 20px;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 15px;
-            font-weight: 700;
+            font-weight: 750;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -188,29 +221,43 @@
             overflow: hidden;
             color: white;
             text-decoration: none;
-            min-height: 56px;
+            min-height: 60px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
         }
 
         .modern-download-btn::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
             animation: shimmer 2.5s infinite;
             animation-play-state: paused;
+        }
+
+        .modern-download-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .modern-download-btn:hover::before {
             animation-play-state: running;
         }
 
+        .modern-download-btn:hover::after {
+            opacity: 1;
+        }
+
         .modern-download-btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
         }
 
         .modern-download-btn:active {
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
         .modern-download-btn.btn-loading {
@@ -223,14 +270,14 @@
             align-items: center;
             justify-content: space-between;
             width: 100%;
-            gap: 14px;
+            gap: 16px;
             position: relative;
             z-index: 1;
         }
 
         .modern-btn-icon {
-            font-size: 24px;
-            min-width: 32px;
+            font-size: 26px;
+            min-width: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -242,98 +289,108 @@
             text-align: left;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 5px;
         }
 
         .modern-btn-name {
-            font-weight: 800;
-            font-size: 15px;
+            font-weight: 900;
+            font-size: 16px;
+            letter-spacing: -0.3px;
         }
 
         .modern-btn-hint {
             font-size: 12px;
-            opacity: 0.9;
+            opacity: 0.92;
             font-weight: 500;
+            letter-spacing: 0.3px;
         }
 
         .modern-btn-arrow {
             font-size: 18px;
-            opacity: 0.85;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.9;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .modern-download-btn:hover .modern-btn-arrow {
-            transform: translateX(4px);
+            transform: translateX(6px);
+            opacity: 1;
         }
 
         /* BUTTON COLOR VARIANTS */
         .modern-btn-invoice {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+            box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
         }
 
         .modern-btn-invoice:hover {
-            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.45);
+            box-shadow: 0 16px 45px rgba(59, 130, 246, 0.5);
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         }
 
         .modern-btn-bukti {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);
         }
 
         .modern-btn-bukti:hover {
-            box-shadow: 0 12px 40px rgba(16, 185, 129, 0.45);
+            box-shadow: 0 16px 45px rgba(16, 185, 129, 0.5);
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
         }
 
         .modern-btn-faktur {
             background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
-            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+            box-shadow: 0 8px 20px rgba(168, 85, 247, 0.35);
         }
 
         .modern-btn-faktur:hover {
-            box-shadow: 0 12px 40px rgba(168, 85, 247, 0.45);
+            box-shadow: 0 16px 45px rgba(168, 85, 247, 0.5);
             background: linear-gradient(135deg, #9333ea 0%, #7e22ce 100%);
         }
 
         .modern-btn-combine {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
-            margin-top: 12px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.35);
+            margin-top: 14px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, 0.25);
         }
 
         .modern-btn-combine:hover {
-            box-shadow: 0 12px 40px rgba(245, 158, 11, 0.45);
+            box-shadow: 0 16px 45px rgba(245, 158, 11, 0.5);
             background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
         }
 
         /* POPUP FOOTER */
         .modern-popup-footer {
-            padding: 0 32px 20px;
+            padding: 0 36px 24px;
+            background: white;
+        }
+
+        .modern-popup-footer.dark {
+            background: #1a1f2e;
         }
 
         .modern-popup-close-btn {
             width: 100%;
-            padding: 12px;
+            padding: 13px;
             background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
             color: #1e293b;
             border: none;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 14px;
+            border-radius: 12px;
+            font-weight: 750;
+            font-size: 15px;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .modern-popup-close-btn:hover {
-            background: linear-gradient(135deg, #cbd5e1 0%, #b0bcc4 100%);
+            background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
         }
 
         .modern-popup-close-btn.dark {
