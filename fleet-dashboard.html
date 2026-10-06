@@ -1478,7 +1478,21 @@
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                     Notify.success('✅ Dokumen berhasil dihapus');
-                    await loadDashboard();
+                    
+                    // Remove document from allDocuments array immediately
+                    allDocuments = allDocuments.filter(d => d.id !== documentId);
+                    
+                    // Refresh the modal view if it's currently open and showing this vehicle
+                    if (currentDetailVehicle) {
+                        viewVehicleDetails(currentDetailVehicle.id);
+                    }
+                    
+                    // Also refresh the tables
+                    renderDocumentsTable();
+                    renderExpiringTable();
+                    renderExpiredTable();
+                    renderVehicles();
+                    renderStats();
                 } catch (error) {
                     console.error('Error deleting document:', error);
                     Notify.error('❌ Gagal menghapus dokumen');
