@@ -253,57 +253,29 @@
 
         /* ========== DOWNLOAD BUTTONS ========== */
         .modern-download-btn {
-            padding: 18px 20px;
+            width: 100%;
+            padding: 12px 14px;
             border: none;
-            border-radius: 14px;
-            font-size: 15px;
-            font-weight: 750;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 12px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
             color: white;
             text-decoration: none;
-            min-height: 60px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-        }
-
-        .modern-download-btn::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            animation: shimmer 2.5s infinite;
-            animation-play-state: paused;
-        }
-
-        .modern-download-btn::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1), transparent);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .modern-download-btn:hover::before {
-            animation-play-state: running;
-        }
-
-        .modern-download-btn:hover::after {
-            opacity: 1;
         }
 
         .modern-download-btn:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
         }
 
         .modern-download-btn:active {
-            transform: translateY(-2px);
+            transform: translateY(0);
         }
 
         .modern-download-btn.btn-loading {
@@ -316,18 +288,15 @@
             align-items: center;
             justify-content: space-between;
             width: 100%;
-            gap: 16px;
+            gap: 12px;
             position: relative;
             z-index: 1;
         }
 
         .modern-btn-icon {
-            font-size: 26px;
-            min-width: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: slideIn 0.4s ease;
+            font-size: 18px;
+            min-width: 24px;
+            text-align: center;
         }
 
         .modern-btn-label {
@@ -335,94 +304,63 @@
             text-align: left;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 0;
         }
 
         .modern-btn-name {
-            font-weight: 900;
-            font-size: 16px;
-            letter-spacing: -0.3px;
+            font-weight: 600;
+            font-size: 13px;
         }
 
         .modern-btn-hint {
-            font-size: 12px;
-            opacity: 0.92;
+            font-size: 11px;
+            opacity: 0.8;
             font-weight: 500;
-            letter-spacing: 0.3px;
         }
 
         .modern-btn-arrow {
-            font-size: 18px;
-            opacity: 0.9;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modern-download-btn:hover .modern-btn-arrow {
-            transform: translateX(6px);
-            opacity: 1;
+            font-size: 14px;
+            opacity: 0.8;
         }
 
         /* BUTTON COLOR VARIANTS */
         .modern-btn-invoice {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
-            box-shadow: 
-                0 0 30px rgba(59, 130, 246, 0.3),
-                0 10px 30px rgba(59, 130, 246, 0.25);
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
         }
 
         .modern-btn-invoice:hover {
-            box-shadow: 
-                0 0 50px rgba(59, 130, 246, 0.5),
-                0 20px 50px rgba(59, 130, 246, 0.4);
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.35);
         }
 
         .modern-btn-bukti {
-            background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
-            box-shadow: 
-                0 0 30px rgba(16, 185, 129, 0.3),
-                0 10px 30px rgba(16, 185, 129, 0.25);
+            background: linear-gradient(135deg, #27ae60, #229954);
+            box-shadow: 0 2px 8px rgba(39, 174, 96, 0.2);
         }
 
         .modern-btn-bukti:hover {
-            box-shadow: 
-                0 0 50px rgba(16, 185, 129, 0.5),
-                0 20px 50px rgba(16, 185, 129, 0.4);
-            background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+            box-shadow: 0 6px 16px rgba(39, 174, 96, 0.35);
         }
 
         .modern-btn-faktur {
-            background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-            box-shadow: 
-                0 0 30px rgba(168, 85, 247, 0.3),
-                0 10px 30px rgba(168, 85, 247, 0.25);
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            box-shadow: 0 2px 8px rgba(155, 89, 182, 0.2);
         }
 
         .modern-btn-faktur:hover {
-            box-shadow: 
-                0 0 50px rgba(168, 85, 247, 0.5),
-                0 20px 50px rgba(168, 85, 247, 0.4);
-            background: linear-gradient(135deg, #9333ea 0%, #7e22ce 50%, #6b21a8 100%);
+            box-shadow: 0 6px 16px rgba(155, 89, 182, 0.35);
         }
 
         .modern-btn-combine {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
-            box-shadow: 
-                0 0 30px rgba(245, 158, 11, 0.3),
-                0 10px 30px rgba(245, 158, 11, 0.25);
-            margin-top: 14px;
-            padding-top: 18px;
-            border-top: 2px solid rgba(255, 255, 255, 0.3);
+            background: linear-gradient(135deg, #e67e22, #d35400);
+            box-shadow: 0 2px 8px rgba(230, 126, 34, 0.2);
+            margin-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            padding-top: 20px;
         }
 
         .modern-btn-combine:hover {
-            box-shadow: 
-                0 0 50px rgba(245, 158, 11, 0.5),
-                0 20px 50px rgba(245, 158, 11, 0.4);
-            background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%);
+            box-shadow: 0 6px 16px rgba(230, 126, 34, 0.35);
         }
 
         /* POPUP FOOTER */
