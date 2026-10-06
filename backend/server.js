@@ -1510,6 +1510,9 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
             });
         }
 
+        // Extract client info for audit logging
+        const { ipAddress, userAgent } = AuditLogger.extractClientInfo(req);
+
         // Generate JWT
         const payload = {
             userId: user.id,
@@ -1522,7 +1525,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
 
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 
-        // Audit with detailed info (reuse userAgent and ipAddress from above)
+        // Audit with detailed info
         await auditLogger.log({
             userId: user.id,
             userEmail: user.email,
