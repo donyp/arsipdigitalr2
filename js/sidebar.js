@@ -58,6 +58,7 @@
         { href: '/support-dashboard', label: 'Support', icon: '<i class="fas fa-headset"></i>' },
         { href: '/audit-logs', label: 'Audit Logs', icon: '<i class="fas fa-shield-alt"></i>' },
         { href: '/storage-handler', label: 'Storage Handler', icon: '<i class="fas fa-folder-open"></i>' },
+        { href: '/fleet', label: 'Fleet Management', icon: '<i class="fas fa-truck"></i>' },
         
         {
             isDropdown: true,

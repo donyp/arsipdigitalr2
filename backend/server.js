@@ -544,6 +544,14 @@ app.get('/zona/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
 });
 
+app.get('/fleet', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'fleet-dashboard.html'));
+});
+
+app.get('/fleet-dashboard', (req, res) => {
+    res.redirect(301, '/fleet');
+});
+
 app.get('/support-dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));
 });
@@ -7532,6 +7540,13 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
                 });
             }
         });
+
+        // ============================================================
+        // Fleet Management Routes
+        // ============================================================
+        const fleetRoutes = require('./fleet-management-endpoints');
+        fleetRoutes.initializeSupabase(supabase);
+        app.use('/api/fleet', fleetRoutes.router);
 
         const server = app.listen(PORT, HOST, () => {
             // Task 3.4: Log successful port binding

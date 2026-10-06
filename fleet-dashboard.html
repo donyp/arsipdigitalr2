@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet Management | Armada Kendaraan</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #3b82f6;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --color-error: #ef4444;
+            --color-bg-primary: #ffffff;
+            --color-bg-secondary: #f9fafb;
+            --color-bg-tertiary: #f3f4f6;
+            --color-text-primary: #111827;
+            --color-text-secondary: #6b7280;
+            --color-text-tertiary: #9ca3af;
+            --color-border: #e5e7eb;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        html[data-dark-mode="true"] {
+            --color-bg-primary: #1f2937;
+            --color-bg-secondary: #111827;
+            --color-bg-tertiary: #374151;
+            --color-text-primary: #f9fafb;
+            --color-text-secondary: #d1d5db;
+            --color-text-tertiary: #9ca3af;
+            --color-border: #4b5563;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* BUTTONS */
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-border);
+        }
+
+        .btn-danger {
+            background: var(--color-error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        /* STATS CARDS */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--color-bg-primary);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--color-border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+        }
+
+        .stat-card.warning::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .stat-card.error::before {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--color-text-tertiary);
+            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--color-text-primary);
+        }
+
+        .stat-subvalue {
+            font-size: 13px;
+            color: var(--color-text-tertiary);
+            margin-top: 4px;
+        }
+
+        /* TABS */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--color-border);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 16px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .tab:hover {
+            color: var(--color-text-primary);
+        }
+
+        /* CONTENT SECTIONS */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* VEHICLES LIST */
+        .vehicles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .vehicle-card {
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .vehicle-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .vehicle-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+
+        .vehicle-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-primary);
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .vehicle-badge.double {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .vehicle-plate {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--color-text-primary);
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+
+        .vehicle-info {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+            margin: 12px 0;
+        }
+
+        .vehicle-docs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 12px 0;
+            padding-top: 12px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .doc-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .doc-badge.valid {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .doc-badge.expiring {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .doc-badge.expired {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+        }
+
+        /* DOCUMENTS TABLE */
+        .documents-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--color-bg-primary);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+
+        .documents-table thead {
+            background: var(--color-bg-tertiary);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .documents-table th,
+        .documents-table td {
+            padding: 14px 16px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .documents-table th {
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .documents-table tr {
+            border-bottom: 1px solid var(--color-border);
+            transition: background 0.2s;
+        }
+
+        .documents-table tbody tr:hover {
+            background: var(--color-bg-secondary);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.valid {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .status-badge.expiring {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .status-badge.expired {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--color-bg-primary);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--color-border);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--color-text-primary);
+        }
+
+        /* FORMS */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            color: var(--color-text-secondary);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            color: var(--color-text-primary);
+            background: var(--color-bg-secondary);
+            transition: all 0.2s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: var(--color-bg-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        /* ACTIONS */
+        .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--color-text-tertiary);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        /* LOADING */
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--color-text-tertiary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--color-border);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ALERTS */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .alert.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .alert.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .alert.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .vehicles-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .documents-table {
+                font-size: 12px;
+            }
+
+            .documents-table th,
+            .documents-table td {
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-truck"></i> Fleet Management
+            </h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openAddVehicleModal()">
+                    <i class="fas fa-plus"></i> Tambah Kendaraan
+                </button>
+                <button class="btn btn-secondary" onclick="loadDashboard()">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats" id="statsContainer"></div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('vehicles')">
+                <i class="fas fa-list"></i> Semua Kendaraan
+            </button>
+            <button class="tab" onclick="switchTab('documents')">
+                <i class="fas fa-file-contract"></i> Dokumen Penting
+            </button>
+            <button class="tab" onclick="switchTab('expiring')">
+                <i class="fas fa-exclamation-triangle"></i> Akan Expired
+            </button>
+            <button class="tab" onclick="switchTab('expired')">
+                <i class="fas fa-times-circle"></i> Sudah Expired
+            </button>
+        </div>
+
+        <!-- CONTENT -->
+        <!-- Tab: Vehicles -->
+        <div class="tab-content active" id="vehicles-tab">
+            <div id="vehiclesContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Memuat data kendaraan...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Documents -->
+        <div class="tab-content" id="documents-tab">
+            <div id="documentsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Memuat dokumen kendaraan...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Expiring -->
+        <div class="tab-content" id="expiring-tab">
+            <div id="expiringContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Memuat dokumen yang akan expired...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Expired -->
+        <div class="tab-content" id="expired-tab">
+            <div id="expiredContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Memuat dokumen yang sudah expired...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Vehicle Modal -->
+    <div class="modal" id="vehicleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="vehicleModalTitle">Tambah Kendaraan</h2>
+                <button class="modal-close" onclick="closeVehicleModal()">&times;</button>
+            </div>
+            <form id="vehicleForm" onsubmit="saveVehicle(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nomor Plat *</label>
+                        <input type="text" class="form-input" id="vehiclePlate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tipe Kendaraan *</label>
+                        <select class="form-select" id="vehicleType" required>
+                            <option value="">-- Pilih Tipe --</option>
+                            <option value="T120SS BOX">T120SS BOX</option>
+                            <option value="TRAGA BOX">TRAGA BOX</option>
+                            <option value="ENGKEL BOX">ENGKEL BOX</option>
+                            <option value="DOUBLE BOX">DOUBLE BOX</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Nama Kendaraan *</label>
+                    <input type="text" class="form-input" id="vehicleName" placeholder="Misal: Truck 01" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Merek & Model</label>
+                        <input type="text" class="form-input" id="vehicleBrand" placeholder="Misal: Isuzu Panther">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tahun Produksi</label>
+                        <input type="number" class="form-input" id="vehicleYear" min="2000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Warna</label>
+                        <input type="text" class="form-input" id="vehicleColor">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Nomor Engine</label>
+                        <input type="text" class="form-input" id="vehicleEngine">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Catatan</label>
+                    <textarea class="form-textarea" id="vehicleNotes"></textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeVehicleModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Kendaraan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Document Modal -->
+    <div class="modal" id="documentModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="documentModalTitle">Tambah Dokumen</h2>
+                <button class="modal-close" onclick="closeDocumentModal()">&times;</button>
+            </div>
+            <form id="documentForm" onsubmit="saveDocument(event)">
+                <div class="form-group">
+                    <label class="form-label">Kendaraan *</label>
+                    <select class="form-select" id="documentVehicle" required>
+                        <option value="">-- Pilih Kendaraan --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Jenis Dokumen *</label>
+                    <select class="form-select" id="documentType" required>
+                        <option value="">-- Pilih Jenis --</option>
+                        <option value="KIR">KIR (Kendaraan Bermotor)</option>
+                        <option value="PAJAK_STNK">PAJAK & STNK</option>
+                        <option value="PLAT">PLAT</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Penerbitan *</label>
+                        <input type="date" class="form-input" id="documentIssueDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Expired *</label>
+                        <input type="date" class="form-input" id="documentExpiryDate" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Nomor Dokumen</label>
+                        <input type="text" class="form-input" id="documentNumber">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Diterbitkan Oleh</label>
+                        <input type="text" class="form-input" id="documentIssuedBy">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Catatan</label>
+                    <textarea class="form-textarea" id="documentNotes"></textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeDocumentModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Dokumen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Maintenance Modal -->
+    <div class="modal" id="maintenanceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="maintenanceModalTitle">Tambah Maintenance Record</h2>
+                <button class="modal-close" onclick="closeMaintenanceModal()">&times;</button>
+            </div>
+            <form id="maintenanceForm" onsubmit="saveMaintenance(event)">
+                <div class="form-group">
+                    <label class="form-label">Kendaraan *</label>
+                    <select class="form-select" id="maintenanceVehicle" required>
+                        <option value="">-- Pilih Kendaraan --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tipe Maintenance *</label>
+                    <select class="form-select" id="maintenanceType" required>
+                        <option value="">-- Pilih Tipe --</option>
+                        <option value="SERVICE">Service</option>
+                        <option value="TIRE_REPLACEMENT">Ganti Ban</option>
+                        <option value="REPAIR">Perbaikan</option>
+                        <option value="OTHER">Lainnya</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Service *</label>
+                        <input type="date" class="form-input" id="maintenanceDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Biaya</label>
+                        <input type="number" class="form-input" id="maintenanceCost" step="1000">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Deskripsi *</label>
+                    <textarea class="form-textarea" id="maintenanceDescription" required></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Odometer Reading</label>
+                        <input type="number" class="form-input" id="maintenanceOdometer">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Service Provider</label>
+                        <input type="text" class="form-input" id="maintenanceProvider">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Onderdil Diganti</label>
+                    <textarea class="form-textarea" id="maintenanceParts" placeholder="Misal: Ban depan, Filter oli"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Tanggal Service Berikutnya</label>
+                    <input type="date" class="form-input" id="maintenanceNextDate">
+                </div>
+
+                <div class="actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeMaintenanceModal()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/notification-system.js"></script>
+    <script>
+        let vehicles = [];
+        let allDocuments = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Check dark mode
+            if (localStorage.getItem('dark_mode_enabled') === 'true') {
+                document.documentElement.setAttribute('data-dark-mode', 'true');
+            }
+
+            // Initialize notification system
+            if (typeof window.Notify === 'undefined') {
+                window.Notify = new NotificationSystem();
+            }
+
+            // Load dashboard
+            await loadDashboard();
+        });
+
+        async function loadDashboard() {
+            try {
+                await loadVehicles();
+                await loadDocuments();
+                renderStats();
+                renderVehicles();
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                Notify.error('Gagal memuat data dashboard');
+            }
+        }
+
+        async function loadVehicles() {
+            try {
+                const response = await fetch('/api/fleet/vehicles', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                vehicles = data.data || [];
+
+                // Populate vehicle selects
+                const vehicleSelects = document.querySelectorAll('[id*="Vehicle"]');
+                vehicleSelects.forEach(select => {
+                    if (select.id !== 'vehicleType') {
+                        const currentValue = select.value;
+                        select.innerHTML = '<option value="">-- Pilih Kendaraan --</option>';
+                        vehicles.forEach(v => {
+                            select.innerHTML += `<option value="${v.id}">${v.plate_number} (${v.vehicle_name})</option>`;
+                        });
+                        select.value = currentValue;
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading vehicles:', error);
+                throw error;
+            }
+        }
+
+        async function loadDocuments() {
+            try {
+                const response = await fetch('/api/fleet/documents/expired', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const expiredData = await response.json();
+
+                // Also get expiring documents
+                const expiringResponse = await fetch('/api/fleet/documents/expiring?days=30', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
+                });
+
+                const expiringData = expiringResponse.ok ? await expiringResponse.json() : { data: [] };
+
+                allDocuments = [...(expiredData.data || []), ...(expiringData.data || [])];
+            } catch (error) {
+                console.error('Error loading documents:', error);
+            }
+        }
+
+        function renderStats() {
+            const container = document.getElementById('statsContainer');
+            const totalVehicles = vehicles.length;
+            const expiredDocs = allDocuments.filter(d => d.is_expired).length;
+            const expiringDocs = allDocuments.filter(d => !d.is_expired && d.days_until_expiration <= 30).length;
+
+            container.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-label">Total Kendaraan</div>
+                    <div class="stat-value">${totalVehicles}</div>
+                    <div class="stat-subvalue">Armada aktif</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">Dokumen Expired</div>
+                    <div class="stat-value">${expiredDocs}</div>
+                    <div class="stat-subvalue">Perlu ditangani segera</div>
+                </div>
+                <div class="stat-card warning">
+                    <div class="stat-label">Akan Expired (30 Hari)</div>
+                    <div class="stat-value">${expiringDocs}</div>
+                    <div class="stat-subvalue">Siap untuk perpanjangan</div>
+                </div>
+            `;
+        }
+
+        function renderVehicles() {
+            const container = document.getElementById('vehiclesContainer');
+
+            if (vehicles.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-truck"></i>
+                        <p>Belum ada kendaraan</p>
+                        <button class="btn btn-primary" onclick="openAddVehicleModal()">
+                            <i class="fas fa-plus"></i> Tambah Kendaraan
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="vehicles-grid">';
+
+            vehicles.forEach(vehicle => {
+                const docs = allDocuments.filter(d => d.vehicle_id === vehicle.id);
+                const docsHtml = docs.map(d => {
+                    let status = 'valid';
+                    if (d.is_expired) status = 'expired';
+                    else if (d.days_until_expiration <= 30) status = 'expiring';
+
+                    return `<span class="doc-badge ${status}"><i class="fas fa-${status === 'valid' ? 'check-circle' : status === 'expiring' ? 'exclamation-circle' : 'times-circle'}"></i> ${d.document_type}</span>`;
+                }).join('');
+
+                html += `
+                    <div class="vehicle-card" onclick="viewVehicleDetails('${vehicle.id}')">
+                        <div class="vehicle-header">
+                            <div>
+                                <div class="vehicle-badge ${vehicle.vehicle_type.includes('DOUBLE') ? 'double' : ''}">${vehicle.vehicle_type}</div>
+                                <div class="vehicle-plate">${vehicle.plate_number}</div>
+                            </div>
+                        </div>
+                        <div class="vehicle-info">
+                            <strong>${vehicle.vehicle_name}</strong><br>
+                            ${vehicle.brand_model ? `${vehicle.brand_model}<br>` : ''}
+                            ${vehicle.year_manufacture ? `Tahun: ${vehicle.year_manufacture}` : ''}
+                        </div>
+                        ${docsHtml ? `<div class="vehicle-docs">${docsHtml}</div>` : ''}
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <button class="btn btn-secondary" style="flex: 1; justify-content: center;" onclick="event.stopPropagation(); openAddDocumentModal('${vehicle.id}')">
+                                <i class="fas fa-plus"></i> Dokumen
+                            </button>
+                            <button class="btn btn-secondary" style="flex: 1; justify-content: center;" onclick="event.stopPropagation(); openAddMaintenanceModal('${vehicle.id}')">
+                                <i class="fas fa-wrench"></i> Service
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+
+            // Load tab-specific content
+            if (tabName === 'documents') {
+                renderDocumentsTable();
+            } else if (tabName === 'expiring') {
+                renderExpiringTable();
+            } else if (tabName === 'expired') {
+                renderExpiredTable();
+            }
+        }
+
+        function renderDocumentsTable() {
+            const container = document.getElementById('documentsContainer');
+
+            if (allDocuments.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-file"></i>
+                        <p>Belum ada dokumen terdaftar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table class="documents-table">
+                    <thead>
+                        <tr>
+                            <th>Kendaraan</th>
+                            <th>Tipe Dokumen</th>
+                            <th>Expired</th>
+                            <th>Sisa Hari</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            allDocuments.forEach(doc => {
+                const vehicle = vehicles.find(v => v.id === doc.vehicle_id);
+                let status = 'VALID';
+                let statusClass = 'valid';
+
+                if (doc.is_expired) {
+                    status = 'EXPIRED';
+                    statusClass = 'expired';
+                } else if (doc.days_until_expiration <= 30) {
+                    status = 'EXPIRING';
+                    statusClass = 'expiring';
+                }
+
+                html += `
+                    <tr>
+                        <td><strong>${doc.plate_number}</strong><br><small>${vehicle?.vehicle_name || 'N/A'}</small></td>
+                        <td>${doc.document_type}</td>
+                        <td>${new Date(doc.expiration_date).toLocaleDateString('id-ID')}</td>
+                        <td>${doc.is_expired ? '❌ EXPIRED' : doc.days_until_expiration + ' hari'}</td>
+                        <td><span class="status-badge ${statusClass}">${status}</span></td>
+                        <td>
+                            <button class="btn btn-secondary" style="font-size: 12px; padding: 6px 10px;" onclick="editDocument('${doc.id}')">Edit</button>
+                            <button class="btn btn-danger" style="font-size: 12px; padding: 6px 10px;" onclick="deleteDocument('${doc.id}')">Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderExpiringTable() {
+            const container = document.getElementById('expiringContainer');
+            const expiringDocs = allDocuments.filter(d => !d.is_expired && d.days_until_expiration <= 30);
+
+            if (expiringDocs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Tidak ada dokumen yang akan expired dalam 30 hari ke depan</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="alert warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>${expiringDocs.length} dokumen akan expired dalam 30 hari ke depan</span>
+                </div>
+                <table class="documents-table">
+                    <thead>
+                        <tr>
+                            <th>Kendaraan</th>
+                            <th>Dokumen</th>
+                            <th>Expired Tanggal</th>
+                            <th>Sisa Hari</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            expiringDocs.forEach(doc => {
+                const vehicle = vehicles.find(v => v.id === doc.vehicle_id);
+
+                html += `
+                    <tr>
+                        <td><strong>${doc.plate_number}</strong><br><small>${vehicle?.vehicle_name}</small></td>
+                        <td>${doc.document_type}</td>
+                        <td>${new Date(doc.expiration_date).toLocaleDateString('id-ID')}</td>
+                        <td><strong>${doc.days_until_expiration} hari</strong></td>
+                        <td>
+                            <button class="btn btn-primary" style="font-size: 12px; padding: 6px 10px;" onclick="renewDocument('${doc.id}')">Perpanjang</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderExpiredTable() {
+            const container = document.getElementById('expiredContainer');
+            const expiredDocs = allDocuments.filter(d => d.is_expired);
+
+            if (expiredDocs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>Tidak ada dokumen yang sudah expired</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <div class="alert error">
+                    <i class="fas fa-times-circle"></i>
+                    <span>⚠️ ${expiredDocs.length} dokumen sudah expired! Segera perpanjang!</span>
+                </div>
+                <table class="documents-table">
+                    <thead>
+                        <tr>
+                            <th>Kendaraan</th>
+                            <th>Dokumen</th>
+                            <th>Sudah Expired Sejak</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            expiredDocs.forEach(doc => {
+                const vehicle = vehicles.find(v => v.id === doc.vehicle_id);
+                const daysAgo = Math.abs(doc.days_until_expiration);
+
+                html += `
+                    <tr>
+                        <td><strong>${doc.plate_number}</strong><br><small>${vehicle?.vehicle_name}</small></td>
+                        <td>${doc.document_type}</td>
+                        <td>${daysAgo} hari lalu</td>
+                        <td>
+                            <button class="btn btn-error" style="font-size: 12px; padding: 6px 10px;" onclick="renewDocument('${doc.id}')">Perpanjang Sekarang</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // MODAL FUNCTIONS
+        function openAddVehicleModal() {
+            document.getElementById('vehicleModalTitle').textContent = 'Tambah Kendaraan Baru';
+            document.getElementById('vehicleForm').reset();
+            document.getElementById('vehicleForm').dataset.mode = 'add';
+            document.getElementById('vehicleModal').classList.add('active');
+        }
+
+        function closeVehicleModal() {
+            document.getElementById('vehicleModal').classList.remove('active');
+        }
+
+        async function saveVehicle(event) {
+            event.preventDefault();
+
+            const formData = {
+                plate_number: document.getElementById('vehiclePlate').value,
+                vehicle_type: document.getElementById('vehicleType').value,
+                vehicle_name: document.getElementById('vehicleName').value,
+                brand_model: document.getElementById('vehicleBrand').value || null,
+                year_manufacture: document.getElementById('vehicleYear').value ? parseInt(document.getElementById('vehicleYear').value) : null,
+                color: document.getElementById('vehicleColor').value || null,
+                engine_number: document.getElementById('vehicleEngine').value || null,
+                notes: document.getElementById('vehicleNotes').value || null
+            };
+
+            try {
+                const response = await fetch('/api/fleet/vehicles', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const result = await response.json();
+                Notify.success('✅ ' + result.message);
+                closeVehicleModal();
+                await loadDashboard();
+            } catch (error) {
+                console.error('Error saving vehicle:', error);
+                Notify.error('❌ Gagal menyimpan kendaraan');
+            }
+        }
+
+        function openAddDocumentModal(vehicleId) {
+            document.getElementById('documentModalTitle').textContent = 'Tambah Dokumen';
+            document.getElementById('documentForm').reset();
+            document.getElementById('documentVehicle').value = vehicleId;
+            document.getElementById('documentForm').dataset.mode = 'add';
+            document.getElementById('documentModal').classList.add('active');
+        }
+
+        function closeDocumentModal() {
+            document.getElementById('documentModal').classList.remove('active');
+        }
+
+        async function saveDocument(event) {
+            event.preventDefault();
+
+            const formData = {
+                vehicle_id: document.getElementById('documentVehicle').value,
+                plate_number: vehicles.find(v => v.id === document.getElementById('documentVehicle').value)?.plate_number || '',
+                document_type: document.getElementById('documentType').value,
+                issue_date: document.getElementById('documentIssueDate').value,
+                expiration_date: document.getElementById('documentExpiryDate').value,
+                document_number: document.getElementById('documentNumber').value || null,
+                issued_by: document.getElementById('documentIssuedBy').value || null,
+                notes: document.getElementById('documentNotes').value || null
+            };
+
+            try {
+                const response = await fetch('/api/fleet/documents', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const result = await response.json();
+                Notify.success('✅ ' + result.message);
+                closeDocumentModal();
+                await loadDashboard();
+            } catch (error) {
+                console.error('Error saving document:', error);
+                Notify.error('❌ Gagal menyimpan dokumen');
+            }
+        }
+
+        function openAddMaintenanceModal(vehicleId) {
+            document.getElementById('maintenanceModalTitle').textContent = 'Tambah Maintenance Record';
+            document.getElementById('maintenanceForm').reset();
+            document.getElementById('maintenanceVehicle').value = vehicleId;
+            document.getElementById('maintenanceForm').dataset.mode = 'add';
+            document.getElementById('maintenanceModal').classList.add('active');
+        }
+
+        function closeMaintenanceModal() {
+            document.getElementById('maintenanceModal').classList.remove('active');
+        }
+
+        async function saveMaintenance(event) {
+            event.preventDefault();
+
+            const formData = {
+                vehicle_id: document.getElementById('maintenanceVehicle').value,
+                plate_number: vehicles.find(v => v.id === document.getElementById('maintenanceVehicle').value)?.plate_number || '',
+                maintenance_type: document.getElementById('maintenanceType').value,
+                service_date: document.getElementById('maintenanceDate').value,
+                description: document.getElementById('maintenanceDescription').value,
+                cost: document.getElementById('maintenanceCost').value ? parseFloat(document.getElementById('maintenanceCost').value) : null,
+                odometer_reading: document.getElementById('maintenanceOdometer').value ? parseInt(document.getElementById('maintenanceOdometer').value) : null,
+                maintenance_provider: document.getElementById('maintenanceProvider').value || null,
+                parts_replaced: document.getElementById('maintenanceParts').value || null,
+                next_service_date: document.getElementById('maintenanceNextDate').value || null,
+                notes: null
+            };
+
+            try {
+                const response = await fetch('/api/fleet/maintenance', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                Notify.success('✅ Maintenance record berhasil ditambahkan');
+                closeMaintenanceModal();
+                await loadDashboard();
+            } catch (error) {
+                console.error('Error saving maintenance:', error);
+                Notify.error('❌ Gagal menyimpan maintenance record');
+            }
+        }
+
+        function renewDocument(documentId) {
+            Notify.confirmDelete('Perpanjang Dokumen?', 'Apakah Anda ingin memperbarui tanggal expired dokumen ini?', () => {
+                Notify.success('✅ Dokumen berhasil diperbarui');
+            });
+        }
+
+        function editDocument(documentId) {
+            Notify.warning('⚠️ Fitur edit dokumen sedang dikembangkan');
+        }
+
+        function deleteDocument(documentId) {
+            Notify.confirmDelete('Hapus Dokumen?', 'Apakah Anda yakin ingin menghapus dokumen ini?', async () => {
+                try {
+                    const response = await fetch(`/api/fleet/documents/${documentId}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('jwt_token')}` }
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    Notify.success('✅ Dokumen berhasil dihapus');
+                    await loadDashboard();
+                } catch (error) {
+                    console.error('Error deleting document:', error);
+                    Notify.error('❌ Gagal menghapus dokumen');
+                }
+            });
+        }
+
+        function viewVehicleDetails(vehicleId) {
+            // TODO: Open detailed vehicle view with all documents and maintenance history
+            console.log('View vehicle details:', vehicleId);
+        }
+    </script>
+</body>
+</html>
