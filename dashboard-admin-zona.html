@@ -4200,7 +4200,15 @@
                             const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona ${user.zona_id}`;
                             document.getElementById('profileZona').textContent = zonaNama;
                         } else {
-                            document.getElementById('profileZona').textContent = `Zona ${user.zona_id}`;
+                            // Extract only numeric ID in case of string concatenation issues
+                            let zonaId = user.zona_id;
+                            if (typeof zonaId === 'string') {
+                                // Extract all numeric characters and take first match
+                                const match = zonaId.match(/\d+/);
+                                zonaId = match ? match[0] : zonaId;
+                            }
+                            const displayZona = `Zona ${zonaId}`;
+                            document.getElementById('profileZona').textContent = displayZona;
                         }
                     } else {
                         document.getElementById('profileZona').textContent = '-';
@@ -4263,7 +4271,15 @@
                         const zonaNama = zonaData.zona?.nama || zonaData.data?.nama || `Zona ${user.zona_id}`;
                         document.getElementById('profileZona').textContent = zonaNama;
                     } else {
-                        document.getElementById('profileZona').textContent = `Zona ${user.zona_id}`;
+                        // Extract only numeric ID in case of string concatenation issues
+                        let zonaId = user.zona_id;
+                        if (typeof zonaId === 'string') {
+                            // Extract all numeric characters and take first match
+                            const match = zonaId.match(/\d+/);
+                            zonaId = match ? match[0] : zonaId;
+                        }
+                        const displayZona = `Zona ${zonaId}`;
+                        document.getElementById('profileZona').textContent = displayZona;
                     }
                 } else {
                     document.getElementById('profileZona').textContent = '-';

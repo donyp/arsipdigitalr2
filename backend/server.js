@@ -6214,6 +6214,22 @@ app.get('/api/zonas', authenticateToken, async (req, res) => {
     res.json({ zonas: data });
 });
 
+// GET /api/zonas/:id - Get single zone by ID
+app.get('/api/zonas/:id', authenticateToken, async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('zonas').select('*').eq('id', parseInt(req.params.id)).single();
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return res.status(404).json({ error: 'Zona tidak ditemukan' });
+            }
+            throw error;
+        }
+        res.json({ zona: data });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // POST /api/zonas — Create new zone
 app.post('/api/zonas', authenticateToken, requirePermission('manage_zonas'), async (req, res) => {
     try {
