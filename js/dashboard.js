@@ -3508,18 +3508,9 @@ async function loadFilterOptions() {
             
         }
         
-        // Populate month select - ONLY with months that have data (CUSTOM DROPDOWN)
-        const monthSelect = document.getElementById('filterMonth');
-        if (monthSelect) {
-            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
-                               'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            const monthOptions = months.map(month => ({ 
-                value: month, 
-                label: monthNames[month - 1] 
-            }));
-            populateCustomDropdownOptions('bulanDropdown', monthOptions);
-            
-        }
+        // DO NOT populate month dropdown - it's hardcoded with all 12 months in HTML
+        // The dropdown is already populated with Januari-Desember in dashboard.html
+        // No need to call populateCustomDropdownOptions for bulanDropdown
         
         // Populate toko custom dropdown
         const tokoOptions = tokos.map(toko => ({ value: toko, label: toko }));
