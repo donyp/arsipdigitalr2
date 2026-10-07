@@ -3231,6 +3231,41 @@
                     if (typeof enableAllFilters === 'function') {
                         enableAllFilters();
                     }
+                    
+                    // Auto-select current year when month is selected
+                    const currentYear = new Date().getFullYear();
+                    const yearInput = document.getElementById('filterYear');
+                    if (yearInput) {
+                        yearInput.value = currentYear;
+                        // Update tahunDropdown label to show selected year
+                        const tahunDropdown = document.getElementById('tahunDropdown');
+                        if (tahunDropdown) {
+                            const trigger = tahunDropdown.querySelector('.dropdown-trigger .dropdown-label');
+                            if (trigger) {
+                                trigger.textContent = String(currentYear);
+                            }
+                            // Update checkmarks
+                            tahunDropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+                                opt.classList.remove('selected');
+                                const checkmark = opt.querySelector('.checkmark');
+                                if (checkmark) {
+                                    checkmark.textContent = '';
+                                }
+                            });
+                            // Mark current year as selected
+                            tahunDropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+                                const optLabel = opt.querySelector('span:last-child').textContent.trim();
+                                if (optLabel === String(currentYear)) {
+                                    opt.classList.add('selected');
+                                    const checkmark = opt.querySelector('.checkmark');
+                                    if (checkmark) {
+                                        checkmark.textContent = '✓';
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    
                     if (applyBtn) {
                         applyBtn.disabled = false;
                         applyBtn.style.opacity = '1';
