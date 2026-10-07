@@ -2038,6 +2038,61 @@
             
             // Update filter state if month was selected
             if (dropdownId === 'monthDropdown') {
+                // Auto-select current year when month is selected
+                const currentYear = new Date().getFullYear();
+                
+                // Update year input
+                const yearInputs = dropdown.parentElement.parentElement.querySelectorAll('input[type="hidden"]');
+                let yearInput = null;
+                for (let input of yearInputs) {
+                    if (input.id === 'filterAdminZonaYear' || input.id === 'yearFilter') {
+                        yearInput = input;
+                        break;
+                    }
+                }
+                
+                // Also find year by looking for year dropdown
+                if (!yearInput) {
+                    const yearDropdown = document.getElementById('yearDropdown');
+                    if (yearDropdown) {
+                        yearInput = yearDropdown.parentElement.querySelector('input[type="hidden"]');
+                    }
+                }
+                
+                if (yearInput) {
+                    yearInput.value = currentYear;
+                    
+                    // Update year dropdown label and checkmarks
+                    const yearDropdown = document.getElementById('yearDropdown');
+                    if (yearDropdown) {
+                        const yearTrigger = yearDropdown.querySelector('.dropdown-trigger .dropdown-label');
+                        if (yearTrigger) {
+                            yearTrigger.textContent = String(currentYear);
+                        }
+                        
+                        // Update checkmarks
+                        yearDropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                            const checkmark = opt.querySelector('.checkmark');
+                            if (checkmark) {
+                                checkmark.textContent = '';
+                            }
+                        });
+                        
+                        // Mark current year as selected
+                        yearDropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+                            const optLabel = opt.querySelector('span:last-child').textContent.trim();
+                            if (optLabel === String(currentYear)) {
+                                opt.classList.add('selected');
+                                const checkmark = opt.querySelector('.checkmark');
+                                if (checkmark) {
+                                    checkmark.textContent = '✓';
+                                }
+                            }
+                        });
+                    }
+                }
+                
                 updateFilterState();
             }
         }
