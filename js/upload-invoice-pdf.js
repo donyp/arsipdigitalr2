@@ -380,9 +380,8 @@ async function validateAllFiles() {
         }
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-        // Validate each file with small delay to show progress
-        for (let i = 0; i < selectedFiles.length; i++) {
-            const file = selectedFiles[i];
+        // Validate all files in parallel for speed
+        const validationPromises = selectedFiles.map(async (file) => {
             const faktur = file.name.replace(/\.pdf$/i, '').trim();
             try {
                 const response = await fetch(`${CONFIG.API_URL}/api/invoice/check-faktur/${faktur}`, {
@@ -404,61 +403,59 @@ async function validateAllFiles() {
                             const checkData = await checkRes.json();
                             if (checkData.exists) {
                                 // File still exists on Google Drive - mark as duplicate
-                                validationResults.push({
+                                return {
                                     file: file,
                                     faktur: faktur,
                                     valid: false,
                                     error: 'PDF sudah diupload sebelumnya (Duplicate)',
                                     invoice: result.data
-                                });
+                                };
                             } else {
                                 // File was deleted from Google Drive - allow re-upload
-                                validationResults.push({
+                                return {
                                     file: file,
                                     faktur: faktur,
                                     valid: true,
                                     invoice: result.data
-                                });
+                                };
                             }
                         } catch (verifyErr) {
                             // If verification fails, assume file is gone and allow re-upload
-                            validationResults.push({
+                            return {
                                 file: file,
                                 faktur: faktur,
                                 valid: true,
                                 invoice: result.data
-                            });
+                            };
                         }
                     } else {
-                        validationResults.push({
+                        return {
                             file: file,
                             faktur: faktur,
                             valid: true,
                             invoice: result.data
-                        });
+                        };
                     }
                 } else {
-                    validationResults.push({
+                    return {
                         file: file,
                         faktur: faktur,
                         valid: false,
                         error: 'Faktur tidak ditemukan'
-                    });
+                    };
                 }
             } catch (error) {
-                validationResults.push({
+                return {
                     file: file,
                     faktur: faktur,
                     valid: false,
                     error: error.message
-                });
+                };
             }
+        });
 
-            // Small delay to avoid overwhelming server
-            if (i < selectedFiles.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-        }
+        // Wait for all validations to complete
+        validationResults = await Promise.all(validationPromises);
 
         // Hide validating, show results
         validating.style.display = 'none';
