@@ -566,12 +566,9 @@ async function uploadValidFiles() {
         }
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-        // OPTIMIZATION: Upload files in parallel
-        // Increase limit for faster uploads (higher = more concurrent, higher load on server)
-        // 3 = conservative, safe for most connections
-        // 5 = moderate, good balance
-        // 10+ = aggressive, may cause issues on slower connections
-        const CONCURRENT_LIMIT = 5;
+        // OPTIMIZATION: Upload files in parallel without limit
+        // All files upload concurrently for maximum speed
+        // Notifications will be generated ONCE at the end with all invoices grouped by zona
         let successCount = 0;
         let failCount = 0;
         let currentProgress = 0;
@@ -630,11 +627,10 @@ async function uploadValidFiles() {
             }
         });
 
-        // Execute with concurrency limit (batched uploads)
-        for (let i = 0; i < uploadTasks.length; i += CONCURRENT_LIMIT) {
-            const batch = uploadTasks.slice(i, i + CONCURRENT_LIMIT);
-            await Promise.all(batch.map(task => task()));
-        }
+        // Execute all uploads in parallel (no concurrency limit)
+        // All files upload at same time → all collected in batchInvoices
+        // Then generate notifications ONCE at the end grouped by zona
+        await Promise.all(uploadTasks.map(task => task()));
 
         // Hide loading overlay
         window.hideLoadingOverlay();
