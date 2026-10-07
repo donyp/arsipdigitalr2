@@ -4422,7 +4422,7 @@ async function populateAvailableMonths() {
         });
         
         let uniqueMonths = Array.from(monthMap.keys()).sort((a, b) => a - b);
-        console.log('[Months] Unique months found:', uniqueMonths);
+        console.log('[Months] Unique months found (from data):', uniqueMonths);
         console.log('[Months] User zona_id:', currentUser ? currentUser.zona_id : 'unknown');
         console.log('[Months] User role:', currentUser ? currentUser.role : 'unknown');
         
@@ -4430,7 +4430,7 @@ async function populateAvailableMonths() {
         const SHOW_ALL_MONTHS = true; // Set to true to show all 12 months, false for data-driven only
         
         if (SHOW_ALL_MONTHS) {
-            // Show all months 1-12
+            // Show all months 1-12 (eliminate duplicates if any)
             console.log('[Months] SHOW_ALL_MONTHS is enabled - showing all 12 months');
             uniqueMonths = [];
             for (let i = 1; i <= 12; i++) {
@@ -4475,9 +4475,11 @@ async function populateAvailableMonths() {
         // Month names in Indonesian
         const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         
-        // Add options for available months
+        // Add options for available months (prevent duplicates)
+        const addedMonths = new Set();
         uniqueMonths.forEach(monthNum => {
-            if (monthNum >= 1 && monthNum <= 12) {
+            if (monthNum >= 1 && monthNum <= 12 && !addedMonths.has(monthNum)) {
+                addedMonths.add(monthNum);
                 const option = document.createElement('div');
                 option.className = 'dropdown-option';
                 option.onclick = (e) => selectOption(e, 'bulanDropdown', String(monthNum), monthNames[monthNum]);
