@@ -4368,6 +4368,10 @@ function setupRegularFilters() {
 
 /**
  * Populate bulan dropdown with available months from database
+ * 
+ * SHOW_ALL_MONTHS setting:
+ * - true: Shows all 12 months regardless of whether data exists
+ * - false: Shows only months that have invoices in the database (default)
  */
 async function populateAvailableMonths() {
     try {
@@ -4417,16 +4421,28 @@ async function populateAvailableMonths() {
             }
         });
         
-        const uniqueMonths = Array.from(monthMap.keys()).sort((a, b) => a - b);
+        let uniqueMonths = Array.from(monthMap.keys()).sort((a, b) => a - b);
         console.log('[Months] Unique months found:', uniqueMonths);
         console.log('[Months] User zona_id:', currentUser ? currentUser.zona_id : 'unknown');
         console.log('[Months] User role:', currentUser ? currentUser.role : 'unknown');
         
-        // If no months found, provide default fallback
-        if (uniqueMonths.length === 0) {
-            console.warn('[Months] No months found, using fallback months 1-10 (Januari-Oktober)');
-            for (let i = 1; i <= 10; i++) {
+        // Decide whether to show all months or only months with data
+        const SHOW_ALL_MONTHS = true; // Set to true to show all 12 months, false for data-driven only
+        
+        if (SHOW_ALL_MONTHS) {
+            // Show all months 1-12
+            console.log('[Months] SHOW_ALL_MONTHS is enabled - showing all 12 months');
+            uniqueMonths = [];
+            for (let i = 1; i <= 12; i++) {
                 uniqueMonths.push(i);
+            }
+        } else {
+            // Show only months with data
+            if (uniqueMonths.length === 0) {
+                console.warn('[Months] No months found with data, showing months 1-10 as fallback');
+                for (let i = 1; i <= 10; i++) {
+                    uniqueMonths.push(i);
+                }
             }
         }
         
