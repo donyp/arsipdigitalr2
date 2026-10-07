@@ -869,9 +869,10 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 continuationToken = response.NextContinuationToken;
             }
 
-            // Use actual bucket size for capacity if no prefix
-            const capacityBytes = prefix ? (totalSize * 1.2) : (bucketSizeInfo.totalBytes || totalSize);
-            const capacityGB = (capacityBytes / 1024 / 1024 / 1024).toFixed(2);
+            // Use STORAGE_QUOTA_GB from environment (default 10GB)
+            const storageQuotaGB = parseFloat(process.env.STORAGE_QUOTA_GB) || 10;
+            const capacityBytes = storageQuotaGB * 1024 * 1024 * 1024;
+            const capacityGB = storageQuotaGB;
 
             // Estimate "today used" as recent changes (last 24 hours activity)
             // For now, we'll use upload count as proxy

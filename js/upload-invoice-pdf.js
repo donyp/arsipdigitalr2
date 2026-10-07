@@ -450,6 +450,12 @@ function renderValidationResults() {
     document.getElementById('validFiles').textContent = validCount;
     document.getElementById('invalidFiles').textContent = invalidCount;
 
+    // Show/hide copy invalid button
+    const btnCopyInvalid = document.getElementById('btnCopyInvalid');
+    if (btnCopyInvalid) {
+        btnCopyInvalid.style.display = invalidCount > 0 ? 'inline-flex' : 'none';
+    }
+
     // Render file items
     filesContainer.innerHTML = validationResults.map((result, index) => {
         const className = result.valid ? 'valid' : 'invalid';
@@ -511,8 +517,8 @@ async function uploadValidFiles() {
     btnUpload.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Processing...';
     btnUpload.style.opacity = '0.8';
 
-    // Initialize fresh batch for this upload session
-    window.batchInvoices = [];
+    // Initialize fresh batch array for this upload session (thread-safe)
+    const uploadBatch = [];
 
     // Show loading overlay with progress
     window.showLoadingOverlay(
@@ -569,12 +575,9 @@ async function uploadValidFiles() {
                     }
                     showNotification(`✓ ${fileResult.faktur}${compressionMsg}`, 'success', 2000);
                     
-                    // Store invoice data for batch notification at end of upload
+                    // Collect invoice data for batch notification (thread-safe push)
                     if (result.zona_id && result.tipe && result.konsumen && result.nominal) {
-                        if (!window.batchInvoices) {
-                            window.batchInvoices = [];
-                        }
-                        window.batchInvoices.push({
+                        uploadBatch.push({
                             zona_id: result.zona_id,
                             tipe: result.tipe,
                             konsumen: result.konsumen,
@@ -600,7 +603,7 @@ async function uploadValidFiles() {
         window.hideLoadingOverlay();
 
         // Generate batch WhatsApp notifications after all uploads complete
-        if (window.batchInvoices && window.batchInvoices.length > 0) {
+        if (uploadBatch && uploadBatch.length > 0) {
             try {
                 const waResponse = await fetch(`${CONFIG.API_URL}/api/whatsapp/generate-invoice-messages`, {
                     method: 'POST',
@@ -609,7 +612,7 @@ async function uploadValidFiles() {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        invoices: window.batchInvoices,
+                        invoices: uploadBatch,
                         batchId: 'batch_' + Date.now() + '_bulk_upload'
                     })
                 });
@@ -621,9 +624,6 @@ async function uploadValidFiles() {
             } catch (waError) {
                 console.error('Error generating batch notifications:', waError);
             }
-            
-            // Clear batch for next upload
-            window.batchInvoices = [];
         }
 
         // Show final result message
@@ -669,6 +669,22 @@ function removeInvalidFile(index) {
     
     // Re-render
     renderValidationResults();
+}
+
+function copyInvalidFilenames() {
+    const invalidFiles = validationResults.filter(r => !r.valid);
+    if (invalidFiles.length === 0) {
+        showNotification('Tidak ada file invalid', 'error');
+        return;
+    }
+
+    const filenames = invalidFiles.map(f => f.file.name).join('\n');
+    
+    navigator.clipboard.writeText(filenames).then(() => {
+        showNotification(`✓ ${invalidFiles.length} invalid filename(s) copied to clipboard`, 'success', 2000);
+    }).catch(err => {
+        showNotification('Error copying to clipboard: ' + err.message, 'error');
+    });
 }
 
 function resetUpload() {
