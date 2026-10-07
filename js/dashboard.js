@@ -4314,6 +4314,9 @@ function setupRegularFilters() {
     // Add event listener to month dropdown to enable all filters when month is selected
     const filterMonth = document.getElementById('filterMonth');
     if (filterMonth) {
+        // First, populate bulan dropdown with available months from database
+        populateAvailableMonths();
+        
         filterMonth.addEventListener('change', () => {
             const monthValue = filterMonth.value || '';
             
@@ -4355,6 +4358,81 @@ function setupRegularFilters() {
                 showInvoiceEmptyState();
             }
         });
+    }
+}
+
+/**
+ * Populate bulan dropdown with available months from database
+ */
+async function populateAvailableMonths() {
+    try {
+        const token = API.getToken() || localStorage.getItem('jwt_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        // Fetch ALL invoices to get available months
+        const params = new URLSearchParams();
+        params.append('limit', 1000);
+        
+        const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
+            method: 'GET',
+            headers: headers
+        });
+        
+        if (!response.ok) {
+            console.warn('Failed to fetch months data');
+            return;
+        }
+        
+        const result = await response.json();
+        const invoices = result.data || result.invoices || [];
+        
+        // Extract unique months from invoice data
+        const monthMap = new Map();
+        invoices.forEach(inv => {
+            if (inv.tanggal) {
+                const date = new Date(inv.tanggal);
+                const monthNum = date.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
+                monthMap.set(monthNum, true);
+            }
+        });
+        
+        const uniqueMonths = Array.from(monthMap.keys()).sort((a, b) => a - b);
+        console.log('Available months from database:', uniqueMonths);
+        
+        // Populate the dropdown
+        const dropdown = document.getElementById('bulanDropdown');
+        if (!dropdown) return;
+        
+        const menu = dropdown.querySelector('.dropdown-menu');
+        if (!menu) return;
+        
+        const optionsContainer = menu.querySelector('.dropdown-options');
+        if (!optionsContainer) return;
+        
+        // Keep first option "Semua Bulan"
+        const firstOption = optionsContainer.querySelector('.dropdown-option:first-child');
+        optionsContainer.innerHTML = '';
+        if (firstOption) {
+            optionsContainer.appendChild(firstOption.cloneNode(true));
+        }
+        
+        // Month names in Indonesian
+        const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        
+        // Add options for available months
+        uniqueMonths.forEach(monthNum => {
+            const option = document.createElement('div');
+            option.className = 'dropdown-option';
+            option.onclick = (e) => selectOption(e, 'bulanDropdown', String(monthNum), monthNames[monthNum]);
+            option.innerHTML = `
+                <span class="checkmark"></span>
+                <span>${monthNames[monthNum]}</span>
+            `;
+            optionsContainer.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.warn('Error populating months:', error);
     }
 }
 
