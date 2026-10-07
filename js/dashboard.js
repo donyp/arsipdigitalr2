@@ -3960,6 +3960,17 @@ async function applyInvoiceFilters() {
         const month = document.getElementById('filterMonth')?.value || '';
         const search = document.getElementById('filterSearch')?.value || '';
         
+        // VALIDATION: Month MUST be selected (cannot be empty/default)
+        if (!month || month === '') {
+            Swal.fire({
+                title: 'Bulan Belum Dipilih',
+                text: 'Silahkan pilih bulan terlebih dahulu untuk melihat data invoice',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#3b82f6'
+            });
+            return;
+        }
         
         
         // Save filter state to localStorage (year and month are sticky)
@@ -4150,6 +4161,9 @@ function resetInvoiceFilters() {
     if (filterYear) filterYear.value = '';
     if (filterMonth) filterMonth.value = '';
     
+    // Reset Terapkan button state
+    updateTerapkanButtonState();
+    
     // Reset total nominal display
     const totalDisplay = document.getElementById('totalNominalDisplay');
     if (totalDisplay) totalDisplay.textContent = 'Total: Rp 0';
@@ -4242,6 +4256,15 @@ function setupRegularFilters() {
         }
     }
     
+    // Update Terapkan button state based on month selection
+    updateTerapkanButtonState();
+    
+    // Add event listener to update button state when month changes
+    const filterMonth = document.getElementById('filterMonth');
+    if (filterMonth) {
+        filterMonth.addEventListener('change', updateTerapkanButtonState);
+    }
+    
     // AUTO-LOAD DISABLED - User must click "Terapkan" button to apply filters
     // Attach change event listeners to all filter inputs
     // This allows filters to work when custom dropdowns change values
@@ -4260,6 +4283,33 @@ function setupRegularFilters() {
     // });
     
     
+}
+
+/**
+ * Update Terapkan button state based on month selection
+ * Button should only be enabled when a valid month is selected
+ */
+function updateTerapkanButtonState() {
+    const monthInput = document.getElementById('filterMonth');
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    
+    if (!applyBtn || !monthInput) return;
+    
+    const monthValue = monthInput.value || '';
+    
+    if (monthValue === '' || monthValue === 'all' || monthValue === 'Semua Bulan') {
+        // Disable button - no valid month selected
+        applyBtn.disabled = true;
+        applyBtn.style.opacity = '0.5';
+        applyBtn.style.cursor = 'not-allowed';
+        applyBtn.title = 'Pilih bulan terlebih dahulu';
+    } else {
+        // Enable button - valid month selected
+        applyBtn.disabled = false;
+        applyBtn.style.opacity = '1';
+        applyBtn.style.cursor = 'pointer';
+        applyBtn.title = 'Klik untuk menerapkan filter';
+    }
 }
 
 // Admin Zona Filter Functions
