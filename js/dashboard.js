@@ -4242,21 +4242,22 @@ function setupRegularFilters() {
         }
     }
     
+    // AUTO-LOAD DISABLED - User must click "Terapkan" button to apply filters
     // Attach change event listeners to all filter inputs
     // This allows filters to work when custom dropdowns change values
-    const filterInputIds = ['filterStatus', 'filterKeterangan', 'filterYear', 'filterMonth', 'filterSearch', 'filterToko'];
-    filterInputIds.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            // Remove any existing listeners first to avoid duplicates
-            const newElement = element.cloneNode(true);
-            element.parentNode.replaceChild(newElement, element);
-            
-            // Attach change event listener
-            document.getElementById(id).addEventListener('change', applyInvoiceFilters);
-            
-        }
-    });
+    // const filterInputIds = ['filterStatus', 'filterKeterangan', 'filterYear', 'filterMonth', 'filterSearch', 'filterToko'];
+    // filterInputIds.forEach(id => {
+    //     const element = document.getElementById(id);
+    //     if (element) {
+    //         // Remove any existing listeners first to avoid duplicates
+    //         const newElement = element.cloneNode(true);
+    //         element.parentNode.replaceChild(newElement, element);
+    //         
+    //         // Attach change event listener
+    //         document.getElementById(id).addEventListener('change', applyInvoiceFilters);
+    //         
+    //     }
+    // });
     
     
 }
