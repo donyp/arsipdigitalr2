@@ -132,16 +132,10 @@
         
         if (isExpanded) {
             // Collapse animation
-            // Step 1: Set transition first
-            container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
-            
-            // Step 2: Set current height explicitly
+            container.style.transition = 'max-height 0.3s ease, opacity 0.3s ease';
             container.style.maxHeight = container.scrollHeight + 'px';
-            
-            // Step 3: Force reflow
             void container.offsetHeight;
             
-            // Step 4: Animate to closed
             requestAnimationFrame(() => {
                 container.style.maxHeight = '0px';
                 container.style.opacity = '0';
@@ -150,15 +144,14 @@
             btn.setAttribute('data-expanded', 'false');
             if (icon) icon.style.transform = 'rotate(0deg)';
             
-            // Hide after animation completes
             setTimeout(() => {
                 if (btn.getAttribute('data-expanded') === 'false') {
                     container.style.display = 'none';
                     container.style.pointerEvents = 'none';
                 }
-            }, 350);
+            }, 300);
         } else {
-            // Close all other dropdowns first (accordion behavior)
+            // Close other dropdowns (accordion behavior)
             const allDropdownButtons = document.querySelectorAll('[id$="-btn"][data-expanded="true"]');
             allDropdownButtons.forEach(otherBtn => {
                 if (otherBtn.id !== id + '-btn') {
@@ -167,17 +160,10 @@
                     const otherIcon = otherBtn.querySelector('.dropdown-arrow');
                     
                     if (otherContainer) {
-                        // Close animation
-                        // Step 1: Set transition first
-                        otherContainer.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
-                        
-                        // Step 2: Set current height
+                        otherContainer.style.transition = 'max-height 0.3s ease, opacity 0.3s ease';
                         otherContainer.style.maxHeight = otherContainer.scrollHeight + 'px';
-                        
-                        // Step 3: Force reflow
                         void otherContainer.offsetHeight;
                         
-                        // Step 4: Animate to closed
                         requestAnimationFrame(() => {
                             otherContainer.style.maxHeight = '0px';
                             otherContainer.style.opacity = '0';
@@ -191,33 +177,23 @@
                                 otherContainer.style.display = 'none';
                                 otherContainer.style.pointerEvents = 'none';
                             }
-                        }, 350);
+                        }, 300);
                     }
                 }
             });
 
-            // Expand animation for current dropdown
-            // Step 1: Show container but keep it hidden
+            // Expand current dropdown
             container.style.display = 'block';
             container.style.overflow = 'hidden';
             container.style.maxHeight = '0px';
             container.style.opacity = '0';
-            
-            // Step 2: Force browser to apply the initial state
             void container.offsetHeight;
             
-            // Step 3: Enable pointer events BEFORE animation starts (fix for dropdown items not clickable)
             container.style.pointerEvents = 'auto';
+            container.style.transition = 'max-height 0.3s ease, opacity 0.3s ease';
             
-            // Step 4: Set transition AFTER initial state is applied
-            container.style.transition = 'max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)';
-            
-            // Step 5: Use requestAnimationFrame to ensure transition is ready
             requestAnimationFrame(() => {
-                // Get the full height of content
                 const fullHeight = container.scrollHeight;
-                
-                // Animate to full height
                 container.style.maxHeight = fullHeight + 'px';
                 container.style.opacity = '1';
             });
@@ -225,14 +201,11 @@
             btn.setAttribute('data-expanded', 'true');
             if (icon) icon.style.transform = 'rotate(180deg)';
             
-            // Set to auto after animation for responsive content
             setTimeout(() => {
                 if (btn.getAttribute('data-expanded') === 'true') {
                     container.style.maxHeight = 'none';
-                    // Keep overflow hidden to prevent content from overflowing nav container
-                    // container.style.overflow = 'visible';
                 }
-            }, 350);
+            }, 300);
         }
     };
 
@@ -257,25 +230,16 @@
             return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
         });
 
-        // Menu item sizes - smaller for upload file pages
-        const menuSizes = isUploadFilePage ? {
-            buttonPadding: '0.5rem 0.6rem',
-            buttonMargin: '0.15rem 0.3rem',
-            buttonFontSize: '0.8rem',
-            childPadding: '0.4rem 0.6rem 0.4rem 2.2rem',
-            childMargin: '0.1rem 0.2rem',
-            childFontSize: '0.7rem',
-            childIconSize: '0.8rem',
-            iconSize: '0.85rem'
-        } : {
-            buttonPadding: '0.75rem 1rem',
-            buttonMargin: '0.2rem 0.6rem',
-            buttonFontSize: '0.9rem',
-            childPadding: '0.6rem 1rem 0.6rem 3rem',
-            childMargin: '0.15rem 0.4rem',
-            childFontSize: '0.82rem',
-            childIconSize: '0.88rem',
-            iconSize: '1rem'
+        // Menu item sizes - modern and consistent
+        const menuSizes = {
+            buttonPadding: '0.625rem 0.75rem',
+            buttonMargin: '0.125rem 0',
+            buttonFontSize: '0.875rem',
+            childPadding: '0.5rem 0.75rem 0.5rem 2.5rem',
+            childMargin: '0.125rem 0',
+            childFontSize: '0.8125rem',
+            childIconSize: '0.875rem',
+            iconSize: '1.125rem'
         };
 
         // Recalculate colors based on current dark mode
@@ -307,7 +271,7 @@
                     const isActive = currentPath === childPath || activePage === child.href;
                     const childBg = isActive ? activeBgColor : 'transparent';
                     const childText = isActive ? activeTextColor : secondaryText;
-                    const childWeight = isActive ? '600' : '500';
+                    const childWeight = isActive ? '600' : '400';
                     
                     childrenHTML += `
                         <a href="${child.href}" onclick="event.stopPropagation();" style="
@@ -315,30 +279,30 @@
                             align-items: center;
                             padding: ${menuSizes.childPadding};
                             margin: ${menuSizes.childMargin};
-                            border-radius: 0.3rem;
+                            border-radius: 8px;
                             font-size: ${menuSizes.childFontSize};
                             background: ${childBg};
                             color: ${childText};
                             font-weight: ${childWeight};
                             text-decoration: none;
-                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                            letter-spacing: 0.01em;
-                            will-change: background-color, color;
-                        " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                            <span style="margin-right: 0.6rem; font-size: ${menuSizes.childIconSize}; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);">${child.icon}</span><span>${child.label}</span>
+                            transition: all 0.2s ease;
+                            letter-spacing: -0.01em;
+                        " onmouseover="if (!this.style.background.includes('${activeBgColor}')) this.style.background='${hoverBgColor}'" onmouseout="if (!this.style.background.includes('${activeBgColor}')) this.style.background='transparent'">
+                            <span style="margin-right: 0.75rem; font-size: ${menuSizes.childIconSize}; opacity: 0.7;">${child.icon}</span>
+                            <span>${child.label}</span>
                         </a>
                     `;
                 }
 
-                const dropdownBg = activeBgColor;
-                const dropdownText = itemIsActive ? activeTextColor : textColor;
+                const dropdownBg = itemIsActive ? hoverBgColor : 'transparent';
+                const dropdownText = itemIsActive ? textColor : textColor;
                 
                 navHTML += `
                     <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${itemIsActive}" style="
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
-                        width: calc(100% - 1.2rem);
+                        width: 100%;
                         padding: ${menuSizes.buttonPadding};
                         margin: ${menuSizes.buttonMargin};
                         border: none;
@@ -347,15 +311,19 @@
                         text-decoration: none;
                         font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        transition: all 0.2s ease;
                         text-align: left;
-                        font-weight: 600;
-                        border-radius: 0.4rem;
-                        letter-spacing: 0.01em;
-                        will-change: background-color, color;
-                    " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                        <span style="display: flex; align-items: center;"><span style="margin-right: 0.8rem; font-size: ${menuSizes.iconSize}; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}</span>
-                        <span class="dropdown-arrow" style="font-size: 0.75rem; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">\u25BC</span>
+                        font-weight: 500;
+                        border-radius: 8px;
+                        letter-spacing: -0.01em;
+                    " onmouseover="this.style.background='${hoverBgColor}'" onmouseout="this.style.background='${itemIsActive ? hoverBgColor : 'transparent'}'">
+                        <span style="display: flex; align-items: center;">
+                            <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8;">${item.icon}</span>
+                            <span>${item.label}</span>
+                        </span>
+                        <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style="opacity: 0.5; transition: transform 0.2s ease; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">
+                            <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
                     </button>
                     <div id="${item.id}" style="
                         display: ${itemIsActive ? 'block' : 'none'};
@@ -363,9 +331,9 @@
                         max-height: ${itemIsActive ? 'none' : '0px'};
                         opacity: ${itemIsActive ? '1' : '0'};
                         overflow: hidden;
-                        transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-                        will-change: max-height, opacity;
+                        transition: max-height 0.3s ease, opacity 0.3s ease;
                         pointer-events: ${itemIsActive ? 'auto' : 'none'};
+                        padding-left: 0.5rem;
                     ">
                         ${childrenHTML}
                     </div>
@@ -382,18 +350,18 @@
                         align-items: center;
                         padding: ${menuSizes.buttonPadding};
                         margin: ${menuSizes.buttonMargin};
-                        border-radius: 0.4rem;
+                        border-radius: 8px;
                         background: ${itemBg};
                         color: ${itemText};
                         font-weight: ${itemWeight};
                         text-decoration: none;
                         font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        letter-spacing: 0.01em;
-                        will-change: background-color, color, transform;
-                    " onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                        <span style="margin-right: 0.8rem; font-size: ${menuSizes.iconSize}; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">${item.icon}</span>${item.label}
+                        transition: all 0.2s ease;
+                        letter-spacing: -0.01em;
+                    " onmouseover="if (!this.style.background.includes('${activeBgColor}')) this.style.background='${hoverBgColor}'" onmouseout="if (!this.style.background.includes('${activeBgColor}')) this.style.background='transparent'">
+                        <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8;">${item.icon}</span>
+                        <span>${item.label}</span>
                     </a>
                 `;
             }
@@ -402,8 +370,8 @@
         const hasAnnouncement = !!document.getElementById('global-announcement-banner');
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
-        // Use smaller width for upload file pages, normal width for others
-        const sidebarWidth = isUploadFilePage ? '13rem' : '16rem';
+        // Modern sidebar with consistent width
+        const sidebarWidth = '15rem';
 
         // Use min-height: 148vh for ideal full page coverage
         const sidebarHeight = `min-height: 148vh;`;
@@ -424,148 +392,136 @@
             will-change: background-color;
             overflow-y: auto;
             overflow-x: hidden;
+            padding: 1.5rem 1rem;
         `;
 
         sidebar.innerHTML = `
+            <!-- Brand Header -->
             <div style="
-                padding: 1.5rem 1.2rem;
-                border-bottom: 1px solid ${borderColor};
-                flex-shrink: 0;
-                transition: border-color 0.4s ease;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                margin-bottom: 2rem;
             ">
                 <div style="
-                    font-weight: 900;
-                    font-size: 0.95rem;
-                    color: ${textColor};
-                    letter-spacing: 0.15em;
-                    text-transform: uppercase;
-                    transition: color 0.4s ease;
-                ">Arsip Anka</div>
-                <div style="
-                    font-size: 0.65rem;
-                    color: ${tertiaryText};
-                    margin-top: 0.35rem;
-                    font-weight: 600;
-                    letter-spacing: 0.05em;
-                    text-transform: uppercase;
-                    transition: color 0.4s ease;
-                ">Admin Panel</div>
+                    width: 40px;
+                    height: 40px;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+                ">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: white;">
+                        <path d="M9 3L5 7L9 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M15 13L19 17L15 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <line x1="19" y1="7" x2="5" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <div style="
+                        font-weight: 700;
+                        font-size: 1.125rem;
+                        color: ${textColor};
+                        letter-spacing: -0.02em;
+                        line-height: 1.2;
+                    ">Arsip Anka</div>
+                </div>
             </div>
+            
             <nav style="
                 flex: 1;
                 overflow-y: auto;
                 overflow-x: hidden;
-                padding: 1rem 0;
                 scroll-behavior: smooth;
-                transition: background-color 0.4s ease;
             ">
                 ${navHTML}
             </nav>
+            
+            <!-- Quick Actions Footer -->
             <div style="
-                padding: 1rem 0.8rem;
+                padding-top: 1.5rem;
+                margin-top: 1.5rem;
                 border-top: 1px solid ${borderColor};
-                flex-shrink: 0;
                 display: flex;
                 flex-direction: column;
-                gap: 0.6rem;
-                transition: border-color 0.4s ease;
+                gap: 0.5rem;
             ">
                 <div style="
-                    font-size: 0.7rem;
+                    font-size: 0.75rem;
                     color: ${tertiaryText};
-                    text-align: center;
-                    font-weight: 700;
+                    font-weight: 600;
                     letter-spacing: 0.05em;
                     text-transform: uppercase;
-                    transition: color 0.4s ease;
-                    margin-bottom: 0.2rem;
+                    margin-bottom: 0.5rem;
                 ">Quick Actions</div>
-                <div style="
-                    display: flex;
-                    flex-direction: row;
-                    gap: 0.5rem;
-                    justify-content: center;
-                ">
-                <!-- Edit Button -->
-                <button onclick="openEditHeadlineModal()"
-                    style="
+                
+                <div style="display: flex; gap: 0.5rem;">
+                    <!-- Edit Button -->
+                    <button onclick="openEditHeadlineModal()" style="
+                        flex: 1;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: 0.75rem;
+                        padding: 0.625rem;
                         background: transparent;
                         color: #60a5fa;
-                        border: 1px solid #60a5fa;
-                        border-radius: 0.5rem;
-                        font-size: 0.9rem;
-                        font-weight: 500;
+                        border: 1px solid ${isDarkMode ? 'rgba(96, 165, 250, 0.3)' : '#60a5fa'};
+                        border-radius: 8px;
                         cursor: pointer;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        white-space: nowrap;
-                    "
-                    onmouseover="this.style.background='#60a5fa'; this.style.color='white'; this.style.transform='translateY(-1px)'"
-                    onmouseout="this.style.background='transparent'; this.style.color='#60a5fa'; this.style.transform='translateY(0)'"
-                    title="Edit headline banner text">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
-                        <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                </button>
-                
-                <!-- Dark Mode Toggle -->
-                <button id="dark-mode-toggle-sidebar" onclick="toggleDarkMode()"
-                    style="
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='#60a5fa'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#60a5fa'" title="Edit headline">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </button>
+                    
+                    <!-- Dark Mode Toggle -->
+                    <button id="dark-mode-toggle-sidebar" onclick="toggleDarkMode()" style="
+                        flex: 1;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: 0.75rem;
+                        padding: 0.625rem;
                         background: transparent;
                         color: ${isDarkMode ? '#fbbf24' : '#6b7280'};
-                        border: 1px solid ${isDarkMode ? '#fbbf24' : '#6b7280'};
-                        border-radius: 0.5rem;
-                        font-size: 0.9rem;
-                        font-weight: 500;
+                        border: 1px solid ${isDarkMode ? 'rgba(251, 191, 36, 0.3)' : '#d1d5db'};
+                        border-radius: 8px;
                         cursor: pointer;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        white-space: nowrap;
-                    "
-                    onmouseover="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background = isDark ? '#fbbf24' : '#6b7280'; this.style.color='white'; this.style.transform='translateY(-1px)'"
-                    onmouseout="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background='transparent'; this.style.color = isDark ? '#fbbf24' : '#6b7280'; this.style.transform='translateY(0)'"
-                    title="Toggle dark/light mode">
-                    <span id="dark-mode-icon-sidebar" style="font-size: 18px;">${isDarkMode ? '☀️' : '🌙'}</span>
-                </button>
-                
-                <!-- Logout Button -->
-                <button onclick="logout()"
-                    style="
+                        transition: all 0.2s ease;
+                    " onmouseover="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background = isDark ? '#fbbf24' : '#6b7280'; this.style.color='white'" onmouseout="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background='transparent'; this.style.color = isDark ? '#fbbf24' : '#6b7280'" title="Toggle theme">
+                        <span style="font-size: 16px;">${isDarkMode ? '☀️' : '🌙'}</span>
+                    </button>
+                    
+                    <!-- Logout Button -->
+                    <button onclick="logout()" style="
+                        flex: 1;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: 0.75rem;
+                        padding: 0.625rem;
                         background: transparent;
                         color: #ef4444;
-                        border: 1px solid #ef4444;
-                        border-radius: 0.5rem;
-                        font-size: 0.9rem;
-                        font-weight: 500;
+                        border: 1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#ef4444'};
+                        border-radius: 8px;
                         cursor: pointer;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                        white-space: nowrap;
-                    "
-                    onmouseover="this.style.background='#ef4444'; this.style.color='white'; this.style.transform='translateY(-1px)'"
-                    onmouseout="this.style.background='transparent'; this.style.color='#ef4444'; this.style.transform='translateY(0)'"
-                    title="Logout from system">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" style="width: 18px; height: 18px;">
-                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                </button>
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#ef4444'" title="Logout">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                    </button>
                 </div>
             </div>
         `;
 
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-            mainContent.style.marginLeft = sidebarWidth;
-            mainContent.style.width = `calc(100% - ${sidebarWidth})`;
+            mainContent.style.marginLeft = '15rem';
+            mainContent.style.width = 'calc(100% - 15rem)';
             mainContent.style.boxSizing = 'border-box';
             mainContent.style.transition = 'all 0.4s ease';
         }
@@ -676,27 +632,7 @@
 
     // Global function accessible from other pages
     window.updateSidebarActiveState = function(pathname) {
-        const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
-        const isUploadFilePage = uploadFilePages.some(page => {
-            const normalizedPage = page.toLowerCase();
-            const normalizedPath = pathname.toLowerCase();
-            return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
-        });
-
-        // Check current sidebar width
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) {
-            const currentWidth = sidebar.style.width;
-            const expectedWidth = isUploadFilePage ? '13rem' : '16rem';
-            
-            // If width doesn't match, we need to re-inject
-            if (currentWidth !== expectedWidth) {
-                inject();
-                return;
-            }
-        }
-
-        // Otherwise just update active states
+        // Just update active states since we now use fixed width
         updateActiveStates(pathname);
         sessionStorage.setItem('sidebar_initialized', 'true');
     };
