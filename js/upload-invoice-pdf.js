@@ -565,8 +565,12 @@ async function uploadValidFiles() {
         }
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-        // OPTIMIZATION: Upload files in parallel (up to 3 concurrent uploads)
-        const CONCURRENT_LIMIT = 3;
+        // OPTIMIZATION: Upload files in parallel
+        // Increase limit for faster uploads (higher = more concurrent, higher load on server)
+        // 3 = conservative, safe for most connections
+        // 5 = moderate, good balance
+        // 10+ = aggressive, may cause issues on slower connections
+        const CONCURRENT_LIMIT = 5;
         let successCount = 0;
         let failCount = 0;
         let currentProgress = 0;
@@ -641,7 +645,7 @@ async function uploadValidFiles() {
             }
         });
 
-        // Execute with concurrency limit
+        // Execute with concurrency limit (batched uploads)
         for (let i = 0; i < uploadTasks.length; i += CONCURRENT_LIMIT) {
             const batch = uploadTasks.slice(i, i + CONCURRENT_LIMIT);
             await Promise.all(batch.map(task => task()));
