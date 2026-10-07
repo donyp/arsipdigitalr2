@@ -544,12 +544,12 @@ app.get('/zona/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
 });
 
-app.get('/fleet', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'fleet-dashboard.html'));
+app.get('/kendaraan', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'kendaraan-dashboard.html'));
 });
 
-app.get('/fleet-dashboard', (req, res) => {
-    res.redirect(301, '/fleet');
+app.get('/kendaraan-dashboard', (req, res) => {
+    res.redirect(301, '/kendaraan');
 });
 
 app.get('/support-dashboard', (req, res) => {

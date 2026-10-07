@@ -92,7 +92,7 @@
                 { href: '/users', label: 'Pengguna', icon: '<i class="fas fa-users"></i>' },
                 { href: '/tokos', label: 'Toko', icon: '<i class="fas fa-store"></i>' },
                 { href: '/zonas', label: 'Zona', icon: '<i class="fas fa-map-marked-alt"></i>' },
-                { href: '/fleet', label: 'Kendaraan', icon: '<i class="fas fa-truck"></i>' },
+                { href: '/kendaraan', label: 'Kendaraan', icon: '<i class="fas fa-truck"></i>' },
             ]
         },
     ];
