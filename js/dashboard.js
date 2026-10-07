@@ -4334,8 +4334,9 @@ function setupRegularFilters() {
                     resetBtn.style.cursor = 'pointer';
                 }
                 
-                // Auto-populate data with selected month
-                autoPopulateInvoicesByMonth(monthValue, invoiceFilterState.year || new Date().getFullYear());
+                // Auto-populate dropdown options based on selected month
+                // This does NOT show invoice table - only populates filter dropdown options
+                // (Removed autoPopulateInvoicesByMonth to prevent showing empty data)
             } else {
                 // No valid month - disable all filters and buttons
                 disableFiltersExceptMonth();
@@ -4357,68 +4358,6 @@ function setupRegularFilters() {
     }
 }
 
-/**
- * Auto-populate invoice data when month is selected
- * This shows data preview without requiring user to click Terapkan
- */
-async function autoPopulateInvoicesByMonth(month, year) {
-    try {
-        const token = API.getToken() || localStorage.getItem('jwt_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        
-        // Build date range
-        const dateFromValue = `${year}-${String(month).padStart(2, '0')}-01`;
-        const dateToObj = new Date(parseInt(year), parseInt(month), 0);
-        const dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
-        
-        const params = new URLSearchParams();
-        params.append('date_from', dateFromValue);
-        params.append('date_to', dateToValue);
-        params.append('limit', INVOICE_PAGE_SIZE);
-        params.append('offset', 0);
-        
-        const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
-            method: 'GET',
-            headers: headers
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to fetch invoices');
-        }
-        
-        const result = await response.json();
-        const invoices = result.data || result.invoices || [];
-        
-        // Update invoice stats
-        if (result.stats) {
-            updateInvoiceStats(result.stats);
-        }
-        
-        // Display invoices in table
-        if (invoices.length > 0) {
-            renderInvoiceTable(invoices);
-        } else {
-            showInvoiceEmptyState('Tidak ada data invoice untuk bulan yang dipilih');
-        }
-        
-    } catch (error) {
-    }
-}
-
-/**
- * Update invoice statistics display
- */
-function updateInvoiceStats(stats) {
-    const statTotal = document.getElementById('statTotal');
-    const statUploaded = document.getElementById('statUploaded');
-    const statPending = document.getElementById('statPending');
-    const statMissing = document.getElementById('statMissing');
-    
-    if (statTotal) statTotal.textContent = stats.total || 0;
-    if (statUploaded) statUploaded.textContent = stats.uploaded || 0;
-    if (statPending) statPending.textContent = stats.pending || 0;
-    if (statMissing) statMissing.textContent = stats.missing || 0;
-}
 
 // Admin Zona Filter Functions
 async function applyAdminZonaFilters() {
