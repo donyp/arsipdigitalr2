@@ -608,33 +608,17 @@ async function uploadValidFiles() {
                     }
                     showNotification(`✓ ${fileResult.faktur}${compressionMsg}`, 'success', 2000);
                     
-                    // Generate WhatsApp message if we have zone data
+                    // Store invoice data for batch notification at end of upload
                     if (result.zona_id && result.tipe && result.konsumen && result.nominal) {
-                        try {
-                            const waResponse = await fetch(`${CONFIG.API_URL}/api/whatsapp/generate-invoice-messages`, {
-                                method: 'POST',
-                                headers: {
-                                    ...headers,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    invoices: [{
-                                        zona_id: result.zona_id,
-                                        tipe: result.tipe,
-                                        konsumen: result.konsumen,
-                                        nominal: result.nominal
-                                    }],
-                                    batchId: 'batch_' + Date.now() + '_' + fileResult.faktur
-                                })
-                            });
-                            
-                            const waResult = await waResponse.json();
-                            if (waResponse.ok && waResult.success) {
-                                // Messages will appear in Notify Zona dashboard, not on upload page
-                            } else {
-                            }
-                        } catch (waError) {
+                        if (!window.batchInvoices) {
+                            window.batchInvoices = [];
                         }
+                        window.batchInvoices.push({
+                            zona_id: result.zona_id,
+                            tipe: result.tipe,
+                            konsumen: result.konsumen,
+                            nominal: result.nominal
+                        });
                     }
                 } else {
                     failCount++;
@@ -654,6 +638,33 @@ async function uploadValidFiles() {
 
         // Hide loading overlay
         window.hideLoadingOverlay();
+
+        // Generate batch WhatsApp notifications after all uploads complete
+        if (window.batchInvoices && window.batchInvoices.length > 0) {
+            try {
+                const waResponse = await fetch(`${CONFIG.API_URL}/api/whatsapp/generate-invoice-messages`, {
+                    method: 'POST',
+                    headers: {
+                        ...headers,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        invoices: window.batchInvoices,
+                        batchId: 'batch_' + Date.now() + '_bulk_upload'
+                    })
+                });
+                
+                const waResult = await waResponse.json();
+                if (waResponse.ok && waResult.success) {
+                    // Notifications grouped by zona will appear in Notify Zona dashboard
+                }
+            } catch (waError) {
+                console.error('Error generating batch notifications:', waError);
+            }
+            
+            // Clear batch for next upload
+            window.batchInvoices = [];
+        }
 
         // Show final result message
         const message = `✅ ${successCount}/${validFiles.length} file berhasil diupload${failCount > 0 ? ` (${failCount} gagal)` : ''}`;
