@@ -392,50 +392,14 @@ async function validateAllFiles() {
                 const result = await response.json();
                 
                 if (response.ok && result.data) {
-                    // Check if PDF has already been uploaded
-                    if (result.data.invoice_pdf_path) {
-                        // File path exists in database, but verify it still exists on Google Drive
-                        try {
-                            const checkRes = await fetch(`${CONFIG.API_URL}/api/invoice/check-file/${faktur}/invoice`, {
-                                method: 'GET',
-                                headers: headers
-                            });
-                            const checkData = await checkRes.json();
-                            if (checkData.exists) {
-                                // File still exists on Google Drive - mark as duplicate
-                                return {
-                                    file: file,
-                                    faktur: faktur,
-                                    valid: false,
-                                    error: 'PDF sudah diupload sebelumnya (Duplicate)',
-                                    invoice: result.data
-                                };
-                            } else {
-                                // File was deleted from Google Drive - allow re-upload
-                                return {
-                                    file: file,
-                                    faktur: faktur,
-                                    valid: true,
-                                    invoice: result.data
-                                };
-                            }
-                        } catch (verifyErr) {
-                            // If verification fails, assume file is gone and allow re-upload
-                            return {
-                                file: file,
-                                faktur: faktur,
-                                valid: true,
-                                invoice: result.data
-                            };
-                        }
-                    } else {
-                        return {
-                            file: file,
-                            faktur: faktur,
-                            valid: true,
-                            invoice: result.data
-                        };
-                    }
+                    // Faktur exists in database - valid for upload
+                    // (Don't check Google Drive duplicate to speed up validation)
+                    return {
+                        file: file,
+                        faktur: faktur,
+                        valid: true,
+                        invoice: result.data
+                    };
                 } else {
                     return {
                         file: file,
