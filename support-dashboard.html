@@ -1026,10 +1026,41 @@
                     <select id="filterZona" class="filter-select">
                         <option value="">Semua Zona</option>
                     </select>
+                    
+                    <!-- Filter Action Buttons -->
+                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                        <button onclick="applyModeratorFilters()" style="
+                            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 6px;
+                            font-weight: 600;
+                            font-size: 13px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            flex: 1;
+                        " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+                            <i class="fas fa-check"></i> Terapkan
+                        </button>
+                        <button onclick="resetModeratorFilters()" style="
+                            background: #f3f4f6;
+                            color: #374151;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 6px;
+                            font-weight: 600;
+                            font-size: 13px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                        " onmouseover="this.style.background='#e5e7eb'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#f3f4f6'; this.style.transform='translateY(0)'">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tickets Table -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style="margin-top: 16px;">
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">

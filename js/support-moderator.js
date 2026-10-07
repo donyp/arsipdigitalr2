@@ -83,34 +83,35 @@ async function initSupportPage() {
         const loadTime = (performance.now() - startTime).toFixed(0);
     }).catch(err => {
     });
-    // Setup event listeners
+    // Setup event listeners - DISABLED AUTO-LOAD (require explicit "Terapkan" click)
     const searchInput = document.getElementById('searchInput');
     const filterStatus = document.getElementById('filterStatus');
     const filterZona = document.getElementById('filterZona');
     
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(() => {
-            window.currentSearch = searchInput.value;
-            window.currentPage = 1;
-            loadTickets();
-        }, 300));
-    }
+    // AUTO-LOAD DISABLED - User must click "Terapkan" button to load data
+    // if (searchInput) {
+    //     searchInput.addEventListener('input', debounce(() => {
+    //         window.currentSearch = searchInput.value;
+    //         window.currentPage = 1;
+    //         loadTickets();
+    //     }, 300));
+    // }
 
-    if (filterStatus) {
-        filterStatus.addEventListener('change', () => {
-            window.currentStatus = filterStatus.value;
-            window.currentPage = 1;
-            loadTickets();
-        });
-    }
+    // if (filterStatus) {
+    //     filterStatus.addEventListener('change', () => {
+    //         window.currentStatus = filterStatus.value;
+    //         window.currentPage = 1;
+    //         loadTickets();
+    //     });
+    // }
 
-    if (filterZona) {
-        filterZona.addEventListener('change', () => {
-            window.currentZona = filterZona.value;
-            window.currentPage = 1;
-            loadTickets();
-        });
-    }
+    // if (filterZona) {
+    //     filterZona.addEventListener('change', () => {
+    //         window.currentZona = filterZona.value;
+    //         window.currentPage = 1;
+    //         loadTickets();
+    //     });
+    // }
 } // End of variable and function initialization guard
 
 // Listen for both direct page load and SPA navigation
@@ -606,3 +607,51 @@ function getRelativeTime(dateString) {
 
 
 
+
+
+// ========== APPLY FILTERS FUNCTION (Terapkan Button) ==========
+/**
+ * Apply all filters and load tickets
+ * Called when user clicks "Terapkan" button
+ */
+function applyModeratorFilters() {
+    // Get current filter values from inputs
+    const searchInput = document.getElementById('searchInput');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterZona = document.getElementById('filterZona');
+    
+    // Store values in window variables
+    if (searchInput) {
+        window.currentSearch = searchInput.value;
+    }
+    if (filterStatus) {
+        window.currentStatus = filterStatus.value;
+    }
+    if (filterZona) {
+        window.currentZona = filterZona.value;
+    }
+    
+    // Reset to first page and load data
+    window.currentPage = 1;
+    loadTickets();
+}
+
+/**
+ * Reset all filters to default
+ */
+function resetModeratorFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const filterStatus = document.getElementById('filterStatus');
+    const filterZona = document.getElementById('filterZona');
+    
+    if (searchInput) searchInput.value = '';
+    if (filterStatus) filterStatus.value = 'all';
+    if (filterZona) filterZona.value = '';
+    
+    window.currentSearch = '';
+    window.currentStatus = 'all';
+    window.currentZona = '';
+    window.currentPage = 1;
+    
+    loadTickets();
+}
