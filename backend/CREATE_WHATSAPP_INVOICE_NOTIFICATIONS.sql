@@ -17,8 +17,9 @@ CREATE TABLE IF NOT EXISTS whatsapp_invoice_notifications (
     updated_at TIMESTAMP DEFAULT NOW(),
     
     -- Foreign key constraints
-    CONSTRAINT fk_zona FOREIGN KEY (zona_id) REFERENCES zonas(id) ON DELETE CASCADE,
-    CONSTRAINT fk_moderator FOREIGN KEY (moderator_id) REFERENCES users(id) ON DELETE SET NULL
+    CONSTRAINT fk_zona FOREIGN KEY (zona_id) REFERENCES zonas(id) ON DELETE CASCADE
+    -- Note: moderator_id foreign key removed to allow notifications to persist
+    -- even if user is deleted, and to handle cases where user ID may not exist
 );
 
 -- Create indexes for faster queries
