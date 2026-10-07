@@ -182,7 +182,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Check for Post-Maintenance Update Notice (Run for ALL users)
-    await initUpdateHistoryNotification();
+    // DISABLED: Update system announcement popup
+    // await initUpdateHistoryNotification();
 
     // NEW DASHBOARD: Hide search since we removed archive list
     document.getElementById('header-search-container')?.classList.add('hidden');
