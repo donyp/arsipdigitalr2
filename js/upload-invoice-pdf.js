@@ -597,19 +597,15 @@ async function uploadValidFiles() {
         // Execute all uploads in parallel (no concurrency limit)
         // All files upload at same time → all collected in uploadBatch
         // Then generate notifications ONCE at the end grouped by zona
-        console.log('[Upload] Starting', uploadTasks.length, 'concurrent uploads');
         await Promise.all(uploadTasks.map(task => task()));
-        console.log('[Upload] All uploads complete. uploadBatch has', uploadBatch.length, 'invoices');
 
         // Hide loading overlay
         window.hideLoadingOverlay();
 
         // Generate batch WhatsApp notifications after all uploads complete
         if (uploadBatch && uploadBatch.length > 0) {
-            console.log('[Upload] All uploads complete, generating notifications for', uploadBatch.length, 'invoices');
             try {
                 const batchId = 'batch_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-                console.log('[Upload] Using batchId:', batchId);
                 
                 const waResponse = await fetch(`${CONFIG.API_URL}/api/whatsapp/generate-invoice-messages`, {
                     method: 'POST',
@@ -624,17 +620,12 @@ async function uploadValidFiles() {
                 });
                 
                 const waResult = await waResponse.json();
-                console.log('[Upload] WA response:', waResult);
                 if (waResponse.ok && waResult.success) {
-                    console.log('[Upload] ✅ Notifications generated successfully');
-                } else {
-                    console.error('[Upload] ❌ WA generation failed:', waResult);
+                    // Notifications grouped by zona will appear in Notify Zona dashboard
                 }
             } catch (waError) {
-                console.error('[Upload] Error generating batch notifications:', waError);
+                console.error('Error generating batch notifications:', waError);
             }
-        } else {
-            console.log('[Upload] No invoices to generate notifications');
         }
 
         // Show final result message
