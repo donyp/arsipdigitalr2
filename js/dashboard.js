@@ -4314,11 +4314,7 @@ function setupRegularFilters() {
     // Add event listener to month dropdown to enable all filters when month is selected
     const filterMonth = document.getElementById('filterMonth');
     if (filterMonth) {
-        // First, populate bulan dropdown with available months from database
-        populateAvailableMonths().catch(err => {
-            console.warn('Failed to populate months:', err);
-            // Continue anyway - user can still select from hard-coded options
-        });
+        // NO LONGER calling populateAvailableMonths() - months are hardcoded in HTML
         
         // Track previous value to detect actual changes
         let previousMonthValue = filterMonth.value || '';
@@ -4366,137 +4362,7 @@ function setupRegularFilters() {
     }
 }
 
-/**
- * Populate bulan dropdown with available months from database
- * 
- * SHOW_ALL_MONTHS setting:
- * - true: Shows all 12 months regardless of whether data exists
- * - false: Shows only months that have invoices in the database (default)
- */
-async function populateAvailableMonths() {
-    try {
-        console.log('[Months] Starting population of available months from database');
-        
-        const token = API.getToken() || localStorage.getItem('jwt_token');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        
-        // Fetch ALL invoices to get available months
-        const params = new URLSearchParams();
-        params.append('limit', 1000);
-        params.append('offset', 0);
-        
-        const url = `${CONFIG.API_URL}/api/invoice/list?${params.toString()}`;
-        console.log('[Months] Fetching from:', url);
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: headers
-        });
-        
-        console.log('[Months] Response status:', response.status);
-        
-        if (!response.ok) {
-            console.warn('[Months] Failed to fetch months data, status:', response.status);
-            return;
-        }
-        
-        const result = await response.json();
-        const invoices = result.data || result.invoices || [];
-        
-        console.log('[Months] Total invoices fetched:', invoices.length);
-        
-        // Extract unique months from invoice data
-        const monthMap = new Map();
-        invoices.forEach(inv => {
-            if (inv.tanggal) {
-                try {
-                    const date = new Date(inv.tanggal);
-                    if (!isNaN(date.getTime())) {
-                        const monthNum = date.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
-                        monthMap.set(monthNum, true);
-                    }
-                } catch (e) {
-                    // Skip invalid dates
-                }
-            }
-        });
-        
-        let uniqueMonths = Array.from(monthMap.keys()).sort((a, b) => a - b);
-        console.log('[Months] Unique months found (from data):', uniqueMonths);
-        console.log('[Months] User zona_id:', currentUser ? currentUser.zona_id : 'unknown');
-        console.log('[Months] User role:', currentUser ? currentUser.role : 'unknown');
-        
-        // Decide whether to show all months or only months with data
-        const SHOW_ALL_MONTHS = true; // Set to true to show all 12 months, false for data-driven only
-        
-        if (SHOW_ALL_MONTHS) {
-            // Show all months 1-12 (eliminate duplicates if any)
-            console.log('[Months] SHOW_ALL_MONTHS is enabled - showing all 12 months');
-            uniqueMonths = [];
-            for (let i = 1; i <= 12; i++) {
-                uniqueMonths.push(i);
-            }
-        } else {
-            // Show only months with data
-            if (uniqueMonths.length === 0) {
-                console.warn('[Months] No months found with data, showing months 1-10 as fallback');
-                for (let i = 1; i <= 10; i++) {
-                    uniqueMonths.push(i);
-                }
-            }
-        }
-        
-        // Populate the dropdown
-        const dropdown = document.getElementById('bulanDropdown');
-        if (!dropdown) {
-            console.warn('[Months] bulanDropdown not found');
-            return;
-        }
-        
-        const menu = dropdown.querySelector('.dropdown-menu');
-        if (!menu) {
-            console.warn('[Months] dropdown-menu not found in bulanDropdown');
-            return;
-        }
-        
-        const optionsContainer = menu.querySelector('.dropdown-options');
-        if (!optionsContainer) {
-            console.warn('[Months] dropdown-options not found in dropdown-menu');
-            return;
-        }
-        
-        // Keep first option "Semua Bulan"
-        const firstOption = optionsContainer.querySelector('.dropdown-option:first-child');
-        optionsContainer.innerHTML = '';
-        if (firstOption) {
-            optionsContainer.appendChild(firstOption.cloneNode(true));
-        }
-        
-        // Month names in Indonesian
-        const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-        
-        // Add options for available months (prevent duplicates)
-        const addedMonths = new Set();
-        uniqueMonths.forEach(monthNum => {
-            if (monthNum >= 1 && monthNum <= 12 && !addedMonths.has(monthNum)) {
-                addedMonths.add(monthNum);
-                const option = document.createElement('div');
-                option.className = 'dropdown-option';
-                option.onclick = (e) => selectOption(e, 'bulanDropdown', String(monthNum), monthNames[monthNum]);
-                option.innerHTML = `
-                    <span class="checkmark"></span>
-                    <span>${monthNames[monthNum]}</span>
-                `;
-                optionsContainer.appendChild(option);
-            }
-        });
-        
-        console.log('[Months] Populated dropdown with', uniqueMonths.length, 'months');
-        
-    } catch (error) {
-        console.error('[Months] Error populating months:', error);
-    }
-}
+
 
 
 // Admin Zona Filter Functions
