@@ -3174,9 +3174,41 @@
             dropdown.classList.remove('active'); // Remove active from parent
             
             // If month dropdown was selected, enable other filters
-            if (dropdownId === 'bulanDropdown' && value && value !== '') {
-                if (typeof enableAllFilters === 'function') {
-                    enableAllFilters();
+            if (dropdownId === 'bulanDropdown') {
+                const applyBtn = document.getElementById('applyFiltersBtn');
+                const resetBtn = document.getElementById('resetBtn');
+                
+                if (value && value !== '') {
+                    // Valid month selected - enable filters and buttons
+                    if (typeof enableAllFilters === 'function') {
+                        enableAllFilters();
+                    }
+                    if (applyBtn) {
+                        applyBtn.disabled = false;
+                        applyBtn.style.opacity = '1';
+                        applyBtn.style.cursor = 'pointer';
+                        applyBtn.title = 'Klik untuk menerapkan filter';
+                    }
+                    if (resetBtn) {
+                        resetBtn.disabled = false;
+                        resetBtn.style.opacity = '1';
+                        resetBtn.style.cursor = 'pointer';
+                    }
+                } else {
+                    // "Semua Bulan" selected - disable filters and buttons
+                    if (typeof disableFiltersExceptMonth === 'function') {
+                        disableFiltersExceptMonth();
+                    }
+                    if (applyBtn) {
+                        applyBtn.disabled = true;
+                        applyBtn.style.opacity = '0.5';
+                        applyBtn.style.cursor = 'not-allowed';
+                    }
+                    if (resetBtn) {
+                        resetBtn.disabled = true;
+                        resetBtn.style.opacity = '0.5';
+                        resetBtn.style.cursor = 'not-allowed';
+                    }
                 }
             }
             
