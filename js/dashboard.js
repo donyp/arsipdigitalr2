@@ -4287,6 +4287,16 @@ function setupRegularFilters() {
         resetBtn.style.cursor = 'not-allowed';
     }
     
+    // DISABLE pagination buttons until data is loaded
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    if (prevPageBtn) {
+        prevPageBtn.disabled = true;
+    }
+    if (nextPageBtn) {
+        nextPageBtn.disabled = true;
+    }
+    
     // Restore saved year and month from invoiceFilterState
     if (invoiceFilterState.year) {
         const yearSelect = document.getElementById('filterYear');
