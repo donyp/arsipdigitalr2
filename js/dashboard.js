@@ -3960,18 +3960,8 @@ async function applyInvoiceFilters() {
         const month = document.getElementById('filterMonth')?.value || '';
         const search = document.getElementById('filterSearch')?.value || '';
         
-        // VALIDATION: Month MUST be selected (cannot be empty/default)
-        if (!month || month === '') {
-            Swal.fire({
-                title: 'Bulan Belum Dipilih',
-                text: 'Silahkan pilih bulan terlebih dahulu untuk melihat data invoice',
-                icon: 'warning',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#3b82f6'
-            });
-            return;
-        }
-        
+        // Month is already validated at this point via event listener
+        // No need to validate again
         
         // Save filter state to localStorage (year and month are sticky)
         invoiceFilterState.hasFiltered = true;
@@ -4168,8 +4158,22 @@ function resetInvoiceFilters() {
     resetCustomDropdownUI('tahunDropdown', 'Semua Tahun');
     resetCustomDropdownUI('bulanDropdown', 'Semua Bulan');
     
-    // Reset Terapkan button state
-    updateTerapkanButtonState();
+    // Disable Terapkan and Reset buttons
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    if (applyBtn) {
+        applyBtn.disabled = true;
+        applyBtn.style.opacity = '0.5';
+        applyBtn.style.cursor = 'not-allowed';
+    }
+    if (resetBtn) {
+        resetBtn.disabled = true;
+        resetBtn.style.opacity = '0.5';
+        resetBtn.style.cursor = 'not-allowed';
+    }
+    
+    // Disable all filters except month
+    disableFiltersExceptMonth();
     
     // Reset total nominal display
     const totalDisplay = document.getElementById('totalNominalDisplay');
@@ -4178,18 +4182,12 @@ function resetInvoiceFilters() {
     // Reset stats to 0
     resetInvoiceStatsToZero();
     
-    // Disable all filters except month again after reset
-    if (typeof disableFiltersExceptMonth === 'function') {
-        disableFiltersExceptMonth();
-    }
-    
     // Clear filter state completely
     invoiceFilterState.year = '';
     invoiceFilterState.month = '';
     invoiceFilterState.hasFiltered = false;
     saveInvoiceFilterState();
     showInvoiceEmptyState();
-    
     
 }
 
@@ -4281,13 +4279,28 @@ function setupAdminZonaFilters() {
 // Setup regular filters for super_admin and moderator - restore saved filter state
 function setupRegularFilters() {
     
+    // DISABLE all filters except month on initial page load
+    disableFiltersExceptMonth();
+    
+    // Disable Terapkan and Reset buttons until month is selected
+    const applyBtn = document.getElementById('applyFiltersBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    if (applyBtn) {
+        applyBtn.disabled = true;
+        applyBtn.style.opacity = '0.5';
+        applyBtn.style.cursor = 'not-allowed';
+    }
+    if (resetBtn) {
+        resetBtn.disabled = true;
+        resetBtn.style.opacity = '0.5';
+        resetBtn.style.cursor = 'not-allowed';
+    }
     
     // Restore saved year and month from invoiceFilterState
     if (invoiceFilterState.year) {
         const yearSelect = document.getElementById('filterYear');
         if (yearSelect) {
             yearSelect.value = invoiceFilterState.year;
-            
         }
     }
     
@@ -4295,64 +4308,116 @@ function setupRegularFilters() {
         const monthSelect = document.getElementById('filterMonth');
         if (monthSelect) {
             monthSelect.value = invoiceFilterState.month;
-            
         }
     }
     
-    // Update Terapkan button state based on month selection
-    updateTerapkanButtonState();
-    
-    // Add event listener to update button state when month changes
+    // Add event listener to month dropdown to enable all filters when month is selected
     const filterMonth = document.getElementById('filterMonth');
     if (filterMonth) {
-        filterMonth.addEventListener('change', updateTerapkanButtonState);
+        filterMonth.addEventListener('change', () => {
+            const monthValue = filterMonth.value || '';
+            
+            if (monthValue && monthValue !== '' && monthValue !== 'Semua Bulan' && monthValue !== 'all') {
+                // Valid month selected - enable all filters and buttons
+                enableAllFilters();
+                
+                // Enable Terapkan and Reset buttons
+                if (applyBtn) {
+                    applyBtn.disabled = false;
+                    applyBtn.style.opacity = '1';
+                    applyBtn.style.cursor = 'pointer';
+                    applyBtn.title = 'Klik untuk menerapkan filter';
+                }
+                if (resetBtn) {
+                    resetBtn.disabled = false;
+                    resetBtn.style.opacity = '1';
+                    resetBtn.style.cursor = 'pointer';
+                }
+                
+                // Auto-populate data with selected month
+                autoPopulateInvoicesByMonth(monthValue, invoiceFilterState.year || new Date().getFullYear());
+            } else {
+                // No valid month - disable all filters and buttons
+                disableFiltersExceptMonth();
+                
+                if (applyBtn) {
+                    applyBtn.disabled = true;
+                    applyBtn.style.opacity = '0.5';
+                    applyBtn.style.cursor = 'not-allowed';
+                }
+                if (resetBtn) {
+                    resetBtn.disabled = true;
+                    resetBtn.style.opacity = '0.5';
+                    resetBtn.style.cursor = 'not-allowed';
+                }
+                
+                showInvoiceEmptyState();
+            }
+        });
     }
-    
-    // AUTO-LOAD DISABLED - User must click "Terapkan" button to apply filters
-    // Attach change event listeners to all filter inputs
-    // This allows filters to work when custom dropdowns change values
-    // const filterInputIds = ['filterStatus', 'filterKeterangan', 'filterYear', 'filterMonth', 'filterSearch', 'filterToko'];
-    // filterInputIds.forEach(id => {
-    //     const element = document.getElementById(id);
-    //     if (element) {
-    //         // Remove any existing listeners first to avoid duplicates
-    //         const newElement = element.cloneNode(true);
-    //         element.parentNode.replaceChild(newElement, element);
-    //         
-    //         // Attach change event listener
-    //         document.getElementById(id).addEventListener('change', applyInvoiceFilters);
-    //         
-    //     }
-    // });
-    
-    
 }
 
 /**
- * Update Terapkan button state based on month selection
- * Button should only be enabled when a valid month is selected
+ * Auto-populate invoice data when month is selected
+ * This shows data preview without requiring user to click Terapkan
  */
-function updateTerapkanButtonState() {
-    const monthInput = document.getElementById('filterMonth');
-    const applyBtn = document.getElementById('applyFiltersBtn');
-    
-    if (!applyBtn || !monthInput) return;
-    
-    const monthValue = monthInput.value || '';
-    
-    if (monthValue === '' || monthValue === 'all' || monthValue === 'Semua Bulan') {
-        // Disable button - no valid month selected
-        applyBtn.disabled = true;
-        applyBtn.style.opacity = '0.5';
-        applyBtn.style.cursor = 'not-allowed';
-        applyBtn.title = 'Pilih bulan terlebih dahulu';
-    } else {
-        // Enable button - valid month selected
-        applyBtn.disabled = false;
-        applyBtn.style.opacity = '1';
-        applyBtn.style.cursor = 'pointer';
-        applyBtn.title = 'Klik untuk menerapkan filter';
+async function autoPopulateInvoicesByMonth(month, year) {
+    try {
+        const token = API.getToken() || localStorage.getItem('jwt_token');
+        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        // Build date range
+        const dateFromValue = `${year}-${String(month).padStart(2, '0')}-01`;
+        const dateToObj = new Date(parseInt(year), parseInt(month), 0);
+        const dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
+        
+        const params = new URLSearchParams();
+        params.append('date_from', dateFromValue);
+        params.append('date_to', dateToValue);
+        params.append('limit', INVOICE_PAGE_SIZE);
+        params.append('offset', 0);
+        
+        const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
+            method: 'GET',
+            headers: headers
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch invoices');
+        }
+        
+        const result = await response.json();
+        const invoices = result.data || result.invoices || [];
+        
+        // Update invoice stats
+        if (result.stats) {
+            updateInvoiceStats(result.stats);
+        }
+        
+        // Display invoices in table
+        if (invoices.length > 0) {
+            renderInvoiceTable(invoices);
+        } else {
+            showInvoiceEmptyState('Tidak ada data invoice untuk bulan yang dipilih');
+        }
+        
+    } catch (error) {
     }
+}
+
+/**
+ * Update invoice statistics display
+ */
+function updateInvoiceStats(stats) {
+    const statTotal = document.getElementById('statTotal');
+    const statUploaded = document.getElementById('statUploaded');
+    const statPending = document.getElementById('statPending');
+    const statMissing = document.getElementById('statMissing');
+    
+    if (statTotal) statTotal.textContent = stats.total || 0;
+    if (statUploaded) statUploaded.textContent = stats.uploaded || 0;
+    if (statPending) statPending.textContent = stats.pending || 0;
+    if (statMissing) statMissing.textContent = stats.missing || 0;
 }
 
 // Admin Zona Filter Functions
