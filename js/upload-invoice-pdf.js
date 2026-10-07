@@ -550,6 +550,9 @@ async function uploadValidFiles() {
     btnUpload.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Processing...';
     btnUpload.style.opacity = '0.8';
 
+    // Initialize fresh batch for this upload session
+    window.batchInvoices = [];
+
     // Show loading overlay with progress
     window.showLoadingOverlay(
         `📤 Uploading Files`,
