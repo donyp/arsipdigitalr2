@@ -4161,6 +4161,13 @@ function resetInvoiceFilters() {
     if (filterYear) filterYear.value = '';
     if (filterMonth) filterMonth.value = '';
     
+    // Reset custom dropdown UI to show default labels
+    resetCustomDropdownUI('statusDropdown', 'Semua Status');
+    resetCustomDropdownUI('kategoriDropdown', 'Semua');
+    resetCustomDropdownUI('tokoDropdown', 'Semua Toko');
+    resetCustomDropdownUI('tahunDropdown', 'Semua Tahun');
+    resetCustomDropdownUI('bulanDropdown', 'Semua Bulan');
+    
     // Reset Terapkan button state
     updateTerapkanButtonState();
     
@@ -4184,6 +4191,42 @@ function resetInvoiceFilters() {
     showInvoiceEmptyState();
     
     
+}
+
+/**
+ * Reset custom dropdown UI to default state
+ * @param {string} dropdownId - ID of the dropdown
+ * @param {string} defaultLabel - Default label text to show
+ */
+function resetCustomDropdownUI(dropdownId, defaultLabel) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    
+    const trigger = dropdown.querySelector('.dropdown-trigger .dropdown-label');
+    
+    // Update trigger label
+    if (trigger) {
+        trigger.textContent = defaultLabel;
+    }
+    
+    // Update checkmarks - remove all first, then add to first option (default)
+    dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+        opt.classList.remove('selected');
+        const checkmark = opt.querySelector('.checkmark');
+        if (checkmark) {
+            checkmark.textContent = '';
+        }
+    });
+    
+    // Mark first option as selected (the "Semua..." option)
+    const firstOption = dropdown.querySelector('.dropdown-option');
+    if (firstOption) {
+        firstOption.classList.add('selected');
+        const checkmark = firstOption.querySelector('.checkmark');
+        if (checkmark) {
+            checkmark.textContent = '✓';
+        }
+    }
 }
 
 // Setup admin zona specific filters - hide stats
