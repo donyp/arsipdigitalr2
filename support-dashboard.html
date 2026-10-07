@@ -1012,10 +1012,10 @@
                 </div>
 
                 <!-- Filters -->
-                <div class="filter-bar">
-                    <input type="text" class="search-input" id="searchInput" placeholder="Cari nomor tiket atau subjek...">
+                <div class="filter-bar" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: flex-end;">
+                    <input type="text" class="search-input" id="searchInput" placeholder="Cari nomor tiket atau subjek..." style="flex: 1; min-width: 200px;">
                     
-                    <select id="filterStatus" class="filter-select">
+                    <select id="filterStatus" class="filter-select" style="flex: 0 1 150px;">
                         <option value="all">Semua Status</option>
                         <option value="Open">Open</option>
                         <option value="Answered">Answered</option>
@@ -1023,12 +1023,12 @@
                         <option value="Closed">Closed</option>
                     </select>
                     
-                    <select id="filterZona" class="filter-select">
+                    <select id="filterZona" class="filter-select" style="flex: 0 1 150px;">
                         <option value="">Semua Zona</option>
                     </select>
                     
                     <!-- Filter Action Buttons -->
-                    <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <div style="display: flex; gap: 8px; flex: 0 1 auto;">
                         <button onclick="applyModeratorFilters()" style="
                             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
                             color: white;
@@ -1039,7 +1039,10 @@
                             font-size: 13px;
                             cursor: pointer;
                             transition: all 0.2s;
-                            flex: 1;
+                            white-space: nowrap;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
                         " onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 12px rgba(59, 130, 246, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
                             <i class="fas fa-check"></i> Terapkan
                         </button>
@@ -1053,6 +1056,10 @@
                             font-size: 13px;
                             cursor: pointer;
                             transition: all 0.2s;
+                            white-space: nowrap;
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
                         " onmouseover="this.style.background='#e5e7eb'; this.style.transform='translateY(-1px)'" onmouseout="this.style.background='#f3f4f6'; this.style.transform='translateY(0)'">
                             <i class="fas fa-redo"></i> Reset
                         </button>
