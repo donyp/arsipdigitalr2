@@ -534,6 +534,7 @@ function renderValidationResults() {
 }
 
 async function uploadValidFiles() {
+    // Filter only valid files for upload (invalid files stay in the list but are skipped)
     const validFiles = validationResults.filter(r => r.valid);
     
     if (validFiles.length === 0) {
