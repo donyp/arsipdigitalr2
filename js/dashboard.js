@@ -4173,6 +4173,22 @@ function resetInvoiceFilters() {
     // Reset stats to 0
     resetInvoiceStatsToZero();
     
+    // Reset pagination buttons to disabled
+    const prevPageBtn = document.getElementById('prevPageBtn');
+    const nextPageBtn = document.getElementById('nextPageBtn');
+    if (prevPageBtn) {
+        prevPageBtn.disabled = true;
+    }
+    if (nextPageBtn) {
+        nextPageBtn.disabled = true;
+    }
+    
+    // Reset pagination info to 0
+    const paginationInfo = document.getElementById('paginationInfo');
+    if (paginationInfo) {
+        paginationInfo.textContent = 'Menampilkan 0 - 0 dari 0 invoice';
+    }
+    
     // Clear filter state completely
     invoiceFilterState.year = '';
     invoiceFilterState.month = '';
