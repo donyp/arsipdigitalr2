@@ -1098,11 +1098,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             if (req.user && req.user.role === 'admin_zona' && count === 0) {
                 console.warn(`[Invoice List] ?? Admin_zona ${req.user.userId} (zona_id: ${req.user.zona_id}) returned 0 invoices!`);
                 // Check if invoices exist at all for this zona
-                const { data: checkData, error: checkErr } = await supabase
+                const { count: checkCount, error: checkErr } = await supabase
                     .from('invoice_file_list')
-                    .select('COUNT(*)', { count: 'exact' })
+                    .select('id', { count: 'exact', head: true })
                     .eq('zona_id', parseInt(req.user.zona_id) || req.user.zona_id);
-                console.warn(`[Invoice List] Total invoices in zona ${req.user.zona_id}:`, checkData, checkErr);
+                console.warn(`[Invoice List] Total invoices in zona ${req.user.zona_id}:`, checkCount, checkErr);
             }
             
             res.json({
