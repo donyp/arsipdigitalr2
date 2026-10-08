@@ -271,11 +271,19 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
             }
 
             // Token is valid - create full JWT session
+            // Get full user data including role
+            const { data: fullUser } = await supabase
+                .from('users')
+                .select('id, username, email, role, zona_id')
+                .eq('id', userId)
+                .single();
+
             const jwtToken = jwt.sign(
                 {
                     userId: userId,
                     username: decoded.username,
                     email: decoded.email,
+                    role: fullUser?.role || 'user',
                     stage: 'authenticated'
                 },
                 process.env.JWT_SECRET,
@@ -291,7 +299,8 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 user: {
                     id: userId,
                     username: decoded.username,
-                    email: decoded.email
+                    email: decoded.email,
+                    role: fullUser?.role || 'user'
                 }
             });
 

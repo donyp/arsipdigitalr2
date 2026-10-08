@@ -1828,7 +1828,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, username, created_at')
+            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, username, created_at, zonas(id, nama, kode)')
             .eq('id', req.user.userId)
             .single();
 
