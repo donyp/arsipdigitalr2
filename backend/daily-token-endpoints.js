@@ -17,6 +17,9 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
      */
     app.post('/api/auth/login', async (req, res) => {
         try {
+            console.log('[DailyTokenEndpoints] POST /api/auth/login received');
+            console.log('[DailyTokenEndpoints] Request body keys:', Object.keys(req.body || {}));
+            
             const { username, password } = req.body;
             const tokenAuthEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
 
