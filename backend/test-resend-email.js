@@ -44,7 +44,7 @@ async function testResendEmail() {
     try {
         const { data, error } = await resend.emails.send({
             from: fromEmail,
-            to: 'donisugiharto322@gmail.com',
+            to: 'donisugiharto@megagroupindonesia.co.id',  // Must be verified Resend account email in sandbox mode
             subject: '🔐 Test Token - Arsip Digital Anka',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -68,7 +68,7 @@ async function testResendEmail() {
         if (data) {
             console.log(`   ✅ Email sent successfully!`);
             console.log(`   Email ID: ${data.id}`);
-            console.log(`   Recipient: donisugiharto322@gmail.com`);
+            console.log(`   Recipient: donisugiharto@megagroupindonesia.co.id`);
             console.log('\n✅ ALL TESTS PASSED - Resend is configured correctly!\n');
             process.exit(0);
         }
