@@ -891,13 +891,21 @@
             if (isProcessing) return;
             
             isProcessing = true;
+            
+            // Hide token form and reset to login
             hideTokenForm();
             tempTokenForVerification = null;
             userEmailForVerification = null;
+            
+            // Reset forms
             document.getElementById('login-form').reset();
             document.getElementById('token-form').reset();
+            
+            // Reset token attempts display
             document.getElementById('token-attempts-display').style.display = 'none';
-            document.getElementById('token-attempts-display').textContent = '⚠️ Sisa <span id="attempts-remaining">3</span>/3 percobaan';
+            document.getElementById('attempts-remaining').textContent = '3';
+            
+            // Reset processing flag
             isProcessing = false;
         });
 

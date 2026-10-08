@@ -10,14 +10,22 @@ class DailyTokenService {
         this.supabase = supabaseClient;
         
         // Check if API key is valid (not placeholder)
-        if (!resendApiKey || resendApiKey === 'YOUR_RESEND_API_KEY_HERE_REPLACE_IN_DEPLOYMENT' || resendApiKey === 're_test') {
-            console.warn('[DailyToken] ⚠️ Resend API key is missing or invalid. Email delivery disabled.');
-            console.warn('[DailyToken] Please set RESEND_API_KEY environment variable from Railway dashboard');
-            this.resend = null;
-            this.emailsDisabled = true;
-        } else {
+        const isValidKey = resendApiKey && 
+                          resendApiKey.startsWith('re_') && 
+                          resendApiKey.length > 20;
+        
+        if (isValidKey) {
             this.resend = new Resend(resendApiKey);
-            this.emailsDisabled = false;
+            this.emailsEnabled = true;
+            console.log('[DailyToken] ✅ Resend email service initialized');
+        } else {
+            console.warn('[DailyToken] ⚠️  RESEND_API_KEY not configured - email sending disabled');
+            console.warn('[DailyToken] To enable emails:');
+            console.warn('[DailyToken]   1. Check Railway dashboard for RESEND_API_KEY');
+            console.warn('[DailyToken]   2. Get API key from https://resend.com/api-keys');
+            console.warn('[DailyToken]   3. Add to Railway environment variables');
+            this.resend = null;
+            this.emailsEnabled = false;
         }
         
         this.fromEmail = fromEmail;
