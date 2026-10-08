@@ -4602,6 +4602,66 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
             return res.status(400).json({ error: 'Email, password, nama, dan role wajib diisi.' });
         }
 
+        // ✅ VALIDATION: admin_zona requires zona_id
+        if (role === 'admin_zona' && !zona_id) {
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Create User - Missing zona_id',
+                resourceType: 'user',
+                resourceId: email,
+                resourceName: email,
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/users',
+                requestMethod: 'POST',
+                statusCode: 400,
+                responseMessage: null,
+                errorMessage: 'admin_zona memerlukan zona_id',
+                isSuspicious: false,
+                severity: 'warning'
+            }).catch(() => {});
+            return res.status(400).json({ error: 'admin_zona memerlukan zona_id.' });
+        }
+
+        // ✅ VALIDATION: zona_id must exist in zonas table if provided
+        if (zona_id) {
+            const { data: zonaExists } = await supabase
+                .from('zonas')
+                .select('id, nama')
+                .eq('id', zona_id)
+                .single();
+
+            if (!zonaExists) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Create User - Invalid zona_id',
+                    resourceType: 'user',
+                    resourceId: email,
+                    resourceName: email,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: '/api/users',
+                    requestMethod: 'POST',
+                    statusCode: 400,
+                    responseMessage: null,
+                    errorMessage: `Zona dengan ID ${zona_id} tidak ditemukan`,
+                    isSuspicious: false,
+                    severity: 'warning'
+                }).catch(() => {});
+                return res.status(400).json({ error: `Zona dengan ID ${zona_id} tidak ditemukan.` });
+            }
+        }
+
         // Username validation (optional but must be unique if provided)
         let finalUsername = null;
         if (username) {
