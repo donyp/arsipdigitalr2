@@ -32,7 +32,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
             // Get user by username
             const { data: users, error: fetchError } = await supabase
                 .from('users')
-                .select('id, username, email, password_hash, role')
+                .select('id, username, email, password_hash, role, zona_id')
                 .eq('username', username)
                 .single();
 
@@ -65,6 +65,8 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                         userId: users.id,
                         username: users.username,
                         email: users.email,
+                        role: users.role || 'user',
+                        zona_id: users.zona_id || null,
                         stage: 'authenticated'
                     },
                     process.env.JWT_SECRET,
@@ -78,7 +80,8 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                     user: {
                         id: users.id,
                         username: users.username,
-                        email: users.email
+                        email: users.email,
+                        role: users.role || 'user'
                     }
                 });
             }
