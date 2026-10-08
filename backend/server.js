@@ -984,6 +984,30 @@ function authenticateToken(req, res, next) {
         }
         
         try {
+            // --- SESSION INVALIDATION CHECK (Daily auto-logout at 00:00) ---
+            // Check if token was issued before the last session invalidation time
+            const { data: invalidations, error: invError } = await supabase
+                .from('session_invalidations')
+                .select('invalidated_at')
+                .order('invalidated_at', { ascending: false })
+                .limit(1);
+
+            if (!invError && invalidations && invalidations.length > 0) {
+                const lastInvalidationTime = new Date(invalidations[0].invalidated_at).getTime();
+                const tokenIssuedTime = (decoded.iat || Math.floor(Date.now() / 1000)) * 1000;
+                
+                if (tokenIssuedTime < lastInvalidationTime) {
+                    logSecurityEvent('[AUTH]', 'Session invalidated - auto-logout enforced', {
+                        userId: decoded.sub || decoded.userId,
+                        invalidatedAt: invalidations[0].invalidated_at
+                    });
+                    return res.status(401).json({ 
+                        error: 'Sesi Anda telah berakhir. Silakan login kembali.',
+                        reason: 'session_invalidated'
+                    });
+                }
+            }
+
             // --- SECURITY FIX #2: Verify role from database instead of trusting token ---
             // Do NOT elevate role based on permissions array in token
             // Always query database for authoritative role
@@ -1161,6 +1185,37 @@ async function notifyModerators(title, message, link = null) {
 console.log('[INIT] Registering Phase 1 feature endpoints...');
 registerFeatureEndpoints(app, supabase, authenticateToken, authorizeRole);
 console.log('[INIT] Phase 1 feature endpoints registered ✅');
+
+// ============================================================
+// DAILY TOKEN AUTHENTICATION SYSTEM (2FA with Email Tokens)
+// ============================================================
+console.log('[INIT] Initializing Daily Token Authentication System...');
+try {
+    const DailyTokenService = require('./daily-token-service');
+    const dailyTokenService = new DailyTokenService(
+        supabase,
+        process.env.RESEND_API_KEY,
+        process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id'
+    );
+
+    const registerDailyTokenEndpoints = require('./daily-token-endpoints');
+    registerDailyTokenEndpoints(app, supabase, dailyTokenService);
+    console.log('[INIT] Daily Token authentication endpoints registered ✅');
+
+    const registerDailyTokenAdminEndpoints = require('./daily-token-admin-endpoints');
+    registerDailyTokenAdminEndpoints(app, supabase, authenticateToken, authorizeRole, dailyTokenService);
+    console.log('[INIT] Daily Token admin endpoints registered ✅');
+
+    // Initialize scheduler
+    const DailyTokenScheduler = require('./daily-token-scheduler');
+    const scheduler = new DailyTokenScheduler(supabase, dailyTokenService);
+    scheduler.start();
+    console.log('[INIT] Daily Token scheduler started ✅');
+
+} catch (error) {
+    console.error('[INIT] Failed to initialize Daily Token system:', error);
+    console.warn('[INIT] Daily Token authentication will not be available');
+}
 
 // ============================================================
 // STORAGE HANDLER ENDPOINTS (Cloudflare R2 File Manager)

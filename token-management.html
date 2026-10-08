@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Token Harian - Arsip Digital Anka</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .token-management-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .token-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .token-header h1 {
+            margin: 0;
+            color: #333;
+            font-size: 28px;
+        }
+
+        .token-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #4CAF50;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            color: #666;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 0;
+        }
+
+        .stat-card.warning {
+            border-left-color: #ff9800;
+        }
+
+        .stat-card.warning .value {
+            color: #ff9800;
+        }
+
+        .stat-card.danger {
+            border-left-color: #f44336;
+        }
+
+        .stat-card.danger .value {
+            color: #f44336;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+        }
+
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #0b7dda;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            margin: 0 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            color: #333;
+        }
+
+        .token-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .token-table thead {
+            background: #f5f5f5;
+        }
+
+        .token-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .token-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        .token-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-generated {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .status-sent {
+            background: #bbdefb;
+            color: #1565c0;
+        }
+
+        .status-used {
+            background: #d0d0d0;
+            color: #424242;
+        }
+
+        .status-failed {
+            background: #ffccbc;
+            color: #d84315;
+        }
+
+        .status-locked {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .search-box select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 150px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-buttons button {
+            padding: 4px 8px;
+            font-size: 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-buttons .btn-resend {
+            background: #2196F3;
+            color: white;
+        }
+
+        .action-buttons .btn-resend:hover {
+            background: #0b7dda;
+        }
+
+        .action-buttons .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+
+        .action-buttons .btn-delete:hover {
+            background: #da190b;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .modal-content .form-group {
+            margin-bottom: 20px;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .modal-content input,
+        .modal-content select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: monospace;
+            min-height: 100px;
+            box-sizing: border-box;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .close-modal {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #000;
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-left-color: #4CAF50;
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border-left-color: #f44336;
+            color: #721c24;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-left-color: #2196F3;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="token-management-container">
+        <!-- Header -->
+        <div class="token-header">
+            <div>
+                <h1>🔐 Manajemen Token Harian</h1>
+                <p style="color: #999; margin: 5px 0;">Kelola token login 2FA untuk semua pengguna</p>
+            </div>
+            <button class="btn btn-secondary" onclick="goBack()">← Kembali</button>
+        </div>
+
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+
+        <!-- Stats -->
+        <div class="token-stats">
+            <div class="stat-card">
+                <h3>Token Hari Ini</h3>
+                <p class="value" id="statGenerated">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>Token Terkirim</h3>
+                <p class="value" id="statSent">-</p>
+            </div>
+            <div class="stat-card warning">
+                <h3>Email Gagal</h3>
+                <p class="value" id="statFailed">-</p>
+            </div>
+            <div class="stat-card">
+                <h3>Terakhir Update</h3>
+                <p class="value" id="lastUpdate" style="font-size: 14px;">-</p>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="generateTokensNow()">📨 Generate Token Sekarang</button>
+            <button class="btn btn-secondary" onclick="refreshStats()">🔄 Refresh Stats</button>
+            <button class="btn btn-danger" onclick="cleanupExpiredNow()">🗑️ Cleanup Expired</button>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="section">
+            <h2>🔍 Cari & Filter</h2>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Cari berdasarkan nama user atau email..." onkeyup="filterTokens()">
+                <select id="statusFilter" onchange="filterTokens()">
+                    <option value="">Semua Status</option>
+                    <option value="generated">Generated</option>
+                    <option value="sent">Sent</option>
+                    <option value="used">Used</option>
+                    <option value="failed">Failed</option>
+                    <option value="locked">Locked</option>
+                </select>
+            </div>
+
+            <!-- Token List -->
+            <div id="tokenListContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Memuat data token...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Token Details Section -->
+        <div class="section">
+            <h2>ℹ️ Informasi Sistem</h2>
+            <table class="token-table" style="border: none;">
+                <tr>
+                    <td style="font-weight: 600; width: 200px; border: none;">Jam Generate Token</td>
+                    <td style="border: none;">04:00 (setiap hari)</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; border: none;">Jam Auto-Logout</td>
+                    <td style="border: none;">00:00 (setiap hari)</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; border: none;">Masa Berlaku Token</td>
+                    <td style="border: none;">24 jam</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; border: none;">Max Percobaan</td>
+                    <td style="border: none;">3 kali, lock 15 menit jika gagal</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; border: none;">Format Token</td>
+                    <td style="border: none;">5 digit angka random (00000 - 99999)</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: 600; border: none;">Email Service</td>
+                    <td style="border: none;">Resend.io</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal untuk Generate Manual -->
+    <div id="generateModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal('generateModal')">&times;</span>
+            <h2>Generate Token Manual</h2>
+            <p style="color: #666; margin-bottom: 20px;">Ini akan mengirim ulang token untuk user yang dipilih</p>
+            
+            <div class="form-group">
+                <label>Pilih User</label>
+                <select id="userSelect" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">-- Pilih User --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="userEmail" readonly style="background: #f5f5f5;">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeModal('generateModal')">Batal</button>
+                <button class="btn btn-primary" onclick="confirmGenerateToken()">Generate & Kirim</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let allTokens = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTokens();
+            refreshStats();
+            // Refresh stats setiap 30 detik
+            setInterval(refreshStats, 30000);
+        });
+
+        function goBack() {
+            // Cek apakah dari dashboard
+            if (document.referrer.includes('dashboard')) {
+                window.history.back();
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        }
+
+        async function loadTokens() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/daily-tokens`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Gagal memuat token');
+
+                const data = await response.json();
+                allTokens = data.tokens || [];
+                displayTokens(allTokens);
+
+            } catch (error) {
+                console.error('Error loading tokens:', error);
+                showAlert('Gagal memuat data token', 'error');
+                displayEmptyState();
+            }
+        }
+
+        function displayTokens(tokens) {
+            const container = document.getElementById('tokenListContainer');
+
+            if (tokens.length === 0) {
+                displayEmptyState();
+                return;
+            }
+
+            let html = `
+                <table class="token-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Token</th>
+                            <th>Status</th>
+                            <th>Percobaan</th>
+                            <th>Generated</th>
+                            <th>Berakhir</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            tokens.forEach(token => {
+                const status = getTokenStatus(token);
+                const attemptsText = token.token_attempts > 0 
+                    ? `${token.token_attempts}/${token.max_attempts || 3}` 
+                    : '-';
+
+                html += `
+                    <tr>
+                        <td><strong>${token.username}</strong></td>
+                        <td>${token.email}</td>
+                        <td><code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">${token.token || 'N/A'}</code></td>
+                        <td><span class="status-badge status-${status.class}">${status.text}</span></td>
+                        <td>${attemptsText}</td>
+                        <td>${formatDate(token.created_at)}</td>
+                        <td>${formatDate(token.expires_at)}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-resend" onclick="resendToken(${token.id}, '${token.email}')">Resend</button>
+                                <button class="btn-delete" onclick="deleteToken(${token.id})">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function getTokenStatus(token) {
+            if (token.is_used) return { text: 'Used', class: 'used' };
+            if (token.is_locked) return { text: 'Locked', class: 'locked' };
+            if (!token.email_sent) return { text: 'Failed', class: 'failed' };
+            if (token.email_sent && !token.is_used) return { text: 'Sent', class: 'sent' };
+            return { text: 'Generated', class: 'generated' };
+        }
+
+        function displayEmptyState() {
+            document.getElementById('tokenListContainer').innerHTML = `
+                <div class="empty-state">
+                    <p>📭 Tidak ada data token</p>
+                    <small>Token akan muncul setelah proses generation di jam 04:00</small>
+                </div>
+            `;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        async function refreshStats() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/token-stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Gagal memuat stats');
+
+                const data = await response.json();
+                if (data.success && data.stats) {
+                    const stats = data.stats;
+                    document.getElementById('statGenerated').textContent = stats.totalGenerated || 0;
+                    document.getElementById('statSent').textContent = stats.totalUsed || 0;
+                    document.getElementById('statFailed').textContent = stats.emailFailed || 0;
+                    document.getElementById('lastUpdate').textContent = formatDate(stats.lastUpdated);
+                }
+
+            } catch (error) {
+                console.error('Error refreshing stats:', error);
+            }
+        }
+
+        async function generateTokensNow() {
+            if (!confirm('Generate dan kirim token ke semua user sekarang?')) return;
+
+            try {
+                showAlert('⏳ Processing... Token sedang dibuat dan dikirim', 'info');
+                
+                const response = await fetch(`${API_BASE}/auth/generate-tokens-now`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`✅ Token berhasil dibuat: ${data.generated} generated, ${data.sent} sent`, 'success');
+                    loadTokens();
+                    refreshStats();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Gagal generate token', 'error');
+            }
+        }
+
+        async function cleanupExpiredNow() {
+            if (!confirm('Hapus semua token yang sudah expired?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/cleanup-expired-now`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('✅ Token yang expired telah dihapus', 'success');
+                    loadTokens();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Gagal cleanup token', 'error');
+            }
+        }
+
+        async function resendToken(tokenId, email) {
+            if (!confirm(`Kirim ulang token ke ${email}?`)) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/resend-token-manual`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tokenId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('✅ Token berhasil dikirim ulang', 'success');
+                    loadTokens();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Gagal mengirim ulang token', 'error');
+            }
+        }
+
+        async function deleteToken(tokenId) {
+            if (!confirm('Hapus token ini? Pengguna harus melakukan login ulang.')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/delete-token/${tokenId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    showAlert('✅ Token berhasil dihapus', 'success');
+                    loadTokens();
+                } else {
+                    const data = await response.json();
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Gagal menghapus token', 'error');
+            }
+        }
+
+        function filterTokens() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            const filtered = allTokens.filter(token => {
+                const matchSearch = 
+                    token.username.toLowerCase().includes(searchText) ||
+                    token.email.toLowerCase().includes(searchText);
+                
+                const matchStatus = !statusFilter || getTokenStatus(token).class === statusFilter;
+
+                return matchSearch && matchStatus;
+            });
+
+            displayTokens(filtered);
+        }
+
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+            
+            const html = `
+                <div class="alert alert-${type}" id="${alertId}">
+                    ${message}
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', html);
+
+            // Auto-remove setelah 5 detik
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) alert.remove();
+            }, 5000);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+    </script>
+</body>
+</html>
