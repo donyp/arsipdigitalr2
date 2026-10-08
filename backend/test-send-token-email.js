@@ -30,7 +30,7 @@ async function test() {
 
         // Test data
         const token = '69577'; // Token from previous test
-        const toEmail = 'mod@arsip.com'; // User email
+        const toEmail = 'donisugiharto322@gmail.com'; // Moderator email (the correct one!)
         const userName = 'Moderator';
 
         console.log(`\n3️⃣  Sending token email...`);
