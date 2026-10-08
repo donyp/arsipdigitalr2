@@ -26,15 +26,14 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
                     locked_until,
                     is_used,
                     email_sent,
-                    email_address,
-                    users:user_id(id, username, email)
+                    email_address
                 `)
                 .order('created_at', { ascending: false })
                 .limit(parseInt(limit))
                 .offset(parseInt(offset));
 
             if (userId) {
-                query = query.eq('user_id', parseInt(userId));
+                query = query.eq('user_id', userId);
             }
 
             const { data: tokens, error } = await query;
@@ -47,12 +46,28 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
                 });
             }
 
+            // Get user emails separately if needed
+            let userMap = {};
+            if (tokens && tokens.length > 0) {
+                const uniqueUserIds = [...new Set(tokens.map(t => t.user_id))];
+                const { data: users } = await supabase
+                    .from('users')
+                    .select('id, email, name')
+                    .in('id', uniqueUserIds);
+                
+                if (users) {
+                    users.forEach(u => {
+                        userMap[u.id] = u;
+                    });
+                }
+            }
+
             // Format response
             const formattedTokens = tokens.map(token => ({
                 id: token.id,
                 userId: token.user_id,
-                username: token.users?.username || 'Unknown',
-                email: token.email_address || token.users?.email || 'N/A',
+                username: userMap[token.user_id]?.name || 'Unknown',
+                email: token.email_address || userMap[token.user_id]?.email || 'N/A',
                 token: token.token,
                 createdAt: token.created_at,
                 expiresAt: token.expires_at,
@@ -75,7 +90,7 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
             console.error('[TokenAdmin] Exception fetching tokens:', error);
             res.status(500).json({
                 success: false,
-                error: 'Failed to fetch tokens'
+                error: 'Failed to fetch tokens: ' + error.message
             });
         }
     });
@@ -166,7 +181,7 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
             // Get token
             const { data: tokenRecord, error: fetchError } = await supabase
                 .from('daily_login_tokens')
-                .select('*, users:user_id(username, email)')
+                .select('*')
                 .eq('id', tokenId)
                 .single();
 
@@ -177,12 +192,19 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
                 });
             }
 
+            // Get user info
+            const { data: user } = await supabase
+                .from('users')
+                .select('name, email')
+                .eq('id', tokenRecord.user_id)
+                .single();
+
             // Resend email
             const emailResult = await dailyTokenService.sendTokenEmail(
                 tokenRecord.user_id,
-                tokenRecord.email_address,
+                tokenRecord.email_address || user?.email,
                 tokenRecord.token,
-                tokenRecord.users?.username
+                user?.name || 'User'
             );
 
             if (emailResult.success) {
