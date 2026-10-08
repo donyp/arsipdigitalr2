@@ -61,6 +61,25 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 });
             }
 
+            // Check if user has a valid token for today (generated at 04:00)
+            const now = new Date();
+            const { data: tokenRecord, error: tokenError } = await supabase
+                .from('daily_login_tokens')
+                .select('token, expires_at, email_sent')
+                .eq('user_id', users.id)
+                .gt('expires_at', now.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+            if (tokenError || !tokenRecord) {
+                console.warn(`[Auth] No valid token found for user: ${username}`);
+                return res.status(403).json({
+                    success: false,
+                    error: 'Kode akses belum dikirim. Coba login lagi nanti atau hubungi admin'
+                });
+            }
+
             // Generate temporary JWT for token form (valid 5 minutes)
             const tempToken = jwt.sign(
                 {
@@ -73,34 +92,11 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 { expiresIn: '5m' }
             );
 
-            // Create and send daily token
-            const tokenResult = await dailyTokenService.createDailyToken(users.id, users.email);
-            if (!tokenResult.success) {
-                console.error('[Auth] Failed to create daily token:', tokenResult.error);
-                return res.status(500).json({
-                    success: false,
-                    error: 'Gagal membuat kode akses'
-                });
-            }
-
-            // Send token email
-            const emailResult = await dailyTokenService.sendTokenEmail(
-                users.id,
-                users.email,
-                tokenResult.token,
-                users.username
-            );
-
-            if (!emailResult.success) {
-                console.warn('[Auth] Failed to send token email:', emailResult.error);
-                // Still allow login to proceed, but warn user
-            }
-
             console.log(`[Auth] ✅ Password verified for user: ${username}`);
 
             res.json({
                 success: true,
-                message: 'Password benar. Masukkan kode dari email Anda',
+                message: 'Password benar. Kode sudah dikirim ke email Anda pukul 04:00',
                 tempToken,
                 email: users.email,
                 expiresIn: 300 // 5 minutes in seconds
@@ -220,7 +216,9 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
 
     /**
      * POST /api/auth/resend-token
-     * Allow user to request token resend (max 3 times per day)
+     * Admin/User request to resend token
+     * Note: Tokens are generated daily at 04:00 via scheduler
+     * This endpoint can resend the most recent token if email didn't arrive
      */
     app.post('/api/auth/resend-token', async (req, res) => {
         try {
@@ -247,12 +245,13 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
             const userId = decoded.userId;
             console.log(`[Auth] Resend token requested for user ${userId}`);
 
-            // Get user's current token
+            // Get user's current token (generated at 04:00 today)
+            const now = new Date();
             const { data: tokenRecord } = await supabase
                 .from('daily_login_tokens')
                 .select('*')
                 .eq('user_id', userId)
-                .gt('expires_at', new Date().toISOString())
+                .gt('expires_at', now.toISOString())
                 .order('created_at', { ascending: false })
                 .limit(1)
                 .single();
@@ -260,8 +259,22 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
             if (!tokenRecord) {
                 return res.status(404).json({
                     success: false,
-                    error: 'Token tidak ditemukan'
+                    error: 'Token untuk hari ini belum tersedia. Coba lagi setelah jam 04:00'
                 });
+            }
+
+            // Check if already sent today (to prevent spam)
+            const lastSentAt = tokenRecord.email_sent_at ? new Date(tokenRecord.email_sent_at) : null;
+            const now_time = new Date();
+            
+            if (lastSentAt) {
+                const minutesSinceSent = (now_time - lastSentAt) / (1000 * 60);
+                if (minutesSinceSent < 5) {
+                    return res.status(429).json({
+                        success: false,
+                        error: 'Tunggu beberapa menit sebelum meminta ulang kode'
+                    });
+                }
             }
 
             // Resend email
