@@ -22,6 +22,8 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
             
             const { username, password } = req.body;
             const tokenAuthEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
+            
+            console.log('[DailyTokenEndpoints] Token auth enabled:', tokenAuthEnabled);
 
             if (!username || !password) {
                 return res.status(400).json({
@@ -40,7 +42,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 .single();
 
             if (fetchError || !users) {
-                console.warn(`[Auth] User not found: ${username}`);
+                console.warn(`[Auth] User not found: ${username}`, fetchError?.message);
                 return res.status(401).json({
                     success: false,
                     error: 'Username atau password salah'
@@ -190,9 +192,11 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
 
         } catch (error) {
             console.error('[Auth] Login error:', error);
+            console.error('[Auth] Error stack:', error.stack);
             res.status(500).json({
                 success: false,
-                error: 'Terjadi kesalahan saat login'
+                error: 'Terjadi kesalahan saat login',
+                debug: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
     });
