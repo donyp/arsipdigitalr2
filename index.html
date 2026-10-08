@@ -277,6 +277,7 @@
             color: var(--color-form-input-text);
             background: var(--color-form-bg);
             transition: border-color 0.3s, color 0.3s, box-shadow 0.3s;
+            padding-left: 28px;
         }
         .form-input::placeholder {
             color: var(--color-form-placeholder);
@@ -479,12 +480,16 @@
                 <!-- STEP 1: Login Form (Username & Password) -->
                 <form id="login-form" autocomplete="on" style="display: block;">
                     <div class="form-group">
-                        <input type="text" id="username" name="username" autocomplete="username" placeholder="Email" class="form-input" required>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 0; top: 12px; color: #667eea; font-size: 16px;">✉️</span>
+                            <input type="text" id="username" name="username" autocomplete="username" placeholder="Email" class="form-input" style="padding-left: 28px;" required>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <div style="position: relative;">
-                            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Password" class="form-input" required>
+                            <span style="position: absolute; left: 0; top: 12px; color: #667eea; font-size: 16px;">🔑</span>
+                            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Password" class="form-input" style="padding-left: 28px;" required>
                             <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 0; top: 12px; background: none; border: none; cursor: pointer; padding: 0; color: #999;">
                                 <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -494,7 +499,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="login-btn" class="login-btn">Login Now</button>
+                    <button type="submit" id="login-btn" class="login-btn">Masuk</button>
                 </form>
 
                 <!-- STEP 2: Token Verification Form (5-digit token from email) -->
