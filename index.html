@@ -740,15 +740,16 @@
                     };
                 }
 
-                // Success! Store temp token and show token form
+                // Success! Check response format
                 tempTokenForVerification = data.tempToken;
                 userEmailForVerification = data.email;
 
-                // 🔑 NEW: If admin already verified token today, skip token verification form
-                if (data.skipTokenVerification && data.token) {
-                    console.log('[Login] Admin token already verified today, logging in directly');
-                    
-                    // Store JWT and redirect
+                // 🔑 DECISION LOGIC:
+                // 1. If data.token exists → Direct login (either token auth disabled OR admin already verified)
+                // 2. If data.tempToken exists → Show token form (token auth enabled, needs verification)
+                if (data.token) {
+                    // Direct login - store JWT and redirect
+                    console.log('[Login] Received full JWT token - logging in directly');
                     localStorage.setItem('jwt_token', data.token);
                     localStorage.setItem('user_info', JSON.stringify(data.user));
                     
@@ -756,7 +757,7 @@
                     await Swal.fire({
                         icon: 'success',
                         title: 'Login Berhasil',
-                        text: 'Anda sudah memverifikasi token hari ini. Selamat datang kembali!',
+                        text: data.message || 'Selamat datang!',
                         confirmButtonText: 'Masuk',
                         confirmButtonColor: '#667eea',
                         timer: 2000,
@@ -768,7 +769,7 @@
                     return;
                 }
 
-                // Show token verification form DIRECTLY
+                // Show token verification form (token auth enabled)
                 showTokenForm();
 
             } catch (err) {
