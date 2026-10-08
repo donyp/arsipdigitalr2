@@ -815,41 +815,44 @@ class DailyTokenService {
      */
     async generateAndSendDailyTokens() {
         try {
+            // Check if token auth is enabled
+            const isEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
+            if (!isEnabled) {
+                console.log('[DailyToken] ⏸️ Token generation DISABLED - ENABLE_DAILY_TOKEN_AUTH=false');
+                console.log('[DailyToken] No tokens will be generated or sent until enabled');
+                return {
+                    success: true,
+                    generated: 0,
+                    sent: 0,
+                    message: 'Token generation disabled'
+                };
+            }
+
             console.log('[DailyToken] Starting daily token generation at 04:00...');
 
-            // Get all users from auth.users (Supabase auth) with valid emails
-            const { data: authUsers, error: fetchError } = await this.supabase.auth.admin.listUsers();
+            // Get all users from users table (not just auth.users)
+            const { data: dbUsers, error: dbError } = await this.supabase
+                .from('users')
+                .select('id, email, name, role, is_active, contact_email')
+                .eq('is_active', true);
 
-            if (fetchError) {
-                console.error('[DailyToken] Error fetching auth users:', fetchError);
-                return { success: false, error: fetchError.message };
+            if (dbError) {
+                console.error('[DailyToken] Error fetching users table:', dbError);
+                return { success: false, error: dbError.message };
             }
 
             // Filter users with valid emails
-            let users = (authUsers?.users || []).filter(u => u.email && u.email.includes('@'));
+            let users = (dbUsers || []).filter(u => {
+                const emailToUse = u.contact_email || u.email;
+                return emailToUse && emailToUse.includes('@');
+            });
 
             if (users.length === 0) {
-                console.log('[DailyToken] No users with valid emails');
-                return { success: true, generated: 0, sent: 0 };
+                console.log('[DailyToken] No active users with valid emails');
+                return { success: true, generated: 0, sent: 0, totalUsers: 0 };
             }
 
-            console.log(`[DailyToken] Found ${users.length} users with valid emails`);
-
-            // Get user roles from users table (Supabase)
-            const { data: userRoles, error: roleError } = await this.supabase
-                .from('users')
-                .select('id, role');
-
-            if (roleError) {
-                console.warn('[DailyToken] Could not fetch user roles:', roleError);
-            }
-
-            const roleMap = {};
-            if (userRoles) {
-                userRoles.forEach(u => {
-                    roleMap[u.id] = u.role;
-                });
-            }
+            console.log(`[DailyToken] Found ${users.length} active users with valid emails`);
 
             let generated = 0;
             let sent = 0;
@@ -858,12 +861,17 @@ class DailyTokenService {
 
             for (const user of users) {
                 try {
+                    // Use contact_email if available, otherwise email
+                    const userEmail = user.contact_email || user.email;
+
                     // Create token
-                    const tokenResult = await this.createDailyToken(user.id, user.email);
+                    const tokenResult = await this.createDailyToken(user.id, userEmail);
                     if (!tokenResult.success) {
                         results.push({
                             userId: user.id,
-                            email: user.email,
+                            name: user.name,
+                            email: userEmail,
+                            role: user.role,
                             status: 'failed',
                             error: tokenResult.error
                         });
@@ -873,11 +881,11 @@ class DailyTokenService {
                     generated++;
 
                     // Determine user role and target email
-                    const userRole = roleMap[user.id] || 'user';
+                    const userRole = user.role || 'user';
                     const isAdmin = ['super_admin', 'moderator'].includes(userRole);
-                    const targetEmail = isAdmin && this.adminTokenEmail ? this.adminTokenEmail : user.email;
+                    const targetEmail = isAdmin && this.adminTokenEmail ? this.adminTokenEmail : userEmail;
 
-                    console.log(`[DailyToken] User ${user.id} role: ${userRole}, target email: ${targetEmail}`);
+                    console.log(`[DailyToken] User ${user.id} (${user.name}) role: ${userRole}, target email: ${targetEmail}`);
 
                     // For super_admin & moderator, collect tokens to send as single email
                     if (isAdmin && this.adminTokenEmail) {
@@ -886,14 +894,15 @@ class DailyTokenService {
                         }
                         adminTokens[targetEmail].push({
                             userId: user.id,
-                            userName: user.user_metadata?.full_name || user.email.split('@')[0],
-                            userEmail: user.email,
+                            userName: user.name || user.email.split('@')[0],
+                            userEmail: userEmail,
                             token: tokenResult.token,
                             role: userRole
                         });
                         results.push({
                             userId: user.id,
-                            email: user.email,
+                            name: user.name,
+                            email: userEmail,
                             role: userRole,
                             status: 'queued_for_admin_email',
                             targetEmail
@@ -904,7 +913,7 @@ class DailyTokenService {
                             user.id,
                             targetEmail,
                             tokenResult.token,
-                            user.user_metadata?.full_name || user.email.split('@')[0],
+                            user.name || user.email.split('@')[0],
                             userRole
                         );
 
@@ -912,7 +921,8 @@ class DailyTokenService {
                             sent++;
                             results.push({
                                 userId: user.id,
-                                email: user.email,
+                                name: user.name,
+                                email: userEmail,
                                 role: userRole,
                                 status: 'sent',
                                 token: tokenResult.token
@@ -920,7 +930,8 @@ class DailyTokenService {
                         } else {
                             results.push({
                                 userId: user.id,
-                                email: user.email,
+                                name: user.name,
+                                email: userEmail,
                                 role: userRole,
                                 status: 'email_failed',
                                 error: emailResult.error
@@ -932,7 +943,9 @@ class DailyTokenService {
                     console.error(`[DailyToken] Error processing user ${user.id}:`, error);
                     results.push({
                         userId: user.id,
+                        name: user.name,
                         email: user.email,
+                        role: user.role,
                         status: 'error',
                         error: error.message
                     });

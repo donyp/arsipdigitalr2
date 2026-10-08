@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS daily_login_tokens (
     email_sent_at TIMESTAMP WITH TIME ZONE NULL,
     email_address VARCHAR(255),
     
-    CONSTRAINT fk_daily_tokens_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+    -- Foreign key to users table (internal table, not auth.users)
+    CONSTRAINT fk_daily_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Add indexes for query optimization
