@@ -739,16 +739,18 @@ class DailyTokenService {
                 }
             }
 
-            // Token is valid - mark as used
+            // Token is valid - mark as used AND verified (single update operation)
             const { error: updateError } = await this.supabase
                 .from('daily_login_tokens')
                 .update({
                     is_used: true,
-                    used_at: new Date().toISOString()
+                    used_at: new Date().toISOString(),
+                    token_verified_at: new Date().toISOString()  // Track verification timestamp for single-daily-verification feature
                 })
                 .eq('id', tokenRecord.id);
 
             if (updateError) {
+                console.error('[DailyToken] Error marking token as used/verified:', updateError);
                 return { success: false, error: 'Failed to update token' };
             }
 

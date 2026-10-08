@@ -281,26 +281,6 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
             );
 
-            // 🔑 NEW: Mark token as verified for admins (single verification per day)
-            // Get token record to update
-            const { data: tokenRec } = await supabase
-                .from('daily_login_tokens')
-                .select('id')
-                .eq('user_id', userId)
-                .eq('token', token)
-                .single();
-
-            if (tokenRec) {
-                try {
-                    await supabase
-                        .from('daily_login_tokens')
-                        .update({ token_verified_at: new Date().toISOString() })
-                        .eq('id', tokenRec.id);
-                } catch (err) {
-                    console.error('[Auth] Failed to mark token as verified:', err);
-                }
-            }
-
             console.log(`[Auth] ✅ User authenticated: ${decoded.username} (ID: ${userId})`);
 
             res.json({
