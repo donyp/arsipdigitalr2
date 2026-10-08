@@ -32,7 +32,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
             // Get user by username
             const { data: users, error: fetchError } = await supabase
                 .from('users')
-                .select('id, username, email, password_hash')
+                .select('id, username, email, password_hash, role')
                 .eq('username', username)
                 .single();
 

@@ -998,33 +998,40 @@
             document.getElementById('token-email-display').textContent = `${userEmailForVerification}`;
             
             // 🔑 NEW: Show "Kirim Ulang" button only for admin/moderator users
-            // The backend returns user role in login response, so we check tempToken JWT
             const resendBtn = document.getElementById('resend-token-btn');
+            
+            console.log('[Login] showTokenForm called, tempToken:', tempTokenForVerification ? 'exists' : 'missing');
+            
+            // DEFAULT: Show resend button (safer default)
+            resendBtn.style.display = 'block';
             
             try {
                 if (!tempTokenForVerification) {
-                    console.warn('[Login] No tempToken available');
-                    resendBtn.style.display = 'none';
+                    console.warn('[Login] No tempToken available, showing resend button anyway');
                     return;
                 }
                 
                 const parts = tempTokenForVerification.split('.');
                 if (parts.length !== 3) {
-                    console.warn('[Login] Invalid JWT format');
-                    resendBtn.style.display = 'none';
+                    console.warn('[Login] Invalid JWT format, showing resend button anyway');
                     return;
                 }
                 
                 const decoded = JSON.parse(atob(parts[1]));
+                console.log('[Login] Decoded token:', decoded);
+                
                 const userRole = decoded.role || 'user';
                 const isAdmin = ['super_admin', 'moderator'].includes(userRole);
                 
+                console.log(`[Login] User role: ${userRole}, isAdmin: ${isAdmin}`);
+                
+                // Show button for admin/moderator, hide for others
                 resendBtn.style.display = isAdmin ? 'block' : 'none';
                 
-                console.log(`[Login] Token form shown - role: ${userRole}, resend visible: ${isAdmin}`);
             } catch (e) {
-                console.error('[Login] Error decoding token:', e);
-                resendBtn.style.display = 'none';
+                console.error('[Login] Error decoding token, showing resend button:', e);
+                // On error, show the button anyway (fail-safe)
+                resendBtn.style.display = 'block';
             }
             
             document.getElementById('token-input').focus();
