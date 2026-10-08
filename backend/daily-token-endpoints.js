@@ -139,7 +139,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                             username: users.username,
                             email: users.email,
                             role: fullUser?.role || 'user',
-                            zonaId: fullUser?.zona_id || null,
+                            zona_id: fullUser?.zona_id || null,
                             stage: 'authenticated'
                         },
                         process.env.JWT_SECRET,
@@ -284,6 +284,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                     username: decoded.username,
                     email: decoded.email,
                     role: fullUser?.role || 'user',
+                    zona_id: fullUser?.zona_id || null,
                     stage: 'authenticated'
                 },
                 process.env.JWT_SECRET,
