@@ -995,6 +995,23 @@
             document.getElementById('login-form').style.display = 'none';
             document.getElementById('token-form').style.display = 'block';
             document.getElementById('token-email-display').textContent = `Email: ${userEmailForVerification}`;
+            
+            // 🔑 NEW: Show "Kirim Ulang" button only for admin/moderator users
+            // The backend returns user role in login response, so we check tempToken JWT
+            try {
+                const decoded = JSON.parse(atob(tempTokenForVerification.split('.')[1]));
+                const userRole = decoded.role || 'user';
+                const isAdmin = ['super_admin', 'moderator'].includes(userRole);
+                
+                const resendBtn = document.getElementById('resend-token-btn');
+                resendBtn.style.display = isAdmin ? 'block' : 'none';
+                
+                console.log(`[Login] Token form shown for user role: ${userRole}, resend button visible: ${isAdmin}`);
+            } catch (e) {
+                console.warn('[Login] Could not decode token, hiding resend button');
+                document.getElementById('resend-token-btn').style.display = 'none';
+            }
+            
             document.getElementById('token-input').focus();
         }
 

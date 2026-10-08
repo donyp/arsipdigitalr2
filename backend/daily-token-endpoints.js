@@ -167,6 +167,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                     userId: users.id,
                     username: users.username,
                     email: users.email,
+                    role: users.role || 'user',  // 🔑 ADD ROLE so frontend can decide UI elements
                     stage: 'token_verification'
                 },
                 process.env.JWT_SECRET,
