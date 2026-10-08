@@ -1212,6 +1212,67 @@ try {
     scheduler.start();
     console.log('[INIT] Daily Token scheduler started ✅');
 
+    // ===== DEV TEST ENDPOINT (Remove in production) =====
+    if (process.env.NODE_ENV === 'development') {
+        // Test endpoint: Get all users with valid emails (NO AUTH - DEV ONLY)
+        app.get('/api/dev/test-users', async (req, res) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            try {
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('id, email, username, role')
+                    .not('email', 'is', null)
+                    .neq('email', '');
+
+                if (error) {
+                    return res.status(500).json({ error: error.message });
+                }
+
+                res.json({
+                    success: true,
+                    count: users.length,
+                    users: users.map(u => ({
+                        id: u.id,
+                        username: u.username,
+                        email: u.email,
+                        role: u.role
+                    }))
+                });
+            } catch (error) {
+                res.status(500).json({ error: error.message });
+            }
+        });
+
+        // Test endpoint: Generate tokens for all users (NO AUTH - DEV ONLY)
+        app.post('/api/dev/test-generate-tokens', async (req, res) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            try {
+                console.log('[DEV] Test endpoint: triggering token generation...');
+                const result = await dailyTokenService.generateAndSendDailyTokens();
+                
+                res.json({
+                    success: result.success,
+                    message: result.success ? 'Tokens generated and sent' : 'Failed to generate tokens',
+                    generated: result.generated,
+                    sent: result.sent,
+                    total: result.total,
+                    error: result.error || null,
+                    results: result.results || []
+                });
+            } catch (error) {
+                console.error('[DEV] Test endpoint error:', error);
+                res.status(500).json({
+                    success: false,
+                    error: error.message
+                });
+            }
+        });
+
+        console.log('[DEV] ⚠️  Test endpoints available (REMOVE IN PRODUCTION):');
+        console.log('  GET  http://localhost:5000/api/dev/test-users');
+        console.log('  POST http://localhost:5000/api/dev/test-generate-tokens');
+    }
+
 } catch (error) {
     console.error('[INIT] Failed to initialize Daily Token system:', error);
     console.warn('[INIT] Daily Token authentication will not be available');
