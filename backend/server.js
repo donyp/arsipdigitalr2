@@ -1202,6 +1202,18 @@ if (tokenAuthEnabled) {
             process.env.ADMIN_TOKEN_EMAIL
         );
 
+        // Log environment variables on startup for debugging
+        console.log('[TokenService] Initialization Debug:');
+        console.log(`  ENABLE_DAILY_TOKEN_AUTH: ${process.env.ENABLE_DAILY_TOKEN_AUTH}`);
+        console.log(`  RESEND_API_KEY: ${process.env.RESEND_API_KEY ? '✅ Set (length: ' + process.env.RESEND_API_KEY.length + ')' : '❌ Not set'}`);
+        console.log(`  RESEND_FROM_EMAIL: ${process.env.RESEND_FROM_EMAIL || 'default: noreply@arsipdigitalanka.my.id'}`);
+        console.log(`  ADMIN_TOKEN_EMAIL: ${process.env.ADMIN_TOKEN_EMAIL || '❌ NOT SET - Emails will go to individual addresses'}`);
+        if (!process.env.ADMIN_TOKEN_EMAIL) {
+            console.warn('[TokenService] ⚠️  WARNING: ADMIN_TOKEN_EMAIL is not configured!');
+            console.warn('[TokenService] Admin and moderator tokens will be sent to INDIVIDUAL emails instead of centralized');
+            console.warn('[TokenService] To fix: Set ADMIN_TOKEN_EMAIL=donisugiharto322@gmail.com in Railway environment variables');
+        }
+
         const registerDailyTokenEndpoints = require('./daily-token-endpoints');
         registerDailyTokenEndpoints(app, supabase, dailyTokenService);
         console.log('[INIT] Daily Token authentication endpoints registered ✅');

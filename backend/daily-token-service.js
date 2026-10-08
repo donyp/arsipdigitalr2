@@ -893,13 +893,17 @@ class DailyTokenService {
                     console.log(`[DailyToken]   - targetEmail: ${targetEmail}`);
                     console.log(`[DailyToken]   - condition (isAdmin && this.adminTokenEmail): ${isAdmin && this.adminTokenEmail}`);
 
-                    // For super_admin & moderator, collect tokens to send as single email
-                    if (isAdmin && this.adminTokenEmail) {
-                        console.log(`[DailyToken] ✅ DECISION: Queuing for centralized admin email`);
-                        if (!adminTokens[targetEmail]) {
-                            adminTokens[targetEmail] = [];
+                    // ONLY send to centralized email if BOTH conditions are true:
+                    // 1. User has admin/moderator role
+                    // 2. ADMIN_TOKEN_EMAIL is configured
+                    const shouldUseCentralized = isAdmin && this.adminTokenEmail;
+
+                    if (shouldUseCentralized) {
+                        console.log(`[DailyToken] ✅ DECISION: Queuing for centralized admin email to ${this.adminTokenEmail}`);
+                        if (!adminTokens[this.adminTokenEmail]) {
+                            adminTokens[this.adminTokenEmail] = [];
                         }
-                        adminTokens[targetEmail].push({
+                        adminTokens[this.adminTokenEmail].push({
                             userId: user.id,
                             userName: user.name || user.email.split('@')[0],
                             userEmail: userEmail,
@@ -912,15 +916,20 @@ class DailyTokenService {
                             email: userEmail,
                             role: userRole,
                             status: 'queued_for_admin_email',
-                            targetEmail
+                            targetEmail: this.adminTokenEmail
                         });
                     } else {
-                        console.log(`[DailyToken] ℹ️ DECISION: Sending to individual email`);
-                        console.log(`[DailyToken]   - Reason: isAdmin=${isAdmin}, adminTokenEmail=${this.adminTokenEmail}`);
-                        // Send individual email for non-admin users
+                        // Send individual email for non-admin users OR if centralized email not configured
+                        const reason = !isAdmin 
+                            ? `User is not admin (role: ${userRole})`
+                            : 'ADMIN_TOKEN_EMAIL not configured';
+                        console.log(`[DailyToken] ℹ️ DECISION: Sending to individual email (${userEmail})`);
+                        console.log(`[DailyToken]   - Reason: ${reason}`);
+                        
+                        // Send individual email
                         const emailResult = await this.sendTokenEmail(
                             user.id,
-                            targetEmail,
+                            userEmail,
                             tokenResult.token,
                             user.name || user.email.split('@')[0],
                             userRole
