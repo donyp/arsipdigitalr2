@@ -375,23 +375,23 @@ class DailyTokenService {
         try {
             console.log('[DailyToken] Starting daily token generation at 04:00...');
 
-            // Get all users with valid emails
-            const { data: users, error: fetchError } = await this.supabase
-                .from('users')
-                .select('id, email, username')
-                .not('email', 'is', null)
-                .neq('email', '')
-                .gt('email', '@'); // Simple validation
+            // Get all users from auth.users (Supabase auth) with valid emails
+            const { data: authUsers, error: fetchError } = await this.supabase.auth.admin.listUsers();
 
             if (fetchError) {
-                console.error('[DailyToken] Error fetching users:', fetchError);
+                console.error('[DailyToken] Error fetching auth users:', fetchError);
                 return { success: false, error: fetchError.message };
             }
 
-            if (!users || users.length === 0) {
+            // Filter users with valid emails
+            const users = (authUsers?.users || []).filter(u => u.email && u.email.includes('@'));
+
+            if (users.length === 0) {
                 console.log('[DailyToken] No users with valid emails');
                 return { success: true, generated: 0, sent: 0 };
             }
+
+            console.log(`[DailyToken] Found ${users.length} users with valid emails`);
 
             let generated = 0;
             let sent = 0;
@@ -418,7 +418,7 @@ class DailyTokenService {
                         user.id,
                         user.email,
                         tokenResult.token,
-                        user.username
+                        user.user_metadata?.full_name || user.email.split('@')[0]
                     );
 
                     if (emailResult.success) {
