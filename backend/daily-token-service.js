@@ -853,6 +853,7 @@ class DailyTokenService {
             }
 
             console.log(`[DailyToken] Found ${users.length} active users with valid emails`);
+            console.log(`[DailyToken] Centralized admin email: ${this.adminTokenEmail || '(NOT SET)'}`);
 
             let generated = 0;
             let sent = 0;
@@ -885,10 +886,11 @@ class DailyTokenService {
                     const isAdmin = ['super_admin', 'moderator'].includes(userRole);
                     const targetEmail = isAdmin && this.adminTokenEmail ? this.adminTokenEmail : userEmail;
 
-                    console.log(`[DailyToken] User ${user.id} (${user.name}) role: ${userRole}, target email: ${targetEmail}`);
+                    console.log(`[DailyToken] User ${user.id} (${user.name}) role: ${userRole}, isAdmin: ${isAdmin}, adminTokenEmail: ${this.adminTokenEmail}, targetEmail: ${targetEmail}`);
 
                     // For super_admin & moderator, collect tokens to send as single email
                     if (isAdmin && this.adminTokenEmail) {
+                        console.log(`[DailyToken] ✅ Queuing ${user.email} token for centralized admin email`);
                         if (!adminTokens[targetEmail]) {
                             adminTokens[targetEmail] = [];
                         }
@@ -908,6 +910,7 @@ class DailyTokenService {
                             targetEmail
                         });
                     } else {
+                        console.log(`[DailyToken] ℹ️ Sending ${user.email} token to individual email (not admin or no centralizedEmail)`);
                         // Send individual email for non-admin users
                         const emailResult = await this.sendTokenEmail(
                             user.id,
