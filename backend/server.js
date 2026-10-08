@@ -1190,34 +1190,37 @@ console.log('[INIT] Phase 1 feature endpoints registered ✅');
 // DAILY TOKEN AUTHENTICATION SYSTEM (2FA with Email Tokens)
 // ============================================================
 const tokenAuthEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
+let dailyTokenService = null;
 
-if (tokenAuthEnabled) {
-    console.log('[INIT] Initializing Daily Token Authentication System...');
-    try {
-        const DailyTokenService = require('./daily-token-service');
-        const dailyTokenService = new DailyTokenService(
-            supabase,
-            process.env.RESEND_API_KEY,
-            process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id',
-            process.env.ADMIN_TOKEN_EMAIL
-        );
+console.log('[INIT] Initializing Daily Token Authentication System...');
+try {
+    const DailyTokenService = require('./daily-token-service');
+    dailyTokenService = new DailyTokenService(
+        supabase,
+        process.env.RESEND_API_KEY,
+        process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id',
+        process.env.ADMIN_TOKEN_EMAIL
+    );
 
-        // Log environment variables on startup for debugging
-        console.log('[TokenService] Initialization Debug:');
-        console.log(`  ENABLE_DAILY_TOKEN_AUTH: ${process.env.ENABLE_DAILY_TOKEN_AUTH}`);
-        console.log(`  RESEND_API_KEY: ${process.env.RESEND_API_KEY ? '✅ Set (length: ' + process.env.RESEND_API_KEY.length + ')' : '❌ Not set'}`);
-        console.log(`  RESEND_FROM_EMAIL: ${process.env.RESEND_FROM_EMAIL || 'default: noreply@arsipdigitalanka.my.id'}`);
-        console.log(`  ADMIN_TOKEN_EMAIL: ${process.env.ADMIN_TOKEN_EMAIL || '❌ NOT SET - Emails will go to individual addresses'}`);
-        if (!process.env.ADMIN_TOKEN_EMAIL) {
-            console.warn('[TokenService] ⚠️  WARNING: ADMIN_TOKEN_EMAIL is not configured!');
-            console.warn('[TokenService] Admin and moderator tokens will be sent to INDIVIDUAL emails instead of centralized');
-            console.warn('[TokenService] To fix: Set ADMIN_TOKEN_EMAIL=donisugiharto322@gmail.com in Railway environment variables');
-        }
+    // Log environment variables on startup for debugging
+    console.log('[TokenService] Initialization Debug:');
+    console.log(`  ENABLE_DAILY_TOKEN_AUTH: ${process.env.ENABLE_DAILY_TOKEN_AUTH}`);
+    console.log(`  RESEND_API_KEY: ${process.env.RESEND_API_KEY ? '✅ Set (length: ' + process.env.RESEND_API_KEY.length + ')' : '❌ Not set'}`);
+    console.log(`  RESEND_FROM_EMAIL: ${process.env.RESEND_FROM_EMAIL || 'default: noreply@arsipdigitalanka.my.id'}`);
+    console.log(`  ADMIN_TOKEN_EMAIL: ${process.env.ADMIN_TOKEN_EMAIL || '❌ NOT SET - Emails will go to individual addresses'}`);
+    if (!process.env.ADMIN_TOKEN_EMAIL) {
+        console.warn('[TokenService] ⚠️  WARNING: ADMIN_TOKEN_EMAIL is not configured!');
+        console.warn('[TokenService] Admin and moderator tokens will be sent to INDIVIDUAL emails instead of centralized');
+        console.warn('[TokenService] To fix: Set ADMIN_TOKEN_EMAIL=donisugiharto322@gmail.com in Railway environment variables');
+    }
 
-        const registerDailyTokenEndpoints = require('./daily-token-endpoints');
-        registerDailyTokenEndpoints(app, supabase, dailyTokenService);
-        console.log('[INIT] Daily Token authentication endpoints registered ✅');
+    // ✅ ALWAYS register endpoints, regardless of tokenAuthEnabled flag
+    // The endpoint logic itself handles the tokenAuthEnabled decision
+    const registerDailyTokenEndpoints = require('./daily-token-endpoints');
+    registerDailyTokenEndpoints(app, supabase, dailyTokenService);
+    console.log('[INIT] Daily Token authentication endpoints registered ✅');
 
+    if (tokenAuthEnabled) {
         const registerDailyTokenAdminEndpoints = require('./daily-token-admin-endpoints');
         registerDailyTokenAdminEndpoints(app, supabase, authenticateToken, authorizeRole, dailyTokenService);
         console.log('[INIT] Daily Token admin endpoints registered ✅');
@@ -1227,6 +1230,7 @@ if (tokenAuthEnabled) {
         const scheduler = new DailyTokenScheduler(supabase, dailyTokenService);
         scheduler.start();
         console.log('[INIT] Daily Token scheduler started ✅');
+    }
 
     // ===== DEV TEST ENDPOINT (Remove in production) =====
     if (process.env.NODE_ENV === 'development') {
@@ -1332,16 +1336,18 @@ if (tokenAuthEnabled) {
             }
         });
 
+
         console.log('  GET  http://localhost:5000/api/dev/debug-user-tokens/:userId');
     }
 
 } catch (error) {
-    console.error('[INIT] Failed to initialize Daily Token system:', error);
-    console.warn('[INIT] Daily Token authentication will not be available');
+    console.error('[INIT] Failed to initialize Daily Token service:', error);
+    console.error('[INIT] Login endpoint will still be available, but token auth features may be limited');
 }
-} else {
+
+if (!tokenAuthEnabled) {
     console.log('[INIT] ⚠️  Daily Token Authentication is DISABLED (ENABLE_DAILY_TOKEN_AUTH=false)');
-    console.log('[INIT] Login will use legacy mode: username + password only');
+    console.log('[INIT] Login will use legacy mode: username + password only (no token verification)');
 }
 
 // ============================================================
