@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manajemen Token Harian - Arsip Digital Anka</title>
     <link rel="stylesheet" href="css/style.css">
+    <!-- SweetAlert2 for beautiful dialogs -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <style>
         .token-management-container {
             max-width: 1200px;
@@ -679,7 +682,18 @@
         }
 
         async function generateTokensNow() {
-            if (!confirm('Generate dan kirim token ke semua user sekarang?')) return;
+            const result = await Swal.fire({
+                title: '📨 Generate Token Sekarang',
+                text: 'Generate dan kirim token ke semua user sekarang?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#667eea',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Generate',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
 
             try {
                 showAlert('⏳ Processing... Token sedang dibuat dan dikirim', 'info');
@@ -709,7 +723,18 @@
         }
 
         async function cleanupExpiredNow() {
-            if (!confirm('Hapus semua token yang sudah expired?')) return;
+            const result = await Swal.fire({
+                title: '🗑️ Cleanup Token Expired',
+                text: 'Hapus semua token yang sudah expired?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff9800',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
 
             try {
                 const response = await fetch(`${API_BASE}/auth/cleanup-expired-now`, {
@@ -736,7 +761,18 @@
         }
 
         async function resendToken(tokenId, email) {
-            if (!confirm(`Kirim ulang token ke ${email}?`)) return;
+            const result = await Swal.fire({
+                title: '📨 Kirim Ulang Token',
+                text: `Kirim ulang token ke ${email}?`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#2196F3',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Kirim',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
 
             try {
                 const response = await fetch(`${API_BASE}/auth/resend-token-manual`, {
@@ -764,7 +800,18 @@
         }
 
         async function deleteToken(tokenId) {
-            if (!confirm('Hapus token ini? Pengguna harus melakukan login ulang.')) return;
+            const result = await Swal.fire({
+                title: '⚠️ Hapus Token',
+                text: 'Hapus token ini? Pengguna harus melakukan login ulang.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d32f2f',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) return;
 
             try {
                 const response = await fetch(`${API_BASE}/auth/delete-token/${tokenId}`, {
@@ -789,12 +836,33 @@
         }
 
         async function deleteAllTokens() {
-            // Double confirmation for destructive action
-            const confirm1 = confirm('⚠️ PERHATIAN: Ini akan MENGHAPUS SEMUA TOKEN!\n\nIni adalah tindakan yang TIDAK BISA DIBATALKAN. Semua pengguna harus login ulang.\n\nLanjutkan?');
-            if (!confirm1) return;
+            // First confirmation
+            const result1 = await Swal.fire({
+                title: '🔥 Delete All Tokens',
+                html: '<strong style="color: #d32f2f;">⚠️ PERHATIAN!</strong><br>Ini akan MENGHAPUS SEMUA TOKEN!<br><br>Tindakan ini TIDAK BISA DIBATALKAN.<br>Semua pengguna harus login ulang.',
+                icon: 'error',
+                showCancelButton: true,
+                confirmButtonColor: '#d32f2f',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal'
+            });
 
-            const confirm2 = confirm('🔥 TERAKHIR: Apakah Anda BENAR-BENAR YAKIN ingin menghapus SEMUA token?');
-            if (!confirm2) return;
+            if (!result1.isConfirmed) return;
+
+            // Second confirmation
+            const result2 = await Swal.fire({
+                title: '🔥 FINAL CONFIRMATION',
+                html: '<strong style="color: #d32f2f;">Apakah Anda BENAR-BENAR YAKIN</strong><br>ingin menghapus SEMUA token?<br><br>Ini adalah tindakan terakhir.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d32f2f',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Saya Yakin. Hapus Semua!',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result2.isConfirmed) return;
 
             try {
                 showAlert('⏳ Menghapus semua token...', 'info');
@@ -840,22 +908,30 @@
         }
 
         function showAlert(message, type = 'info') {
-            const container = document.getElementById('alertContainer');
-            const alertId = 'alert-' + Date.now();
-            
-            const html = `
-                <div class="alert alert-${type}" id="${alertId}">
-                    ${message}
-                </div>
-            `;
+            // Map type to SweetAlert2 icon
+            const iconMap = {
+                'success': 'success',
+                'error': 'error',
+                'warning': 'warning',
+                'info': 'info'
+            };
 
-            container.insertAdjacentHTML('beforeend', html);
+            const icon = iconMap[type] || 'info';
 
-            // Auto-remove setelah 5 detik
-            setTimeout(() => {
-                const alert = document.getElementById(alertId);
-                if (alert) alert.remove();
-            }, 5000);
+            Swal.fire({
+                icon: icon,
+                title: type.charAt(0).toUpperCase() + type.slice(1),
+                html: message,
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 4000,
+                timerProgressBar: true,
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
         }
 
         function closeModal(modalId) {
