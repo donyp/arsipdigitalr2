@@ -352,75 +352,75 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             console.log(`[StorageHandler] > 5 files (${files.length}), creating ZIP...`);
 
             const archiver = require('archiver');
-            const { PassThrough } = require('stream');
+            const { Readable } = require('stream');
 
-            const passThrough = new PassThrough();
-            const chunks = [];
-
-            // Collect ZIP data
-            passThrough.on('data', chunk => chunks.push(chunk));
-
-            const zip = archiver('zip', { zlib: { level: 6 } });
             let filesAdded = 0;
             let filesFailed = 0;
 
-            zip.on('error', (error) => {
-                console.error('[StorageHandler] ZIP error:', error);
-                throw error;
-            });
+            // Create ZIP in memory
+            const zipBuffer = await new Promise((resolve, reject) => {
+                const chunks = [];
+                const zip = archiver('zip', { zlib: { level: 6 } });
 
-            zip.pipe(passThrough);
-
-            // Add each file to ZIP
-            for (const filePath of files) {
-                try {
-                    const filename = path.basename(filePath);
-                    
-                    console.log(`[StorageHandler] Adding to ZIP: ${filename}`);
-
-                    const command = new GetObjectCommand({
-                        Bucket: config.bucketName,
-                        Key: filePath
-                    });
-
-                    const response = await s3Client.send(command);
-                    
-                    // Convert stream to buffer
-                    const fileChunks = [];
-                    for await (const chunk of response.Body) {
-                        fileChunks.push(chunk);
-                    }
-                    const buffer = Buffer.concat(fileChunks);
-
-                    // Add to ZIP
-                    zip.append(buffer, { name: filename });
-                    filesAdded++;
-
-                } catch (error) {
-                    console.error(`[StorageHandler] Error adding ${filePath} to ZIP:`, error);
-                    filesFailed++;
-                }
-            }
-
-            if (filesAdded === 0) {
-                return res.status(500).json({
-                    success: false,
-                    error: 'Failed to add any files to ZIP'
+                zip.on('data', (chunk) => {
+                    chunks.push(chunk);
                 });
-            }
 
-            // Finalize ZIP
-            console.log(`[StorageHandler] Finalizing ZIP (${filesAdded} files added, ${filesFailed} failed)`);
-            
-            await zip.finalize();
+                zip.on('end', () => {
+                    console.log(`[StorageHandler] ZIP stream ended`);
+                    resolve(Buffer.concat(chunks));
+                });
 
-            // Wait for all data to be collected
-            await new Promise((resolve, reject) => {
-                passThrough.on('end', resolve);
-                passThrough.on('error', reject);
+                zip.on('error', (error) => {
+                    console.error('[StorageHandler] ZIP error:', error);
+                    reject(error);
+                });
+
+                // Add files to ZIP
+                (async () => {
+                    try {
+                        for (const filePath of files) {
+                            try {
+                                const filename = path.basename(filePath);
+                                
+                                console.log(`[StorageHandler] Adding to ZIP: ${filename}`);
+
+                                const command = new GetObjectCommand({
+                                    Bucket: config.bucketName,
+                                    Key: filePath
+                                });
+
+                                const response = await s3Client.send(command);
+                                
+                                // Convert stream to buffer
+                                const fileChunks = [];
+                                for await (const chunk of response.Body) {
+                                    fileChunks.push(chunk);
+                                }
+                                const buffer = Buffer.concat(fileChunks);
+
+                                // Add to ZIP
+                                zip.append(buffer, { name: filename });
+                                filesAdded++;
+
+                            } catch (error) {
+                                console.error(`[StorageHandler] Error adding ${filePath} to ZIP:`, error);
+                                filesFailed++;
+                            }
+                        }
+
+                        // Finalize after all files added
+                        console.log(`[StorageHandler] Finalizing ZIP (${filesAdded} files added, ${filesFailed} failed)`);
+                        await zip.finalize();
+
+                    } catch (error) {
+                        console.error('[StorageHandler] Error during ZIP creation:', error);
+                        reject(error);
+                    }
+                })();
             });
 
-            const zipBuffer = Buffer.concat(chunks);
+            console.log(`[StorageHandler] ZIP buffer size: ${zipBuffer.length} bytes`);
 
             // Upload ZIP to R2 temporary
             const zipFileName = `batch-download-${Date.now()}.zip`;
@@ -437,7 +437,7 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             });
 
             await s3Client.send(uploadCommand);
-            console.log(`[StorageHandler] ✅ ZIP uploaded to temp: ${zipFileName}`);
+            console.log(`[StorageHandler] ✅ ZIP uploaded to temp: ${zipFileName} (${zipBuffer.length} bytes)`);
 
             // Generate signed URL for ZIP download
             const downloadCommand = new GetObjectCommand({
@@ -448,15 +448,26 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             });
 
             const signedZipUrl = await getSignedUrl(s3Client, downloadCommand, { expiresIn: 900 });
+            console.log(`[StorageHandler] ✅ Generated signed URL for ZIP (expires in 900s)`);
 
-            res.json({
+            const responseData = {
                 success: true,
                 type: 'zip',
                 url: signedZipUrl,
                 filename: zipFileName,
                 filesIncluded: filesAdded,
                 filesFailed: filesFailed
+            };
+
+            console.log(`[StorageHandler] Sending response:`, { 
+                success: responseData.success, 
+                type: responseData.type, 
+                filename: responseData.filename,
+                filesIncluded: responseData.filesIncluded,
+                urlLength: signedZipUrl.length 
             });
+
+            res.json(responseData);
 
         } catch (error) {
             console.error('[StorageHandler] Bulk download error:', error);
