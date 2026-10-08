@@ -632,7 +632,7 @@
                 const size = item.type === 'folder' ? '-' : formatFileSize(item.size);
                 const date = item.type === 'folder' ? '-' : new Date(item.lastModified).toLocaleString('id-ID');
 
-                html += `<div class="file-item ${isSelected ? 'selected' : ''}" data-path="${item.path}" ondblclick="event.stopPropagation(); ${item.type === 'folder' ? `navigateToFolder('${item.path}')` : ''}">
+                html += `<div class="file-item ${isSelected ? 'selected' : ''}" data-path="${item.path}" onclick="${item.type !== 'folder' ? `toggleFileSelect('${item.path}')` : ''}" ondblclick="event.stopPropagation(); ${item.type === 'folder' ? `navigateToFolder('${item.path}')` : ''}">
                     <div class="checkbox-wrapper" onclick="event.stopPropagation(); toggleFileSelect('${item.path}')">
                         <div class="checkbox ${isSelected ? 'checked' : ''}">
                             ${isSelected ? '<i class="fas fa-check"></i>' : ''}

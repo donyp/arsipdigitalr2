@@ -348,13 +348,28 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 });
             }
 
-            // If > 5 files, create ZIP
+            // If > 5 files, create ZIP using archiver
             console.log(`[StorageHandler] > 5 files (${files.length}), creating ZIP...`);
 
-            const JSZip = require('jszip');
-            const zip = new JSZip();
+            const archiver = require('archiver');
+            const { PassThrough } = require('stream');
+
+            const passThrough = new PassThrough();
+            const chunks = [];
+
+            // Collect ZIP data
+            passThrough.on('data', chunk => chunks.push(chunk));
+
+            const zip = archiver('zip', { zlib: { level: 6 } });
             let filesAdded = 0;
             let filesFailed = 0;
+
+            zip.on('error', (error) => {
+                console.error('[StorageHandler] ZIP error:', error);
+                throw error;
+            });
+
+            zip.pipe(passThrough);
 
             // Add each file to ZIP
             for (const filePath of files) {
@@ -371,14 +386,14 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                     const response = await s3Client.send(command);
                     
                     // Convert stream to buffer
-                    const chunks = [];
+                    const fileChunks = [];
                     for await (const chunk of response.Body) {
-                        chunks.push(chunk);
+                        fileChunks.push(chunk);
                     }
-                    const buffer = Buffer.concat(chunks);
+                    const buffer = Buffer.concat(fileChunks);
 
                     // Add to ZIP
-                    zip.file(filename, buffer);
+                    zip.append(buffer, { name: filename });
                     filesAdded++;
 
                 } catch (error) {
@@ -394,10 +409,18 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 });
             }
 
-            // Generate ZIP file
-            console.log(`[StorageHandler] Generating ZIP (${filesAdded} files added, ${filesFailed} failed)`);
+            // Finalize ZIP
+            console.log(`[StorageHandler] Finalizing ZIP (${filesAdded} files added, ${filesFailed} failed)`);
+            
+            await zip.finalize();
 
-            const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+            // Wait for all data to be collected
+            await new Promise((resolve, reject) => {
+                passThrough.on('end', resolve);
+                passThrough.on('error', reject);
+            });
+
+            const zipBuffer = Buffer.concat(chunks);
 
             // Upload ZIP to R2 temporary
             const zipFileName = `batch-download-${Date.now()}.zip`;
