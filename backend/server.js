@@ -1274,6 +1274,52 @@ if (tokenAuthEnabled) {
         console.log('[DEV] ⚠️  Test endpoints available (REMOVE IN PRODUCTION):');
         console.log('  GET  http://localhost:5000/api/dev/test-users');
         console.log('  POST http://localhost:5000/api/dev/test-generate-tokens');
+
+        // Debug endpoint: Check user's current token status
+        app.get('/api/dev/debug-user-tokens/:userId', async (req, res) => {
+            res.header('Access-Control-Allow-Origin', '*');
+            try {
+                const userId = req.params.userId;
+                
+                // Get user info
+                const { data: user } = await supabase
+                    .from('users')
+                    .select('id, email, username')
+                    .eq('id', userId)
+                    .single();
+
+                if (!user) {
+                    return res.status(404).json({ error: 'User not found' });
+                }
+
+                // Get user's current valid tokens
+                const now = new Date();
+                const { data: tokens, error } = await supabase
+                    .from('daily_login_tokens')
+                    .select('id, token, expires_at, email_sent, email_sent_at, token_attempts, is_locked, created_at')
+                    .eq('user_id', userId)
+                    .gt('expires_at', now.toISOString())
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                res.json({
+                    success: true,
+                    user: {
+                        id: user.id,
+                        email: user.email,
+                        username: user.username
+                    },
+                    tokens: tokens || [],
+                    now: now.toISOString(),
+                    tokenCount: tokens ? tokens.length : 0
+                });
+            } catch (error) {
+                console.error('[DEV] Debug error:', error);
+                res.status(500).json({ error: error.message });
+            }
+        });
+
+        console.log('  GET  http://localhost:5000/api/dev/debug-user-tokens/:userId');
     }
 
 } catch (error) {
