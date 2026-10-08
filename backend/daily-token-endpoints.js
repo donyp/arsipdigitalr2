@@ -291,11 +291,14 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 .single();
 
             if (tokenRec) {
-                await supabase
-                    .from('daily_login_tokens')
-                    .update({ token_verified_at: new Date().toISOString() })
-                    .eq('id', tokenRec.id)
-                    .catch(err => console.error('[Auth] Failed to mark token as verified:', err));
+                try {
+                    await supabase
+                        .from('daily_login_tokens')
+                        .update({ token_verified_at: new Date().toISOString() })
+                        .eq('id', tokenRec.id);
+                } catch (err) {
+                    console.error('[Auth] Failed to mark token as verified:', err);
+                }
             }
 
             console.log(`[Auth] ✅ User authenticated: ${decoded.username} (ID: ${userId})`);
