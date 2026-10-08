@@ -33,6 +33,8 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
             }
 
             console.log(`[Auth] Login attempt for user: ${username}`);
+            console.log(`[Auth] ENABLE_DAILY_TOKEN_AUTH env var: ${process.env.ENABLE_DAILY_TOKEN_AUTH}`);
+            console.log(`[Auth] tokenAuthEnabled boolean: ${tokenAuthEnabled}`);
 
             // Get user by username
             const { data: users, error: fetchError } = await supabase
