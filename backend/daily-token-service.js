@@ -8,7 +8,18 @@ const { Resend } = require('resend');
 class DailyTokenService {
     constructor(supabaseClient, resendApiKey, fromEmail) {
         this.supabase = supabaseClient;
-        this.resend = new Resend(resendApiKey);
+        
+        // Check if API key is valid (not placeholder)
+        if (!resendApiKey || resendApiKey === 'YOUR_RESEND_API_KEY_HERE_REPLACE_IN_DEPLOYMENT' || resendApiKey === 're_test') {
+            console.warn('[DailyToken] ⚠️ Resend API key is missing or invalid. Email delivery disabled.');
+            console.warn('[DailyToken] Please set RESEND_API_KEY environment variable from Railway dashboard');
+            this.resend = null;
+            this.emailsDisabled = true;
+        } else {
+            this.resend = new Resend(resendApiKey);
+            this.emailsDisabled = false;
+        }
+        
         this.fromEmail = fromEmail;
         this.MAX_ATTEMPTS = 3;
         this.LOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
@@ -83,6 +94,13 @@ class DailyTokenService {
             if (!userEmail || !userEmail.includes('@')) {
                 console.warn(`[DailyToken] Invalid email for user ${userId}: ${userEmail}`);
                 return { success: false, error: 'Invalid email address' };
+            }
+
+            // Check if emails are disabled
+            if (this.emailsDisabled || !this.resend) {
+                console.warn(`[DailyToken] ⚠️ Email sending is DISABLED - Resend API key not configured`);
+                console.log(`[DailyToken] Token for ${userEmail}: ${token} (would be sent via email in production)`);
+                return { success: false, error: 'Email service not configured. Check RESEND_API_KEY in environment variables.' };
             }
 
             const subject = 'Kode Akses Login Harian Arsip Digital Anka';

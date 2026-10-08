@@ -73,6 +73,29 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 { expiresIn: '5m' }
             );
 
+            // Create and send daily token
+            const tokenResult = await dailyTokenService.createDailyToken(users.id, users.email);
+            if (!tokenResult.success) {
+                console.error('[Auth] Failed to create daily token:', tokenResult.error);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Gagal membuat kode akses'
+                });
+            }
+
+            // Send token email
+            const emailResult = await dailyTokenService.sendTokenEmail(
+                users.id,
+                users.email,
+                tokenResult.token,
+                users.username
+            );
+
+            if (!emailResult.success) {
+                console.warn('[Auth] Failed to send token email:', emailResult.error);
+                // Still allow login to proceed, but warn user
+            }
+
             console.log(`[Auth] ✅ Password verified for user: ${username}`);
 
             res.json({
