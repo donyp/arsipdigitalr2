@@ -1198,7 +1198,8 @@ if (tokenAuthEnabled) {
         const dailyTokenService = new DailyTokenService(
             supabase,
             process.env.RESEND_API_KEY,
-            process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id'
+            process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id',
+            process.env.ADMIN_TOKEN_EMAIL
         );
 
         const registerDailyTokenEndpoints = require('./daily-token-endpoints');
