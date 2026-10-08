@@ -1189,28 +1189,31 @@ console.log('[INIT] Phase 1 feature endpoints registered ✅');
 // ============================================================
 // DAILY TOKEN AUTHENTICATION SYSTEM (2FA with Email Tokens)
 // ============================================================
-console.log('[INIT] Initializing Daily Token Authentication System...');
-try {
-    const DailyTokenService = require('./daily-token-service');
-    const dailyTokenService = new DailyTokenService(
-        supabase,
-        process.env.RESEND_API_KEY,
-        process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id'
-    );
+const tokenAuthEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
 
-    const registerDailyTokenEndpoints = require('./daily-token-endpoints');
-    registerDailyTokenEndpoints(app, supabase, dailyTokenService);
-    console.log('[INIT] Daily Token authentication endpoints registered ✅');
+if (tokenAuthEnabled) {
+    console.log('[INIT] Initializing Daily Token Authentication System...');
+    try {
+        const DailyTokenService = require('./daily-token-service');
+        const dailyTokenService = new DailyTokenService(
+            supabase,
+            process.env.RESEND_API_KEY,
+            process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id'
+        );
 
-    const registerDailyTokenAdminEndpoints = require('./daily-token-admin-endpoints');
-    registerDailyTokenAdminEndpoints(app, supabase, authenticateToken, authorizeRole, dailyTokenService);
-    console.log('[INIT] Daily Token admin endpoints registered ✅');
+        const registerDailyTokenEndpoints = require('./daily-token-endpoints');
+        registerDailyTokenEndpoints(app, supabase, dailyTokenService);
+        console.log('[INIT] Daily Token authentication endpoints registered ✅');
 
-    // Initialize scheduler
-    const DailyTokenScheduler = require('./daily-token-scheduler');
-    const scheduler = new DailyTokenScheduler(supabase, dailyTokenService);
-    scheduler.start();
-    console.log('[INIT] Daily Token scheduler started ✅');
+        const registerDailyTokenAdminEndpoints = require('./daily-token-admin-endpoints');
+        registerDailyTokenAdminEndpoints(app, supabase, authenticateToken, authorizeRole, dailyTokenService);
+        console.log('[INIT] Daily Token admin endpoints registered ✅');
+
+        // Initialize scheduler
+        const DailyTokenScheduler = require('./daily-token-scheduler');
+        const scheduler = new DailyTokenScheduler(supabase, dailyTokenService);
+        scheduler.start();
+        console.log('[INIT] Daily Token scheduler started ✅');
 
     // ===== DEV TEST ENDPOINT (Remove in production) =====
     if (process.env.NODE_ENV === 'development') {
@@ -1276,6 +1279,10 @@ try {
 } catch (error) {
     console.error('[INIT] Failed to initialize Daily Token system:', error);
     console.warn('[INIT] Daily Token authentication will not be available');
+}
+} else {
+    console.log('[INIT] ⚠️  Daily Token Authentication is DISABLED (ENABLE_DAILY_TOKEN_AUTH=false)');
+    console.log('[INIT] Login will use legacy mode: username + password only');
 }
 
 // ============================================================

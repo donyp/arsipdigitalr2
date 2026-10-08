@@ -12,11 +12,13 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
     /**
      * POST /api/auth/login
      * Step 1: Verify username and password
-     * Returns: temporary token valid for 5 minutes (for token entry form)
+     * If ENABLE_DAILY_TOKEN_AUTH: Returns temporary token for token verification
+     * If disabled: Returns full JWT token immediately
      */
     app.post('/api/auth/login', async (req, res) => {
         try {
             const { username, password } = req.body;
+            const tokenAuthEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
 
             if (!username || !password) {
                 return res.status(400).json({
@@ -52,6 +54,36 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 });
             }
 
+            console.log(`[Auth] ✅ Password verified for user: ${username}`);
+
+            // If token auth is DISABLED - direct login
+            if (!tokenAuthEnabled) {
+                console.log(`[Auth] Token auth disabled - issuing full JWT token`);
+                
+                const jwtToken = jwt.sign(
+                    {
+                        userId: users.id,
+                        username: users.username,
+                        email: users.email,
+                        stage: 'authenticated'
+                    },
+                    process.env.JWT_SECRET,
+                    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+                );
+
+                return res.json({
+                    success: true,
+                    message: 'Login berhasil',
+                    token: jwtToken,
+                    user: {
+                        id: users.id,
+                        username: users.username,
+                        email: users.email
+                    }
+                });
+            }
+
+            // Token auth is ENABLED - proceed with 2FA flow
             // Check if user has valid email
             if (!users.email || !users.email.includes('@')) {
                 console.warn(`[Auth] User has no valid email: ${username}`);
@@ -92,8 +124,6 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 { expiresIn: '24h' }
             );
 
-            console.log(`[Auth] ✅ Password verified for user: ${username}`);
-
             res.json({
                 success: true,
                 message: 'Password benar. Kode sudah dikirim ke email Anda pukul 04:00',
@@ -114,11 +144,21 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
     /**
      * POST /api/auth/verify-token
      * Step 2: Verify 5-digit token with attempt tracking
+     * Only active if ENABLE_DAILY_TOKEN_AUTH=true
      * Input: tempToken (from step 1), token (5 digits)
      * Returns: valid JWT if token matches
      */
     app.post('/api/auth/verify-token', async (req, res) => {
         try {
+            const tokenAuthEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
+
+            if (!tokenAuthEnabled) {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Token authentication is disabled'
+                });
+            }
+
             const { tempToken, token } = req.body;
 
             if (!tempToken || !token) {
