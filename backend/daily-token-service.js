@@ -684,6 +684,8 @@ class DailyTokenService {
      */
     async verifyToken(userId, token) {
         try {
+            console.log(`[DailyToken] verifyToken() called for user ${userId}, token: ${token}`);
+            
             // Get current token record
             const { data: tokenRecord, error: fetchError } = await this.supabase
                 .from('daily_login_tokens')
@@ -693,8 +695,13 @@ class DailyTokenService {
                 .gt('expires_at', new Date().toISOString())
                 .single();
 
-            if (fetchError || !tokenRecord) {
-                console.warn(`[DailyToken] Invalid/expired token for user ${userId}`);
+            if (fetchError) {
+                console.error(`[DailyToken] Database error looking up token: ${fetchError.message}`, fetchError);
+            }
+            
+            if (!tokenRecord) {
+                console.warn(`[DailyToken] Token not found for user ${userId}, token ${token}`);
+                console.warn(`[DailyToken] Fetch error: ${fetchError ? fetchError.message : 'none'}`);
                 return {
                     success: false,
                     error: 'Token tidak valid atau sudah expired',
@@ -703,8 +710,13 @@ class DailyTokenService {
                 };
             }
 
+            console.log(`[DailyToken] ✅ Token record found: id=${tokenRecord.id}, is_used=${tokenRecord.is_used}, is_locked=${tokenRecord.is_locked}`);
+            console.log(`[DailyToken]   expires_at=${tokenRecord.expires_at}, now=${new Date().toISOString()}`);
+            console.log(`[DailyToken]   token_attempts=${tokenRecord.token_attempts}, MAX_ATTEMPTS=${this.MAX_ATTEMPTS}`);
+
             // Check if already used
             if (tokenRecord.is_used) {
+                console.warn(`[DailyToken] Token already used for user ${userId}`);
                 return {
                     success: false,
                     error: 'Token sudah digunakan',
@@ -715,6 +727,7 @@ class DailyTokenService {
 
             // Check if locked
             if (tokenRecord.is_locked) {
+                console.warn(`[DailyToken] Token is locked for user ${userId}`);
                 const lockedUntil = new Date(tokenRecord.locked_until);
                 const now = new Date();
                 if (now < lockedUntil) {
@@ -728,6 +741,7 @@ class DailyTokenService {
                     };
                 } else {
                     // Unlock if time has passed
+                    console.log(`[DailyToken] Lock expired, unlocking token for user ${userId}`);
                     await this.supabase
                         .from('daily_login_tokens')
                         .update({
@@ -739,6 +753,8 @@ class DailyTokenService {
                 }
             }
 
+            console.log(`[DailyToken] Token validation passed, marking as used for user ${userId}`);
+            
             // Token is valid - mark as used AND verified (single update operation)
             const { error: updateError } = await this.supabase
                 .from('daily_login_tokens')
