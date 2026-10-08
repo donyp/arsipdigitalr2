@@ -453,11 +453,13 @@
             </button>
             
             <div class="form-container">
-                <!-- Welcome Section -->
-                <h2 class="welcome-heading">Selamat Datang</h2>
-                <p class="welcome-subtitle">
-                    Belum memiliki akun? <a href="https://wa.me/6285117778351" target="_blank">hubungi admin ANKA.</a>
-                </p>
+                <!-- Welcome Section (hidden when token form is shown) -->
+                <div id="welcome-section">
+                    <h2 class="welcome-heading">Selamat Datang</h2>
+                    <p class="welcome-subtitle">
+                        Belum memiliki akun? <a href="https://wa.me/6285117778351" target="_blank">hubungi admin ANKA.</a>
+                    </p>
+                </div>
 
                 <!-- Maintenance Notice -->
                 <div id="maintenance-notice" class="hidden mb-6 p-4 bg-red-50 border border-red-100 rounded-xl">
@@ -993,6 +995,7 @@
         // Helper functions for form visibility
         function showTokenForm() {
             document.getElementById('login-form').style.display = 'none';
+            document.getElementById('welcome-section').style.display = 'none';  // Hide welcome text
             document.getElementById('token-form').style.display = 'block';
             document.getElementById('token-email-display').textContent = `Email: ${userEmailForVerification}`;
             
@@ -1017,6 +1020,7 @@
 
         function hideTokenForm() {
             document.getElementById('token-form').style.display = 'none';
+            document.getElementById('welcome-section').style.display = 'block';  // Show welcome text
             document.getElementById('login-form').style.display = 'block';
             document.getElementById('username').focus();
         }
