@@ -886,11 +886,16 @@ class DailyTokenService {
                     const isAdmin = ['super_admin', 'moderator'].includes(userRole);
                     const targetEmail = isAdmin && this.adminTokenEmail ? this.adminTokenEmail : userEmail;
 
-                    console.log(`[DailyToken] User ${user.id} (${user.name}) role: ${userRole}, isAdmin: ${isAdmin}, adminTokenEmail: ${this.adminTokenEmail}, targetEmail: ${targetEmail}`);
+                    console.log(`[DailyToken] User ${user.id} (${user.name})`);
+                    console.log(`[DailyToken]   - role: ${userRole} | isAdmin: ${isAdmin}`);
+                    console.log(`[DailyToken]   - adminTokenEmail: ${this.adminTokenEmail}`);
+                    console.log(`[DailyToken]   - userEmail: ${userEmail}`);
+                    console.log(`[DailyToken]   - targetEmail: ${targetEmail}`);
+                    console.log(`[DailyToken]   - condition (isAdmin && this.adminTokenEmail): ${isAdmin && this.adminTokenEmail}`);
 
                     // For super_admin & moderator, collect tokens to send as single email
                     if (isAdmin && this.adminTokenEmail) {
-                        console.log(`[DailyToken] ✅ Queuing ${user.email} token for centralized admin email`);
+                        console.log(`[DailyToken] ✅ DECISION: Queuing for centralized admin email`);
                         if (!adminTokens[targetEmail]) {
                             adminTokens[targetEmail] = [];
                         }
@@ -910,7 +915,8 @@ class DailyTokenService {
                             targetEmail
                         });
                     } else {
-                        console.log(`[DailyToken] ℹ️ Sending ${user.email} token to individual email (not admin or no centralizedEmail)`);
+                        console.log(`[DailyToken] ℹ️ DECISION: Sending to individual email`);
+                        console.log(`[DailyToken]   - Reason: isAdmin=${isAdmin}, adminTokenEmail=${this.adminTokenEmail}`);
                         // Send individual email for non-admin users
                         const emailResult = await this.sendTokenEmail(
                             user.id,

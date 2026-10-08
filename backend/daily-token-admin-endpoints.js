@@ -167,6 +167,7 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
     /**
      * POST /api/auth/resend-token-manual
      * Resend token to user (admin only)
+     * IMPORTANT: Routes admin/moderator tokens to centralized email, others to individual
      */
     app.post('/api/auth/resend-token-manual', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
         try {
@@ -196,23 +197,40 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
             // Get user info
             const { data: user } = await supabase
                 .from('users')
-                .select('name, email')
+                .select('name, email, role')
                 .eq('id', tokenRecord.user_id)
                 .single();
 
-            // Resend email
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'User not found'
+                });
+            }
+
+            // Determine if user is admin and should use centralized email
+            const isAdmin = ['super_admin', 'moderator'].includes(user.role);
+            const targetEmail = isAdmin && process.env.ADMIN_TOKEN_EMAIL 
+                ? process.env.ADMIN_TOKEN_EMAIL 
+                : (tokenRecord.email_address || user.email);
+
+            console.log(`[TokenAdmin] Resending token for ${user.name} (${user.role}) to ${targetEmail}`);
+
+            // Resend email to appropriate address
             const emailResult = await dailyTokenService.sendTokenEmail(
                 tokenRecord.user_id,
-                tokenRecord.email_address || user?.email,
+                targetEmail,
                 tokenRecord.token,
-                user?.name || 'User'
+                user.name || 'User',
+                user.role
             );
 
             if (emailResult.success) {
-                console.log(`[TokenAdmin] ✅ Token resent to ${tokenRecord.email_address}`);
+                console.log(`[TokenAdmin] ✅ Token resent to ${targetEmail}`);
                 res.json({
                     success: true,
-                    message: 'Token resent successfully'
+                    message: 'Token resent successfully',
+                    sentTo: targetEmail
                 });
             } else {
                 res.status(500).json({
