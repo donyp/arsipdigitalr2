@@ -434,6 +434,7 @@
             <button class="btn btn-primary" onclick="generateTokensNow()">📨 Generate Token Sekarang</button>
             <button class="btn btn-secondary" onclick="refreshStats()">🔄 Refresh Stats</button>
             <button class="btn btn-danger" onclick="cleanupExpiredNow()">🗑️ Cleanup Expired</button>
+            <button class="btn btn-danger" onclick="deleteAllTokens()" style="background: #d32f2f;">🔥 Delete All Tokens</button>
         </div>
 
         <!-- Search & Filter -->
@@ -784,6 +785,40 @@
             } catch (error) {
                 console.error('Error:', error);
                 showAlert('Gagal menghapus token', 'error');
+            }
+        }
+
+        async function deleteAllTokens() {
+            // Double confirmation for destructive action
+            const confirm1 = confirm('⚠️ PERHATIAN: Ini akan MENGHAPUS SEMUA TOKEN!\n\nIni adalah tindakan yang TIDAK BISA DIBATALKAN. Semua pengguna harus login ulang.\n\nLanjutkan?');
+            if (!confirm1) return;
+
+            const confirm2 = confirm('🔥 TERAKHIR: Apakah Anda BENAR-BENAR YAKIN ingin menghapus SEMUA token?');
+            if (!confirm2) return;
+
+            try {
+                showAlert('⏳ Menghapus semua token...', 'info');
+                
+                const response = await fetch(`${API_BASE}/auth/delete-all-tokens`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`✅ Semua token berhasil dihapus! (${data.deletedCount} tokens)`, 'success');
+                    loadTokens();
+                    refreshStats();
+                } else {
+                    showAlert(`Error: ${data.error}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Gagal menghapus semua token', 'error');
             }
         }
 

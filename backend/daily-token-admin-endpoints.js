@@ -249,6 +249,49 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
     });
 
     /**
+     * DELETE /api/auth/delete-all-tokens
+     * Delete ALL token records (admin only) - DANGEROUS!
+     */
+    app.delete('/api/auth/delete-all-tokens', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+        try {
+            console.log('[TokenAdmin] Delete all tokens triggered by:', req.user.email);
+
+            // Get count before delete
+            const { count: countBefore } = await supabase
+                .from('daily_login_tokens')
+                .select('*', { count: 'exact', head: true });
+
+            // Delete all tokens
+            const { error } = await supabase
+                .from('daily_login_tokens')
+                .delete()
+                .gte('id', 0); // Delete all rows (id >= 0)
+
+            if (error) {
+                console.error('[TokenAdmin] Delete all error:', error);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Failed to delete tokens: ' + error.message
+                });
+            }
+
+            console.log(`[TokenAdmin] ✅ Successfully deleted ${countBefore || 0} tokens`);
+            res.json({
+                success: true,
+                message: `Deleted ${countBefore || 0} tokens`,
+                deletedCount: countBefore || 0
+            });
+
+        } catch (error) {
+            console.error('[TokenAdmin] Delete all tokens error:', error);
+            res.status(500).json({
+                success: false,
+                error: 'Failed to delete all tokens'
+            });
+        }
+    });
+
+    /**
      * DELETE /api/auth/delete-token/:id
      * Delete a token record (admin only)
      */
