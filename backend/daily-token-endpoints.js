@@ -80,7 +80,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 });
             }
 
-            // Generate temporary JWT for token form (valid 5 minutes)
+            // Generate temporary JWT for token form (valid 24 hours, same as daily token)
             const tempToken = jwt.sign(
                 {
                     userId: users.id,
@@ -89,7 +89,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                     stage: 'token_verification'
                 },
                 process.env.JWT_SECRET,
-                { expiresIn: '5m' }
+                { expiresIn: '24h' }
             );
 
             console.log(`[Auth] ✅ Password verified for user: ${username}`);
@@ -99,7 +99,7 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 message: 'Password benar. Kode sudah dikirim ke email Anda pukul 04:00',
                 tempToken,
                 email: users.email,
-                expiresIn: 300 // 5 minutes in seconds
+                expiresIn: 86400 // 24 hours in seconds
             });
 
         } catch (error) {
