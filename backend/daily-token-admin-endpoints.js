@@ -28,13 +28,14 @@ module.exports = function registerDailyTokenAdminEndpoints(app, supabase, authen
                     email_sent,
                     email_address
                 `)
-                .order('created_at', { ascending: false })
-                .limit(parseInt(limit))
-                .offset(parseInt(offset));
+                .order('created_at', { ascending: false });
 
             if (userId) {
                 query = query.eq('user_id', userId);
             }
+
+            // Apply limit and offset separately
+            query = query.range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
 
             const { data: tokens, error } = await query;
 
