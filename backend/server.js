@@ -4692,9 +4692,25 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
         const salt = await bcrypt.genSalt(12);
         const password_hash = await bcrypt.hash(password, salt);
 
+        // Step 1: Create user in Supabase Auth (auth.users)
+        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+            email: email.toLowerCase().trim(),
+            password: password,
+            email_confirm: true // Auto-confirm email
+        });
+
+        if (authError) {
+            console.error('[CreateUser] Auth creation failed:', authError);
+            throw new Error(`Gagal membuat akun auth: ${authError.message}`);
+        }
+
+        console.log(`[CreateUser] Auth user created: ${authUser.user.id}`);
+
+        // Step 2: Create user in public.users table with auth.user.id as the reference
         const { data: user, error } = await supabase
             .from('users')
             .insert({
+                id: authUser.user.id, // Use auth user ID as primary key
                 email: email.toLowerCase().trim(),
                 username: finalUsername,
                 password_hash,
@@ -4708,7 +4724,17 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            console.error('[CreateUser] Database insert failed:', error);
+            // Try to clean up auth user if DB insert fails
+            try {
+                await supabase.auth.admin.deleteUser(authUser.user.id);
+                console.log('[CreateUser] Cleaned up orphaned auth user');
+            } catch (cleanupErr) {
+                console.error('[CreateUser] Cleanup failed:', cleanupErr);
+            }
+            throw new Error(`Gagal membuat user di database: ${error.message}`);
+        }
 
         const totalTime = Date.now() - startTime;
         const { ipAddress } = AuditLogger.extractClientInfo(req);
