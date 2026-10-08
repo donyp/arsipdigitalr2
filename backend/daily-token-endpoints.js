@@ -93,11 +93,15 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 });
             }
 
+            // Check if user is admin (super_admin or moderator) - for single token verification per day
+            const userRole = users.role || 'user';
+            const isAdmin = ['super_admin', 'moderator'].includes(userRole);
+
             // Check if user has a valid token for today (generated at 04:00)
             const now = new Date();
             const { data: tokenRecord, error: tokenError } = await supabase
                 .from('daily_login_tokens')
-                .select('token, expires_at, email_sent')
+                .select('token, expires_at, email_sent, token_verified_at, id')
                 .eq('user_id', users.id)
                 .gt('expires_at', now.toISOString())
                 .order('created_at', { ascending: false })
@@ -110,6 +114,51 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                     success: false,
                     error: 'Kode akses belum dikirim. Coba login lagi nanti atau hubungi admin'
                 });
+            }
+
+            // 🔑 NEW FEATURE: For admins, check if token was already verified today
+            // If yes → skip token verification and issue JWT directly
+            if (isAdmin && tokenRecord.token_verified_at) {
+                const verifiedDate = new Date(tokenRecord.token_verified_at);
+                const today = new Date();
+                
+                // Check if verified today (same calendar day)
+                if (verifiedDate.toDateString() === today.toDateString()) {
+                    console.log(`[Auth] ✅ Admin user ${username} already verified token today. Issuing JWT directly.`);
+                    
+                    // Get full user data
+                    const { data: fullUser } = await supabase
+                        .from('users')
+                        .select('id, username, email, role, zona_id')
+                        .eq('id', users.id)
+                        .single();
+
+                    const jwtToken = jwt.sign(
+                        {
+                            userId: users.id,
+                            username: users.username,
+                            email: users.email,
+                            role: fullUser?.role || 'user',
+                            zonaId: fullUser?.zona_id || null,
+                            stage: 'authenticated'
+                        },
+                        process.env.JWT_SECRET,
+                        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+                    );
+
+                    return res.json({
+                        success: true,
+                        message: 'Login berhasil (token sudah diverifikasi hari ini)',
+                        token: jwtToken,
+                        user: {
+                            id: users.id,
+                            username: users.username,
+                            email: users.email,
+                            role: fullUser?.role || 'user'
+                        },
+                        skipTokenVerification: true
+                    });
+                }
             }
 
             // Generate temporary JWT for token form (valid 24 hours, same as daily token)
@@ -231,6 +280,23 @@ module.exports = function registerDailyTokenEndpoints(app, supabase, dailyTokenS
                 process.env.JWT_SECRET,
                 { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
             );
+
+            // 🔑 NEW: Mark token as verified for admins (single verification per day)
+            // Get token record to update
+            const { data: tokenRec } = await supabase
+                .from('daily_login_tokens')
+                .select('id')
+                .eq('user_id', userId)
+                .eq('token', token)
+                .single();
+
+            if (tokenRec) {
+                await supabase
+                    .from('daily_login_tokens')
+                    .update({ token_verified_at: new Date().toISOString() })
+                    .eq('id', tokenRec.id)
+                    .catch(err => console.error('[Auth] Failed to mark token as verified:', err));
+            }
 
             console.log(`[Auth] ✅ User authenticated: ${decoded.username} (ID: ${userId})`);
 
