@@ -281,16 +281,24 @@
                     transition: all 0.2s ease;
                     box-sizing: border-box;
                     font-family: inherit;
-                    font-weight: 500;
+                    font-weight: ${isActive ? 600 : 500};
+                    position: relative;
+                    overflow: hidden;
+                    border-left: ${isActive ? '3px solid ' + colors.activeTextColor : '3px solid transparent'};
+                    padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} - 3px);
                 "
                 onmouseover="
                     this.style.backgroundColor = '${colors.hoverBg}';
                     this.style.color = '${colors.activeTextColor}';
+                    this.style.transform = 'translateX(4px)';
+                    this.style.borderLeftColor = '${colors.activeTextColor}';
                 "
                 onmouseout="
                     const isActive = this.classList.contains('active');
                     this.style.backgroundColor = isActive ? '${colors.hoverBg}' : 'transparent';
                     this.style.color = isActive ? '${colors.activeTextColor}' : '${colors.textColor}';
+                    this.style.transform = 'translateX(0)';
+                    this.style.borderLeftColor = isActive ? '${colors.activeTextColor}' : 'transparent';
                 "
             >
                 <span style="
@@ -345,16 +353,24 @@
                         transition: all 0.2s ease;
                         box-sizing: border-box;
                         font-family: inherit;
-                        font-weight: 400;
+                        font-weight: ${isActive ? 600 : 400};
+                        position: relative;
+                        overflow: hidden;
+                        border-left: ${isActive ? '3px solid ' + colors.activeTextColor : '3px solid transparent'};
+                        padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} + ${STYLES.iconSize} + ${STYLES.menuItemGap} - 3px);
                     "
                     onmouseover="
                         this.style.backgroundColor = '${colors.hoverBg}';
                         this.style.color = '${colors.activeTextColor}';
+                        this.style.transform = 'translateX(4px)';
+                        this.style.borderLeftColor = '${colors.activeTextColor}';
                     "
                     onmouseout="
                         const isActive = this.classList.contains('active');
                         this.style.backgroundColor = isActive ? '${colors.hoverBg}' : 'transparent';
                         this.style.color = isActive ? '${colors.activeTextColor}' : '${colors.textMutedColor}';
+                        this.style.transform = 'translateX(0)';
+                        this.style.borderLeftColor = isActive ? '${colors.activeTextColor}' : 'transparent';
                     "
                 >
                     <span style="
@@ -405,14 +421,22 @@
                         box-sizing: border-box;
                         font-family: inherit;
                         font-weight: 500;
+                        position: relative;
+                        overflow: hidden;
+                        border-left: 3px solid transparent;
+                        padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} - 3px);
                     "
                     onmouseover="
                         this.style.backgroundColor = '${colors.hoverBg}';
                         this.style.color = '${colors.activeTextColor}';
+                        this.style.transform = 'translateX(4px)';
+                        this.style.borderLeftColor = '${colors.activeTextColor}';
                     "
                     onmouseout="
                         this.style.backgroundColor = 'transparent';
                         this.style.color = '${colors.textColor}';
+                        this.style.transform = 'translateX(0)';
+                        this.style.borderLeftColor = 'transparent';
                     "
                 >
                     <span style="
@@ -585,9 +609,79 @@
     // GLOBAL FUNCTIONS (exposed for HTML event handlers)
     // ============================================================
     window.toggleSidebarDropdown = function(dropdownId) {
-        const isExpanded = sessionStorage.getItem(`sidebar-dropdown-${dropdownId}`) === 'true';
-        sessionStorage.setItem(`sidebar-dropdown-${dropdownId}`, String(!isExpanded));
-        renderSidebar();
+        const dropdownContent = document.getElementById(`dd-${dropdownId}`);
+        if (!dropdownContent) return;
+
+        // Get all dropdown contents
+        const allDropdownContents = document.querySelectorAll('.sidebar-dropdown-content');
+        
+        // Check if this dropdown is currently expanded
+        const isCurrentlyExpanded = dropdownContent.style.display === 'flex';
+
+        // Close all dropdowns with smooth animation
+        allDropdownContents.forEach(content => {
+            if (content.id !== `dd-${dropdownId}`) {
+                // Close other dropdowns
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                content.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    content.style.display = 'none';
+                }, 300);
+                
+                // Update arrow rotation for button
+                const btn = content.previousElementSibling;
+                if (btn) {
+                    const arrow = btn.querySelector('.dropdown-arrow');
+                    if (arrow) {
+                        arrow.style.transform = 'rotate(0deg)';
+                    }
+                }
+            }
+        });
+
+        // Toggle current dropdown
+        if (isCurrentlyExpanded) {
+            // Close current dropdown
+            dropdownContent.style.maxHeight = '0px';
+            dropdownContent.style.opacity = '0';
+            dropdownContent.style.pointerEvents = 'none';
+            setTimeout(() => {
+                dropdownContent.style.display = 'none';
+            }, 300);
+            
+            // Rotate arrow back
+            const btn = dropdownContent.previousElementSibling;
+            if (btn) {
+                const arrow = btn.querySelector('.dropdown-arrow');
+                if (arrow) {
+                    arrow.style.transform = 'rotate(0deg)';
+                }
+            }
+            
+            // Update expanded state in sessionStorage
+            sessionStorage.removeItem(`sidebar-dropdown-${dropdownId}`);
+        } else {
+            // Open current dropdown
+            dropdownContent.style.display = 'flex';
+            // Trigger reflow to enable transition
+            void dropdownContent.offsetHeight;
+            dropdownContent.style.maxHeight = '500px';
+            dropdownContent.style.opacity = '1';
+            dropdownContent.style.pointerEvents = 'auto';
+            
+            // Rotate arrow
+            const btn = dropdownContent.previousElementSibling;
+            if (btn) {
+                const arrow = btn.querySelector('.dropdown-arrow');
+                if (arrow) {
+                    arrow.style.transform = 'rotate(180deg)';
+                }
+            }
+            
+            // Update expanded state in sessionStorage
+            sessionStorage.setItem(`sidebar-dropdown-${dropdownId}`, 'true');
+        }
     };
 
     window.toggleDarkMode = function() {
