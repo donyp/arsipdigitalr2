@@ -603,6 +603,12 @@ app.get('/:page', (req, res, next) => {
         return next();
     }
     
+    // Skip upload pages and other SPA-routed pages - let SPA router handle them
+    const spaRoutedPages = ['upload-excel', 'upload-invoice-pdf', 'upload-bukti-bayar', 'upload-faktur-pajak', 'rename-faktur', 'users', 'tokos', 'zonas', 'whatsapp-messages', 'support-dashboard'];
+    if (spaRoutedPages.includes(page)) {
+        return next();
+    }
+    
     // Try to find the .html file
     const filePath = path.join(__dirname, '..', `${page}.html`);
     
