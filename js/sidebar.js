@@ -56,16 +56,60 @@
             will-change: background-color, color;
         }
 
+        /* Active state styling - modern & fancy (CSS only, no structure changes) */
+        #sidebar nav a[data-active="true"],
+        #sidebar nav button[data-active="true"],
+        #sidebar nav a.active,
+        #sidebar nav button.active {
+            background: rgba(96, 165, 250, 0.12) !important;
+            box-shadow: inset 0 2px 0 0 #60a5fa !important;
+        }
+
+        /* Dark mode active state */
+        html[data-dark-mode="true"] #sidebar nav a[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav button[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav a.active,
+        html[data-dark-mode="true"] #sidebar nav button.active {
+            background: rgba(96, 165, 250, 0.15) !important;
+            box-shadow: inset 0 2px 0 0 #60a5fa !important;
+        }
+
+        /* Active icon glow effect */
+        #sidebar nav a[data-active="true"] span i,
+        #sidebar nav button[data-active="true"] span i,
+        #sidebar nav a.active span i,
+        #sidebar nav button.active span i {
+            opacity: 1 !important;
+            color: #60a5fa !important;
+        }
+
+        /* Active text color */
+        #sidebar nav a[data-active="true"],
+        #sidebar nav button[data-active="true"],
+        #sidebar nav a.active,
+        #sidebar nav button.active {
+            color: #3b82f6 !important;
+            font-weight: 600 !important;
+        }
+
+        /* Dark mode active text */
+        html[data-dark-mode="true"] #sidebar nav a[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav button[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav a.active,
+        html[data-dark-mode="true"] #sidebar nav button.active {
+            color: #60a5fa !important;
+        }
+
         /* Smooth background & color transition */
         #sidebar nav a,
         #sidebar nav button {
-            transition: background-color 0.12s ease-out, color 0.12s ease-out !important;
+            transition: background-color 0.12s ease-out, color 0.12s ease-out, box-shadow 0.12s ease-out !important;
         }
 
         /* Fast icon opacity transition */
         #sidebar nav a span i,
         #sidebar nav button span i {
-            transition: opacity 0.12s ease-out !important;
+            transition: opacity 0.12s ease-out, color 0.12s ease-out !important;
         }
 
         /* Dropdown arrow smooth rotation */
@@ -77,6 +121,34 @@
         #sidebar nav a span,
         #sidebar nav button span {
             transition: color 0.12s ease-out !important;
+        }
+
+        /* Hover effect for non-active items */
+        #sidebar nav a:not([data-active="true"]):not(.active):hover,
+        #sidebar nav button:not([data-active="true"]):not(.active):hover {
+            background: rgba(0, 0, 0, 0.04) !important;
+        }
+
+        html[data-dark-mode="true"] #sidebar nav a:not([data-active="true"]):not(.active):hover,
+        html[data-dark-mode="true"] #sidebar nav button:not([data-active="true"]):not(.active):hover {
+            background: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* Active state hover - brighten underline */
+        #sidebar nav a[data-active="true"]:hover,
+        #sidebar nav button[data-active="true"]:hover,
+        #sidebar nav a.active:hover,
+        #sidebar nav button.active:hover {
+            background: rgba(96, 165, 250, 0.18) !important;
+            box-shadow: inset 0 3px 0 0 #60a5fa !important;
+        }
+
+        html[data-dark-mode="true"] #sidebar nav a[data-active="true"]:hover,
+        html[data-dark-mode="true"] #sidebar nav button[data-active="true"]:hover,
+        html[data-dark-mode="true"] #sidebar nav a.active:hover,
+        html[data-dark-mode="true"] #sidebar nav button.active:hover {
+            background: rgba(96, 165, 250, 0.22) !important;
+            box-shadow: inset 0 3px 0 0 #60a5fa !important;
         }
     `;
     document.head.appendChild(scrollbarStyle);
@@ -588,13 +660,12 @@
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
                 
                 if (itemIsActive) {
-                    // Active item - brighten
-                    const brightenBg = isDarkMode ? '#1e4a7f' : '#bfdbfe';
-                    this.style.backgroundColor = brightenBg;
+                    // Active item - brighten with thicker underline
+                    this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.22)' : 'rgba(96, 165, 250, 0.18)';
+                    this.style.boxShadow = 'inset 0 3px 0 0 #60a5fa';
                 } else {
-                    // Non-active - show hover
-                    const hoverColor = isDarkMode ? '#1e293b' : '#f7fafc';
-                    this.style.backgroundColor = hoverColor;
+                    // Non-active - show subtle hover
+                    this.style.background = isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
                 }
             };
             
@@ -603,12 +674,13 @@
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
                 
                 if (itemIsActive) {
-                    // Restore active background
-                    const activeBg = isDarkMode ? '#1e3a5f' : '#dbeafe';
-                    this.style.backgroundColor = activeBg;
+                    // Restore active background with thin underline
+                    this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
+                    this.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
                 } else {
                     // Restore transparent
-                    this.style.backgroundColor = 'transparent';
+                    this.style.background = 'transparent';
+                    this.style.boxShadow = 'none';
                 }
             };
             
