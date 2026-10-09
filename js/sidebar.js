@@ -278,7 +278,6 @@
                     line-height: ${STYLES.menuItemLineHeight};
                     border-radius: 0.5rem;
                     cursor: pointer;
-                    transition: all 0.2s ease;
                     box-sizing: border-box;
                     font-family: inherit;
                     font-weight: ${isActive ? 600 : 500};
@@ -291,14 +290,12 @@
                 onmouseover="
                     this.style.backgroundColor = '${colors.hoverBg}';
                     this.style.color = '${colors.activeTextColor}';
-                    this.style.transform = 'translateX(4px)';
                     this.style.borderLeftColor = '${colors.activeTextColor}';
                 "
                 onmouseout="
                     const isActive = this.classList.contains('active');
                     this.style.backgroundColor = isActive ? '${colors.hoverBg}' : 'transparent';
                     this.style.color = isActive ? '${colors.activeTextColor}' : '${colors.textColor}';
-                    this.style.transform = 'translateX(0)';
                     this.style.borderLeftColor = isActive ? '${colors.activeTextColor}' : 'transparent';
                 "
             >
@@ -351,7 +348,6 @@
                         line-height: ${STYLES.menuItemLineHeight};
                         border-radius: 0.5rem;
                         cursor: pointer;
-                        transition: all 0.2s ease;
                         box-sizing: border-box;
                         font-family: inherit;
                         font-weight: ${isActive ? 600 : 400};
@@ -363,14 +359,12 @@
                     onmouseover="
                         this.style.backgroundColor = '${colors.hoverBg}';
                         this.style.color = '${colors.activeTextColor}';
-                        this.style.transform = 'translateX(4px)';
                         this.style.borderLeftColor = '${colors.activeTextColor}';
                     "
                     onmouseout="
                         const isActive = this.classList.contains('active');
                         this.style.backgroundColor = isActive ? '${colors.hoverBg}' : 'transparent';
                         this.style.color = isActive ? '${colors.activeTextColor}' : '${colors.textMutedColor}';
-                        this.style.transform = 'translateX(0)';
                         this.style.borderLeftColor = isActive ? '${colors.activeTextColor}' : 'transparent';
                     "
                 >
@@ -418,7 +412,6 @@
                         line-height: ${STYLES.menuItemLineHeight};
                         border-radius: 0.5rem;
                         cursor: pointer;
-                        transition: all 0.2s ease;
                         box-sizing: border-box;
                         font-family: inherit;
                         font-weight: 500;
@@ -431,13 +424,11 @@
                     onmouseover="
                         this.style.backgroundColor = '${colors.hoverBg}';
                         this.style.color = '${colors.activeTextColor}';
-                        this.style.transform = 'translateX(4px)';
                         this.style.borderLeftColor = '${colors.activeTextColor}';
                     "
                     onmouseout="
                         this.style.backgroundColor = 'transparent';
                         this.style.color = '${colors.textColor}';
-                        this.style.transform = 'translateX(0)';
                         this.style.borderLeftColor = 'transparent';
                     "
                 >
@@ -465,22 +456,17 @@
                         flex-shrink: 0;
                         opacity: 0.6;
                         transform: ${isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'};
-                        transition: transform 0.2s ease;
                     ">
                         <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                 </button>
 
-                <div class="sidebar-dropdown-content" 
+                <div class="sidebar-dropdown-content ${isExpanded ? 'active' : ''}" 
                     id="dd-${item.id}"
                     style="
                         display: flex;
                         flex-direction: column;
                         gap: 0.2rem;
-                        max-height: ${isExpanded ? '500px' : '0px'};
-                        opacity: ${isExpanded ? '1' : '0'};
-                        overflow: hidden;
-                        transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         pointer-events: ${isExpanded ? 'auto' : 'none'};
                     ">
                     ${childrenHTML}
@@ -512,7 +498,6 @@
                 flex-direction: column;
                 min-height: 0;
             }
-            }
 
             .sidebar-nav::-webkit-scrollbar {
                 width: 6px;
@@ -532,6 +517,18 @@
             .sidebar-child-item {
                 box-sizing: border-box;
                 flex-shrink: 0;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transform: translateX(0);
+            }
+
+            /* Smooth hover animation for non-dropdown items */
+            .sidebar-item:hover {
+                transform: translateX(4px);
+            }
+
+            /* Smooth hover animation for dropdown buttons */
+            .sidebar-dropdown-btn:hover {
+                transform: translateX(4px);
             }
 
             .sidebar-item.active,
@@ -539,8 +536,27 @@
                 font-weight: 600;
             }
 
+            .sidebar-dropdown-btn.expanded {
+                transform: translateX(0);
+            }
+
             .sidebar-dropdown-btn.expanded .dropdown-arrow {
                 transform: rotate(180deg);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .sidebar-dropdown-content {
+                display: flex;
+                flex-direction: column;
+                max-height: 0;
+                opacity: 0;
+                overflow: hidden;
+                transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            .sidebar-dropdown-content.active {
+                max-height: 500px;
+                opacity: 1;
             }
 
             #main-content {
