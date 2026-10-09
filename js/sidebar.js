@@ -626,6 +626,9 @@
                 content.style.opacity = '0';
                 content.style.pointerEvents = 'none';
                 
+                // Extract dropdown ID from content's id (format: dd-{dropdownId})
+                const otherDropdownId = content.id.replace('dd-', '');
+                
                 // Update arrow rotation for button
                 const btn = content.previousElementSibling;
                 if (btn) {
@@ -634,6 +637,9 @@
                         arrow.style.transform = 'rotate(0deg)';
                     }
                 }
+                
+                // Update sessionStorage for closed dropdown
+                sessionStorage.removeItem(`sidebar-dropdown-${otherDropdownId}`);
             }
         });
 
