@@ -137,11 +137,13 @@
         #sidebar nav a:not([data-active="true"]):not(.active):hover,
         #sidebar nav button:not([data-active="true"]):not(.active):hover {
             background: rgba(0, 0, 0, 0.04) !important;
+            transform: translateX(4px);
         }
 
         html[data-dark-mode="true"] #sidebar nav a:not([data-active="true"]):not(.active):hover,
         html[data-dark-mode="true"] #sidebar nav button:not([data-active="true"]):not(.active):hover {
             background: rgba(255, 255, 255, 0.06) !important;
+            transform: translateX(4px);
         }
 
         /* Active state hover - brighten underline */
@@ -151,6 +153,7 @@
         #sidebar nav button.active:hover {
             background: rgba(96, 165, 250, 0.18) !important;
             box-shadow: inset 0 3px 0 0 #60a5fa !important;
+            transform: translateX(6px);
         }
 
         html[data-dark-mode="true"] #sidebar nav a[data-active="true"]:hover,
@@ -159,20 +162,7 @@
         html[data-dark-mode="true"] #sidebar nav button.active:hover {
             background: rgba(96, 165, 250, 0.22) !important;
             box-shadow: inset 0 3px 0 0 #60a5fa !important;
-        }
-
-        /* Icon zoom on hover */
-        #sidebar nav a:not([data-active="true"]):not(.active):hover span i,
-        #sidebar nav button:not([data-active="true"]):not(.active):hover span i {
-            transform: translateX(3px);
-        }
-
-        /* Active state hover - icon slide more */
-        #sidebar nav a[data-active="true"]:hover span i,
-        #sidebar nav button[data-active="true"]:hover span i,
-        #sidebar nav a.active:hover span i,
-        #sidebar nav button.active:hover span i {
-            transform: translateX(5px);
+            transform: translateX(6px);
         }
     `;
     document.head.appendChild(scrollbarStyle);
@@ -682,35 +672,33 @@
             const enterHandler = function(e) {
                 const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
-                const icon = this.querySelector('span i');
                 
                 if (itemIsActive) {
-                    // Active item - brighten with thicker underline
+                    // Active item - brighten with thicker underline and slide right
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.22)' : 'rgba(96, 165, 250, 0.18)';
                     this.style.boxShadow = 'inset 0 3px 0 0 #60a5fa';
-                    if (icon) icon.style.transform = 'translateX(5px)';
+                    this.style.transform = 'translateX(6px)';
                 } else {
-                    // Non-active - show subtle hover
+                    // Non-active - show subtle hover and slide
                     this.style.background = isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
-                    if (icon) icon.style.transform = 'translateX(3px)';
+                    this.style.transform = 'translateX(4px)';
                 }
             };
             
             const leaveHandler = function(e) {
                 const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
-                const icon = this.querySelector('span i');
                 
                 if (itemIsActive) {
                     // Restore active background with thin underline
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
                     this.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
-                    if (icon) icon.style.transform = 'translateX(0)';
+                    this.style.transform = 'translateX(0)';
                 } else {
                     // Restore transparent
                     this.style.background = 'transparent';
                     this.style.boxShadow = 'none';
-                    if (icon) icon.style.transform = 'translateX(0)';
+                    this.style.transform = 'translateX(0)';
                 }
             };
             
