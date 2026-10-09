@@ -113,7 +113,13 @@
         /* Fast icon opacity transition */
         #sidebar nav a span i,
         #sidebar nav button span i {
-            transition: opacity 0.12s ease-out, color 0.12s ease-out, transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+            transition: opacity 0.12s ease-out, color 0.12s ease-out !important;
+        }
+
+        /* Menu item translate transition */
+        #sidebar nav a,
+        #sidebar nav button {
+            transition: background-color 0.12s ease-out, color 0.12s ease-out, box-shadow 0.12s ease-out, transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         }
 
         /* Dropdown arrow smooth rotation */
@@ -158,15 +164,15 @@
         /* Icon zoom on hover */
         #sidebar nav a:not([data-active="true"]):not(.active):hover span i,
         #sidebar nav button:not([data-active="true"]):not(.active):hover span i {
-            transform: scale(1.15);
+            transform: translateX(3px);
         }
 
-        /* Active state hover - icon zoom more */
+        /* Active state hover - icon slide more */
         #sidebar nav a[data-active="true"]:hover span i,
         #sidebar nav button[data-active="true"]:hover span i,
         #sidebar nav a.active:hover span i,
         #sidebar nav button.active:hover span i {
-            transform: scale(1.25);
+            transform: translateX(5px);
         }
     `;
     document.head.appendChild(scrollbarStyle);
@@ -682,11 +688,11 @@
                     // Active item - brighten with thicker underline
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.22)' : 'rgba(96, 165, 250, 0.18)';
                     this.style.boxShadow = 'inset 0 3px 0 0 #60a5fa';
-                    if (icon) icon.style.transform = 'scale(1.25)';
+                    if (icon) icon.style.transform = 'translateX(5px)';
                 } else {
                     // Non-active - show subtle hover
                     this.style.background = isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
-                    if (icon) icon.style.transform = 'scale(1.15)';
+                    if (icon) icon.style.transform = 'translateX(3px)';
                 }
             };
             
@@ -699,12 +705,12 @@
                     // Restore active background with thin underline
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
                     this.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
-                    if (icon) icon.style.transform = 'scale(1)';
+                    if (icon) icon.style.transform = 'translateX(0)';
                 } else {
                     // Restore transparent
                     this.style.background = 'transparent';
                     this.style.boxShadow = 'none';
-                    if (icon) icon.style.transform = 'scale(1)';
+                    if (icon) icon.style.transform = 'translateX(0)';
                 }
             };
             
