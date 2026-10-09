@@ -532,6 +532,22 @@ app.get('/rename-invoice-hijau', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'rename-invoice-hijau.html'));
 });
 
+app.get('/upload-excel', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-excel.html'));
+});
+
+app.get('/upload-invoice-pdf', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-invoice-pdf.html'));
+});
+
+app.get('/upload-bukti-bayar', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-bukti-bayar.html'));
+});
+
+app.get('/upload-faktur-pajak', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-faktur-pajak.html'));
+});
+
 app.get('/dashboard-zona', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
 });
