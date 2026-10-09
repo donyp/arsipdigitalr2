@@ -548,8 +548,7 @@
             box-sizing: border-box;
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow: hidden;
             padding: 0.75rem 0.5rem;
         `;
 
