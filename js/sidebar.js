@@ -503,8 +503,8 @@
             }
 
             #main-content {
-                margin-left: 15rem;
-                width: calc(100% - 15rem);
+                margin-left: 16rem;
+                width: calc(100% - 16rem);
                 box-sizing: border-box;
                 transition: all 0.3s ease;
             }
@@ -556,9 +556,10 @@
     function adjustMainContent() {
         const mainContent = document.getElementById('main-content');
         if (mainContent) {
-            mainContent.style.marginLeft = '15rem';
-            mainContent.style.width = 'calc(100% - 15rem)';
+            mainContent.style.marginLeft = '16rem';
+            mainContent.style.width = 'calc(100% - 16rem)';
             mainContent.style.boxSizing = 'border-box';
+            mainContent.style.transition = 'all 300ms ease';
         }
     }
 
