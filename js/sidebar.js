@@ -559,8 +559,7 @@
             box-sizing: border-box;
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
-            overflow-x: hidden;
-            overflow-y: hidden;
+            overflow: hidden;
             padding: ${isUploadFilePage ? '0.6rem 0.4rem' : '0.85rem 0.6rem'};
         `;
 
@@ -608,7 +607,6 @@
                 scroll-behavior: smooth;
                 min-height: 0;
                 order: 1;
-                ${isUploadFilePage ? 'max-height: calc(100vh - 12rem);' : ''}
             ">
                 ${navHTML}
             </nav>
