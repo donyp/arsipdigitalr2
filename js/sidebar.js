@@ -595,12 +595,14 @@
                 overflow-y: auto;
                 overflow-x: hidden;
                 scroll-behavior: smooth;
+                min-height: 0;
             ">
                 ${navHTML}
             </nav>
             
-            <!-- Quick Actions Footer -->
+            <!-- Quick Actions Footer - Fixed at bottom -->
             <div style="
+                flex-shrink: 0;
                 padding-top: 1rem;
                 margin-top: 1rem;
                 border-top: 1px solid ${borderColor};
