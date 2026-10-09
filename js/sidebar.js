@@ -595,6 +595,7 @@
                 overflow-x: hidden;
                 scroll-behavior: smooth;
                 min-height: 0;
+                max-height: calc(100vh - 12rem);
             ">
                 ${navHTML}
             </nav>
