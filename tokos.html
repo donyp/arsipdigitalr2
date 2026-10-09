@@ -154,6 +154,7 @@
                         <table class="w-full text-left text-sm" id="tokos-table">
                             <thead class="bg-gray-50 border-b border-gray-200">
                                 <tr>
+                                    <th class="px-6 py-3 font-bold text-gray-700">Toko ID</th>
                                     <th class="px-6 py-3 font-bold text-gray-700">Nama Toko</th>
                                     <th class="px-6 py-3 font-bold text-gray-700">Kode Toko</th>
                                     <th class="px-6 py-3 font-bold text-gray-700">Zona</th>
@@ -264,14 +265,17 @@
         function renderTokosTable() {
             const tbody = document.getElementById('tokos-body');
             if (filteredTokos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-8 text-center text-gray-500">Tidak ada data toko</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">Tidak ada data toko</td></tr>';
                 return;
             }
 
             tbody.innerHTML = filteredTokos.map(toko => {
                 const zona = currentZonas.find(z => z.id === toko.zona_id);
+                // ✅ Show toko_id as monospace code
+                const tokoIdDisplay = `<code class="bg-gray-100 px-2 py-1 rounded text-xs font-mono">${toko.id}</code>`;
                 return `
                     <tr class="border-b border-gray-200 hover:bg-gray-50">
+                        <td class="px-6 py-4 font-mono text-gray-600">${tokoIdDisplay}</td>
                         <td class="px-6 py-4 font-medium text-gray-900">${toko.nama}</td>
                         <td class="px-6 py-4 text-gray-600">${toko.kode}</td>
                         <td class="px-6 py-4">${zona ? zona.nama : 'Unknown'}</td>
