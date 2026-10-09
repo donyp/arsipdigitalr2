@@ -583,6 +583,11 @@
         renderSidebar();
     };
 
+    window.loadSidebar = function(page) {
+        console.log('[SIDEBAR] loadSidebar() called for page:', page);
+        renderSidebar();
+    };
+
     // ============================================================
     // INITIALIZE ON DOM READY
     // ============================================================
