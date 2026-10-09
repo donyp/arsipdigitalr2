@@ -20,6 +20,8 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             const { status, zona_id, page = 1, limit = 20, search } = req.query;
             const offset = (page - 1) * limit;
 
+            console.log('[Support API] Request from user:', req.user.userId, 'role:', req.user.role);
+
             let query = supabase
                 .from('support_tickets')
                 .select('id, ticket_number, subject, category, priority, status, assigned_to, user_id, zona_id, created_at, updated_at, resolved_at', { count: 'exact' });
@@ -28,11 +30,14 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             // Admin Zona can see tickets only from their zona
             // Other users only see their own tickets
             if (req.user.role === 'moderator' || req.user.role === 'super_admin') {
+                console.log('[Support API] User is moderator/super_admin - showing all tickets');
                 // Moderator/Super Admin can see all
             } else if (req.user.role === 'admin_zona') {
+                console.log('[Support API] User is admin_zona, zona_id:', req.user.zona_id);
                 // Admin zona sees tickets from their zona
                 query = query.eq('zona_id', req.user.zona_id);
             } else {
+                console.log('[Support API] User is regular user, showing own tickets only');
                 // Regular users see only their own
                 query = query.eq('user_id', req.user.userId);
             }
@@ -59,6 +64,8 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             const { data: tickets, error, count } = await query.range(offset, offset + limit - 1);
 
             if (error) throw error;
+
+            console.log('[Support API] Found', tickets?.length || 0, 'tickets, total count:', count);
 
             // Now fetch zona names and usernames for the tickets
             const enrichedTickets = await Promise.all((tickets || []).map(async (ticket) => {
