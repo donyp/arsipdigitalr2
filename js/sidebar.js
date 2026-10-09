@@ -606,7 +606,7 @@
                 overflow-x: hidden;
                 scroll-behavior: smooth;
                 min-height: 0;
-                max-height: ${isUploadFilePage ? 'calc(100vh - 12rem)' : 'calc(100vh - 10.5rem)'};
+                max-height: ${isUploadFilePage ? 'calc(100vh - 12rem)' : 'calc(100vh - 9.5rem)'};
             ">
                 ${navHTML}
             </nav>
@@ -614,38 +614,38 @@
             <!-- Quick Actions Footer - Fixed at bottom -->
             <div style="
                 flex-shrink: 0;
-                padding-top: ${isUploadFilePage ? '1rem' : '0.8rem'};
-                margin-top: ${isUploadFilePage ? '1rem' : '0.8rem'};
+                padding-top: ${isUploadFilePage ? '1rem' : '0.6rem'};
+                margin-top: ${isUploadFilePage ? '1rem' : '0.6rem'};
                 border-top: 1px solid ${borderColor};
                 display: flex;
                 flex-direction: column;
-                gap: ${isUploadFilePage ? '0.4rem' : '0.3rem'};
+                gap: ${isUploadFilePage ? '0.4rem' : '0.25rem'};
             ">
                 <div style="
-                    font-size: ${isUploadFilePage ? '0.65rem' : '0.6rem'};
+                    font-size: ${isUploadFilePage ? '0.65rem' : '0.55rem'};
                     color: ${tertiaryText};
                     font-weight: 600;
                     letter-spacing: 0.05em;
                     text-transform: uppercase;
-                    margin-bottom: ${isUploadFilePage ? '0.3rem' : '0.2rem'};
+                    margin-bottom: ${isUploadFilePage ? '0.3rem' : '0.15rem'};
                 ">Quick Actions</div>
                 
-                <div style="display: flex; gap: ${isUploadFilePage ? '0.4rem' : '0.35rem'};">
+                <div style="display: flex; gap: ${isUploadFilePage ? '0.4rem' : '0.3rem'};">
                     <!-- Edit Button -->
                     <button onclick="openEditHeadlineModal()" style="
                         flex: 1;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: ${isUploadFilePage ? '0.5rem' : '0.4rem'};
+                        padding: ${isUploadFilePage ? '0.5rem' : '0.35rem'};
                         background: transparent;
                         color: #60a5fa;
                         border: 1px solid ${isDarkMode ? 'rgba(96, 165, 250, 0.3)' : '#60a5fa'};
-                        border-radius: ${isUploadFilePage ? '6px' : '5px'};
+                        border-radius: ${isUploadFilePage ? '6px' : '4px'};
                         cursor: pointer;
                         transition: all 0.2s ease;
                     " onmouseover="this.style.background='#60a5fa'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#60a5fa'" title="Edit headline">
-                        <svg width="${isUploadFilePage ? '14' : '12'}" height="${isUploadFilePage ? '14' : '12'}" fill="currentColor" viewBox="0 0 24 24">
+                        <svg width="${isUploadFilePage ? '14' : '11'}" height="${isUploadFilePage ? '14' : '11'}" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </button>
@@ -656,15 +656,15 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: ${isUploadFilePage ? '0.5rem' : '0.4rem'};
+                        padding: ${isUploadFilePage ? '0.5rem' : '0.35rem'};
                         background: transparent;
                         color: ${isDarkMode ? '#fbbf24' : '#6b7280'};
                         border: 1px solid ${isDarkMode ? 'rgba(251, 191, 36, 0.3)' : '#d1d5db'};
-                        border-radius: ${isUploadFilePage ? '6px' : '5px'};
+                        border-radius: ${isUploadFilePage ? '6px' : '4px'};
                         cursor: pointer;
                         transition: all 0.2s ease;
                     " onmouseover="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background = isDark ? '#fbbf24' : '#6b7280'; this.style.color='white'" onmouseout="const isDark = localStorage.getItem('dark_mode_enabled') === 'true'; this.style.background='transparent'; this.style.color = isDark ? '#fbbf24' : '#6b7280'" title="Toggle theme">
-                        <span style="font-size: ${isUploadFilePage ? '16px' : '14px'};">${isDarkMode ? '☀️' : '🌙'}</span>
+                        <span style="font-size: ${isUploadFilePage ? '16px' : '13px'};">${isDarkMode ? '☀️' : '🌙'}</span>
                     </button>
                     
                     <!-- Logout Button -->
@@ -673,15 +673,15 @@
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        padding: ${isUploadFilePage ? '0.5rem' : '0.4rem'};
+                        padding: ${isUploadFilePage ? '0.5rem' : '0.35rem'};
                         background: transparent;
                         color: #ef4444;
                         border: 1px solid ${isDarkMode ? 'rgba(239, 68, 68, 0.3)' : '#ef4444'};
-                        border-radius: ${isUploadFilePage ? '6px' : '5px'};
+                        border-radius: ${isUploadFilePage ? '6px' : '4px'};
                         cursor: pointer;
                         transition: all 0.2s ease;
                     " onmouseover="this.style.background='#ef4444'; this.style.color='white'" onmouseout="this.style.background='transparent'; this.style.color='#ef4444'" title="Logout">
-                        <svg width="${isUploadFilePage ? '14' : '12'}" height="${isUploadFilePage ? '14' : '12'}" fill="currentColor" viewBox="0 0 24 24">
+                        <svg width="${isUploadFilePage ? '14' : '11'}" height="${isUploadFilePage ? '14' : '11'}" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                     </button>
