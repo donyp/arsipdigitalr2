@@ -419,6 +419,20 @@ class SPARouter {
             });
         }
 
+        // ✅ CRITICAL: Reinitialize sidebar on every SPA route change
+        // The sidebar must be reinitialized to ensure all menu items maintain
+        // uniform styling (height, padding, font-size) via sidebar-v6.js.
+        // Without this, sidebar items lose their inline styles when navigating
+        // via SPA router instead of full page reload.
+        if (typeof window.loadSidebar === 'function') {
+            try {
+                console.log('[SPA Router] Reinitializing sidebar after route change');
+                await window.loadSidebar();
+            } catch (e) {
+                console.error('[SPA Router] Error reinitializing sidebar:', e);
+            }
+        }
+
         // Trigger custom event that pages can listen for
         window.dispatchEvent(new CustomEvent('spa-page-loaded', { detail: { page: this.currentPage } }));
         
