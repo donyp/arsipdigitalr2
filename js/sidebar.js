@@ -110,6 +110,8 @@
     // INJECT SIDEBAR INTO DOM
     // ============================================================
     function renderSidebar() {
+        console.log('[SIDEBAR] renderSidebar() called');
+        
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) {
             console.error('[SIDEBAR] ERROR: #sidebar element not found');
@@ -241,6 +243,15 @@
 
         sidebar.innerHTML = sidebarHTML;
         sidebar.setAttribute('data-rendered', 'true');
+
+        // Log sidebar container width for verification
+        const sidebarContainer = sidebar.querySelector('.sidebar-container');
+        if (sidebarContainer) {
+            console.log('[SIDEBAR] Sidebar container created:', {
+                width: sidebarContainer.style.width,
+                computedWidth: window.getComputedStyle(sidebarContainer).width
+            });
+        }
 
         // Adjust main content margin
         adjustMainContent();
@@ -560,6 +571,14 @@
             mainContent.style.width = 'calc(100% - 16rem)';
             mainContent.style.boxSizing = 'border-box';
             mainContent.style.transition = 'all 300ms ease';
+            
+            console.log('[SIDEBAR] adjustMainContent() - Set main-content:', {
+                marginLeft: mainContent.style.marginLeft,
+                width: mainContent.style.width,
+                boxSizing: mainContent.style.boxSizing,
+                computedWidth: window.getComputedStyle(mainContent).width,
+                computedMarginLeft: window.getComputedStyle(mainContent).marginLeft
+            });
         }
     }
 
