@@ -380,16 +380,16 @@
             return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
         });
 
-        // Menu item sizes - modern and consistent
+        // Menu item sizes - modern and consistent - smaller for compact layout
         const menuSizes = {
-            buttonPadding: '0.625rem 0.75rem',
-            buttonMargin: '0.125rem 0',
-            buttonFontSize: '0.875rem',
-            childPadding: '0.5rem 0.75rem 0.5rem 2.5rem',
-            childMargin: '0.125rem 0',
-            childFontSize: '0.8125rem',
-            childIconSize: '0.875rem',
-            iconSize: '1.125rem'
+            buttonPadding: '0.5rem 0.6rem',
+            buttonMargin: '0.1rem 0',
+            buttonFontSize: '0.75rem',
+            childPadding: '0.4rem 0.6rem 0.4rem 2rem',
+            childMargin: '0.1rem 0',
+            childFontSize: '0.7rem',
+            childIconSize: '0.75rem',
+            iconSize: '0.95rem'
         };
 
         // Recalculate colors based on current dark mode
@@ -528,11 +528,11 @@
         const hasAnnouncement = !!document.getElementById('global-announcement-banner');
         const topOffset = hasAnnouncement ? '60px' : '0px';
 
-        // Modern sidebar with consistent width
-        const sidebarWidth = '15rem';
+        // Modern sidebar with consistent width - more compact
+        const sidebarWidth = '14rem';
 
-        // Use max-height: 100vh to fit within viewport and allow scrolling
-        const sidebarHeight = `max-height: 100vh;`;
+        // Use min-height: 100vh to always stretch to viewport, plus flex: 1 on nav for growth
+        const sidebarHeight = `min-height: 100vh;`;
 
         sidebar.style.cssText = `
             position: fixed;
@@ -550,7 +550,7 @@
             will-change: background-color;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 1.5rem 1rem;
+            padding: 1rem 0.6rem;
         `;
 
         sidebar.innerHTML = `
@@ -558,22 +558,22 @@
             <div style="
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-                padding: 0.5rem 0;
-                margin-bottom: 2rem;
+                gap: 0.5rem;
+                padding: 0.4rem 0;
+                margin-bottom: 1rem;
             ">
                 <div style="
-                    width: 40px;
-                    height: 40px;
+                    width: 32px;
+                    height: 32px;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border-radius: 12px;
+                    border-radius: 8px;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
                     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
                 ">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="color: white;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="color: white;">
                         <path d="M9 3L5 7L9 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M15 13L19 17L15 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <line x1="19" y1="7" x2="5" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -582,7 +582,7 @@
                 <div>
                     <div style="
                         font-weight: 700;
-                        font-size: 1.125rem;
+                        font-size: 0.95rem;
                         color: ${textColor};
                         letter-spacing: -0.02em;
                         line-height: 1.2;
