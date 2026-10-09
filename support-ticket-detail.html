@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <base href="/">
@@ -1173,7 +1173,7 @@
 
                 const data = await response.json();
 
-                statusDiv.textContent = '✓ Pesan terkirim!';
+                statusDiv.textContent = '? Pesan terkirim!';
                 statusDiv.style.color = '#10b981';
                 statusDiv.classList.remove('loading');
                 document.getElementById('replyMessage').value = '';
@@ -1185,7 +1185,7 @@
 
             } catch (error) {
                 const statusDiv = document.getElementById('replyStatus');
-                statusDiv.textContent = '✗ Error: ' + error.message;
+                statusDiv.textContent = '? Error: ' + error.message;
                 statusDiv.style.color = '#ef4444';
                 statusDiv.style.display = 'block';
                 statusDiv.classList.remove('loading');

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -28,7 +28,7 @@
     <div id="mobile-overlay" class="mobile-overlay" onclick="toggleSidebar()"></div>
 
     <!-- Sidebar -->
-    <!-- Sidebar (rendered by js/sidebar.js?v=ULTRACLEAN_2026) -->
+    <!-- Sidebar (rendered by js/sidebar.js?cb=1791563282
     <aside id="sidebar"
         class="sidebar fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 flex flex-col z-40 hidden">
     </aside>
@@ -65,12 +65,12 @@
                     <div class="space-y-6 relative z-10">
                         <!-- Instructions -->
                         <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-                            <p class="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-2">📋 Petunjuk Upload Invoice</p>
+                            <p class="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-2">?? Petunjuk Upload Invoice</p>
                             <ul class="text-xs text-yellow-700 space-y-1.5">
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>File harus berformat <strong>PDF</strong></span></li>
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>Nama file harus nomor faktur (contoh: <strong>835100310.pdf</strong>)</span></li>
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>Sistem akan otomatis match dengan daftar invoice</span></li>
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>Status akan berubah dari PENDING → UPLOADED</span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>File harus berformat <strong>PDF</strong></span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>Nama file harus nomor faktur (contoh: <strong>835100310.pdf</strong>)</span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>Sistem akan otomatis match dengan daftar invoice</span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>Status akan berubah dari PENDING ? UPLOADED</span></li>
                             </ul>
                         </div>
 
@@ -111,7 +111,7 @@
                             <div class="flex items-center justify-between mb-3 px-1">
                                 <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Berkas
                                     Dokumen</label>
-                                <span class="text-[10px] text-gray-600 font-medium tracking-tight">Maks 25MB •
+                                <span class="text-[10px] text-gray-600 font-medium tracking-tight">Maks 25MB �
                                     PDF/JPG/PNG</span>
                             </div>
                             <div id="drop-zone"
@@ -228,12 +228,12 @@
                     <div class="space-y-6 relative z-10">
                         <!-- Instructions -->
                         <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-                            <p class="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-2">📋 Petunjuk Upload Invoice</p>
+                            <p class="text-xs font-bold text-yellow-800 uppercase tracking-widest mb-2">?? Petunjuk Upload Invoice</p>
                             <ul class="text-xs text-yellow-700 space-y-1.5">
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>File harus berformat <strong>PDF</strong></span></li>
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>Nama file harus nomor faktur (contoh: <strong>835100310.pdf</strong>)</span></li>
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>Sistem akan otomatis match dengan daftar invoice</span></li>
-                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">✓</span> <span>Status akan berubah dari PENDING → UPLOADED</span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>File harus berformat <strong>PDF</strong></span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>Nama file harus nomor faktur (contoh: <strong>835100310.pdf</strong>)</span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>Sistem akan otomatis match dengan daftar invoice</span></li>
+                                <li class="flex items-start gap-2"><span class="text-green-600 font-bold">?</span> <span>Status akan berubah dari PENDING ? UPLOADED</span></li>
                             </ul>
                         </div>
 
@@ -275,7 +275,7 @@
 
     <!-- Scripts -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="js/sidebar.js?v=ULTRACLEAN_2026"></script>
+    <script src="js/sidebar.js?cb=1791563282"></script>
     <script src="js/config.js"></script>
     <script src="js/supabase.js"></script>
     <script src="js/utils.js?v=1778387279965"></script>
@@ -333,7 +333,7 @@
             invoiceFilesToUpload = Array.from(input.files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
             
             if (invoiceFilesToUpload.length === 0) {
-                Toast.error('Hanya file PDF yang diterima', '❌ Error');
+                Toast.error('Hanya file PDF yang diterima', '? Error');
                 return;
             }
 
@@ -344,7 +344,7 @@
             // Display files with loading status, then check each faktur
             listEl.innerHTML = invoiceFilesToUpload.map(f => `
                 <li class="flex items-center gap-3 p-3 bg-gray-50 rounded text-sm border border-gray-200">
-                    <span class="text-red-600 font-bold">📄</span>
+                    <span class="text-red-600 font-bold">??</span>
                     <div class="flex-1">
                         <p class="font-bold text-gray-900">${f.name}</p>
                         <p class="text-xs text-gray-500">${(f.size / 1024 / 1024).toFixed(2)}MB</p>
@@ -383,16 +383,16 @@
                     
                     if (result.exists) {
                         // Found in daftar
-                        statusEl.innerHTML = '🟢';
+                        statusEl.innerHTML = '??';
                         statusEl.title = `Found: ${result.data.toko} (${result.data.status})`;
                     } else {
                         // Not found in daftar
-                        statusEl.innerHTML = '🔴';
+                        statusEl.innerHTML = '??';
                         statusEl.title = `Not in daftar (${faktur})`;
                     }
                 } catch (error) {
                     const statusEl = document.querySelector(`[data-filename="${file.name}"] span`);
-                    statusEl.innerHTML = '⚠️';
+                    statusEl.innerHTML = '??';
                     statusEl.title = 'Error checking faktur';
                 }
             }
@@ -400,13 +400,13 @@
 
         async function uploadInvoicePDFs() {
             if (invoiceFilesToUpload.length === 0) {
-                Toast.error('Pilih file PDF terlebih dahulu', '❌ Error');
+                Toast.error('Pilih file PDF terlebih dahulu', '? Error');
                 return;
             }
 
             const btn = document.getElementById('btn-upload-invoices');
             btn.disabled = true;
-            btn.innerHTML = '<span class="animate-spin">⏳</span> Uploading...';
+            btn.innerHTML = '<span class="animate-spin">?</span> Uploading...';
 
             let successCount = 0;
             let failCount = 0;
@@ -444,11 +444,11 @@
 
                 // Show summary
                 if (successCount > 0) {
-                    Notify.success(`✅ ${successCount} invoice berhasil diupload!`);
+                    Notify.success(`? ${successCount} invoice berhasil diupload!`);
                 }
                 
                 if (failCount > 0) {
-                    Notify.error(`❌ ${failCount} file gagal diupload`);
+                    Notify.error(`? ${failCount} file gagal diupload`);
                 }
 
                 // Reset UI only if all uploads successful

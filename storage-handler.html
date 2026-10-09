@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -570,7 +570,7 @@
                 loadFiles(currentPath);
                 loadStats();
                 setupEventListeners();
-                // ✅ OPTIMIZED: Refresh stats every 120 seconds (was 30s) to reduce API calls
+                // ? OPTIMIZED: Refresh stats every 120 seconds (was 30s) to reduce API calls
                 // Stats are cached server-side for 60s, so 120s is reasonable
                 setInterval(loadStats, 120000);
             });
@@ -741,7 +741,7 @@
             
             // If > 5 files, create ZIP
             if (fileCount > 5) {
-                Notify.info(`📦 Preparing ZIP with ${fileCount} files...`);
+                Notify.info(`?? Preparing ZIP with ${fileCount} files...`);
                 
                 try {
                     const response = await fetch('/api/storage-handler/download-bulk', {
@@ -759,7 +759,7 @@
                         throw new Error(`HTTP ${response.status}`);
                     }
 
-                    // ✅ FIXED: Response is now binary ZIP data, not JSON
+                    // ? FIXED: Response is now binary ZIP data, not JSON
                     // Check content type to determine response format
                     const contentType = response.headers.get('content-type');
                     
@@ -785,7 +785,7 @@
                         document.body.removeChild(a);
                         
                         console.log('[BulkDownload] ZIP downloaded successfully');
-                        Notify.success(`✓ ZIP downloaded (${fileCount} files)`);
+                        Notify.success(`? ZIP downloaded (${fileCount} files)`);
                         clearSelection();
                     } else {
                         // JSON response (old format with signed URL)
@@ -795,7 +795,7 @@
                             window.location.href = data.url;
                             
                             setTimeout(() => {
-                                Notify.success(`✓ ZIP downloading (${data.filesIncluded} files${data.filesFailed > 0 ? `, ${data.filesFailed} failed` : ''})`);
+                                Notify.success(`? ZIP downloading (${data.filesIncluded} files${data.filesFailed > 0 ? `, ${data.filesFailed} failed` : ''})`);
                                 clearSelection();
                             }, 500);
                         } else {
@@ -811,7 +811,7 @@
             }
 
             // If <= 5 files, individual downloads
-            Notify.info(`📥 Starting ${fileCount} downloads...`);
+            Notify.info(`?? Starting ${fileCount} downloads...`);
             
             try {
                 const response = await fetch('/api/storage-handler/download-bulk', {
@@ -842,7 +842,7 @@
                     }
 
                     setTimeout(() => {
-                        Notify.success(`✓ ${fileCount} files started downloading`);
+                        Notify.success(`? ${fileCount} files started downloading`);
                         clearSelection();
                     }, downloadCount * 500 + 800);
                 } else {
@@ -884,7 +884,7 @@
                         } catch (error) {}
                     }
 
-                    Notify.success(`✓ Deleted ${deleted}/${paths.length} items`);
+                    Notify.success(`? Deleted ${deleted}/${paths.length} items`);
                     clearSelection();
                     refreshBrowser();
                 }
@@ -934,11 +934,11 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    Notify.success(`✓ Uploaded ${data.uploaded} file(s)`);
+                    Notify.success(`? Uploaded ${data.uploaded} file(s)`);
                     closeUploadModal();
                     refreshBrowser();
                 } else {
-                    Notify.warning(`ΓÜá∩╕Å Uploaded ${data.uploaded}, failed ${data.failed}`);
+                    Notify.warning(`G��n+� Uploaded ${data.uploaded}, failed ${data.failed}`);
                 }
             } catch (error) {
                 Notify.error('Upload failed');
@@ -949,7 +949,7 @@
 
         async function downloadFile(filePath) {
             try {
-                Notify.info('📥 Preparing download...');
+                Notify.info('?? Preparing download...');
                 
                 console.log('[Download] Requesting signed URL for:', filePath);
                 
@@ -975,7 +975,7 @@
                 window.location.href = data.url;
                 
                 setTimeout(() => {
-                    Notify.success('✓ Download started - check your downloads folder');
+                    Notify.success('? Download started - check your downloads folder');
                 }, 500);
                 
             } catch (error) {
@@ -998,7 +998,7 @@
 
                     const data = await response.json();
                     if (data.success) {
-                        Notify.success('✓ Deleted');
+                        Notify.success('? Deleted');
                         refreshBrowser();
                     } else throw new Error(data.error);
                 } catch (error) {
@@ -1037,7 +1037,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    Notify.success('✓ Renamed');
+                    Notify.success('? Renamed');
                     closeRenameModal();
                     refreshBrowser();
                 } else throw new Error(data.error);
@@ -1073,7 +1073,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    Notify.success('✓ Folder created');
+                    Notify.success('? Folder created');
                     closeCreateFolderModal();
                     refreshBrowser();
                 } else throw new Error(data.error);

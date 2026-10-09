@@ -3,6 +3,7 @@
 // ============================================================
 
 (function() {
+    console.log('[SIDEBAR v6.0] Starting sidebar initialization...');
     // Add scrollbar styling for sidebar - both light and dark mode
     const scrollbarStyle = document.createElement('style');
     scrollbarStyle.textContent = `
@@ -343,7 +344,11 @@
 
     function inject() {
         let sidebar = document.getElementById('sidebar');
-        if (!sidebar) return;
+        if (!sidebar) {
+            console.error('[SIDEBAR v6.0] ERROR: #sidebar element not found in DOM!');
+            return;
+        }
+        console.log('[SIDEBAR v6.0] Sidebar element found. Injecting v6.0 layout...');
 
         sidebar.removeAttribute('data-injected');
 
@@ -727,18 +732,22 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('[SIDEBAR v6.0] DOMContentLoaded event - running inject()');
             inject();
             setupHoverListeners();
         });
     } else {
+        console.log('[SIDEBAR v6.0] DOM already loaded - running inject() immediately');
         inject();
         setupHoverListeners();
     }
 
     window.loadSidebar = async function() {
+        console.log('[SIDEBAR v6.0] loadSidebar() called explicitly');
         inject();
         setupHoverListeners();
         const currentPath = window.location.pathname;
+        console.log('[SIDEBAR v6.0] Updated active state for path:', currentPath);
         updateActiveStates(currentPath);
         return Promise.resolve();
     };

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -186,7 +186,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/sidebar.js?cb=1791562743"></script>
+    <script src="js/sidebar.js?cb=1791563282"></script>
     <script src="js/config.js"></script>
     <script src="js/supabase.js"></script>
     <script src="js/auth.js"></script>
@@ -355,7 +355,7 @@
 
             const btn = document.getElementById('uploadBtn');
             btn.disabled = true;
-            btn.textContent = '⏳ Loading...';
+            btn.textContent = '? Loading...';
 
             try {
                 // 1. Upload file to storage
@@ -394,7 +394,7 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    showMessage('✅ Invoice berhasil diupload! Pesan WhatsApp sudah digenerate.', 'success');
+                    showMessage('? Invoice berhasil diupload! Pesan WhatsApp sudah digenerate.', 'success');
                     displayWhatsappMessages(result.notifications);
                     document.getElementById('invoiceForm').reset();
                 } else {
@@ -422,7 +422,7 @@
                     </h3>
                     <div class="message-preview">${escapeHtml(data.message)}</div>
                     <button class="copy-btn" onclick="copyMessage('${escapeJsString(data.message)}', '${zonaName}')">
-                        📋 Salin Pesan
+                        ?? Salin Pesan
                     </button>
                 </div>
             `).join('');
@@ -437,7 +437,7 @@
             try {
                 await navigator.clipboard.writeText(message);
                 if (typeof Toast !== 'undefined') {
-                    Toast.success(`✅ Pesan zona ${zonaName} sudah disalin!`);
+                    Toast.success(`? Pesan zona ${zonaName} sudah disalin!`);
                 }
             } catch (error) {
                 if (typeof Toast !== 'undefined') {

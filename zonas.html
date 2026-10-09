@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -177,7 +177,7 @@
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/sidebar.js?cb=1791562743"></script>
+    <script src="js/sidebar.js?cb=1791563282"></script>
     <script src="js/spa-page-handler.js"></script>
     <script>
         // Prevent redeclaration when page reloads via SPA
@@ -216,7 +216,7 @@
             }
             tbody.innerHTML = currentZonas.map(zona => {
                 const tokoCount = currentTokos.filter(t => t.zona_id === zona.id).length;
-                // ✅ Show zona_id as monospace code
+                // ? Show zona_id as monospace code
                 const zonaIdDisplay = `<code class="bg-gray-100 px-2 py-1 rounded text-xs font-mono">${zona.id}</code>`;
                 return `<tr class="border-b border-gray-200 hover:bg-gray-50">
                     <td class="px-6 py-4 font-mono text-gray-600">${zonaIdDisplay}</td>

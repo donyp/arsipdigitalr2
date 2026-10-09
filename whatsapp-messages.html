@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -271,7 +271,7 @@
                         <div>
                             <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">WhatsApp Notifications</h2>
                             <h1 class="text-3xl font-black text-gray-900 flex items-center gap-3">
-                                <span class="text-4xl">💬</span>
+                                <span class="text-4xl">??</span>
                                 <span>Pesan WhatsApp</span>
                             </h1>
                             <p class="text-gray-600 font-medium mt-2">Salin dan kirim notifikasi per zona dengan mudah</p>
@@ -312,7 +312,7 @@
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/sidebar.js?cb=1791562743"></script>
+    <script src="js/sidebar.js?cb=1791563282"></script>
     <script src="js/spa-page-handler.js"></script>
     <script>
         // Prevent redeclaration when SPA router reloads the page
@@ -611,7 +611,7 @@ ${msg.message || 'N/A'}
                 
                 // Show copy success toast
                 if (typeof Toast !== 'undefined') {
-                    Toast.success('✓ Pesan berhasil disalin ke clipboard');
+                    Toast.success('? Pesan berhasil disalin ke clipboard');
                 } else {
                     Notify.success('Pesan berhasil disalin!');
                 }
@@ -636,7 +636,7 @@ ${msg.message || 'N/A'}
                 await API.post('/api/whatsapp/delete-invoice-message', { notificationId: msgId });
                 await loadMessages();
                 if (typeof Toast !== 'undefined') {
-                    Toast.success('✓ Pesan dihapus');
+                    Toast.success('? Pesan dihapus');
                 }
             } catch (err) {
                 if (typeof Toast !== 'undefined') {

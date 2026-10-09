@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -447,7 +447,7 @@
 
                     <!-- Validating Spinner -->
                     <div id="validating" style="display: none; text-align: center; padding: 32px;">
-                        <div class="inline-block animate-spin text-5xl mb-4">⏳</div>
+                        <div class="inline-block animate-spin text-5xl mb-4">?</div>
                         <p class="text-base font-semibold text-gray-900 mb-2">Validating Files...</p>
                         <p class="text-sm text-gray-500">Mohon tunggu sementara kami memeriksa file Anda</p>
                     </div>
@@ -462,11 +462,11 @@
                         </div>
                         <div class="stat-card">
                             <div class="text-3xl font-black text-green-600 mb-2" id="validFiles">0</div>
-                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Valid ✓</div>
+                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Valid ?</div>
                         </div>
                         <div class="stat-card">
                             <div class="text-3xl font-black text-red-500 mb-2" id="invalidFiles">0</div>
-                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Invalid ✗</div>
+                            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Invalid ?</div>
                         </div>
                     </div>
 
@@ -495,7 +495,7 @@
     <script src="js/config.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/sidebar.js?cb=1791562743"></script>
+    <script src="js/sidebar.js?cb=1791563282"></script>
     <script src="js/spa-page-handler.js"></script>
 
     <script>
@@ -702,14 +702,14 @@
                         
                         return `
                             <div style="background: var(--color-bg-card); padding: 12px 15px; border-radius: 6px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; border: 1px solid var(--color-border);">
-                                <div style="font-size: 18px; color: #10b981;">✓</div>
+                                <div style="font-size: 18px; color: #10b981;">?</div>
                                 <div style="flex: 1;">
                                     <div style="font-size: 13px; font-weight: 600; color: var(--color-text-primary);">${file.name}</div>
                                     <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">
                                         Faktur: ${faktur} | ${tokoName} | ${nominal} | ${(file.size / 1024 / 1024).toFixed(2)} MB
                                     </div>
                                 </div>
-                                <button onclick="removeFile(${idx})" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">✕ Remove</button>
+                                <button onclick="removeFile(${idx})" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">? Remove</button>
                             </div>
                         `;
                     }).join('');
@@ -776,11 +776,11 @@
 
                     // Show results
                     if (successCount > 0) {
-                        Notify.success(`✅ ${successCount} bukti bayar berhasil diupload!`);
+                        Notify.success(`? ${successCount} bukti bayar berhasil diupload!`);
                     }
                     
                     if (failedFiles.length > 0) {
-                        Notify.error(`❌ ${failedFiles.length} file gagal: ${failedFiles.join(', ')}`);
+                        Notify.error(`? ${failedFiles.length} file gagal: ${failedFiles.join(', ')}`);
                     }
 
                     // Reset UI only if all uploads successful
@@ -788,7 +788,7 @@
                         window.resetUpload();
                     }
                 } catch (error) {
-                    Notify.error('❌ Upload gagal: ' + error.message);
+                    Notify.error('? Upload gagal: ' + error.message);
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
