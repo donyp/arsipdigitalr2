@@ -901,18 +901,6 @@ select option {
     }
 }
 
-/* ---- Main Content Layout ---- */
-.main-content {
-    margin-left: 280px;
-    transition: margin-left 0.3s ease;
-    min-height: 100vh;
-    background: var(--surface);
-    display: flex;
-    flex-direction: column;
-}
-
-@media (max-width: 768px) {
-    .main-content {
-        margin-left: 0;
-    }
-}
+/* ---- Main Content Layout (handled by sidebar.js - do not use) ---- */
+/* .main-content class is deprecated - use #main-content ID instead */
+/* Sidebar width is 16rem across all pages via sidebar.js */

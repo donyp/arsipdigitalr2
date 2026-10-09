@@ -29,26 +29,8 @@ async function initSupportPage() {
     console.log('[Support] initSupportPage() called');
     console.log('[Support] Current page:', window.location.pathname);
     
-    // Check sidebar size and re-inject if page type changed
-    const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
-    const isUploadFilePage = uploadFilePages.some(page => {
-        const normalizedPage = page.toLowerCase();
-        const normalizedPath = (window.location.pathname).toLowerCase();
-        return normalizedPath === normalizedPage || normalizedPath.replace('.html', '') === normalizedPage;
-    });
-    
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        const currentWidth = sidebar.style.width;
-        const expectedWidth = isUploadFilePage ? '14rem' : '20rem';
-        
-        // If width doesn't match, we need to re-inject
-        if (currentWidth !== expectedWidth) {
-            if (typeof inject === 'function') {
-                inject();
-            }
-        }
-    }
+    // Sidebar is now consistently 16rem across all pages via sidebar.js
+    // No special width adjustments needed
     
     // Check if DOM is ready - wait for key elements
     const ticketsContainer = document.getElementById('ticketsContainer');
