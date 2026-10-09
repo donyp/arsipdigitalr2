@@ -546,11 +546,11 @@
         const sidebarHeight = isUploadFilePage ? `min-height: 100vh;` : `min-height: auto;`;
 
         sidebar.style.cssText = `
-            position: ${isUploadFilePage ? 'fixed' : 'absolute'};
+            position: fixed;
             top: ${topOffset};
             left: 0;
+            bottom: 0;
             width: ${sidebarWidth};
-            ${sidebarHeight}
             display: flex;
             flex-direction: column;
             background: ${bgColor};
