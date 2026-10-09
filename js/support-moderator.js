@@ -26,6 +26,8 @@ if (!window.__supportVarsInitialized) {
 
 // SPA-aware initialization
 async function initSupportPage() {
+    console.log('[Support] initSupportPage() called');
+    
     // Check sidebar size and re-inject if page type changed
     const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
     const isUploadFilePage = uploadFilePages.some(page => {
@@ -310,6 +312,8 @@ async function loadTickets() {
         });
 
         const url = `/api/support/tickets?${params}`;
+        console.log('[Support] Fetching tickets from:', url);
+        
         // Add timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -320,14 +324,20 @@ async function loadTickets() {
         });
 
         clearTimeout(timeoutId);
+        console.log('[Support] Response status:', response.status);
+        
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown'}`);
         }
 
         const data = await response.json();
+        console.log('[Support] Response data:', data);
+        
         const tickets = data.tickets || [];
         const pagination = data.pagination || {};
+
+        console.log('[Support] Loaded', tickets.length, 'tickets');
 
         window.totalPages = pagination.pages || 1;
         
@@ -339,6 +349,7 @@ async function loadTickets() {
         updatePagination();
 
     } catch (error) {
+        console.error('[Support] loadTickets error:', error);
         const container = document.getElementById('ticketsContainer');
         if (!container) {
             return;
