@@ -532,10 +532,6 @@ app.get('/rename-invoice-hijau', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'rename-invoice-hijau.html'));
 });
 
-app.get('/upload-faktur', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'upload-faktur-pajak.html'));
-});
-
 app.get('/dashboard-zona', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
 });
