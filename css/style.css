@@ -237,7 +237,7 @@ body {
     animation-delay: 0.2s;
 }
 
-/* ---- Sidebar ---- */
+/* ---- Sidebar (Handled by sidebar.js - do not add CSS here) ---- */
 .no-sidebar #sidebar {
     display: none !important;
 }
@@ -246,10 +246,6 @@ body {
     margin-left: 0 !important;
     width: 100% !important;
 }
-
-/* Sidebar styling handled by js/sidebar.js for consistency */
-
-/* Sidebar styling handled by sidebar-v6.js - do not override */
 
 /* ---- Data Tables ---- */
 .data-table {
@@ -484,28 +480,6 @@ td > span {
 
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-        position: fixed;
-        z-index: 40;
-    }
-
-    .sidebar.open {
-        transform: translateX(0);
-    }
-
-    .mobile-overlay {
-        display: none;
-    }
-
-    .mobile-overlay.active {
-        display: block;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.3);
-        z-index: 35;
-    }
-
     #main-content {
         margin-left: 0 !important;
         width: 100% !important;
@@ -632,8 +606,7 @@ body {
 }
 
 .role-admin-zona [data-role="super_admin"],
-.role-admin-zona [data-permission],
-.role-admin-zona #sidebar {
+.role-admin-zona [data-permission] {
     display: none !important;
 }
 
