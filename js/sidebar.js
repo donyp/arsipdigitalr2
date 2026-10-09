@@ -56,9 +56,16 @@
             will-change: background-color, color;
         }
 
-        #sidebar nav a:hover,
-        #sidebar nav button:hover {
+        /* Non-active items: show hover background */
+        #sidebar nav a:not([data-active="true"]):hover,
+        #sidebar nav button:not([data-active="true"]):hover {
             background-color: var(--hover-bg) !important;
+        }
+
+        /* Active items: KEEP active background on hover */
+        #sidebar nav a[data-active="true"]:hover,
+        #sidebar nav button[data-active="true"]:hover {
+            background-color: var(--active-bg) !important;
         }
 
         /* Smooth background transition */
@@ -311,7 +318,7 @@
                     const childWeight = isActive ? '600' : '400';
                     
                     childrenHTML += `
-                        <a href="${child.href}" onclick="event.stopPropagation();" style="
+                        <a href="${child.href}" onclick="event.stopPropagation();" data-active="${isActive}" style="
                             display: flex;
                             align-items: center;
                             padding: ${menuSizes.childPadding};
@@ -335,7 +342,7 @@
                 const dropdownText = itemIsActive ? textColor : textColor;
                 
                 navHTML += `
-                    <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${itemIsActive}" style="
+                    <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${itemIsActive}" data-active="${itemIsActive}" style="
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
@@ -382,7 +389,7 @@
                 const itemWeight = isActive ? '600' : '500';
                 
                 navHTML += `
-                    <a href="${item.href}" style="
+                    <a href="${item.href}" data-active="${isActive}" style="
                         display: flex;
                         align-items: center;
                         padding: ${menuSizes.buttonPadding};
@@ -578,8 +585,11 @@
         menuItems.forEach(item => {
             // Fast hover effect
             item.addEventListener('mouseenter', function(e) {
-                // Store original background for non-active items
-                if (!this.style.backgroundColor || this.style.backgroundColor === 'transparent') {
+                // Keep active background, only update if not active
+                const isActive = this.getAttribute('data-active') === 'true' || 
+                                 this.style.backgroundColor === sidebarColors.activeBgColor;
+                
+                if (!isActive) {
                     const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
                     const hoverColor = isDarkMode ? '#1e293b' : '#f7fafc';
                     this.style.backgroundColor = hoverColor;
@@ -588,7 +598,9 @@
 
             item.addEventListener('mouseleave', function(e) {
                 // Restore only if not active
-                const isActive = this.style.backgroundColor?.includes(sidebarColors.activeBgColor || '#dbeafe');
+                const isActive = this.getAttribute('data-active') === 'true' ||
+                                 this.style.backgroundColor === sidebarColors.activeBgColor;
+                                 
                 if (!isActive) {
                     this.style.backgroundColor = 'transparent';
                 }
