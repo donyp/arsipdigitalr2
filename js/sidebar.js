@@ -90,8 +90,6 @@
         activePage = 'dashboard';
     }
     
-    console.log(`[Sidebar] Detected active page: "${activePage}" from pathname: "${window.location.pathname}"`);
-    
     const menuItems = [
         { href: '/dashboard', label: 'Dashboard', icon: '<i class="fas fa-chart-line"></i>' },
         { href: '/whatsapp-messages', label: 'Notify Zona', icon: '<i class="fas fa-bell"></i>' },
@@ -579,8 +577,6 @@
         menuItems.forEach(item => {
             // Check if has data-active="true" or class="active"
             const isActive = item.getAttribute('data-active') === 'true' || item.classList.contains('active');
-            
-            console.log(`Setting up listener for: ${item.innerText.trim()} (active: ${isActive})`);
             
             // Remove previous listeners (if any)
             item.removeEventListener('mouseenter', menuHoverEnter);
