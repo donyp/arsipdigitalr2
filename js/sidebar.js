@@ -606,7 +606,7 @@
                 overflow-x: hidden;
                 scroll-behavior: smooth;
                 min-height: 0;
-                max-height: calc(100vh - 12rem);
+                max-height: ${isUploadFilePage ? 'calc(100vh - 12rem)' : 'calc(100vh - 11.5rem)'};
             ">
                 ${navHTML}
             </nav>
