@@ -81,7 +81,16 @@
     `;
     document.head.appendChild(scrollbarStyle);
     
-    const activePage = window.location.pathname.split('/').pop() || 'dashboard';
+    // Better active page detection - normalize pathname
+    let activePage = window.location.pathname.split('/').pop() || 'dashboard';
+    // Remove .html if present
+    activePage = activePage.replace('.html', '').toLowerCase();
+    // If empty (home), set to dashboard
+    if (!activePage || activePage === '' || activePage === '/') {
+        activePage = 'dashboard';
+    }
+    
+    console.log(`[Sidebar] Detected active page: "${activePage}" from pathname: "${window.location.pathname}"`);
     
     const menuItems = [
         { href: '/dashboard', label: 'Dashboard', icon: '<i class="fas fa-chart-line"></i>' },
@@ -142,15 +151,13 @@
         if (item.isDropdown) {
             // Check if any child matches current page
             return item.children.some(child => {
-                const childPath = child.href.replace('.html', '');
-                const currentPath = activePage.replace('.html', '');
-                return currentPath === childPath || activePage === child.href;
+                const childPath = child.href.replace('.html', '').toLowerCase().replace(/^\//, '');
+                return activePage === childPath;
             });
         } else {
             // For regular items, check if it matches
-            const itemPath = item.href.replace('.html', '');
-            const currentPath = activePage.replace('.html', '');
-            return currentPath === itemPath || activePage === item.href;
+            const itemPath = item.href.replace('.html', '').toLowerCase().replace(/^\//, '');
+            return activePage === itemPath;
         }
     }
 
@@ -298,9 +305,8 @@
 
                 let childrenHTML = '';
                 for (const child of visibleChildren) {
-                    const childPath = child.href.replace('.html', '');
-                    const currentPath = activePage.replace('.html', '');
-                    const isActive = currentPath === childPath || activePage === child.href;
+                    const childPath = child.href.replace('.html', '').toLowerCase().replace(/^\//, '');
+                    const isActive = activePage === childPath;
                     const childBg = isActive ? activeBgColor : 'transparent';
                     const childText = isActive ? activeTextColor : secondaryText;
                     const childWeight = isActive ? '600' : '400';
