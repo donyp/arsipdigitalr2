@@ -56,28 +56,16 @@
             will-change: background-color, color;
         }
 
-        /* Non-active items: show hover background */
-        #sidebar nav a:not([data-active="true"]):hover,
-        #sidebar nav button:not([data-active="true"]):hover {
-            background-color: var(--hover-bg) !important;
-        }
-
-        /* Active items: KEEP active background on hover */
-        #sidebar nav a[data-active="true"]:hover,
-        #sidebar nav button[data-active="true"]:hover {
-            background-color: var(--active-bg) !important;
-        }
-
-        /* Smooth background transition */
+        /* Smooth background & color transition */
         #sidebar nav a,
         #sidebar nav button {
-            transition: background-color 0.15s ease-out, color 0.15s ease-out !important;
+            transition: background-color 0.12s ease-out, color 0.12s ease-out !important;
         }
 
         /* Fast icon opacity transition */
         #sidebar nav a span i,
         #sidebar nav button span i {
-            transition: opacity 0.15s ease-out !important;
+            transition: opacity 0.12s ease-out !important;
         }
 
         /* Dropdown arrow smooth rotation */
@@ -88,7 +76,7 @@
         /* Text color transition */
         #sidebar nav a span,
         #sidebar nav button span {
-            transition: color 0.15s ease-out !important;
+            transition: color 0.12s ease-out !important;
         }
     `;
     document.head.appendChild(scrollbarStyle);
@@ -583,25 +571,33 @@
         const menuItems = sidebar.querySelectorAll('nav a, nav button');
         
         menuItems.forEach(item => {
+            const isActive = item.getAttribute('data-active') === 'true';
+            
             // Fast hover effect
             item.addEventListener('mouseenter', function(e) {
-                // Keep active background, only update if not active
-                const isActive = this.getAttribute('data-active') === 'true' || 
-                                 this.style.backgroundColor === sidebarColors.activeBgColor;
+                const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
                 
-                if (!isActive) {
-                    const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+                if (isActive) {
+                    // Active item - brighten the active color
+                    const activeBg = isDarkMode ? '#1e3a5f' : '#dbeafe';
+                    const brightenBg = isDarkMode ? '#1e4a7f' : '#bfdbfe';
+                    this.style.backgroundColor = brightenBg;
+                } else {
+                    // Non-active item - show hover background
                     const hoverColor = isDarkMode ? '#1e293b' : '#f7fafc';
                     this.style.backgroundColor = hoverColor;
                 }
             }, { passive: true });
 
             item.addEventListener('mouseleave', function(e) {
-                // Restore only if not active
-                const isActive = this.getAttribute('data-active') === 'true' ||
-                                 this.style.backgroundColor === sidebarColors.activeBgColor;
-                                 
-                if (!isActive) {
+                const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+                
+                if (isActive) {
+                    // Restore active background
+                    const activeBg = isDarkMode ? '#1e3a5f' : '#dbeafe';
+                    this.style.backgroundColor = activeBg;
+                } else {
+                    // Restore transparent
                     this.style.backgroundColor = 'transparent';
                 }
             }, { passive: true });
@@ -627,6 +623,19 @@
         updateActiveStates(currentPath);
         
         return Promise.resolve();
+    };
+
+    // Re-setup hover listeners when dark mode toggles
+    const originalToggleDarkMode = window.toggleDarkMode;
+    window.toggleDarkMode = function() {
+        if (originalToggleDarkMode) {
+            originalToggleDarkMode();
+        }
+        // Re-inject and re-setup hover listeners after dark mode change
+        setTimeout(() => {
+            inject();
+            setupHoverListeners();
+        }, 50);
     };
 
     // Function to update active states without full re-render
