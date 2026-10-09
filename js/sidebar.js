@@ -560,7 +560,7 @@
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
             overflow-x: hidden;
-            overflow-y: auto;
+            overflow-y: hidden;
             padding: ${isUploadFilePage ? '0.6rem 0.4rem' : '0.85rem 0.6rem'};
         `;
 
@@ -607,6 +607,7 @@
                 overflow-x: hidden;
                 scroll-behavior: smooth;
                 min-height: 0;
+                order: 1;
                 ${isUploadFilePage ? 'max-height: calc(100vh - 12rem);' : ''}
             ">
                 ${navHTML}
@@ -614,9 +615,11 @@
             
             <!-- Quick Actions Footer - Fixed at bottom -->
             <div style="
+                order: 2;
                 flex-shrink: 0;
+                margin-top: auto;
                 padding-top: ${isUploadFilePage ? '1rem' : '0.6rem'};
-                margin-top: ${isUploadFilePage ? '1rem' : '0.6rem'};
+                padding-bottom: ${isUploadFilePage ? '0.5rem' : '0.3rem'};
                 border-top: 1px solid ${borderColor};
                 display: flex;
                 flex-direction: column;
