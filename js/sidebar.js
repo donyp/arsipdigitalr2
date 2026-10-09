@@ -56,16 +56,63 @@
             will-change: background-color, color;
         }
 
+        /* Active state styling - modern & fancy */
+        #sidebar nav a[data-active="true"],
+        #sidebar nav button[data-active="true"],
+        #sidebar nav a.active,
+        #sidebar nav button.active {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%) !important;
+            border-left: 3px solid #60a5fa !important;
+            padding-left: calc(0.75rem - 3px) !important;
+            position: relative;
+        }
+
+        /* Dark mode active state */
+        html[data-dark-mode="true"] #sidebar nav a[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav button[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav a.active,
+        html[data-dark-mode="true"] #sidebar nav button.active {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.2) 0%, rgba(59, 130, 246, 0.1) 100%) !important;
+            border-left-color: #60a5fa !important;
+        }
+
+        /* Active icon glow effect */
+        #sidebar nav a[data-active="true"] span i,
+        #sidebar nav button[data-active="true"] span i,
+        #sidebar nav a.active span i,
+        #sidebar nav button.active span i {
+            opacity: 1 !important;
+            color: #60a5fa;
+            text-shadow: 0 0 10px rgba(96, 165, 250, 0.4);
+        }
+
+        /* Active text color */
+        #sidebar nav a[data-active="true"],
+        #sidebar nav button[data-active="true"],
+        #sidebar nav a.active,
+        #sidebar nav button.active {
+            color: #3b82f6 !important;
+            font-weight: 600 !important;
+        }
+
+        /* Dark mode active text */
+        html[data-dark-mode="true"] #sidebar nav a[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav button[data-active="true"],
+        html[data-dark-mode="true"] #sidebar nav a.active,
+        html[data-dark-mode="true"] #sidebar nav button.active {
+            color: #60a5fa !important;
+        }
+
         /* Smooth background & color transition */
         #sidebar nav a,
         #sidebar nav button {
-            transition: background-color 0.12s ease-out, color 0.12s ease-out !important;
+            transition: background-color 0.12s ease-out, color 0.12s ease-out, border-left-color 0.12s ease-out, box-shadow 0.12s ease-out !important;
         }
 
         /* Fast icon opacity transition */
         #sidebar nav a span i,
         #sidebar nav button span i {
-            transition: opacity 0.12s ease-out !important;
+            transition: opacity 0.12s ease-out, color 0.12s ease-out, text-shadow 0.12s ease-out !important;
         }
 
         /* Dropdown arrow smooth rotation */
@@ -308,30 +355,36 @@
                     const childBg = isActive ? activeBgColor : 'transparent';
                     const childText = isActive ? activeTextColor : secondaryText;
                     const childWeight = isActive ? '600' : '400';
+                    const childBg = isActive ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)' : 'transparent';
+                    const childBorderLeft = isActive ? '3px solid #60a5fa' : 'none';
+                    const childPaddingLeft = isActive ? 'calc(2.5rem - 3px)' : '2.5rem';
                     
                     childrenHTML += `
                         <a href="${child.href}" onclick="event.stopPropagation();" class="${isActive ? 'active' : ''}" data-active="${isActive}" style="
                             display: flex;
                             align-items: center;
-                            padding: ${menuSizes.childPadding};
+                            padding: 0.5rem 0.75rem 0.5rem ${childPaddingLeft};
                             margin: ${menuSizes.childMargin};
                             border-radius: 8px;
+                            border-left: ${childBorderLeft};
                             font-size: ${menuSizes.childFontSize};
                             background: ${childBg};
                             color: ${childText};
                             font-weight: ${childWeight};
                             text-decoration: none;
-                            transition: all 0.15s ease-out;
+                            transition: all 0.12s ease-out;
                             letter-spacing: -0.01em;
                         ">
-                            <span style="margin-right: 0.75rem; font-size: ${menuSizes.childIconSize}; opacity: 0.7;">${child.icon}</span>
+                            <span style="margin-right: 0.75rem; font-size: ${menuSizes.childIconSize}; opacity: ${isActive ? '1' : '0.7'}; color: ${isActive ? '#60a5fa' : 'inherit'}; text-shadow: ${isActive ? '0 0 10px rgba(96, 165, 250, 0.4)' : 'none'};">${child.icon}</span>
                             <span>${child.label}</span>
                         </a>
                     `;
                 }
 
-                const dropdownBg = itemIsActive ? hoverBgColor : 'transparent';
-                const dropdownText = itemIsActive ? textColor : textColor;
+                const dropdownBg = itemIsActive ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)' : 'transparent';
+                const dropdownBorderLeft = itemIsActive ? '3px solid #60a5fa' : 'none';
+                const dropdownPaddingLeft = itemIsActive ? 'calc(0.75rem - 3px)' : '0.75rem';
+                const dropdownText = itemIsActive ? '#3b82f6' : textColor;
                 
                 navHTML += `
                     <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" class="${itemIsActive ? 'active' : ''}" data-expanded="${itemIsActive}" data-active="${itemIsActive}" style="
@@ -339,17 +392,18 @@
                         align-items: center;
                         justify-content: space-between;
                         width: 100%;
-                        padding: ${menuSizes.buttonPadding};
+                        padding: 0.625rem ${dropdownPaddingLeft} 0.625rem 0.75rem;
                         margin: ${menuSizes.buttonMargin};
                         border: none;
+                        border-left: ${dropdownBorderLeft};
                         background: ${dropdownBg};
                         color: ${dropdownText};
                         text-decoration: none;
                         font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
-                        transition: all 0.15s ease-out;
+                        transition: all 0.12s ease-out;
                         text-align: left;
-                        font-weight: 500;
+                        font-weight: ${itemIsActive ? '600' : '500'};
                         border-radius: 8px;
                         letter-spacing: -0.01em;
                     ">
@@ -376,27 +430,30 @@
                 `;
             } else {
                 const isActive = isItemActive(item);
-                const itemBg = isActive ? activeBgColor : 'transparent';
-                const itemText = isActive ? activeTextColor : textColor;
+                const itemBg = isActive ? 'linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%)' : 'transparent';
+                const itemText = isActive ? '#3b82f6' : textColor;
                 const itemWeight = isActive ? '600' : '500';
+                const itemBorderLeft = isActive ? '3px solid #60a5fa' : 'none';
+                const itemPaddingLeft = isActive ? 'calc(0.75rem - 3px)' : '0.75rem';
                 
                 navHTML += `
                     <a href="${item.href}" class="${isActive ? 'active' : ''}" data-active="${isActive}" style="
                         display: flex;
                         align-items: center;
-                        padding: ${menuSizes.buttonPadding};
+                        padding: 0.625rem ${itemPaddingLeft} 0.625rem 0.75rem;
                         margin: ${menuSizes.buttonMargin};
                         border-radius: 8px;
+                        border-left: ${itemBorderLeft};
                         background: ${itemBg};
                         color: ${itemText};
                         font-weight: ${itemWeight};
                         text-decoration: none;
                         font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
-                        transition: all 0.15s ease-out;
+                        transition: all 0.12s ease-out;
                         letter-spacing: -0.01em;
                     ">
-                        <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8;">${item.icon}</span>
+                        <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: ${isActive ? '1' : '0.8'}; color: ${isActive ? '#60a5fa' : 'inherit'}; text-shadow: ${isActive ? '0 0 10px rgba(96, 165, 250, 0.4)' : 'none'};">${item.icon}</span>
                         <span>${item.label}</span>
                     </a>
                 `;
@@ -620,6 +677,39 @@
     // Global handlers (for cleanup)
     function menuHoverEnter(e) {}
     function menuHoverLeave(e) {}
+
+    // Add hover effect CSS for non-active items
+    const hoverStyle = document.createElement('style');
+    hoverStyle.textContent = `
+        /* Hover effect for non-active items */
+        #sidebar nav a:not([data-active="true"]):not(.active):hover,
+        #sidebar nav button:not([data-active="true"]):not(.active):hover {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.03) 100%) !important;
+        }
+
+        html[data-dark-mode="true"] #sidebar nav a:not([data-active="true"]):not(.active):hover,
+        html[data-dark-mode="true"] #sidebar nav button:not([data-active="true"]):not(.active):hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%) !important;
+        }
+
+        /* Active state hover - brighten with glow */
+        #sidebar nav a[data-active="true"]:hover,
+        #sidebar nav button[data-active="true"]:hover,
+        #sidebar nav a.active:hover,
+        #sidebar nav button.active:hover {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.25) 0%, rgba(59, 130, 246, 0.15) 100%) !important;
+            box-shadow: inset 0 0 15px rgba(96, 165, 250, 0.1);
+        }
+
+        html[data-dark-mode="true"] #sidebar nav a[data-active="true"]:hover,
+        html[data-dark-mode="true"] #sidebar nav button[data-active="true"]:hover,
+        html[data-dark-mode="true"] #sidebar nav a.active:hover,
+        html[data-dark-mode="true"] #sidebar nav button.active:hover {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%) !important;
+            box-shadow: inset 0 0 15px rgba(96, 165, 250, 0.15);
+        }
+    `;
+    document.head.appendChild(hoverStyle);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
