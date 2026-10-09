@@ -316,8 +316,7 @@
             container.style.transition = 'max-height 0.3s ease, opacity 0.3s ease';
             
             requestAnimationFrame(() => {
-                const fullHeight = container.scrollHeight;
-                container.style.maxHeight = fullHeight + 'px';
+                container.style.maxHeight = '300px';
                 container.style.opacity = '1';
             });
             
@@ -326,7 +325,8 @@
             
             setTimeout(() => {
                 if (btn.getAttribute('data-expanded') === 'true') {
-                    container.style.maxHeight = 'none';
+                    container.style.maxHeight = '300px';
+                    container.style.overflow = 'auto';
                 }
             }, 300);
         }
@@ -450,12 +450,13 @@
                     <div id="${item.id}" style="
                         display: ${itemIsActive ? 'block' : 'none'};
                         background: transparent;
-                        max-height: ${itemIsActive ? 'none' : '0px'};
+                        max-height: ${itemIsActive ? '300px' : '0px'};
                         opacity: ${itemIsActive ? '1' : '0'};
-                        overflow: hidden;
+                        overflow: auto;
                         transition: max-height 0.3s ease, opacity 0.3s ease;
                         pointer-events: ${itemIsActive ? 'auto' : 'none'};
                         padding-left: 0.5rem;
+                        scroll-behavior: smooth;
                     ">
                         ${childrenHTML}
                     </div>
