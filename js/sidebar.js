@@ -75,6 +75,9 @@
             -webkit-backface-visibility: hidden;
             line-height: 1 !important;
             min-height: auto !important;
+            height: 2.2rem !important;
+            display: flex !important;
+            align-items: center !important;
         }
 
         /* Active state styling - modern & fancy (CSS only, no structure changes) */
