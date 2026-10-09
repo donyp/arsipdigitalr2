@@ -73,6 +73,8 @@
             backface-visibility: hidden;
             -webkit-font-smoothing: antialiased;
             -webkit-backface-visibility: hidden;
+            line-height: 1 !important;
+            min-height: auto !important;
         }
 
         /* Active state styling - modern & fancy (CSS only, no structure changes) */
