@@ -18,30 +18,7 @@
             -ms-touch-action: pan-y;
         }
         
-        /* Fix: Sidebar scroll - prevent scroll propagation to main content */
-        #sidebar {
-            overflow-y: auto;
-            overflow-x: hidden;
-            overscroll-behavior: contain;
-        }
-        
-        /* Fix: Smooth scrollbar for sidebar */
-        #sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        #sidebar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        #sidebar::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.3);
-            border-radius: 3px;
-        }
-        
-        #sidebar::-webkit-scrollbar-thumb:hover {
-            background: rgba(102, 126, 234, 0.5);
-        }
+        /* Sidebar styling and scrollbar handled by js/sidebar.js */
 
         /* Menu Category Cards */
         .menu-category-card {

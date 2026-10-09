@@ -770,72 +770,8 @@
         html[data-dark-mode="true"] .stat-content {
             color: var(--color-text-primary);
         }
-
-        /* Sidebar dark mode styling */
-        html[data-dark-mode="true"] #sidebar {
-            background: var(--color-bg-secondary) !important;
-            border-right-color: var(--color-border) !important;
-        }
-
-        html[data-dark-mode="true"] #sidebar > div {
-            background: var(--color-bg-secondary) !important;
-            border-color: var(--color-border) !important;
-        }
-
-        html[data-dark-mode="true"] #sidebar nav {
-            background: var(--color-bg-secondary) !important;
-        }
-
-        /* Sidebar items */
-        html[data-dark-mode="true"] #sidebar a {
-            color: var(--color-text-primary) !important;
-            background: transparent !important;
-            transition: all 0.2s !important;
-        }
-
-        html[data-dark-mode="true"] #sidebar a:hover {
-            background: var(--color-bg-tertiary) !important;
-            color: var(--color-accent) !important;
-        }
-
-        /* Sidebar section headers */
-        html[data-dark-mode="true"] #sidebar p {
-            color: var(--color-text-secondary) !important;
-        }
-
-        /* Sidebar buttons */
-        html[data-dark-mode="true"] #sidebar button {
-            background: var(--color-bg-tertiary) !important;
-            color: var(--color-text-primary) !important;
-            border-color: var(--color-border) !important;
-            transition: all 0.2s !important;
-        }
-
-        html[data-dark-mode="true"] #sidebar button:hover {
-            background: var(--color-border) !important;
-            transform: translateY(-2px) !important;
-        }
-
-        /* Sidebar footer */
-        html[data-dark-mode="true"] #sidebar > div:last-child {
-            background: var(--color-bg-secondary) !important;
-            border-top-color: var(--color-border) !important;
-        }
-
-        /* Sidebar logo section */
-        html[data-dark-mode="true"] #sidebar > div:first-child {
-            background: var(--color-bg-secondary) !important;
-            border-bottom-color: var(--color-border) !important;
-        }
-
-        /* Text in sidebar */
-        html[data-dark-mode="true"] #sidebar h1 {
-            color: var(--color-text-primary) !important;
-        }
-
-        html[data-dark-mode="true"] #sidebar span {
-            color: var(--color-text-secondary) !important;
-        }
+        
+        /* Dark mode sidebar styling handled by js/sidebar.js */
 
         /* Explicit table body styling for dark mode */
         html[data-dark-mode="true"] table > tbody > tr {

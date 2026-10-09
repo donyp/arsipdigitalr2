@@ -70,13 +70,7 @@
             scroll-behavior: smooth;
         }
 
-        #sidebar {
-            scroll-behavior: smooth;
-            visibility: visible !important;
-            opacity: 1 !important;
-            display: flex !important;
-        }
-
+        /* Sidebar styling is handled by js/sidebar.js for consistency */
         /* Force sidebar to never hide */
         body {
             position: relative;
@@ -94,47 +88,8 @@
             will-change: auto;
         }
 
-        /* Optimize dropdown transitions - NO transition on display property */
-        #sidebar div[id^="dd-"] {
-            transition: max-height 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-                        opacity 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-            overflow: hidden !important;
-            will-change: max-height, opacity;
-        }
-
-        /* Smooth scroll for nav items */
-        #sidebar nav {
-            scroll-behavior: smooth;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(100, 116, 139, 0.3) transparent;
-        }
-
-        #sidebar nav::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        #sidebar nav::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        #sidebar nav::-webkit-scrollbar-thumb {
-            background: rgba(100, 116, 139, 0.3);
-            border-radius: 3px;
-        }
-
-        #sidebar nav::-webkit-scrollbar-thumb:hover {
-            background: rgba(100, 116, 139, 0.5);
-        }
-
-        /* Dark mode scrollbar */
-        html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb {
-            background: rgba(75, 85, 99, 0.4);
-        }
-
-        html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb:hover {
-            background: rgba(75, 85, 99, 0.6);
-        }
-
+        /* Sidebar styling handled by js/sidebar.js for consistency */
+        
         /* Reduce motion for accessibility */
         @media (prefers-reduced-motion: reduce) {
             * {
@@ -579,24 +534,7 @@
         }
 
         /* Fix sidebar in dark mode */
-        html[data-dark-mode="true"] #sidebar {
-            background-color: var(--color-bg-primary) !important;
-            border-right-color: var(--color-border) !important;
-            color: var(--color-text-primary) !important;
-        }
-
-        /* Fix sidebar text colors */
-        html[data-dark-mode="true"] #sidebar p,
-        html[data-dark-mode="true"] #sidebar span,
-        html[data-dark-mode="true"] #sidebar a {
-            color: var(--color-text-secondary) !important;
-        }
-
-        html[data-dark-mode="true"] #sidebar h1,
-        html[data-dark-mode="true"] #sidebar h2,
-        html[data-dark-mode="true"] #sidebar h3 {
-            color: var(--color-text-primary) !important;
-        }
+        /* Dark mode sidebar styling handled by js/sidebar.js */
 
         /* Only style dark-mode-toggle, not dropdown buttons */
         html[data-dark-mode="true"] #dark-mode-toggle {
@@ -825,11 +763,8 @@
             color: var(--color-text-primary);
         }
 
-        html[data-dark-mode="true"] #sidebar {
-            background: var(--color-bg-primary);
-            border-right-color: var(--color-border);
-        }
-
+        /* Dark mode styling handled by js/sidebar.js */
+        
         html[data-dark-mode="true"] #main-content {
             background-color: var(--color-bg-primary);
             color: var(--color-text-primary);
@@ -1920,29 +1855,7 @@
             -ms-touch-action: pan-y;
         }
         
-        #sidebar {
-            display: flex;
-            flex-direction: column;
-            width: 16rem !important;
-            margin-right: 0;
-        }
-        
-        #sidebar::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        #sidebar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        
-        #sidebar::-webkit-scrollbar-thumb {
-            background: rgba(102, 126, 234, 0.3);
-            border-radius: 3px;
-        }
-        
-        #sidebar::-webkit-scrollbar-thumb:hover {
-            background: rgba(102, 126, 234, 0.5);
-        }
+        /* Sidebar scrollbar styling handled by js/sidebar.js */
     </style>
     <script>
         // Store original opacity state but don't hide yet
