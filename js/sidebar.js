@@ -392,14 +392,14 @@
             childIconSize: '0.6rem',
             iconSize: '0.75rem'
         } : {
-            buttonPadding: '0.4rem 0.5rem',
-            buttonMargin: '0.08rem 0',
-            buttonFontSize: '0.65rem',
-            childPadding: '0.3rem 0.5rem 0.3rem 1.75rem',
-            childMargin: '0.08rem 0',
-            childFontSize: '0.6rem',
-            childIconSize: '0.65rem',
-            iconSize: '0.85rem'
+            buttonPadding: '0.5rem 0.6rem',
+            buttonMargin: '0.1rem 0',
+            buttonFontSize: '0.75rem',
+            childPadding: '0.4rem 0.6rem 0.4rem 2rem',
+            childMargin: '0.1rem 0',
+            childFontSize: '0.68rem',
+            childIconSize: '0.7rem',
+            iconSize: '0.95rem'
         };
 
         // Recalculate colors based on current dark mode
@@ -540,7 +540,7 @@
 
         // Modern sidebar with consistent width - more compact
         // Even smaller on Upload pages
-        const sidebarWidth = isUploadFilePage ? '12.5rem' : '13rem';
+        const sidebarWidth = isUploadFilePage ? '12.5rem' : '13.5rem';
 
         // Use min-height: 100vh to always stretch to viewport, plus flex: 1 on nav for growth
         const sidebarHeight = `min-height: 100vh;`;
@@ -560,7 +560,7 @@
             transition: background-color 0.4s ease, border-color 0.4s ease;
             will-change: background-color;
             overflow: hidden;
-            padding: ${isUploadFilePage ? '0.6rem 0.4rem' : '0.75rem 0.5rem'};
+            padding: ${isUploadFilePage ? '0.6rem 0.4rem' : '0.85rem 0.6rem'};
         `;
 
         sidebar.innerHTML = `
@@ -568,22 +568,22 @@
             <div style="
                 display: flex;
                 align-items: center;
-                gap: ${isUploadFilePage ? '0.35rem' : '0.5rem'};
-                padding: ${isUploadFilePage ? '0.3rem 0' : '0.4rem 0'};
-                margin-bottom: ${isUploadFilePage ? '0.75rem' : '1rem'};
+                gap: ${isUploadFilePage ? '0.35rem' : '0.55rem'};
+                padding: ${isUploadFilePage ? '0.3rem 0' : '0.45rem 0'};
+                margin-bottom: ${isUploadFilePage ? '0.75rem' : '1.1rem'};
             ">
                 <div style="
-                    width: ${isUploadFilePage ? '28px' : '32px'};
-                    height: ${isUploadFilePage ? '28px' : '32px'};
+                    width: ${isUploadFilePage ? '28px' : '35px'};
+                    height: ${isUploadFilePage ? '28px' : '35px'};
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border-radius: ${isUploadFilePage ? '6px' : '8px'};
+                    border-radius: ${isUploadFilePage ? '6px' : '9px'};
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
                     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
                 ">
-                    <svg width="${isUploadFilePage ? '16' : '20'}" height="${isUploadFilePage ? '16' : '20'}" viewBox="0 0 24 24" fill="none" style="color: white;">
+                    <svg width="${isUploadFilePage ? '16' : '22'}" height="${isUploadFilePage ? '16' : '22'}" viewBox="0 0 24 24" fill="none" style="color: white;">
                         <path d="M9 3L5 7L9 11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M15 13L19 17L15 21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                         <line x1="19" y1="7" x2="5" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -592,7 +592,7 @@
                 <div>
                     <div style="
                         font-weight: 700;
-                        font-size: ${isUploadFilePage ? '0.85rem' : '0.95rem'};
+                        font-size: ${isUploadFilePage ? '0.85rem' : '1rem'};
                         color: ${textColor};
                         letter-spacing: -0.02em;
                         line-height: 1.2;
