@@ -16,23 +16,13 @@ class SPARouter {
             '/whatsapp-messages.html': { url: 'whatsapp-messages.html', title: 'Notify Zona' },
             '/support-dashboard': { url: 'support-dashboard.html', title: 'Support Dashboard' },
             '/support-dashboard.html': { url: 'support-dashboard.html', title: 'Support Dashboard' },
-            '/rename-faktur': { url: 'rename-faktur.html', title: 'Rename Faktur Pajak' },
-            '/rename-faktur.html': { url: 'rename-faktur.html', title: 'Rename Faktur Pajak' },
-            '/upload-excel': { url: 'upload-excel.html', title: 'Upload Excel' },
-            '/upload-excel.html': { url: 'upload-excel.html', title: 'Upload Excel' },
-            '/upload-invoice-pdf': { url: 'upload-invoice-pdf.html', title: 'Upload Invoice PDF' },
-            '/upload-invoice-pdf.html': { url: 'upload-invoice-pdf.html', title: 'Upload Invoice PDF' },
-            '/upload-bukti-bayar': { url: 'upload-bukti-bayar.html', title: 'Upload Bukti Bayar' },
-            '/upload-bukti-bayar.html': { url: 'upload-bukti-bayar.html', title: 'Upload Bukti Bayar' },
-            '/upload-faktur': { url: 'upload-faktur-pajak.html', title: 'Upload Faktur Pajak' },
-            '/upload-faktur.html': { url: 'upload-faktur-pajak.html', title: 'Upload Faktur Pajak' },
-            '/upload-faktur-pajak.html': { url: 'upload-faktur-pajak.html', title: 'Upload Faktur Pajak' },
             '/users': { url: 'users.html', title: 'Manajemen Pengguna' },
             '/users.html': { url: 'users.html', title: 'Manajemen Pengguna' },
             '/tokos': { url: 'tokos.html', title: 'Daftar Toko' },
             '/tokos.html': { url: 'tokos.html', title: 'Daftar Toko' },
             '/zonas': { url: 'zonas.html', title: 'Zona Operasional' },
             '/zonas.html': { url: 'zonas.html', title: 'Zona Operasional' },
+            // Upload pages use full page navigation (not SPA), so excluded from menuMapping
         };
         
         this.init();
