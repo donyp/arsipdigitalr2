@@ -113,7 +113,7 @@
         /* Fast icon opacity transition */
         #sidebar nav a span i,
         #sidebar nav button span i {
-            transition: opacity 0.12s ease-out, color 0.12s ease-out !important;
+            transition: opacity 0.12s ease-out, color 0.12s ease-out, transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
         }
 
         /* Dropdown arrow smooth rotation */
@@ -153,6 +153,20 @@
         html[data-dark-mode="true"] #sidebar nav button.active:hover {
             background: rgba(96, 165, 250, 0.22) !important;
             box-shadow: inset 0 3px 0 0 #60a5fa !important;
+        }
+
+        /* Icon zoom on hover */
+        #sidebar nav a:not([data-active="true"]):not(.active):hover span i,
+        #sidebar nav button:not([data-active="true"]):not(.active):hover span i {
+            transform: scale(1.15);
+        }
+
+        /* Active state hover - icon zoom more */
+        #sidebar nav a[data-active="true"]:hover span i,
+        #sidebar nav button[data-active="true"]:hover span i,
+        #sidebar nav a.active:hover span i,
+        #sidebar nav button.active:hover span i {
+            transform: scale(1.25);
         }
     `;
     document.head.appendChild(scrollbarStyle);
@@ -662,29 +676,35 @@
             const enterHandler = function(e) {
                 const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
+                const icon = this.querySelector('span i');
                 
                 if (itemIsActive) {
                     // Active item - brighten with thicker underline
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.22)' : 'rgba(96, 165, 250, 0.18)';
                     this.style.boxShadow = 'inset 0 3px 0 0 #60a5fa';
+                    if (icon) icon.style.transform = 'scale(1.25)';
                 } else {
                     // Non-active - show subtle hover
                     this.style.background = isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+                    if (icon) icon.style.transform = 'scale(1.15)';
                 }
             };
             
             const leaveHandler = function(e) {
                 const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
+                const icon = this.querySelector('span i');
                 
                 if (itemIsActive) {
                     // Restore active background with thin underline
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
                     this.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
+                    if (icon) icon.style.transform = 'scale(1)';
                 } else {
                     // Restore transparent
                     this.style.background = 'transparent';
                     this.style.boxShadow = 'none';
+                    if (icon) icon.style.transform = 'scale(1)';
                 }
             };
             
