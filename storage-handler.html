@@ -570,8 +570,9 @@
                 loadFiles(currentPath);
                 loadStats();
                 setupEventListeners();
-                // Refresh stats every 30 seconds for realtime updates
-                setInterval(loadStats, 30000);
+                // ✅ OPTIMIZED: Refresh stats every 120 seconds (was 30s) to reduce API calls
+                // Stats are cached server-side for 60s, so 120s is reasonable
+                setInterval(loadStats, 120000);
             });
 
             function goBack() { window.history.back(); }

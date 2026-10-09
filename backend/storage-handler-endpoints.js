@@ -23,6 +23,26 @@ const stream = require('stream');
 const r2Storage = require('./r2-storage');
 
 module.exports = function registerStorageHandlerEndpoints(app, supabase, authenticateToken, authorizeRole) {
+    // ✅ Add cache for stats to avoid repeated expensive ListObjectsV2 calls
+    let statsCache = {
+        data: null,
+        timestamp: 0,
+        CACHE_TTL: 60000 // Cache for 60 seconds
+    };
+
+    const getCachedStats = () => {
+        const now = Date.now();
+        if (statsCache.data && (now - statsCache.timestamp) < statsCache.CACHE_TTL) {
+            console.log('[StorageHandler] Returning cached stats');
+            return statsCache.data;
+        }
+        return null;
+    };
+
+    const setCachedStats = (data) => {
+        statsCache.data = data;
+        statsCache.timestamp = Date.now();
+    };
     
     // Get S3 client and config from r2-storage module
     const s3Client = r2Storage.getS3Client();
@@ -808,6 +828,14 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
             console.log(`[StorageHandler] Stats request for prefix: ${prefix || 'root'}`);
 
+            // ✅ Check cache first (only for root prefix, since file-specific stats might be different)
+            if (!prefix) {
+                const cached = getCachedStats();
+                if (cached) {
+                    return res.json(cached);
+                }
+            }
+
             // Get actual bucket size
             let bucketSizeInfo = { totalBytes: 0, totalGB: 0 };
             try {
@@ -840,9 +868,11 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
             let continuationToken = null;
             let isTruncated = true;
+            let iterationCount = 0;
 
             // Paginate through all results
             while (isTruncated) {
+                iterationCount++;
                 const listCommand = new ListObjectsV2Command({
                     Bucket: config.bucketName,
                     Prefix: prefix,
@@ -873,7 +903,14 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
                 isTruncated = response.IsTruncated;
                 continuationToken = response.NextContinuationToken;
+                
+                // Log progress every 100 iterations
+                if (iterationCount % 100 === 0) {
+                    console.log(`[StorageHandler] Stats scanning progress: ${iterationCount} batches processed, ${totalFiles} files scanned`);
+                }
             }
+
+            console.log(`[StorageHandler] Stats scan complete: ${iterationCount} batches, ${totalFiles} files total`);
 
             // Use STORAGE_QUOTA_GB from environment (default 10GB)
             const storageQuotaGB = parseFloat(process.env.STORAGE_QUOTA_GB) || 10;
@@ -885,7 +922,7 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             const todayUsedGB = Math.max(0, (todayUsedSize / 1024 / 1024 / 1024).toFixed(2));
             const todayUploadGB = Math.max(0, (todayUploadSize / 1024 / 1024 / 1024).toFixed(2));
 
-            res.json({
+            const responseData = {
                 success: true,
                 prefix: prefix || '/',
                 stats: {
@@ -913,7 +950,14 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                     // File types
                     fileTypes
                 }
-            });
+            };
+
+            // ✅ Cache for root prefix
+            if (!prefix) {
+                setCachedStats(responseData);
+            }
+
+            res.json(responseData);
 
         } catch (error) {
             console.error('[StorageHandler] Stats error:', error);
