@@ -571,6 +571,7 @@
                 gap: ${isUploadFilePage ? '0.35rem' : '0.55rem'};
                 padding: ${isUploadFilePage ? '0.3rem 0' : '0.45rem 0'};
                 margin-bottom: ${isUploadFilePage ? '0.75rem' : '1.1rem'};
+                flex-shrink: 0;
             ">
                 <div style="
                     width: ${isUploadFilePage ? '28px' : '35px'};
@@ -606,16 +607,13 @@
                 overflow-x: hidden;
                 scroll-behavior: smooth;
                 min-height: 0;
-                order: 1;
             ">
                 ${navHTML}
             </nav>
             
             <!-- Quick Actions Footer - Fixed at bottom -->
             <div style="
-                order: 2;
                 flex-shrink: 0;
-                margin-top: auto;
                 padding-top: ${isUploadFilePage ? '1rem' : '0.6rem'};
                 padding-bottom: ${isUploadFilePage ? '0.5rem' : '0.3rem'};
                 border-top: 1px solid ${borderColor};
