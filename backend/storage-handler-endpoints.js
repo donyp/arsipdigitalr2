@@ -422,52 +422,24 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
             console.log(`[StorageHandler] ZIP buffer size: ${zipBuffer.length} bytes`);
 
-            // Upload ZIP to R2 temporary
-            const zipFileName = `batch-download-${Date.now()}.zip`;
-            const uploadCommand = new PutObjectCommand({
-                Bucket: config.bucketName,
-                Key: `temp/${zipFileName}`,
-                Body: zipBuffer,
-                ContentType: 'application/zip',
-                Metadata: {
-                    'temp': 'true',
-                    'created-by': req.user.email,
-                    'created-at': new Date().toISOString()
-                }
-            });
+            // ✅ FIXED: Stream ZIP directly to user WITHOUT uploading to R2
+            // Generate filename with timestamp for uniqueness
+            const now = new Date();
+            const DD = String(now.getDate()).padStart(2, '0');
+            const MM = String(now.getMonth() + 1).padStart(2, '0');
+            const YY = String(now.getFullYear()).slice(-2);
+            const randomBatch = Math.floor(100 + Math.random() * 900);
+            const zipFileName = `ARSIP ANKA ${randomBatch}${DD}${MM}${YY}.zip`;
 
-            await s3Client.send(uploadCommand);
-            console.log(`[StorageHandler] ✅ ZIP uploaded to temp: ${zipFileName} (${zipBuffer.length} bytes)`);
+            // Set headers for file download
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(zipFileName)}"`);
+            res.setHeader('Content-Length', zipBuffer.length);
 
-            // Generate signed URL for ZIP download
-            const downloadCommand = new GetObjectCommand({
-                Bucket: config.bucketName,
-                Key: `temp/${zipFileName}`,
-                ResponseContentType: 'application/zip',
-                ResponseContentDisposition: `attachment; filename="${encodeURIComponent(zipFileName)}"`
-            });
+            console.log(`[StorageHandler] ✅ Streaming ZIP directly to user: ${zipFileName} (${zipBuffer.length} bytes)`);
 
-            const signedZipUrl = await getSignedUrl(s3Client, downloadCommand, { expiresIn: 900 });
-            console.log(`[StorageHandler] ✅ Generated signed URL for ZIP (expires in 900s)`);
-
-            const responseData = {
-                success: true,
-                type: 'zip',
-                url: signedZipUrl,
-                filename: zipFileName,
-                filesIncluded: filesAdded,
-                filesFailed: filesFailed
-            };
-
-            console.log(`[StorageHandler] Sending response:`, { 
-                success: responseData.success, 
-                type: responseData.type, 
-                filename: responseData.filename,
-                filesIncluded: responseData.filesIncluded,
-                urlLength: signedZipUrl.length 
-            });
-
-            res.json(responseData);
+            // Stream the buffer directly to response (no R2 storage)
+            res.end(zipBuffer);
 
         } catch (error) {
             console.error('[StorageHandler] Bulk download error:', error);
