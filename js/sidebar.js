@@ -47,6 +47,42 @@
         html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb:hover {
             background: rgba(75, 85, 99, 0.8) !important;
         }
+
+        /* ============ SMOOTH HOVER ANIMATIONS ============ */
+        /* Sidebar menu items - smooth hover effect */
+        #sidebar nav a,
+        #sidebar nav button {
+            position: relative;
+            will-change: background-color, color;
+        }
+
+        #sidebar nav a:hover,
+        #sidebar nav button:hover {
+            background-color: var(--hover-bg) !important;
+        }
+
+        /* Smooth background transition */
+        #sidebar nav a,
+        #sidebar nav button {
+            transition: background-color 0.15s ease-out, color 0.15s ease-out !important;
+        }
+
+        /* Fast icon opacity transition */
+        #sidebar nav a span i,
+        #sidebar nav button span i {
+            transition: opacity 0.15s ease-out !important;
+        }
+
+        /* Dropdown arrow smooth rotation */
+        #sidebar nav .dropdown-arrow {
+            transition: transform 0.2s ease-out !important;
+        }
+
+        /* Text color transition */
+        #sidebar nav a span,
+        #sidebar nav button span {
+            transition: color 0.15s ease-out !important;
+        }
     `;
     document.head.appendChild(scrollbarStyle);
     
@@ -286,9 +322,9 @@
                             color: ${childText};
                             font-weight: ${childWeight};
                             text-decoration: none;
-                            transition: all 0.2s ease;
+                            transition: all 0.15s ease-out;
                             letter-spacing: -0.01em;
-                        " onmouseover="if (!this.style.background.includes('${activeBgColor}')) this.style.background='${hoverBgColor}'" onmouseout="if (!this.style.background.includes('${activeBgColor}')) this.style.background='transparent'">
+                        ">
                             <span style="margin-right: 0.75rem; font-size: ${menuSizes.childIconSize}; opacity: 0.7;">${child.icon}</span>
                             <span>${child.label}</span>
                         </a>
@@ -312,12 +348,12 @@
                         text-decoration: none;
                         font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
-                        transition: all 0.2s ease;
+                        transition: all 0.15s ease-out;
                         text-align: left;
                         font-weight: 500;
                         border-radius: 8px;
                         letter-spacing: -0.01em;
-                    " onmouseover="this.style.background='${hoverBgColor}'" onmouseout="this.style.background='${itemIsActive ? hoverBgColor : 'transparent'}'">
+                    ">
                         <span style="display: flex; align-items: center;">
                             <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8;">${item.icon}</span>
                             <span>${item.label}</span>
@@ -358,9 +394,9 @@
                         text-decoration: none;
                         font-size: ${menuSizes.buttonFontSize};
                         cursor: pointer;
-                        transition: all 0.2s ease;
+                        transition: all 0.15s ease-out;
                         letter-spacing: -0.01em;
-                    " onmouseover="if (!this.style.background.includes('${activeBgColor}')) this.style.background='${hoverBgColor}'" onmouseout="if (!this.style.background.includes('${activeBgColor}')) this.style.background='transparent'">
+                    ">
                         <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8;">${item.icon}</span>
                         <span>${item.label}</span>
                     </a>
@@ -531,14 +567,48 @@
         sidebar.setAttribute('data-injected', 'true');
     }
 
+    // Setup fast hover listeners for menu items
+    function setupHoverListeners() {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+
+        // Get all menu links and buttons
+        const menuItems = sidebar.querySelectorAll('nav a, nav button');
+        
+        menuItems.forEach(item => {
+            // Fast hover effect
+            item.addEventListener('mouseenter', function(e) {
+                // Store original background for non-active items
+                if (!this.style.backgroundColor || this.style.backgroundColor === 'transparent') {
+                    const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+                    const hoverColor = isDarkMode ? '#1e293b' : '#f7fafc';
+                    this.style.backgroundColor = hoverColor;
+                }
+            }, { passive: true });
+
+            item.addEventListener('mouseleave', function(e) {
+                // Restore only if not active
+                const isActive = this.style.backgroundColor?.includes(sidebarColors.activeBgColor || '#dbeafe');
+                if (!isActive) {
+                    this.style.backgroundColor = 'transparent';
+                }
+            }, { passive: true });
+        });
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', inject);
+        document.addEventListener('DOMContentLoaded', () => {
+            inject();
+            setupHoverListeners();
+        });
     } else {
         inject();
+        setupHoverListeners();
     }
 
     window.loadSidebar = async function() {
         inject();
+        setupHoverListeners();
         
         // Update active states for current page without full re-render
         const currentPath = window.location.pathname;
