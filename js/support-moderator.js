@@ -27,6 +27,7 @@ if (!window.__supportVarsInitialized) {
 // SPA-aware initialization
 async function initSupportPage() {
     console.log('[Support] initSupportPage() called');
+    console.log('[Support] Current page:', window.location.pathname);
     
     // Check sidebar size and re-inject if page type changed
     const uploadFilePages = ['/upload-excel', '/upload-invoice-pdf', '/upload-bukti-bayar', '/upload-faktur', '/rename-faktur'];
@@ -83,7 +84,9 @@ async function initSupportPage() {
         loadTickets()
     ]).then(() => {
         const loadTime = (performance.now() - startTime).toFixed(0);
+        console.log('[Support] Data loaded in', loadTime, 'ms');
     }).catch(err => {
+        console.error('[Support] Error loading data:', err);
     });
     // Setup event listeners - DISABLED AUTO-LOAD (require explicit "Terapkan" click)
     const searchInput = document.getElementById('searchInput');
