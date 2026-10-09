@@ -594,25 +594,39 @@ td > span {
     gap: 20px;
 }
 
-/* ============================================================ 
-   ANTI-SPOILER / FLASH OF UNAUTHORIZED CONTENT (FOUC)
-   ============================================================ */
-html.auth-loading body {
-    opacity: 0;
+/* ---- Sidebar CSS Reset (consistent across all pages) ---- */
+#sidebar, .sidebar-container, .sidebar-nav, .sidebar-item, .sidebar-child-item {
+    all: revert;
 }
 
-body {
-    transition: opacity 0.25s ease-in-out;
+:root {
+    --color-bg-primary: #f8fafc;
+    --color-bg-secondary: #ffffff;
+    --color-bg-card: #ffffff;
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #64748b;
+    --color-border: #e2e8f0;
+    --color-accent: #8b5cf6;
+    --color-accent-hover: #7c3aed;
+    --color-success: #10b981;
+    --color-danger: #ef4444;
 }
 
-.role-admin-zona [data-role="super_admin"],
-.role-admin-zona [data-permission] {
-    display: none !important;
+html[data-dark-mode="true"] {
+    --color-bg-primary: #0f172a;
+    --color-bg-secondary: #1e293b;
+    --color-bg-card: #1e293b;
+    --color-text-primary: #f1f5f9;
+    --color-text-secondary: #94a3b8;
+    --color-border: #334155;
 }
 
-.role-admin-zona #main-content {
-    margin-left: 0 !important;
-    width: 100% !important;
+/* ---- Sidebar CSS */
+#sidebar {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
 }
 
 /* ---- Select & Dropdown Fixes ---- */
