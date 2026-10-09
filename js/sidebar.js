@@ -417,6 +417,7 @@
                             letter-spacing: -0.01em;
                             box-sizing: border-box;
                             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                            line-height: 1;
                         ">
                         <span style="font-size: ${menuSizes.iconSize}; opacity: 0.8; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: ${menuSizes.iconSize}; height: ${menuSizes.iconSize};">
                             ${item.icon}
@@ -460,6 +461,7 @@
                                 letter-spacing: -0.01em;
                                 box-sizing: border-box;
                                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                                line-height: 1;
                             ">
                             <span style="font-size: calc(${menuSizes.iconSize} * 0.8); opacity: 0.6; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
                                 ${child.icon}
@@ -511,6 +513,7 @@
                             letter-spacing: -0.01em;
                             box-sizing: border-box;
                             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                            line-height: 1;
                         ">
                         <span style="font-size: ${menuSizes.iconSize}; opacity: 0.8; flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: ${menuSizes.iconSize}; height: ${menuSizes.iconSize};">
                             ${item.icon}
