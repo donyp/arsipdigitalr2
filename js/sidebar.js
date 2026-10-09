@@ -306,7 +306,7 @@
                     const childWeight = isActive ? '600' : '400';
                     
                     childrenHTML += `
-                        <a href="${child.href}" onclick="event.stopPropagation();" data-active="${isActive}" style="
+                        <a href="${child.href}" onclick="event.stopPropagation();" class="${isActive ? 'active' : ''}" data-active="${isActive}" style="
                             display: flex;
                             align-items: center;
                             padding: ${menuSizes.childPadding};
@@ -330,7 +330,7 @@
                 const dropdownText = itemIsActive ? textColor : textColor;
                 
                 navHTML += `
-                    <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" data-expanded="${itemIsActive}" data-active="${itemIsActive}" style="
+                    <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" class="${itemIsActive ? 'active' : ''}" data-expanded="${itemIsActive}" data-active="${itemIsActive}" style="
                         display: flex;
                         align-items: center;
                         justify-content: space-between;
@@ -377,7 +377,7 @@
                 const itemWeight = isActive ? '600' : '500';
                 
                 navHTML += `
-                    <a href="${item.href}" data-active="${isActive}" style="
+                    <a href="${item.href}" class="${isActive ? 'active' : ''}" data-active="${isActive}" style="
                         display: flex;
                         align-items: center;
                         padding: ${menuSizes.buttonPadding};
@@ -571,28 +571,36 @@
         const menuItems = sidebar.querySelectorAll('nav a, nav button');
         
         menuItems.forEach(item => {
-            const isActive = item.getAttribute('data-active') === 'true';
+            // Check if has data-active="true" or class="active"
+            const isActive = item.getAttribute('data-active') === 'true' || item.classList.contains('active');
             
-            // Fast hover effect
-            item.addEventListener('mouseenter', function(e) {
+            console.log(`Setting up listener for: ${item.innerText.trim()} (active: ${isActive})`);
+            
+            // Remove previous listeners (if any)
+            item.removeEventListener('mouseenter', menuHoverEnter);
+            item.removeEventListener('mouseleave', menuHoverLeave);
+            
+            // Add new listeners with isActive bound
+            const enterHandler = function(e) {
                 const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+                const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
                 
-                if (isActive) {
-                    // Active item - brighten the active color
-                    const activeBg = isDarkMode ? '#1e3a5f' : '#dbeafe';
+                if (itemIsActive) {
+                    // Active item - brighten
                     const brightenBg = isDarkMode ? '#1e4a7f' : '#bfdbfe';
                     this.style.backgroundColor = brightenBg;
                 } else {
-                    // Non-active item - show hover background
+                    // Non-active - show hover
                     const hoverColor = isDarkMode ? '#1e293b' : '#f7fafc';
                     this.style.backgroundColor = hoverColor;
                 }
-            }, { passive: true });
-
-            item.addEventListener('mouseleave', function(e) {
+            };
+            
+            const leaveHandler = function(e) {
                 const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+                const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
                 
-                if (isActive) {
+                if (itemIsActive) {
                     // Restore active background
                     const activeBg = isDarkMode ? '#1e3a5f' : '#dbeafe';
                     this.style.backgroundColor = activeBg;
@@ -600,9 +608,16 @@
                     // Restore transparent
                     this.style.backgroundColor = 'transparent';
                 }
-            }, { passive: true });
+            };
+            
+            item.addEventListener('mouseenter', enterHandler, { passive: true });
+            item.addEventListener('mouseleave', leaveHandler, { passive: true });
         });
     }
+
+    // Global handlers (for cleanup)
+    function menuHoverEnter(e) {}
+    function menuHoverLeave(e) {}
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
