@@ -146,7 +146,7 @@
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 15rem;
+                width: 16rem;
                 height: 100vh;
                 background-color: ${colors.bgColor};
                 border-right: 1px solid ${colors.borderColor};
