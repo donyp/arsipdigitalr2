@@ -10,19 +10,8 @@ class SPARouter {
         this.isFirstLoad = true; // Track if it's the first page load
         this.pageLoadStart = Date.now(); // Track page load start time
         this.menuMapping = {
-            '/dashboard': { url: 'dashboard.html', title: 'Dashboard' },
-            '/dashboard.html': { url: 'dashboard.html', title: 'Dashboard' },
-            '/whatsapp-messages': { url: 'whatsapp-messages.html', title: 'Notify Zona' },
-            '/whatsapp-messages.html': { url: 'whatsapp-messages.html', title: 'Notify Zona' },
-            '/support-dashboard': { url: 'support-dashboard.html', title: 'Support Dashboard' },
-            '/support-dashboard.html': { url: 'support-dashboard.html', title: 'Support Dashboard' },
-            '/users': { url: 'users.html', title: 'Manajemen Pengguna' },
-            '/users.html': { url: 'users.html', title: 'Manajemen Pengguna' },
-            '/tokos': { url: 'tokos.html', title: 'Daftar Toko' },
-            '/tokos.html': { url: 'tokos.html', title: 'Daftar Toko' },
-            '/zonas': { url: 'zonas.html', title: 'Zona Operasional' },
-            '/zonas.html': { url: 'zonas.html', title: 'Zona Operasional' },
-            // Upload pages use full page navigation (not SPA), so excluded from menuMapping
+            // All pages use full page navigation (no SPA routing)
+            // This ensures consistent sidebar styling across all pages
         };
         
         this.init();

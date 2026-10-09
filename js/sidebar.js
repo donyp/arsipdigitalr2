@@ -15,21 +15,21 @@
             id: 'dashboard',
             label: 'Dashboard',
             icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>',
-            href: '/dashboard',
+            href: '/dashboard.html',
             children: []
         },
         {
             id: 'whatsapp',
             label: 'WhatsApp Messages',
             icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
-            href: '/whatsapp-messages',
+            href: '/whatsapp-messages.html',
             children: []
         },
         {
             id: 'support',
             label: 'Support',
             icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><path d="M12 1v6m6 6h6m-6 6v6m-12 0h6m-6-6H1"></path><circle cx="12" cy="12" r="9"></circle></svg>',
-            href: '/support-dashboard',
+            href: '/support-dashboard.html',
             children: []
         },
         {
@@ -52,8 +52,8 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'PDF to CSV', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>', href: '/upload-invoice-pdf' },
-                { label: 'Rename Faktur', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 7 20.3"></path></svg>', href: '/rename-faktur' }
+                { label: 'PDF to CSV', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>', href: '/upload-invoice-pdf.html' },
+                { label: 'Rename Faktur', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 7 20.3"></path></svg>', href: '/rename-faktur.html' }
             ]
         },
         {
@@ -63,10 +63,10 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Users', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>', href: '/users' },
-                { label: 'Tokos', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>', href: '/tokos' },
-                { label: 'Zonas', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>', href: '/zonas' },
-                { label: 'Kendaraan', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h-1V6c0-1-1-2-2-2H9c-1 0-2 1-2 2v2H6l-2 5v7h2v2h2v-2h8v2h2v-2h2v-7l-2-5z"></path><path d="M9 6h6v2H9z"></path></svg>', href: '/kendaraan-dashboard' }
+                { label: 'Users', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>', href: '/users.html' },
+                { label: 'Tokos', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>', href: '/tokos.html' },
+                { label: 'Zonas', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>', href: '/zonas.html' },
+                { label: 'Kendaraan', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h-1V6c0-1-1-2-2-2H9c-1 0-2 1-2 2v2H6l-2 5v7h2v2h2v-2h8v2h2v-2h2v-7l-2-5z"></path><path d="M9 6h6v2H9z"></path></svg>', href: '/kendaraan-dashboard.html' }
             ]
         },
         {
@@ -76,9 +76,9 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Audit Logs', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8m.31-8.86c-1.77-.45-2.34-1.16-2.34-2.27 0-1.39 1.11-2.3 2.72-2.3 1.67 0 2.52.87 2.65 2.2h1.52c-.15-1.76-1.27-2.9-2.9-3.15V5h-1.11v1.52c-1.51.15-2.66 1.09-2.66 2.23 0 .97.54 1.63 2.05 2.09 1.77.45 2.35 1.24 2.35 2.37 0 1.33-1.05 2.37-2.75 2.37-1.68 0-2.72-.88-2.88-2.4H9.7c.02 1.65 1.16 2.95 2.75 3.21v1.53h1.1v-1.52c1.65-.2 2.5-1.08 2.5-2.25h-1.52c-.12.89-.93 1.42-1.99 1.42z"></path></svg>', href: '/audit-logs' },
-                { label: 'Storage Handler', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54h2.86v2h-4v-3.2L6.5 6.5H9.86V4.5h4v2h-2.9l2.04 2.79z"></path></svg>', href: '/storage-handler' },
-                { label: 'Token Management', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>', href: '/token-management' }
+                { label: 'Audit Logs', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8m.31-8.86c-1.77-.45-2.34-1.16-2.34-2.27 0-1.39 1.11-2.3 2.72-2.3 1.67 0 2.52.87 2.65 2.2h1.52c-.15-1.76-1.27-2.9-2.9-3.15V5h-1.11v1.52c-1.51.15-2.66 1.09-2.66 2.23 0 .97.54 1.63 2.05 2.09 1.77.45 2.35 1.24 2.35 2.37 0 1.33-1.05 2.37-2.75 2.37-1.68 0-2.72-.88-2.88-2.4H9.7c.02 1.65 1.16 2.95 2.75 3.21v1.53h1.1v-1.52c1.65-.2 2.5-1.08 2.5-2.25h-1.52c-.12.89-.93 1.42-1.99 1.42z"></path></svg>', href: '/audit-logs.html' },
+                { label: 'Storage Handler', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54h2.86v2h-4v-3.2L6.5 6.5H9.86V4.5h4v2h-2.9l2.04 2.79z"></path></svg>', href: '/storage-handler.html' },
+                { label: 'Token Management', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>', href: '/token-management.html' }
             ]
         }
     ];
