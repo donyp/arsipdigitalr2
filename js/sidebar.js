@@ -8,24 +8,29 @@
     scrollbarStyle.textContent = `
         /* Light mode scrollbar */
         #sidebar::-webkit-scrollbar,
-        #sidebar nav::-webkit-scrollbar {
+        #sidebar nav::-webkit-scrollbar,
+        #sidebar [id^="dd-"]::-webkit-scrollbar {
             width: 8px;
+            height: 0px;
         }
         
         #sidebar::-webkit-scrollbar-track,
-        #sidebar nav::-webkit-scrollbar-track {
+        #sidebar nav::-webkit-scrollbar-track,
+        #sidebar [id^="dd-"]::-webkit-scrollbar-track {
             background: transparent;
         }
         
         #sidebar::-webkit-scrollbar-thumb,
-        #sidebar nav::-webkit-scrollbar-thumb {
+        #sidebar nav::-webkit-scrollbar-thumb,
+        #sidebar [id^="dd-"]::-webkit-scrollbar-thumb {
             background: rgba(100, 120, 140, 0.6);
             border-radius: 4px;
             transition: background 0.3s ease;
         }
         
         #sidebar::-webkit-scrollbar-thumb:hover,
-        #sidebar nav::-webkit-scrollbar-thumb:hover {
+        #sidebar nav::-webkit-scrollbar-thumb:hover,
+        #sidebar [id^="dd-"]::-webkit-scrollbar-thumb:hover {
             background: rgba(100, 120, 140, 0.8);
         }
         
@@ -39,12 +44,21 @@
             background: rgba(75, 85, 99, 0.6) !important;
             border-radius: 4px;
         }
+
+        html[data-dark-mode="true"] #sidebar [id^="dd-"]::-webkit-scrollbar-thumb {
+            background: rgba(75, 85, 99, 0.6) !important;
+            border-radius: 4px;
+        }
         
         html[data-dark-mode="true"] #sidebar::-webkit-scrollbar-thumb:hover {
             background: rgba(75, 85, 99, 0.8) !important;
         }
         
         html[data-dark-mode="true"] #sidebar nav::-webkit-scrollbar-thumb:hover {
+            background: rgba(75, 85, 99, 0.8) !important;
+        }
+
+        html[data-dark-mode="true"] #sidebar [id^="dd-"]::-webkit-scrollbar-thumb:hover {
             background: rgba(75, 85, 99, 0.8) !important;
         }
 
@@ -131,6 +145,16 @@
         #sidebar nav a span,
         #sidebar nav button span {
             transition: color 0.12s ease-out !important;
+        }
+
+        /* Hide horizontal scrollbar on dropdown containers */
+        #sidebar [id^="dd-"] {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(100, 120, 140, 0.6) transparent;
+        }
+
+        html[data-dark-mode="true"] #sidebar [id^="dd-"] {
+            scrollbar-color: rgba(75, 85, 99, 0.6) transparent;
         }
 
         /* Hover effect for non-active items */
@@ -318,6 +342,8 @@
             requestAnimationFrame(() => {
                 container.style.maxHeight = '300px';
                 container.style.opacity = '1';
+                container.style.overflowY = 'auto';
+                container.style.overflowX = 'hidden';
             });
             
             btn.setAttribute('data-expanded', 'true');
@@ -326,7 +352,8 @@
             setTimeout(() => {
                 if (btn.getAttribute('data-expanded') === 'true') {
                     container.style.maxHeight = '300px';
-                    container.style.overflow = 'auto';
+                    container.style.overflowY = 'auto';
+                    container.style.overflowX = 'hidden';
                 }
             }, 300);
         }
@@ -409,9 +436,14 @@
                             text-decoration: none;
                             transition: all 0.15s ease-out;
                             letter-spacing: -0.01em;
+                            box-sizing: border-box;
+                            width: 100%;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
                         ">
-                            <span style="margin-right: 0.75rem; font-size: ${menuSizes.childIconSize}; opacity: 0.7;">${child.icon}</span>
-                            <span>${child.label}</span>
+                            <span style="margin-right: 0.75rem; font-size: ${menuSizes.childIconSize}; opacity: 0.7; flex-shrink: 0;">${child.icon}</span>
+                            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${child.label}</span>
                         </a>
                     `;
                 }
@@ -452,11 +484,13 @@
                         background: transparent;
                         max-height: ${itemIsActive ? '300px' : '0px'};
                         opacity: ${itemIsActive ? '1' : '0'};
-                        overflow: auto;
+                        overflow-y: auto;
+                        overflow-x: hidden;
                         transition: max-height 0.3s ease, opacity 0.3s ease;
                         pointer-events: ${itemIsActive ? 'auto' : 'none'};
                         padding-left: 0.5rem;
                         scroll-behavior: smooth;
+                        box-sizing: border-box;
                     ">
                         ${childrenHTML}
                     </div>
