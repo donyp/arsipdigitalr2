@@ -4256,7 +4256,8 @@ app.all('/api/files/bulk-download', authenticateToken, async (req, res) => {
         const MM = String(now.getMonth() + 1).padStart(2, '0');
         const YY = String(now.getFullYear()).slice(-2);
         const randomBatch = Math.floor(100 + Math.random() * 900);
-        res.attachment(`ARSIP ANKA ${randomBatch}${DD}${MM}${YY}.zip`);
+        // ✅ IMPROVED: Clean filename format: ARSIP_ANKA_[DD-MM-YY]_[BATCH].zip
+        res.attachment(`ARSIP_ANKA_${DD}-${MM}-${YY}_${randomBatch}.zip`);
         archive.pipe(res);
 
         // 3. Add files to ZIP sequentially to prevent server overload

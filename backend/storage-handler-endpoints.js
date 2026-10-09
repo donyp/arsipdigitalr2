@@ -449,7 +449,8 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             const MM = String(now.getMonth() + 1).padStart(2, '0');
             const YY = String(now.getFullYear()).slice(-2);
             const randomBatch = Math.floor(100 + Math.random() * 900);
-            const zipFileName = `ARSIP ANKA ${randomBatch}${DD}${MM}${YY}.zip`;
+            // ✅ IMPROVED: Clean filename format: ARSIP_ANKA_[DD-MM-YY]_[BATCH].zip
+            const zipFileName = `ARSIP_ANKA_${DD}-${MM}-${YY}_${randomBatch}.zip`;
 
             // Set headers for file download
             res.setHeader('Content-Type', 'application/zip');
