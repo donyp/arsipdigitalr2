@@ -249,75 +249,7 @@ body {
 
 /* Sidebar styling handled by js/sidebar.js for consistency */
 
-.sidebar {
-    transition: width 0.3s ease, transform 0.3s ease;
-    background: var(--surface-2);
-    border-right: 1px solid var(--border);
-    height: 100vh !important;
-    overflow-y: auto !important;
-}
-
-.sidebar-link {
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-    color: var(--text-muted);
-}
-
-.sidebar-link::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: var(--primary);
-    transform: scaleY(0);
-    transition: transform 0.2s ease;
-    border-radius: 0 4px 4px 0;
-}
-
-.sidebar-link:hover,
-.sidebar-link.active {
-    background: rgba(37, 99, 235, 0.08);
-    color: var(--primary);
-}
-
-.sidebar-link:hover::before,
-.sidebar-link.active::before {
-    transform: scaleY(1);
-}
-
-/* ---- Sidebar Dropdown ---- */
-.sidebar-dropdown-btn {
-    transition: all 0.2s ease;
-    color: var(--text-muted);
-}
-
-.sidebar-dropdown-btn:hover {
-    background: rgba(0, 0, 0, 0.04);
-    color: var(--text);
-}
-
-.sidebar-dropdown-content {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar-dropdown-icon {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar-dropdown.expanded .sidebar-dropdown-icon,
-#sidebar-parent.expanded .sidebar-dropdown-icon {
-    transform: rotate(180deg);
-}
-
-.sidebar-dropdown-content .sidebar-link {
-    padding-left: 3rem;
-    font-size: 0.8125rem;
-}
+/* Sidebar styling handled by sidebar-v6.js - do not override */
 
 /* ---- Data Tables ---- */
 .data-table {
