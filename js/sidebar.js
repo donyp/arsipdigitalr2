@@ -472,13 +472,13 @@
                 <div class="sidebar-dropdown-content" 
                     id="dd-${item.id}"
                     style="
-                        display: ${isExpanded ? 'flex' : 'none'};
+                        display: flex;
                         flex-direction: column;
                         gap: 0.2rem;
                         max-height: ${isExpanded ? '500px' : '0px'};
                         opacity: ${isExpanded ? '1' : '0'};
                         overflow: hidden;
-                        transition: max-height 0.3s ease, opacity 0.3s ease;
+                        transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                         pointer-events: ${isExpanded ? 'auto' : 'none'};
                     ">
                     ${childrenHTML}
@@ -616,7 +616,7 @@
         const allDropdownContents = document.querySelectorAll('.sidebar-dropdown-content');
         
         // Check if this dropdown is currently expanded
-        const isCurrentlyExpanded = dropdownContent.style.display === 'flex';
+        const isCurrentlyExpanded = parseFloat(dropdownContent.style.maxHeight) > 0;
 
         // Close all dropdowns with smooth animation
         allDropdownContents.forEach(content => {
@@ -625,9 +625,6 @@
                 content.style.maxHeight = '0px';
                 content.style.opacity = '0';
                 content.style.pointerEvents = 'none';
-                setTimeout(() => {
-                    content.style.display = 'none';
-                }, 300);
                 
                 // Update arrow rotation for button
                 const btn = content.previousElementSibling;
@@ -646,9 +643,6 @@
             dropdownContent.style.maxHeight = '0px';
             dropdownContent.style.opacity = '0';
             dropdownContent.style.pointerEvents = 'none';
-            setTimeout(() => {
-                dropdownContent.style.display = 'none';
-            }, 300);
             
             // Rotate arrow back
             const btn = dropdownContent.previousElementSibling;
@@ -663,9 +657,6 @@
             sessionStorage.removeItem(`sidebar-dropdown-${dropdownId}`);
         } else {
             // Open current dropdown
-            dropdownContent.style.display = 'flex';
-            // Trigger reflow to enable transition
-            void dropdownContent.offsetHeight;
             dropdownContent.style.maxHeight = '500px';
             dropdownContent.style.opacity = '1';
             dropdownContent.style.pointerEvents = 'auto';
