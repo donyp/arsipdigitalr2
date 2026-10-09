@@ -465,7 +465,6 @@
                     <button id="${item.id}-btn" onclick="toggleSidebarDropdown('${item.id}')" class="${itemIsActive ? 'active' : ''}" data-expanded="${itemIsActive}" data-active="${itemIsActive}" style="
                         display: flex;
                         align-items: center;
-                        justify-content: space-between;
                         width: 100%;
                         padding: ${menuSizes.buttonPadding};
                         margin: ${menuSizes.buttonMargin};
@@ -480,12 +479,11 @@
                         font-weight: 500;
                         border-radius: 8px;
                         letter-spacing: -0.01em;
+                        box-sizing: border-box;
                     ">
-                        <span style="display: flex; align-items: center;">
-                            <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8;">${item.icon}</span>
-                            <span>${item.label}</span>
-                        </span>
-                        <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style="opacity: 0.5; transition: transform 0.2s ease; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">
+                        <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8; flex-shrink: 0;">${item.icon}</span>
+                        <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.label}</span>
+                        <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" style="opacity: 0.5; transition: transform 0.2s ease; margin-left: 0.5rem; flex-shrink: 0; ${itemIsActive ? 'transform: rotate(180deg);' : ''}">
                             <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
                         </svg>
                     </button>
@@ -527,9 +525,11 @@
                         cursor: pointer;
                         transition: all 0.15s ease-out;
                         letter-spacing: -0.01em;
+                        box-sizing: border-box;
+                        width: 100%;
                     ">
-                        <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8;">${item.icon}</span>
-                        <span>${item.label}</span>
+                        <span style="margin-right: 0.75rem; font-size: ${menuSizes.iconSize}; opacity: 0.8; flex-shrink: 0;">${item.icon}</span>
+                        <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.label}</span>
                     </a>
                 `;
             }
