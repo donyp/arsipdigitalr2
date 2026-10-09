@@ -673,13 +673,14 @@
                 const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
                 
+                // Only apply hover effect, NEVER remove active background
                 if (itemIsActive) {
-                    // Active item - brighten with thicker underline and slide right
+                    // Active item - brighten with thicker underline and slide right (KEEP active state)
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.22)' : 'rgba(96, 165, 250, 0.18)';
                     this.style.boxShadow = 'inset 0 3px 0 0 #60a5fa';
                     this.style.transform = 'translateX(6px)';
                 } else {
-                    // Non-active - show subtle hover and slide
+                    // Non-active - show subtle hover and slide (but keep data-active for reference)
                     this.style.background = isDarkMode ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
                     this.style.transform = 'translateX(4px)';
                 }
@@ -690,7 +691,7 @@
                 const itemIsActive = this.getAttribute('data-active') === 'true' || this.classList.contains('active');
                 
                 if (itemIsActive) {
-                    // Restore active background with thin underline
+                    // Restore active background - ALWAYS keep highlight (CRITICAL)
                     this.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
                     this.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
                     this.style.transform = 'translateX(0)';
@@ -750,10 +751,10 @@
         const sidebar = document.getElementById('sidebar');
         if (!sidebar) return;
 
-        const { textColor = '#2d3748', activeTextColor = '#1e40af', activeBgColor = '#eff6ff' } = sidebarColors;
+        const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
 
         // Normalize pathname for comparison
-        const normalizedPath = pathname.replace('.html', '').replace(/\/$/, '').toLowerCase();
+        const normalizedPath = pathname.replace('.html', '').replace(/\/$/, '').toLowerCase().replace(/^\//, '');
 
         for (const item of menuItems) {
             if (item.isDropdown) {
@@ -764,17 +765,20 @@
                 // Check if any child matches current path
                 let itemIsActive = false;
                 for (const child of item.children) {
-                    const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
+                    const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase().replace(/^\//, '');
                     if (normalizedPath === childPath) {
                         itemIsActive = true;
                         break;
                     }
                 }
 
-                // Update button color and state
+                // Update button state and styling
+                btn.setAttribute('data-active', itemIsActive);
                 if (itemIsActive) {
-                    btn.style.backgroundColor = activeBgColor;
-                    btn.style.color = activeTextColor;
+                    btn.classList.add('active');
+                    btn.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
+                    btn.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
+                    btn.style.color = isDarkMode ? '#60a5fa' : '#3b82f6';
                     const arrow = btn.querySelector('.dropdown-arrow');
                     if (arrow) arrow.style.transform = 'rotate(180deg)';
                     // Auto-open dropdown when child is active
@@ -784,8 +788,10 @@
                     container.style.overflow = 'visible';
                     btn.setAttribute('data-expanded', 'true');
                 } else {
-                    btn.style.backgroundColor = 'transparent';
-                    btn.style.color = textColor;
+                    btn.classList.remove('active');
+                    btn.style.background = 'transparent';
+                    btn.style.boxShadow = 'none';
+                    btn.style.color = '';
                     const arrow = btn.querySelector('.dropdown-arrow');
                     if (arrow) arrow.style.transform = 'rotate(0deg)';
                     container.style.display = 'none';
@@ -798,15 +804,20 @@
                 for (const child of item.children) {
                     const childLink = sidebar.querySelector(`a[href="${child.href}"]`);
                     if (childLink) {
-                        const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
+                        const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase().replace(/^\//, '');
                         const isChildActive = normalizedPath === childPath;
                         
+                        childLink.setAttribute('data-active', isChildActive);
                         if (isChildActive) {
-                            childLink.style.backgroundColor = activeBgColor;
-                            childLink.style.color = activeTextColor;
+                            childLink.classList.add('active');
+                            childLink.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
+                            childLink.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
+                            childLink.style.color = isDarkMode ? '#60a5fa' : '#3b82f6';
                         } else {
-                            childLink.style.backgroundColor = 'transparent';
-                            childLink.style.color = textColor;
+                            childLink.classList.remove('active');
+                            childLink.style.background = 'transparent';
+                            childLink.style.boxShadow = 'none';
+                            childLink.style.color = '';
                         }
                     }
                 }
@@ -814,15 +825,20 @@
                 // Regular menu item
                 const link = sidebar.querySelector(`a[href="${item.href}"]`);
                 if (link) {
-                    const itemPath = item.href.replace('.html', '').replace(/\/$/, '').toLowerCase();
+                    const itemPath = item.href.replace('.html', '').replace(/\/$/, '').toLowerCase().replace(/^\//, '');
                     const isActive = normalizedPath === itemPath;
                     
+                    link.setAttribute('data-active', isActive);
                     if (isActive) {
-                        link.style.backgroundColor = activeBgColor;
-                        link.style.color = activeTextColor;
+                        link.classList.add('active');
+                        link.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
+                        link.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
+                        link.style.color = isDarkMode ? '#60a5fa' : '#3b82f6';
                     } else {
-                        link.style.backgroundColor = 'transparent';
-                        link.style.color = textColor;
+                        link.classList.remove('active');
+                        link.style.background = 'transparent';
+                        link.style.boxShadow = 'none';
+                        link.style.color = '';
                     }
                 }
             }
