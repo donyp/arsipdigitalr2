@@ -14,48 +14,48 @@
         {
             id: 'dashboard',
             label: 'Dashboard',
-            icon: '📊',
+            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>',
             href: '/dashboard',
             children: []
         },
         {
-            id: 'notify',
-            label: 'Notify Zona',
-            icon: '📢',
+            id: 'whatsapp',
+            label: 'WhatsApp Messages',
+            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>',
             href: '/whatsapp-messages',
             children: []
         },
         {
             id: 'support',
             label: 'Support',
-            icon: '🆘',
+            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><path d="M12 1v6m6 6h6m-6 6v6m-12 0h6m-6-6H1"></path><circle cx="12" cy="12" r="9"></circle></svg>',
             href: '/support-dashboard',
             children: []
         },
         {
             id: 'upload',
             label: 'Upload File',
-            icon: '📁',
+            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>',
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Upload Excel', icon: '📊', href: '/upload-excel' },
-                { label: 'Upload Invoice PDF', icon: '📄', href: '/upload-invoice-pdf' },
-                { label: 'Upload Bukti Bayar', icon: '💳', href: '/upload-bukti-bayar' },
-                { label: 'Upload Faktur Pajak', icon: '📋', href: '/upload-faktur-pajak' },
-                { label: 'Rename Faktur', icon: '✏️', href: '/rename-faktur' }
+                { label: 'Upload Excel', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>', href: '/upload-excel' },
+                { label: 'Upload Invoice PDF', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="13" x2="12" y2="17"></line><line x1="10" y1="15" x2="14" y2="15"></line></svg>', href: '/upload-invoice-pdf' },
+                { label: 'Upload Bukti Bayar', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>', href: '/upload-bukti-bayar' },
+                { label: 'Upload Faktur Pajak', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>', href: '/upload-faktur-pajak' },
+                { label: 'Rename Faktur', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 7 20.3"></path></svg>', href: '/rename-faktur' }
             ]
         },
         {
             id: 'management',
             label: 'Management',
-            icon: '⚙️',
+            icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>',
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Users', icon: '👥', href: '/users' },
-                { label: 'Tokos', icon: '🏪', href: '/tokos' },
-                { label: 'Zonas', icon: '🗺️', href: '/zonas' }
+                { label: 'Users', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>', href: '/users' },
+                { label: 'Tokos', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>', href: '/tokos' },
+                { label: 'Zonas', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>', href: '/zonas' }
             ]
         }
     ];
@@ -261,13 +261,13 @@
                 "
             >
                 <span style="
-                    font-size: ${STYLES.iconSize};
                     flex-shrink: 0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     width: ${STYLES.iconSize};
                     height: ${STYLES.iconSize};
+                    color: currentColor;
                 ">
                     ${item.icon}
                 </span>
@@ -325,9 +325,14 @@
                     "
                 >
                     <span style="
-                        font-size: 0.9rem;
                         flex-shrink: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 1rem;
+                        height: 1rem;
                         opacity: 0.6;
+                        color: currentColor;
                     ">
                         ${child.icon}
                     </span>
@@ -378,13 +383,13 @@
                     "
                 >
                     <span style="
-                        font-size: ${STYLES.iconSize};
                         flex-shrink: 0;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         width: ${STYLES.iconSize};
                         height: ${STYLES.iconSize};
+                        color: currentColor;
                     ">
                         ${item.icon}
                     </span>
