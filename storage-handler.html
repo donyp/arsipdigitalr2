@@ -758,18 +758,48 @@
                         throw new Error(`HTTP ${response.status}`);
                     }
 
-                    const data = await response.json();
-
-                    if (data.success && data.type === 'zip') {
-                        console.log('[BulkDownload] ZIP created, starting download');
-                        window.location.href = data.url;
+                    // ✅ FIXED: Response is now binary ZIP data, not JSON
+                    // Check content type to determine response format
+                    const contentType = response.headers.get('content-type');
+                    
+                    if (contentType && contentType.includes('application/zip')) {
+                        // Binary ZIP - download directly
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
                         
-                        setTimeout(() => {
-                            Notify.success(`✓ ZIP downloading (${data.filesIncluded} files${data.filesFailed > 0 ? `, ${data.filesFailed} failed` : ''})`);
-                            clearSelection();
-                        }, 500);
+                        // Extract filename from Content-Disposition header
+                        const disposition = response.headers.get('content-disposition');
+                        let filename = 'download.zip';
+                        if (disposition) {
+                            const matches = disposition.match(/filename="([^"]+)"/);
+                            if (matches) filename = matches[1];
+                        }
+                        
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        document.body.removeChild(a);
+                        
+                        console.log('[BulkDownload] ZIP downloaded successfully');
+                        Notify.success(`✓ ZIP downloaded (${fileCount} files)`);
+                        clearSelection();
                     } else {
-                        throw new Error('Invalid response');
+                        // JSON response (old format with signed URL)
+                        const data = await response.json();
+                        if (data.success && data.type === 'zip') {
+                            console.log('[BulkDownload] ZIP created, starting download');
+                            window.location.href = data.url;
+                            
+                            setTimeout(() => {
+                                Notify.success(`✓ ZIP downloading (${data.filesIncluded} files${data.filesFailed > 0 ? `, ${data.filesFailed} failed` : ''})`);
+                                clearSelection();
+                            }, 500);
+                        } else {
+                            throw new Error('Invalid response');
+                        }
                     }
 
                 } catch (error) {
