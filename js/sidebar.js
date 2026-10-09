@@ -489,6 +489,7 @@
                         transition: max-height 0.3s ease, opacity 0.3s ease;
                         pointer-events: ${itemIsActive ? 'auto' : 'none'};
                         padding-left: 0.5rem;
+                        padding-right: 0.5rem;
                         scroll-behavior: smooth;
                         box-sizing: border-box;
                     ">
@@ -530,8 +531,8 @@
         // Modern sidebar with consistent width
         const sidebarWidth = '15rem';
 
-        // Use min-height: 148vh for ideal full page coverage
-        const sidebarHeight = `min-height: 148vh;`;
+        // Use max-height: 100vh to fit within viewport and allow scrolling
+        const sidebarHeight = `max-height: 100vh;`;
 
         sidebar.style.cssText = `
             position: fixed;
