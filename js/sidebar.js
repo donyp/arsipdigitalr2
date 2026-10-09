@@ -286,6 +286,7 @@
                     overflow: hidden;
                     border-left: ${isActive ? '3px solid ' + colors.activeTextColor : '3px solid transparent'};
                     padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} - 3px);
+                    flex-shrink: 0;
                 "
                 onmouseover="
                     this.style.backgroundColor = '${colors.hoverBg}';
@@ -425,6 +426,7 @@
                         overflow: hidden;
                         border-left: 3px solid transparent;
                         padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} - 3px);
+                        flex-shrink: 0;
                     "
                     onmouseover="
                         this.style.backgroundColor = '${colors.hoverBg}';
@@ -506,6 +508,10 @@
             .sidebar-nav {
                 scrollbar-width: thin;
                 scrollbar-color: rgba(100, 100, 100, 0.5) transparent;
+                display: flex;
+                flex-direction: column;
+                min-height: 0;
+            }
             }
 
             .sidebar-nav::-webkit-scrollbar {
@@ -525,6 +531,7 @@
             .sidebar-dropdown-btn,
             .sidebar-child-item {
                 box-sizing: border-box;
+                flex-shrink: 0;
             }
 
             .sidebar-item.active,
