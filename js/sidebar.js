@@ -542,8 +542,8 @@
         // Even smaller on Upload pages
         const sidebarWidth = isUploadFilePage ? '12.5rem' : '13.5rem';
 
-        // Use min-height: 100vh to always stretch to viewport, plus flex: 1 on nav for growth
-        const sidebarHeight = `min-height: 100vh;`;
+        // Allow sidebar to grow naturally beyond viewport on regular pages
+        const sidebarHeight = isUploadFilePage ? `min-height: 100vh;` : `min-height: auto;`;
 
         sidebar.style.cssText = `
             position: fixed;
