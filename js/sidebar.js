@@ -800,25 +800,29 @@
                     btn.setAttribute('data-expanded', 'false');
                 }
 
-                // Highlight active child item
+                // Highlight active child item - CRITICAL FIX
                 for (const child of item.children) {
-                    const childLink = sidebar.querySelector(`a[href="${child.href}"]`);
-                    if (childLink) {
+                    // Find child by href attribute properly
+                    const childLinks = sidebar.querySelectorAll(`a[href="${child.href}"]`);
+                    if (childLinks.length > 0) {
                         const childPath = child.href.replace('.html', '').replace(/\/$/, '').toLowerCase().replace(/^\//, '');
                         const isChildActive = normalizedPath === childPath;
                         
-                        childLink.setAttribute('data-active', isChildActive);
-                        if (isChildActive) {
-                            childLink.classList.add('active');
-                            childLink.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
-                            childLink.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
-                            childLink.style.color = isDarkMode ? '#60a5fa' : '#3b82f6';
-                        } else {
-                            childLink.classList.remove('active');
-                            childLink.style.background = 'transparent';
-                            childLink.style.boxShadow = 'none';
-                            childLink.style.color = '';
-                        }
+                        // Update ALL matching links (in case there are duplicates)
+                        childLinks.forEach(childLink => {
+                            childLink.setAttribute('data-active', isChildActive);
+                            if (isChildActive) {
+                                childLink.classList.add('active');
+                                childLink.style.background = isDarkMode ? 'rgba(96, 165, 250, 0.15)' : 'rgba(96, 165, 250, 0.12)';
+                                childLink.style.boxShadow = 'inset 0 2px 0 0 #60a5fa';
+                                childLink.style.color = isDarkMode ? '#60a5fa' : '#3b82f6';
+                            } else {
+                                childLink.classList.remove('active');
+                                childLink.style.background = 'transparent';
+                                childLink.style.boxShadow = 'none';
+                                childLink.style.color = '';
+                            }
+                        });
                     }
                 }
             } else {
