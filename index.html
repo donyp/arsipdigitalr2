@@ -484,7 +484,7 @@
                             <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #667eea; stroke: currentColor; stroke-width: 2; fill: none;" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
-                            <input type="text" id="username" name="username" autocomplete="username" placeholder="Email" class="form-input" style="padding-left: 28px;" required>
+                            <input type="text" id="username" name="username" autocomplete="username" placeholder="Username" class="form-input" style="padding-left: 28px;" required>
                         </div>
                     </div>
 
@@ -786,9 +786,9 @@
                 let errorTitle = 'Login Gagal';
                 
                 if (err.status === 401) {
-                    errorMessage = 'Email atau password salah. Periksa kembali data Anda.';
+                    errorMessage = 'Username atau password salah. Periksa kembali data Anda.';
                 } else if (err.status === 403) {
-                    errorMessage = err.message || 'Email tidak valid. Hubungi administrator';
+                    errorMessage = err.message || 'Username tidak valid. Hubungi administrator';
                     errorTitle = 'Akses Ditolak';
                 } else if (err.status === 503) {
                     errorMessage = 'Sistem sedang dalam perbaikan (Maintenance Mode). Coba lagi nanti.';
