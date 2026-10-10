@@ -1652,7 +1652,7 @@
             <div class="welcome-section">
                 <div class="welcome-header">
                     <div class="welcome-text">
-                        <h2 id="welcome-name">Selamat siang, Admin ??</h2>
+                        <h2 id="welcome-name">Selamat siang, Admin 👋</h2>
                         <p id="welcome-info">Informasi data zona anda</p>
                     </div>
                     
@@ -1913,7 +1913,7 @@
                     <tbody id="invoiceTableBody">
                         <tr>
                             <td colspan="8" class="empty-state">
-                                <div class="empty-state-icon">??</div>
+                                <div class="empty-state-icon">⏳</div>
                                 <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
@@ -2159,7 +2159,7 @@
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="8" class="empty-state">
-                        <div class="empty-state-icon">??</div>
+                        <div class="empty-state-icon">ℹ️</div>
                         <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                         <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                     </td>
@@ -2812,7 +2812,7 @@
                         <td>${total}</td>
                         <td>${inv.keterangan || '-'}</td>
                         <td style="text-align: center;">
-                            <button onclick="showAdminZonaDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor=document.body.classList.contains('dark-mode') ? '#334155' : '#f3f4f6'; this.style.color=document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">?</button>
+                            <button onclick="showAdminZonaDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor=document.body.classList.contains('dark-mode') ? '#334155' : '#f3f4f6'; this.style.color=document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⬇️</button>
                         </td>
                     </tr>
                 `;
@@ -3180,7 +3180,7 @@
                 }
                 
                 const welcomeNameEl = document.getElementById('welcome-name');
-                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} ??`;
+                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
 
                 const welcomeInfoEl = document.getElementById('welcome-info');
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
@@ -3202,7 +3202,7 @@
                     } else if (hour >= 18 || hour < 5) {
                         greeting = 'malam';
                     }
-                    welcomeNameEl.textContent = `Selamat ${greeting}, User ??`;
+                    welcomeNameEl.textContent = `Selamat ${greeting}, User 👋`;
                 }
             }
         });
@@ -3399,7 +3399,7 @@
                 
                 // Show popup with dark mode support
                 Swal.fire({
-                    title: '?? Download Files',
+                    title: 'ℹ️ Download Files',
                     html: menuHTML,
                     icon: 'info',
                     showConfirmButton: false,
