@@ -756,7 +756,7 @@
                     // Determine correct dashboard based on role
                     let dashboardPage = '/dashboard.html';
                     if (data.user.role === 'admin_zona') {
-                        dashboardPage = '/dashboard-admin-zona.html';
+                        dashboardPage = '/zona/dashboard';
                     }
                     
                     // Show success and redirect
@@ -892,7 +892,7 @@
                 // Determine dashboard page based on role
                 let dashboardPage = '/dashboard';
                 if (user.role === 'admin_zona') {
-                    dashboardPage = '/dashboard-admin-zona.html';
+                    dashboardPage = '/zona/dashboard';
                 }
 
                 await Swal.fire({
