@@ -76,8 +76,7 @@
             isDropdown: true,
             children: [
                 { label: 'Audit Logs', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8m.31-8.86c-1.77-.45-2.34-1.16-2.34-2.27 0-1.39 1.11-2.3 2.72-2.3 1.67 0 2.52.87 2.65 2.2h1.52c-.15-1.76-1.27-2.9-2.9-3.15V5h-1.11v1.52c-1.51.15-2.66 1.09-2.66 2.23 0 .97.54 1.63 2.05 2.09 1.77.45 2.35 1.24 2.35 2.37 0 1.33-1.05 2.37-2.75 2.37-1.68 0-2.72-.88-2.88-2.4H9.7c.02 1.65 1.16 2.95 2.75 3.21v1.53h1.1v-1.52c1.65-.2 2.5-1.08 2.5-2.25h-1.52c-.12.89-.93 1.42-1.99 1.42z"></path></svg>', href: '/audit-logs.html' },
-                { label: 'Storage Handler', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54h2.86v2h-4v-3.2L6.5 6.5H9.86V4.5h4v2h-2.9l2.04 2.79z"></path></svg>', href: '/storage-handler.html' },
-                { label: 'Token Management', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>', href: '/token-management.html' }
+                { label: 'Storage Handler', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54h2.86v2h-4v-3.2L6.5 6.5H9.86V4.5h4v2h-2.9l2.04 2.79z"></path></svg>', href: '/storage-handler.html' }
             ]
         }
     ];

@@ -1205,167 +1205,24 @@ registerFeatureEndpoints(app, supabase, authenticateToken, authorizeRole);
 console.log('[INIT] Phase 1 feature endpoints registered ✅');
 
 // ============================================================
-// DAILY TOKEN AUTHENTICATION SYSTEM (2FA with Email Tokens)
+// AUTHENTICATION SYSTEM (Simplified: username/password only)
 // ============================================================
-const tokenAuthEnabled = process.env.ENABLE_DAILY_TOKEN_AUTH === 'true';
-let dailyTokenService = null;
 
-console.log('[INIT] Initializing Daily Token Authentication System...');
+console.log('[INIT] Initializing Authentication Endpoints...');
 try {
-    const DailyTokenService = require('./daily-token-service');
-    dailyTokenService = new DailyTokenService(
-        supabase,
-        process.env.RESEND_API_KEY,
-        process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.my.id',
-        process.env.ADMIN_TOKEN_EMAIL
-    );
-
-    // Log environment variables on startup for debugging
-    console.log('[TokenService] Initialization Debug:');
-    console.log(`  ENABLE_DAILY_TOKEN_AUTH: ${process.env.ENABLE_DAILY_TOKEN_AUTH}`);
-    console.log(`  RESEND_API_KEY: ${process.env.RESEND_API_KEY ? '✅ Set (length: ' + process.env.RESEND_API_KEY.length + ')' : '❌ Not set'}`);
-    console.log(`  RESEND_FROM_EMAIL: ${process.env.RESEND_FROM_EMAIL || 'default: noreply@arsipdigitalanka.my.id'}`);
-    console.log(`  ADMIN_TOKEN_EMAIL: ${process.env.ADMIN_TOKEN_EMAIL || '❌ NOT SET - Emails will go to individual addresses'}`);
-    if (!process.env.ADMIN_TOKEN_EMAIL) {
-        console.warn('[TokenService] ⚠️  WARNING: ADMIN_TOKEN_EMAIL is not configured!');
-        console.warn('[TokenService] Admin and moderator tokens will be sent to INDIVIDUAL emails instead of centralized');
-        console.warn('[TokenService] To fix: Set ADMIN_TOKEN_EMAIL=donisugiharto322@gmail.com in Railway environment variables');
-    }
-
-    // ✅ ALWAYS register endpoints, regardless of tokenAuthEnabled flag
-    // The endpoint logic itself handles the tokenAuthEnabled decision
-    const registerDailyTokenEndpoints = require('./daily-token-endpoints');
-    registerDailyTokenEndpoints(app, supabase, dailyTokenService);
-    console.log('[INIT] Daily Token authentication endpoints registered ✅');
-
-    if (tokenAuthEnabled) {
-        const registerDailyTokenAdminEndpoints = require('./daily-token-admin-endpoints');
-        registerDailyTokenAdminEndpoints(app, supabase, authenticateToken, authorizeRole, dailyTokenService);
-        console.log('[INIT] Daily Token admin endpoints registered ✅');
-
-        // Initialize scheduler
-        const DailyTokenScheduler = require('./daily-token-scheduler');
-        const scheduler = new DailyTokenScheduler(supabase, dailyTokenService);
-        scheduler.start();
-        console.log('[INIT] Daily Token scheduler started ✅');
-    }
-
-    // ===== DEV TEST ENDPOINT (Remove in production) =====
-    if (process.env.NODE_ENV === 'development') {
-        // Test endpoint: Get all users with valid emails (NO AUTH - DEV ONLY)
-        app.get('/api/dev/test-users', async (req, res) => {
-            res.header('Access-Control-Allow-Origin', '*');
-            try {
-                const { data: users, error } = await supabase
-                    .from('users')
-                    .select('id, email, username, role')
-                    .not('email', 'is', null)
-                    .neq('email', '');
-
-                if (error) {
-                    return res.status(500).json({ error: error.message });
-                }
-
-                res.json({
-                    success: true,
-                    count: users.length,
-                    users: users.map(u => ({
-                        id: u.id,
-                        username: u.username,
-                        email: u.email,
-                        role: u.role
-                    }))
-                });
-            } catch (error) {
-                res.status(500).json({ error: error.message });
-            }
-        });
-
-        // Test endpoint: Generate tokens for all users (NO AUTH - DEV ONLY)
-        app.post('/api/dev/test-generate-tokens', async (req, res) => {
-            res.header('Access-Control-Allow-Origin', '*');
-            try {
-                console.log('[DEV] Test endpoint: triggering token generation...');
-                const result = await dailyTokenService.generateAndSendDailyTokens();
-                
-                res.json({
-                    success: result.success,
-                    message: result.success ? 'Tokens generated and sent' : 'Failed to generate tokens',
-                    generated: result.generated,
-                    sent: result.sent,
-                    total: result.total,
-                    error: result.error || null,
-                    results: result.results || []
-                });
-            } catch (error) {
-                console.error('[DEV] Test endpoint error:', error);
-                res.status(500).json({
-                    success: false,
-                    error: error.message
-                });
-            }
-        });
-
-        console.log('[DEV] ⚠️  Test endpoints available (REMOVE IN PRODUCTION):');
-        console.log('  GET  http://localhost:5000/api/dev/test-users');
-        console.log('  POST http://localhost:5000/api/dev/test-generate-tokens');
-
-        // Debug endpoint: Check user's current token status
-        app.get('/api/dev/debug-user-tokens/:userId', async (req, res) => {
-            res.header('Access-Control-Allow-Origin', '*');
-            try {
-                const userId = req.params.userId;
-                
-                // Get user info
-                const { data: user } = await supabase
-                    .from('users')
-                    .select('id, email, username')
-                    .eq('id', userId)
-                    .single();
-
-                if (!user) {
-                    return res.status(404).json({ error: 'User not found' });
-                }
-
-                // Get user's current valid tokens
-                const now = new Date();
-                const { data: tokens, error } = await supabase
-                    .from('daily_login_tokens')
-                    .select('id, token, expires_at, email_sent, email_sent_at, token_attempts, is_locked, created_at')
-                    .eq('user_id', userId)
-                    .gt('expires_at', now.toISOString())
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-
-                res.json({
-                    success: true,
-                    user: {
-                        id: user.id,
-                        email: user.email,
-                        username: user.username
-                    },
-                    tokens: tokens || [],
-                    now: now.toISOString(),
-                    tokenCount: tokens ? tokens.length : 0
-                });
-            } catch (error) {
-                console.error('[DEV] Debug error:', error);
-                res.status(500).json({ error: error.message });
-            }
-        });
-
-
-        console.log('  GET  http://localhost:5000/api/dev/debug-user-tokens/:userId');
-    }
+    // Register simplified auth endpoints (username/password login, returns JWT)
+    const registerAuthEndpoints = require('./auth-endpoints');
+    registerAuthEndpoints(app, supabase);
+    console.log('[INIT] ✅ Authentication endpoints registered');
 
 } catch (error) {
-    console.error('[INIT] Failed to initialize Daily Token service:', error);
-    console.error('[INIT] Login endpoint will still be available, but token auth features may be limited');
+    console.error('[INIT] ❌ Failed to initialize authentication:', error.message);
+    process.exit(1);
 }
 
-if (!tokenAuthEnabled) {
-    console.log('[INIT] ⚠️  Daily Token Authentication is DISABLED (ENABLE_DAILY_TOKEN_AUTH=false)');
-    console.log('[INIT] Login will use legacy mode: username + password only (no token verification)');
+} catch (error) {
+    console.error('[INIT] ❌ Failed to initialize authentication:', error.message);
+    process.exit(1);
 }
 
 // ============================================================
@@ -1584,8 +1441,8 @@ app.use('/api/', apiLimiter);
 // POST /api/auth/login
 // ============================================================
 // ============================================================
-// POST /api/auth/login is now handled by daily-token-endpoints.js
-// That endpoint supports both token-based 2FA and direct login
+// POST /api/auth/login is now handled by auth-endpoints.js
+// Supports username/password only (direct JWT return)
 // ============================================================
 
 // ============================================================

@@ -506,85 +506,7 @@
                     <button type="submit" id="login-btn" class="login-btn">Masuk</button>
                 </form>
 
-                <!-- STEP 2: Token Verification Form (5-digit token from email) -->
-                <form id="token-form" autocomplete="off" style="display: none;">
-                    <div style="text-align: center; margin-bottom: 14px;">
-                        <div style="display: inline-block; padding: 6px 10px; background: rgba(255, 152, 0, 0.15); border-radius: 6px; margin-bottom: 8px;">
-                            <span style="color: #ff9800; font-size: 18px;">🔐</span>
-                        </div>
-                        <h3 style="margin: 0 0 4px 0; color: #fff; font-size: 16px; font-weight: 700;">Masukkan Token</h3>
-                    </div>
 
-                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 8px; margin-bottom: 12px; text-align: center;">
-                        <p style="margin: 0; color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600;">Email</p>
-                        <p style="margin: 3px 0 0 0; color: #fff; font-size: 11px; font-weight: 600;" id="token-email-display"></p>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 12px;">
-                        <div style="position: relative;">
-                            <input 
-                                type="text" 
-                                id="token-input" 
-                                name="token" 
-                                placeholder="00000" 
-                                class="form-input" 
-                                inputmode="numeric" 
-                                maxlength="5" 
-                                required 
-                                pattern="[0-9]{5}"
-                                autocomplete="off"
-                                style="text-align: center; font-size: 20px; letter-spacing: 8px; font-weight: 700; font-family: 'Courier New', monospace; padding: 10px 12px !important;"
-                            >
-                            <div style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 16px; pointer-events: none;">?</div>
-                        </div>
-                    </div>
-
-                    <div id="token-attempts-display" style="text-align: center; color: #ff9800; font-size: 11px; margin-bottom: 10px; font-weight: 600; display: none; padding: 6px; background: rgba(255, 152, 0, 0.1); border-radius: 6px; border-left: 2px solid #ff9800;">
-                        ⚠️ Sisa <span id="attempts-remaining">3</span>/3
-                    </div>
-
-                    <button type="submit" id="token-btn" class="login-btn" style="margin-bottom: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 12px; font-size: 12px; padding: 10px;">Verifikasi</button>
-
-                    <button type="button" id="resend-token-btn" class="login-btn" style="background: rgba(33, 150, 243, 0.1); color: #2196F3; border: 1px solid #2196F3; margin-bottom: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s ease; margin-top: 6px; font-size: 11px; padding: 8px;">📧 Kirim Ulang</button>
-                    
-                    <button type="button" id="back-btn" class="login-btn" style="background: rgba(255, 255, 255, 0.1); color: #ccc; border: 1px solid rgba(255, 255, 255, 0.2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; transition: all 0.3s ease; margin-top: 6px; font-size: 11px; padding: 8px;">← Kembali</button>
-
-                    <style>
-                        #token-input {
-                            background: rgba(255, 255, 255, 0.08) !important;
-                            border: 2px solid rgba(102, 126, 234, 0.3) !important;
-                            color: #fff !important;
-                            border-radius: 12px !important;
-                            transition: all 0.3s ease !important;
-                        }
-                        
-                        #token-input:focus {
-                            background: rgba(255, 255, 255, 0.12) !important;
-                            border-color: #667eea !important;
-                            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1) !important;
-                        }
-                        
-                        #token-input::placeholder {
-                            color: rgba(255, 255, 255, 0.3);
-                        }
-
-                        #resend-token-btn:hover {
-                            background: rgba(33, 150, 243, 0.15) !important;
-                            transform: translateY(-2px) !important;
-                        }
-
-                        #back-btn:hover {
-                            background: rgba(255, 255, 255, 0.15) !important;
-                            border-color: rgba(255, 255, 255, 0.3) !important;
-                            transform: translateY(-2px) !important;
-                        }
-
-                        @keyframes spin {
-                            0% { transform: rotate(0deg); }
-                            100% { transform: rotate(360deg); }
-                        }
-                    </style>
-                </form>
             </div>
         </div>
     </div>
@@ -698,12 +620,10 @@
             }
         }
 
-        // ===== 2-FACTOR LOGIN FLOW =====
-        let tempTokenForVerification = null;
-        let userEmailForVerification = null;
+        // ===== SIMPLIFIED LOGIN FLOW (Username/Password only) =====
         let isProcessing = false;
 
-        // Step 1: Handle initial login form (username + password)
+        // Handle login form (username + password) → Direct JWT
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -718,11 +638,11 @@
             btn.disabled = true;
             btn.innerHTML = `<span style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <span style="width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span>
-                Processing...
+                Memproses...
             </span>`;
 
             try {
-                // Call backend login endpoint (Step 1: verify username/password)
+                // Call backend login endpoint
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
@@ -740,43 +660,31 @@
                     };
                 }
 
-                // Success! Check response format
-                tempTokenForVerification = data.tempToken;
-                userEmailForVerification = data.email;
-
-                // DECISION LOGIC:
-                // 1. If data.token exists ? Direct login (either token auth disabled OR admin already verified)
-                // 2. If data.tempToken exists ? Show token form (token auth enabled, needs verification)
-                if (data.token) {
-                    // Direct login - store JWT and redirect
-                    console.log('[Login] Received full JWT token - logging in directly');
-                    localStorage.setItem('jwt_token', data.token);
-                    localStorage.setItem('user_info', JSON.stringify(data.user));
-                    
-                    // Determine correct dashboard based on role
-                    let dashboardPage = '/dashboard.html';
-                    if (data.user.role === 'admin_zona') {
-                        dashboardPage = '/dashboard-admin-zona.html';
-                    }
-                    
-                    // Show success and redirect
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Login Berhasil',
-                        text: data.message || 'Selamat datang!',
-                        confirmButtonText: 'Masuk',
-                        confirmButtonColor: '#667eea',
-                        timer: 2000,
-                        timerProgressBar: true
-                    });
-                    
-                    // Redirect to dashboard
-                    window.location.href = dashboardPage;
-                    return;
+                // Login successful - store JWT and redirect
+                console.log('[Login] Login berhasil - redirect ke dashboard');
+                localStorage.setItem('jwt_token', data.token);
+                localStorage.setItem('user_info', JSON.stringify(data.user));
+                
+                // Determine correct dashboard based on role
+                let dashboardPage = '/dashboard.html';
+                if (data.user.role === 'admin_zona') {
+                    dashboardPage = '/dashboard-admin-zona.html';
                 }
-
-                // Show token verification form (token auth enabled)
-                showTokenForm();
+                
+                // Show success and redirect
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Login Berhasil',
+                    text: data.message || 'Selamat datang!',
+                    confirmButtonText: 'Masuk',
+                    confirmButtonColor: '#667eea',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+                
+                // Redirect to dashboard
+                window.location.href = dashboardPage;
+                return;
 
             } catch (err) {
                 btn.disabled = false;
@@ -807,258 +715,6 @@
                 isProcessing = false;
             }
         });
-
-        // Step 2: Handle token verification form
-        document.getElementById('token-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            if (isProcessing) return;
-            isProcessing = true;
-            
-            const btn = document.getElementById('token-btn');
-            const token = document.getElementById('token-input').value.trim();
-
-            if (token.length !== 5 || !/^\d+$/.test(token)) {
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Format Tidak Valid',
-                    text: 'Kode harus 5 digit angka',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#ef4444'
-                });
-                isProcessing = false;
-                return;
-            }
-
-            const originalBtnHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<span style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <span style="width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span>
-                Verifying...
-            </span>`;
-
-            try {
-                // Call backend token verification endpoint
-                const response = await fetch('/api/auth/verify-token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        tempToken: tempTokenForVerification,
-                        token
-                    })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    // Token verification failed
-                    const remainingAttempts = data.remainingAttempts || 0;
-                    const isLocked = data.isLocked || false;
-
-                    btn.disabled = false;
-                    btn.innerHTML = originalBtnHtml;
-
-                    // Update attempts display
-                    if (remainingAttempts > 0 && !isLocked) {
-                        document.getElementById('attempts-remaining').textContent = remainingAttempts;
-                        document.getElementById('token-attempts-display').style.display = 'block';
-                    } else if (isLocked) {
-                        document.getElementById('token-attempts-display').textContent = '? Terlalu banyak percobaan. Coba lagi dalam 15 menit.';
-                        document.getElementById('token-attempts-display').style.display = 'block';
-                    }
-
-                    const errorMsg = isLocked 
-                        ? 'Terlalu banyak percobaan salah. Coba lagi dalam 15 menit.'
-                        : `${data.message || data.error} ${remainingAttempts > 0 ? `(Sisa ${remainingAttempts}/3 percobaan)` : ''}`;
-
-                    await Swal.fire({
-                        icon: 'error',
-                        title: 'Kode Tidak Valid',
-                        text: errorMsg,
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#ef4444'
-                    });
-                    isProcessing = false;
-                    return;
-                }
-
-                // Token verification successful! Store JWT and redirect
-                localStorage.setItem('jwt_token', data.token);
-                const user = data.user;
-                localStorage.setItem('user', JSON.stringify(user));
-
-                // Determine dashboard page based on role
-                let dashboardPage = '/dashboard';
-                if (user.role === 'admin_zona') {
-                    dashboardPage = '/dashboard-admin-zona.html';
-                }
-
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Login Berhasil!',
-                    text: 'Anda akan diarahkan ke dashboard...',
-                    showConfirmButton: false,
-                    timer: 2500,
-                    timerProgressBar: true,
-                    allowOutsideClick: false,
-                    willClose: () => {
-                        window.location.href = dashboardPage;
-                    }
-                });
-
-            } catch (err) {
-                btn.disabled = false;
-                btn.innerHTML = originalBtnHtml;
-
-                console.error('Token verification error:', err);
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Terjadi Kesalahan',
-                    text: 'Gagal memverifikasi kode. Silakan coba lagi.',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#ef4444'
-                });
-            } finally {
-                isProcessing = false;
-            }
-        });
-
-        // Back button: return to login form
-        document.getElementById('back-btn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            if (isProcessing) return;
-            
-            isProcessing = true;
-            
-            // Hide token form and reset to login
-            hideTokenForm();
-            tempTokenForVerification = null;
-            userEmailForVerification = null;
-            
-            // Reset forms
-            document.getElementById('login-form').reset();
-            document.getElementById('token-form').reset();
-            
-            // Reset token attempts display
-            document.getElementById('token-attempts-display').style.display = 'none';
-            document.getElementById('attempts-remaining').textContent = '3';
-            
-            // Reset processing flag
-            isProcessing = false;
-        });
-
-        // Resend token button
-        document.getElementById('resend-token-btn').addEventListener('click', async (e) => {
-            e.preventDefault();
-            if (isProcessing) return;
-            
-            const btn = e.target;
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = '? Mengirim...';
-            isProcessing = true;
-
-            try {
-                const response = await fetch('/api/auth/resend-token', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        tempToken: tempTokenForVerification
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Kode Dikirim!',
-                        text: 'Silakan cek email Anda untuk kode terbaru',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#4CAF50'
-                    });
-                } else {
-                    await Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal Mengirim',
-                        text: data.error || 'Gagal mengirim ulang kode',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#ef4444'
-                    });
-                }
-            } catch (err) {
-                console.error('Resend error:', err);
-                await Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Terjadi kesalahan saat mengirim ulang kode',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#ef4444'
-                });
-            }
-
-            btn.disabled = false;
-            btn.textContent = originalText;
-            isProcessing = false;
-        });
-
-        // Helper functions for form visibility
-        function showTokenForm() {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('welcome-section').style.display = 'none';  // Hide welcome text
-            document.getElementById('token-form').style.display = 'block';
-            document.getElementById('token-email-display').textContent = `${userEmailForVerification}`;
-            
-            // NEW: Show "Kirim Ulang" button only for admin/moderator users
-            const resendBtn = document.getElementById('resend-token-btn');
-            
-            console.log('[Login] showTokenForm called, tempToken:', tempTokenForVerification ? 'exists' : 'missing');
-            
-            // DEFAULT: Show resend button (safer default)
-            resendBtn.style.display = 'block';
-            
-            try {
-                if (!tempTokenForVerification) {
-                    console.warn('[Login] No tempToken available, showing resend button anyway');
-                    return;
-                }
-                
-                const parts = tempTokenForVerification.split('.');
-                if (parts.length !== 3) {
-                    console.warn('[Login] Invalid JWT format, showing resend button anyway');
-                    return;
-                }
-                
-                const decoded = JSON.parse(atob(parts[1]));
-                console.log('[Login] Decoded token:', decoded);
-                
-                const userRole = decoded.role || 'user';
-                const isAdmin = ['super_admin', 'moderator'].includes(userRole);
-                
-                console.log(`[Login] User role: ${userRole}, isAdmin: ${isAdmin}`);
-                
-                // Show button for admin/moderator, hide for others
-                resendBtn.style.display = isAdmin ? 'block' : 'none';
-                
-            } catch (e) {
-                console.error('[Login] Error decoding token, showing resend button:', e);
-                // On error, show the button anyway (fail-safe)
-                resendBtn.style.display = 'block';
-            }
-            
-            document.getElementById('token-input').focus();
-        }
-
-        function hideTokenForm() {
-            document.getElementById('token-form').style.display = 'none';
-            document.getElementById('welcome-section').style.display = 'block';  // Show welcome text
-            document.getElementById('login-form').style.display = 'block';
-            document.getElementById('username').focus();
-        }
 
         // Add spinning animation
         const style = document.createElement('style');
