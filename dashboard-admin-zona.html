@@ -511,10 +511,10 @@
         .profile-card-content {
             position: relative;
             z-index: 1;
-            padding: 24px;
+            padding: 20px 24px;
             display: flex;
-            flex-direction: column;
-            gap: 24px;
+            gap: 20px;
+            align-items: flex-start;
         }
 
         .profile-header {
@@ -523,29 +523,30 @@
             align-items: center;
             text-align: center;
             flex-shrink: 0;
-            gap: 8px;
+            padding-top: 10px;
         }
 
         .profile-avatar {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             background: linear-gradient(135deg, #667eea, #764ba2);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
+            font-size: 36px;
             color: white;
             font-weight: 700;
             box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            margin-bottom: 8px;
             border: 3px solid var(--color-bg-secondary);
         }
 
         .profile-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 800;
             color: var(--color-text-primary);
-            margin: 0;
+            margin-bottom: 2px;
             background: linear-gradient(135deg, var(--color-text-primary), var(--color-text-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -553,63 +554,65 @@
         }
 
         .profile-role {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.7px;
             color: #667eea;
             display: inline-block;
             background: rgba(102, 126, 234, 0.1);
-            padding: 4px 12px;
+            padding: 2px 8px;
             border-radius: 12px;
         }
 
         .profile-divider {
-            display: none;
+            height: 100%;
+            width: 1px;
+            background: var(--color-border);
+            margin: -20px 0;
         }
 
         .profile-info-group {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 10px;
             flex: 1;
         }
 
         .profile-info-item {
             display: flex;
-            align-items: flex-start;
-            gap: 12px;
+            align-items: center;
+            gap: 8px;
         }
 
         .profile-info-icon {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 8px;
             background: rgba(102, 126, 234, 0.1);
             display: flex;
             align-items: center;
             justify-content: center;
             color: #667eea;
-            font-size: 14px;
+            font-size: 13px;
             flex-shrink: 0;
         }
 
         .profile-info-content {
             flex: 1;
-            min-width: 0;
         }
 
         .profile-info-label {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
             color: var(--color-text-secondary);
-            letter-spacing: 0.4px;
-            margin-bottom: 2px;
+            letter-spacing: 0.3px;
+            margin-bottom: 1px;
         }
 
         .profile-info-value {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--color-text-primary);
             font-weight: 600;
             word-break: break-word;
@@ -618,18 +621,15 @@
         .profile-status {
             display: flex;
             align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
+            gap: 5px;
+            padding: 6px 10px;
             background: rgba(34, 197, 94, 0.1);
             border-radius: 8px;
-            width: fit-content;
-            align-self: center;
-            margin-bottom: 8px;
         }
 
         .profile-status-dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             border-radius: 50%;
             background: #22c55e;
         }
@@ -641,15 +641,11 @@
         }
 
         .profile-actions {
-            position: absolute;
-            top: 12px;
-            right: 12px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-shrink: 0;
             align-items: center;
-            flex-direction: row;
-            z-index: 2;
+            flex-direction: column;
         }
 
         .profile-btn {
@@ -1567,7 +1563,7 @@
                 <!-- Center: Info -->
                 <div style="flex: 1;">
                     <!-- Status -->
-                    <div class="profile-status">
+                    <div class="profile-status" style="margin-bottom: 12px;">
                         <div class="profile-status-dot"></div>
                         <span class="profile-status-text">Aktif</span>
                     </div>
