@@ -1664,21 +1664,21 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
         }
 
         res.json({ user });
-
-        // POST /api/logout â€” Terminate session
-        app.post('/api/logout', authenticateToken, async (req, res) => {
-            try {
-                const { session_id } = req.body;
-                if (session_id) {
-                    await supabase.from('user_sessions').delete().eq('session_token', session_id);
-                }
-                res.json({ success: true });
-            } catch (err) {
-                res.status(500).json({ error: err.message });
-            }
-        });
     } catch (err) {
         res.status(500).json({ error: 'Server error.' });
+    }
+});
+
+// POST /api/logout - Terminate session
+app.post('/api/logout', authenticateToken, async (req, res) => {
+    try {
+        const { session_id } = req.body;
+        if (session_id) {
+            await supabase.from('user_sessions').delete().eq('session_token', session_id);
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
