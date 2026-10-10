@@ -1352,6 +1352,24 @@
             cursor: not-allowed;
         }
 
+        /* LOADING SKELETON */
+        .loading-skeleton {
+            background: linear-gradient(
+                90deg,
+                var(--color-bg-tertiary) 0%,
+                var(--color-bg-secondary) 50%,
+                var(--color-bg-tertiary) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        .loading-skeleton td {
+            padding: 12px 16px;
+            height: 24px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
         /* SWEETALERT CUSTOM STYLES */
         .logout-popup-small {
             padding: 24px !important;
@@ -1768,7 +1786,7 @@
                             <div class="dropdown-menu">
                                 <div class="dropdown-options">
                                     <div class="dropdown-option selected" onclick="selectOption(event, 'tokoDropdown', '', 'Semua Toko')">
-                                        <span class="checkmark">?</span>
+                                        <span class="checkmark">✓</span>
                                         <span>Semua Toko</span>
                                     </div>
                                 </div>
@@ -1790,7 +1808,7 @@
                             <div class="dropdown-menu">
                                 <div class="dropdown-options">
                                     <div class="dropdown-option selected" onclick="selectOption(event, 'supplierDropdown', '', 'Semua Supplier')">
-                                        <span class="checkmark">?</span>
+                                        <span class="checkmark">✓</span>
                                         <span>Semua Supplier</span>
                                     </div>
                                 </div>
@@ -1812,7 +1830,7 @@
                             <div class="dropdown-menu">
                                 <div class="dropdown-options">
                                     <div class="dropdown-option selected" onclick="selectOption(event, 'keteranganDropdown', '', 'Semua')">
-                                        <span class="checkmark">?</span>
+                                        <span class="checkmark">✓</span>
                                         <span>Semua</span>
                                     </div>
                                     <div class="dropdown-option" onclick="selectOption(event, 'keteranganDropdown', 'PPN', 'PPN')">
@@ -1846,7 +1864,7 @@
                             <div class="dropdown-menu">
                                 <div class="dropdown-options">
                                     <div class="dropdown-option selected" onclick="selectOption(event, 'yearDropdown', '', 'Semua Tahun')">
-                                        <span class="checkmark">?</span>
+                                        <span class="checkmark">✓</span>
                                         <span>Semua Tahun</span>
                                     </div>
                                 </div>
@@ -1868,7 +1886,7 @@
                             <div class="dropdown-menu">
                                 <div class="dropdown-options">
                                     <div class="dropdown-option selected" onclick="selectOption(event, 'monthDropdown', '', 'Semua Bulan')">
-                                        <span class="checkmark">?</span>
+                                        <span class="checkmark">✓</span>
                                         <span>Semua Bulan</span>
                                     </div>
                                 </div>
@@ -2030,7 +2048,7 @@
             const selectedOption = event.currentTarget;
             selectedOption.classList.add('selected');
             const checkmark = selectedOption.querySelector('.checkmark');
-            if (checkmark) checkmark.textContent = '?';
+            if (checkmark) checkmark.textContent = '✓';
             
             // Close dropdown
             if (menu) menu.style.display = 'none';
@@ -2086,7 +2104,7 @@
                                 opt.classList.add('selected');
                                 const checkmark = opt.querySelector('.checkmark');
                                 if (checkmark) {
-                                    checkmark.textContent = '?';
+                                    checkmark.textContent = '✓';
                                 }
                             }
                         });
@@ -2212,7 +2230,7 @@
                 const yearOptions = yearDropdown.querySelector('.dropdown-options');
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
                 
-                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">?</span><span>Semua Tahun</span></div>';
+                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">✓</span><span>Semua Tahun</span></div>';
                 years.forEach(year => {
                     yearHTML += `<div class="dropdown-option" onclick="selectOption(event, 'yearDropdown', '${year}', '${year}')"><span class="checkmark"></span><span>${year}</span></div>`;
                 });
@@ -2227,7 +2245,7 @@
                     '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
                 };
                 
-                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">?</span><span>Semua Bulan</span></div>';
+                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">✓</span><span>Semua Bulan</span></div>';
                 const months = Array.from(monthsSet).sort();
                 months.forEach(month => {
                     monthHTML += `<div class="dropdown-option" onclick="selectOption(event, 'monthDropdown', '${month}', '${monthNames[month]}')"><span class="checkmark"></span><span>${monthNames[month]}</span></div>`;
@@ -2239,7 +2257,7 @@
                 const tokoDropdown = document.getElementById('tokoDropdown');
                 const tokoOptions = tokoDropdown.querySelector('.dropdown-options');
                 
-                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">?</span><span>Semua Toko</span></div>';
+                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">✓</span><span>Semua Toko</span></div>';
                 tokoList.forEach(toko => {
                     const escaped = toko.replace(/'/g, "\\'");
                     tokoHTML += `<div class="dropdown-option" onclick="selectOption(event, 'tokoDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${toko}</span></div>`;
@@ -2251,7 +2269,7 @@
                 const supplierDropdown = document.getElementById('supplierDropdown');
                 const supplierOptions = supplierDropdown.querySelector('.dropdown-options');
                 
-                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">?</span><span>Semua Supplier</span></div>';
+                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">✓</span><span>Semua Supplier</span></div>';
                 suppliers.forEach(supplier => {
                     const escaped = supplier.replace(/'/g, "\\'");
                     supplierHTML += `<div class="dropdown-option" onclick="selectOption(event, 'supplierDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${supplier}</span></div>`;
@@ -2300,23 +2318,40 @@
 
                 // === UPDATE WELCOME STATS ===
                 const totalInvoice = invoices.length;
-                const lunas = invoices.filter(inv => inv.status === 'UPLOADED').length;
-                const belumLunas = invoices.filter(inv => inv.status === 'PENDING').length;
-
-                // Calculate total amount
-                const totalAmount = invoices.reduce((sum, inv) => {
-                    const nominal = parseFloat(inv.total_jumlah_jual) || 0;
-                    return sum + nominal;
-                }, 0);
-
-                // Calculate Rupiah stats
-                const lunasAmount = invoices
-                    .filter(inv => inv.status === 'UPLOADED')
-                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
                 
-                const belumLunasAmount = invoices
-                    .filter(inv => inv.status === 'PENDING')
-                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+                let lunas = 0;
+                let belumLunas = 0;
+                let totalAmount = 0;
+                let lunasAmount = 0;
+                let belumLunasAmount = 0;
+
+                invoices.forEach(inv => {
+                    const nominal = parseFloat(inv.total_jumlah_jual) || 0;
+                    totalAmount += nominal;
+                    
+                    // Calculate files uploaded
+                    let filesUploaded = inv.files_uploaded_count || 0;
+                    if (filesUploaded === 0) {
+                        if (inv.invoice_pdf_path) filesUploaded++;
+                        if (inv.bukti_bayar_path) filesUploaded++;
+                        if (inv.faktur_pajak_path) filesUploaded++;
+                    }
+                    
+                    // Determine files required (PPN = 3, NON PPN = 2)
+                    const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
+                    const filesRequired = isPPN ? 3 : 2;
+                    
+                    // Check if complete
+                    const isComplete = filesUploaded >= filesRequired;
+                    
+                    if (isComplete) {
+                        lunas++;
+                        lunasAmount += nominal;
+                    } else {
+                        belumLunas++;
+                        belumLunasAmount += nominal;
+                    }
+                });
 
                 // Format currency
                 const formatter = new Intl.NumberFormat('id-ID', {
@@ -2362,7 +2397,7 @@
                 const yearOptions = yearDropdown.querySelector('.dropdown-options');
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
                 
-                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">?</span><span>Semua Tahun</span></div>';
+                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">✓</span><span>Semua Tahun</span></div>';
                 years.forEach(year => {
                     yearHTML += `<div class="dropdown-option" onclick="selectOption(event, 'yearDropdown', '${year}', '${year}')"><span class="checkmark"></span><span>${year}</span></div>`;
                 });
@@ -2377,7 +2412,7 @@
                     '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
                 };
                 
-                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">?</span><span>Semua Bulan</span></div>';
+                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">✓</span><span>Semua Bulan</span></div>';
                 const months = Array.from(monthsSet).sort();
                 months.forEach(month => {
                     monthHTML += `<div class="dropdown-option" onclick="selectOption(event, 'monthDropdown', '${month}', '${monthNames[month]}')"><span class="checkmark"></span><span>${monthNames[month]}</span></div>`;
@@ -2389,7 +2424,7 @@
                 const tokoDropdown = document.getElementById('tokoDropdown');
                 const tokoOptions = tokoDropdown.querySelector('.dropdown-options');
                 
-                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">?</span><span>Semua Toko</span></div>';
+                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">✓</span><span>Semua Toko</span></div>';
                 tokoList.forEach(toko => {
                     const escaped = toko.replace(/'/g, "\\'");
                     tokoHTML += `<div class="dropdown-option" onclick="selectOption(event, 'tokoDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${toko}</span></div>`;
@@ -2401,7 +2436,7 @@
                 const supplierDropdown = document.getElementById('supplierDropdown');
                 const supplierOptions = supplierDropdown.querySelector('.dropdown-options');
                 
-                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">?</span><span>Semua Supplier</span></div>';
+                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">✓</span><span>Semua Supplier</span></div>';
                 suppliers.forEach(supplier => {
                     const escaped = supplier.replace(/'/g, "\\'");
                     supplierHTML += `<div class="dropdown-option" onclick="selectOption(event, 'supplierDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${supplier}</span></div>`;
@@ -2430,25 +2465,42 @@
                 const res = await API.get('/api/invoice/list?limit=10000&offset=0');
                 const invoices = res.data || [];
 
-                // Calculate stats
+                // Calculate stats based on FILE COMPLETION, not status field
                 const totalInvoice = invoices.length;
-                const lunas = invoices.filter(inv => inv.status === 'UPLOADED').length;
-                const belumLunas = invoices.filter(inv => inv.status === 'PENDING').length;
-
-                // Calculate total amount
-                const totalAmount = invoices.reduce((sum, inv) => {
-                    const nominal = parseFloat(inv.total_jumlah_jual) || 0;
-                    return sum + nominal;
-                }, 0);
-
-                // Calculate Rupiah stats
-                const lunasAmount = invoices
-                    .filter(inv => inv.status === 'UPLOADED')
-                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
                 
-                const belumLunasAmount = invoices
-                    .filter(inv => inv.status === 'PENDING')
-                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+                let lunas = 0;
+                let belumLunas = 0;
+                let totalAmount = 0;
+                let lunasAmount = 0;
+                let belumLunasAmount = 0;
+
+                invoices.forEach(inv => {
+                    const nominal = parseFloat(inv.total_jumlah_jual) || 0;
+                    totalAmount += nominal;
+                    
+                    // Calculate files uploaded
+                    let filesUploaded = inv.files_uploaded_count || 0;
+                    if (filesUploaded === 0) {
+                        if (inv.invoice_pdf_path) filesUploaded++;
+                        if (inv.bukti_bayar_path) filesUploaded++;
+                        if (inv.faktur_pajak_path) filesUploaded++;
+                    }
+                    
+                    // Determine files required (PPN = 3, NON PPN = 2)
+                    const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
+                    const filesRequired = isPPN ? 3 : 2;
+                    
+                    // Check if complete
+                    const isComplete = filesUploaded >= filesRequired;
+                    
+                    if (isComplete) {
+                        lunas++;
+                        lunasAmount += nominal;
+                    } else {
+                        belumLunas++;
+                        belumLunasAmount += nominal;
+                    }
+                });
 
                 // Format currency
                 const formatter = new Intl.NumberFormat('id-ID', {
@@ -2499,7 +2551,7 @@
                 const yearOptions = yearDropdown.querySelector('.dropdown-options');
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
                 
-                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">?</span><span>Semua Tahun</span></div>';
+                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">✓</span><span>Semua Tahun</span></div>';
                 years.forEach(year => {
                     yearHTML += `<div class="dropdown-option" onclick="selectOption(event, 'yearDropdown', '${year}', '${year}')"><span class="checkmark"></span><span>${year}</span></div>`;
                 });
@@ -2514,7 +2566,7 @@
                     '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
                 };
                 
-                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">?</span><span>Semua Bulan</span></div>';
+                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">✓</span><span>Semua Bulan</span></div>';
                 const months = Array.from(monthsSet).sort();
                 months.forEach(month => {
                     monthHTML += `<div class="dropdown-option" onclick="selectOption(event, 'monthDropdown', '${month}', '${monthNames[month]}')"><span class="checkmark"></span><span>${monthNames[month]}</span></div>`;
@@ -2526,7 +2578,7 @@
                 const supplierDropdown = document.getElementById('supplierDropdown');
                 const supplierOptions = supplierDropdown.querySelector('.dropdown-options');
                 
-                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">?</span><span>Semua Supplier</span></div>';
+                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">✓</span><span>Semua Supplier</span></div>';
                 suppliers.forEach(supplier => {
                     const escaped = supplier.replace(/'/g, "\\'");
                     supplierHTML += `<div class="dropdown-option" onclick="selectOption(event, 'supplierDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${supplier}</span></div>`;
@@ -2631,23 +2683,45 @@
         function updateWelcomeStatsWithAllFiltered(allFilteredInvoices) {
             try {
                 const totalInvoice = allFilteredInvoices.length;
-                const lunas = allFilteredInvoices.filter(inv => inv.status === 'UPLOADED').length;
-                const belumLunas = allFilteredInvoices.filter(inv => inv.status === 'PENDING').length;
-
-                // Calculate total amount dari SEMUA filtered invoices
-                const totalAmount = allFilteredInvoices.reduce((sum, inv) => {
-                    const nominal = parseFloat(inv.total_jumlah_jual) || 0;
-                    return sum + nominal;
-                }, 0);
-
-                // Calculate Rupiah stats
-                const lunasAmount = allFilteredInvoices
-                    .filter(inv => inv.status === 'UPLOADED')
-                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
                 
-                const belumLunasAmount = allFilteredInvoices
-                    .filter(inv => inv.status === 'PENDING')
-                    .reduce((sum, inv) => sum + (parseFloat(inv.total_jumlah_jual) || 0), 0);
+                // Calculate lunas/belum lunas based on FILE COMPLETION, not status field
+                // Lunas = all required files uploaded
+                // Belum Lunas = missing at least one required file
+                let lunas = 0;
+                let belumLunas = 0;
+                let totalAmount = 0;
+                let lunasAmount = 0;
+                let belumLunasAmount = 0;
+
+                allFilteredInvoices.forEach(inv => {
+                    const nominal = parseFloat(inv.total_jumlah_jual) || 0;
+                    totalAmount += nominal;
+                    
+                    // Calculate files uploaded from database (cached count)
+                    let filesUploaded = inv.files_uploaded_count || 0;
+                    
+                    // If no cached count, calculate from paths (fallback)
+                    if (filesUploaded === 0) {
+                        if (inv.invoice_pdf_path) filesUploaded++;
+                        if (inv.bukti_bayar_path) filesUploaded++;
+                        if (inv.faktur_pajak_path) filesUploaded++;
+                    }
+                    
+                    // Determine files required (PPN = 3, NON PPN = 2)
+                    const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
+                    const filesRequired = isPPN ? 3 : 2;
+                    
+                    // Check if complete
+                    const isComplete = filesUploaded >= filesRequired;
+                    
+                    if (isComplete) {
+                        lunas++;
+                        lunasAmount += nominal;
+                    } else {
+                        belumLunas++;
+                        belumLunasAmount += nominal;
+                    }
+                });
 
                 // Format currency
                 const formatter = new Intl.NumberFormat('id-ID', {
@@ -2812,7 +2886,7 @@
                         <td>${total}</td>
                         <td>${inv.keterangan || '-'}</td>
                         <td style="text-align: center;">
-                            <button onclick="showAdminZonaDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor=document.body.classList.contains('dark-mode') ? '#334155' : '#f3f4f6'; this.style.color=document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⬇️</button>
+                            <button onclick="showAdminZonaDownloadMenu('${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #6b7280; font-size: 18px; padding: 6px 10px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: all 0.2s;" onmouseover="this.style.backgroundColor=document.body.classList.contains('dark-mode') ? '#334155' : '#f3f4f6'; this.style.color=document.body.classList.contains('dark-mode') ? '#cbd5e1' : '#374151';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#6b7280';" title="Aksi">⋮</button>
                         </td>
                     </tr>
                 `;
@@ -2932,6 +3006,15 @@
             enableSortHeaders(true);
 
             currentPage = 1;
+            
+            // Show loading skeleton
+            const tableBody = document.getElementById('invoiceTableBody');
+            let skeletonHTML = '';
+            for (let i = 0; i < 5; i++) {
+                skeletonHTML += '<tr class="loading-skeleton"><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
+            }
+            tableBody.innerHTML = skeletonHTML;
+            
             loadInvoices();
         }
 
@@ -2975,7 +3058,7 @@
                 if (firstOption) {
                     firstOption.classList.add('selected');
                     const checkmark = firstOption.querySelector('.checkmark');
-                    if (checkmark) checkmark.textContent = '?';
+                    if (checkmark) checkmark.textContent = '✓';
                 }
             });
             
