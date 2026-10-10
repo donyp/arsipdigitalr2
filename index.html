@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -443,7 +443,7 @@
                 <h1 class="left-heading">Sistem Arsip Digital</h1>
 
             </div>
-            <div class="left-footer">� 2024-2026 Anka Aksesoris. All rights reserved.</div>
+            <div class="left-footer">© <span id="currentYear">2026</span> PT Garuda Gemilang Indonesia. All rights reserved.</div>
         </div>
 
         <!-- Right Side -->
@@ -1103,6 +1103,12 @@
                 document.documentElement.setAttribute('data-dark-mode', 'true');
             }
             updateThemeIcon();
+            
+            // Update current year in footer
+            const currentYearElement = document.getElementById('currentYear');
+            if (currentYearElement) {
+                currentYearElement.textContent = new Date().getFullYear();
+            }
         });
         
         // Also apply on initial load if page is already loaded
@@ -1112,6 +1118,12 @@
                 document.documentElement.setAttribute('data-dark-mode', 'true');
             }
             updateThemeIcon();
+            
+            // Update current year in footer
+            const currentYearElement = document.getElementById('currentYear');
+            if (currentYearElement) {
+                currentYearElement.textContent = new Date().getFullYear();
+            }
         }
     </script>
 </body>
