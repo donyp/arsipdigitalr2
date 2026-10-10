@@ -987,7 +987,7 @@
                     <i class="fas fa-shield-alt"></i>
                     Audit Logs Dashboard
                 </h1>
-                <p>?? Monitor dan analisis semua aktivitas sistem untuk compliance dan security</p>
+                <p>📋 Monitor dan analisis semua aktivitas sistem untuk compliance dan security</p>
             </div>
             <div class="header-actions">
                 <button class="btn btn-secondary" onclick="goBack()" title="Back to Dashboard" style="display: flex; align-items: center; gap: 8px;">
@@ -1001,7 +1001,7 @@
             <div class="stat-card info">
                 <div class="stat-card-header">
                     <div>
-                        <div class="stat-label">?? Total Logs</div>
+                        <div class="stat-label">📊 Total Logs</div>
                         <div class="stat-value">-</div>
                         <div class="stat-subtext">Semua waktu</div>
                     </div>
@@ -1011,7 +1011,7 @@
             <div class="stat-card critical">
                 <div class="stat-card-header">
                     <div>
-                        <div class="stat-label">?? Suspicious Activity</div>
+                        <div class="stat-label">⚠️ Suspicious Activity</div>
                         <div class="stat-value">-</div>
                         <div class="stat-subtext">Perlu review</div>
                     </div>
@@ -1021,7 +1021,7 @@
             <div class="stat-card warning">
                 <div class="stat-card-header">
                     <div>
-                        <div class="stat-label">?? Critical Actions</div>
+                        <div class="stat-label">🚨 Critical Actions</div>
                         <div class="stat-value">-</div>
                         <div class="stat-subtext">30 hari terakhir</div>
                     </div>
@@ -1031,7 +1031,7 @@
             <div class="stat-card success">
                 <div class="stat-card-header">
                     <div>
-                        <div class="stat-label">?? Users Active</div>
+                        <div class="stat-label">👥 Users Active</div>
                         <div class="stat-value">-</div>
                         <div class="stat-subtext">Unique users</div>
                     </div>
@@ -1122,7 +1122,7 @@
         <div class="logs-container">
             <div class="logs-header">
                 <h3><i class="fas fa-list"></i> Activity Logs</h3>
-                <div class="logs-count">?? Total: <span id="logCount">0</span></div>
+                <div class="logs-count">📋 Total: <span id="logCount">0</span></div>
             </div>
 
             <div id="logsContent">
@@ -1146,7 +1146,7 @@
     <div class="modal" id="detailModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>?? Audit Log Detail</h2>
+                <h2>📝 Audit Log Detail</h2>
                 <button class="modal-close" onclick="closeDetailModal()">
                     <i class="fas fa-times"></i>
                 </button>
@@ -1309,7 +1309,7 @@
                 const date = new Date(log.created_at).toLocaleString('id-ID');
                 const severityClass = log.severity || 'info';
                 const operationClass = `op-${log.operation.toLowerCase()}`;
-                const suspicious = log.is_suspicious ? '?? Yes' : 'No';
+                const suspicious = log.is_suspicious ? '⚠️ Yes' : 'No';
 
                 html += `<tr>
                     <td>${date}</td>
@@ -1379,7 +1379,7 @@
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">Status</div>
-                        <div class="detail-value">${log.status_code} ${log.is_suspicious ? '?? SUSPICIOUS' : 'OK'}</div>
+                        <div class="detail-value">${log.status_code} ${log.is_suspicious ? '⚠️ SUSPICIOUS' : 'OK'}</div>
                     </div>
                     <div class="detail-row">
                         <div class="detail-label">IP Address</div>
