@@ -1860,6 +1860,23 @@
             -ms-touch-action: pan-y;
         }
         
+        /* Popup optimization for faster, smaller download menu */
+        .colored-download-popup {
+            max-width: 320px !important;
+            width: 320px !important;
+            border-radius: 12px !important;
+        }
+        
+        .colored-download-popup .swal2-title {
+            font-size: 18px !important;
+            margin-bottom: 8px !important;
+        }
+        
+        .colored-download-popup .swal2-html-container {
+            padding: 12px !important;
+            font-size: 14px !important;
+        }
+        
         /* Sidebar scrollbar styling handled by js/sidebar.js */
     </style>
     <script>
@@ -2254,15 +2271,15 @@
                                             <div class="dropdown-menu" style="display: none;">
                                                 <div class="dropdown-options">
                                                     <div class="dropdown-option" onclick="selectOption(event, 'statusDropdown', '', 'Semua Status')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Semua Status</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'statusDropdown', 'Belum Lunas', 'Belum Lunas')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Belum Lunas</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'statusDropdown', 'Lunas', 'Lunas')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Lunas</span>
                                                     </div>
                                                 </div>
@@ -2284,19 +2301,19 @@
                                             <div class="dropdown-menu" style="display: none;">
                                                 <div class="dropdown-options">
                                                     <div class="dropdown-option selected" onclick="selectOption(event, 'kategoriDropdown', '', 'Semua')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Semua</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'kategoriDropdown', 'PPN', 'PPN')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>PPN</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'kategoriDropdown', 'NON PPN', 'NON PPN')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>NON PPN</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'kategoriDropdown', 'GUNGGUNG', 'GUNGGUNG')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>GUNGGUNG</span>
                                                     </div>
                                                 </div>
@@ -2318,15 +2335,15 @@
                                             <div class="dropdown-menu" style="display: none;">
                                                 <div class="dropdown-options">
                                                     <div class="dropdown-option selected" onclick="selectOption(event, 'tokoDropdown', '', 'Semua Toko')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Semua Toko</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'tokoDropdown', 'Anka Pemalang', 'Anka Pemalang')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Anka Pemalang</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'tokoDropdown', 'Anka Bekasi', 'Anka Bekasi')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Anka Bekasi</span>
                                                     </div>
                                                 </div>
@@ -2348,7 +2365,7 @@
                                             <div class="dropdown-menu" style="display: none;">
                                                 <div class="dropdown-options">
                                                     <div class="dropdown-option selected" onclick="selectOption(event, 'tahunDropdown', '', 'Semua Tahun')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Semua Tahun</span>
                                                     </div>
                                                 </div>
@@ -2370,55 +2387,55 @@
                                             <div class="dropdown-menu" style="display: none;">
                                                 <div class="dropdown-options">
                                                     <div class="dropdown-option selected" onclick="selectOption(event, 'bulanDropdown', '', 'Semua Bulan')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Semua Bulan</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '1', 'Januari')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Januari</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '2', 'Februari')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Februari</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '3', 'Maret')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Maret</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '4', 'April')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>April</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '5', 'Mei')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Mei</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '6', 'Juni')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Juni</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '7', 'Juli')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Juli</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '8', 'Agustus')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Agustus</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '9', 'September')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>September</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '10', 'Oktober')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Oktober</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '11', 'November')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>November</span>
                                                     </div>
                                                     <div class="dropdown-option" onclick="selectOption(event, 'bulanDropdown', '12', 'Desember')">
-                                                        <span class="checkmark">✓</span>
+                                                        <span class="checkmark"></span>
                                                         <span>Desember</span>
                                                     </div>
                                                 </div>
@@ -3217,6 +3234,36 @@
             hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
+        // Initialize dropdown checkmarks - show only for selected items
+        function initializeDropdownCheckmarks() {
+            const dropdownIds = ['statusDropdown', 'kategoriDropdown', 'tokoDropdown', 'tahunDropdown', 'bulanDropdown'];
+            
+            dropdownIds.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (!dropdown) return;
+                
+                // Find all options in this dropdown
+                dropdown.querySelectorAll('.dropdown-option').forEach(option => {
+                    const checkmark = option.querySelector('.checkmark');
+                    if (!checkmark) return;
+                    
+                    // Set checkmark to '?' only for selected items, empty for others
+                    if (option.classList.contains('selected')) {
+                        checkmark.textContent = '?';
+                    } else {
+                        checkmark.textContent = '';
+                    }
+                });
+            });
+        }
+        
+        // Initialize on page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDropdownCheckmarks);
+        } else {
+            initializeDropdownCheckmarks();
+        }
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', function(event) {
             if (!event.target.closest('.custom-dropdown')) {
@@ -3569,8 +3616,8 @@
                             <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${formatCurrency(inv.total_jumlah_jual)}</td>
                             <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${inv.keterangan || '-'}</td>
                             <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle; text-align: center;">
-                                <button onclick="toggleActionMenu(event, '${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #7f8c8d; font-size: 20px; padding: 8px 12px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'; this.style.color='#2c3e50';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#7f8c8d';" title="Aksi">
-                                    ?
+                                <button onclick="toggleActionMenu(event, '${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #7f8c8d; font-size: 18px; padding: 8px 12px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'; this.style.color='#2c3e50';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#7f8c8d';" title="Aksi">
+                                    <i class="fas fa-ellipsis-v"></i>
                                 </button>
                             </td>
                         </tr>

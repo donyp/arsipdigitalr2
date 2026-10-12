@@ -1936,20 +1936,26 @@ function setupEventListeners() {
     const handleInvoiceFilterEnter = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            applyInvoiceFilters();
+            // Only apply filters for search input (filterSearch)
+            // Other filters require explicit "Terapkan" button click
+            if (e.target.id === 'filterSearch') {
+                applyInvoiceFilters();
+            }
         }
     };
     invoiceFilterInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('keydown', handleInvoiceFilterEnter);
-            // Add change event for both SELECT dropdowns and custom dropdown hidden inputs
-            if (el.tagName === 'SELECT') {
-                el.addEventListener('change', applyInvoiceFilters);
-            } else if (el.tagName === 'INPUT' && el.type === 'hidden') {
-                // For custom dropdowns (hidden input elements)
-                el.addEventListener('change', applyInvoiceFilters);
-            }
+            // REMOVED: Auto-load on dropdown change
+            // Change event listeners on hidden inputs (custom dropdowns) have been removed
+            // Filtering now only happens when user explicitly clicks "Terapkan" button
+            // Exception: Search field still supports Enter key for immediate search
+            // if (el.tagName === 'SELECT') {
+            //     el.addEventListener('change', applyInvoiceFilters);
+            // } else if (el.tagName === 'INPUT' && el.type === 'hidden') {
+            //     el.addEventListener('change', applyInvoiceFilters);
+            // }
         }
     });
     
@@ -3049,7 +3055,6 @@ function formatCurrency(value) {
     return 'Rp ' + parseInt(value).toLocaleString('id-ID');
 }
 
-// Download individual invoice files with detailed progress stages
 async function downloadInvoiceFile(btn, faktur, fileType) {
     try {
         // Define colors and stages for each file type
@@ -3178,7 +3183,7 @@ async function downloadInvoiceFile(btn, faktur, fileType) {
         // Progress stage 1: Mencari file (0%)
         currentStage = 0;
         updateProgress(currentStage);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // REMOVED: await new Promise(resolve => setTimeout(resolve, 300)); // Delay removed for faster response
         
         // Progress stage 2: Mengambil file dari server (30%)
         currentStage = 1;
@@ -3201,7 +3206,7 @@ async function downloadInvoiceFile(btn, faktur, fileType) {
         // Progress stage 3: Memproses file (60%)
         currentStage = 2;
         updateProgress(currentStage);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // REMOVED: await new Promise(resolve => setTimeout(resolve, 200)); // Delay removed for faster processing
         
         const blob = await response.blob();
         
@@ -3232,7 +3237,7 @@ async function downloadInvoiceFile(btn, faktur, fileType) {
         updateProgress(currentStage);
         
         // Close loading and show success
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 500ms for faster feedback
         Swal.fire({
             icon: 'success',
             title: 'Berhasil!',
@@ -3370,7 +3375,7 @@ async function combinePDF(faktur) {
         // Progress stage 1: Mencari file (0%)
         currentStage = 0;
         updateProgress(currentStage);
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // REMOVED: await new Promise(resolve => setTimeout(resolve, 300)); // Delay removed for faster response
         
         // Progress stage 2: Mengambil file dari server (30%)
         currentStage = 1;
@@ -3390,7 +3395,7 @@ async function combinePDF(faktur) {
         // Progress stage 3: Menggabungkan PDF (60%)
         currentStage = 2;
         updateProgress(currentStage);
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // REMOVED: await new Promise(resolve => setTimeout(resolve, 200)); // Delay removed for faster processing
         
         const blob = await response.blob();
         
@@ -3412,7 +3417,7 @@ async function combinePDF(faktur) {
         updateProgress(currentStage);
 
         // Show success
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 100)); // Reduced from 500ms for faster feedback
         Swal.fire({
             icon: 'success',
             title: 'Berhasil!',
