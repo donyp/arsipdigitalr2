@@ -910,15 +910,20 @@
                 `${formatBytes(disk.used)} / ${formatBytes(disk.total)}`;
             updateProgressBar('diskBar', diskPercent);
 
-            // Uptime
-            const uptimeInt = Math.floor(uptime);
-            const days = Math.floor(uptimeInt / 86400);
-            const hours = Math.floor((uptimeInt % 86400) / 3600);
-            document.getElementById('uptime').textContent = `${days}d ${hours}h`;
-
-            // Start real-time uptime counter
+            // Uptime - only initialize counter once
             if (!uptimeInterval) {
+                const uptimeInt = Math.floor(uptime);
                 let currentUptime = uptimeInt;
+                
+                // Update display immediately
+                const d = Math.floor(currentUptime / 86400);
+                const h = Math.floor((currentUptime % 86400) / 3600);
+                const m = Math.floor((currentUptime % 3600) / 60);
+                const s = Math.floor(currentUptime % 60);
+                const formatted = `${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                document.getElementById('uptime').textContent = formatted;
+                
+                // Start real-time uptime counter
                 uptimeInterval = setInterval(() => {
                     currentUptime++;
                     const d = Math.floor(currentUptime / 86400);
