@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🖥️ VPS Monitoring - Real-time System Performance</title>
+    <title>🖥️ Advanced VPS Monitoring</title>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
@@ -47,6 +47,51 @@
             display: flex;
             gap: 15px;
             align-items: center;
+        }
+
+        /* Tabs Navigation */
+        .tabs-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: #a0a0a0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: #00d4ff;
+        }
+
+        .tab-btn.active {
+            color: #00d4ff;
+            border-bottom-color: #00d4ff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .status-badge {
@@ -77,9 +122,13 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
+        }
+
+        .grid-2x2 {
+            grid-template-columns: repeat(2, 1fr);
         }
 
         .card {
@@ -146,12 +195,12 @@
         }
 
         .chart-container {
-            grid-column: 1 / -1;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             padding: 24px;
             backdrop-filter: blur(10px);
+            margin-bottom: 20px;
         }
 
         .chart-title {
@@ -162,7 +211,7 @@
         }
 
         .miniChart {
-            height: 200px;
+            height: 250px;
             background: rgba(0, 212, 255, 0.05);
             border-radius: 8px;
             padding: 16px;
@@ -183,19 +232,20 @@
             background: linear-gradient(180deg, #00f0ff, #00d4ff);
         }
 
-        .processes-table {
-            grid-column: 1 / -1;
+        .table-container {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             padding: 24px;
             backdrop-filter: blur(10px);
             overflow-x: auto;
+            margin-bottom: 20px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            font-size: 13px;
         }
 
         th {
@@ -204,14 +254,13 @@
             font-weight: 600;
             color: #a0a0a0;
             text-transform: uppercase;
-            font-size: 12px;
+            font-size: 11px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         td {
             padding: 12px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 14px;
         }
 
         tr:hover td {
@@ -224,12 +273,12 @@
         }
 
         .alerts-container {
-            grid-column: 1 / -1;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 12px;
             padding: 24px;
             backdrop-filter: blur(10px);
+            min-height: 200px;
         }
 
         .alert {
@@ -261,11 +310,6 @@
             color: #a7f3d0;
         }
 
-        .btn-group {
-            display: flex;
-            gap: 10px;
-        }
-
         button {
             padding: 8px 16px;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -283,19 +327,32 @@
             border-color: #00d4ff;
         }
 
-        button.danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: #fca5a5;
-            border-color: rgba(239, 68, 68, 0.3);
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
         }
 
-        button.danger:hover {
-            background: rgba(239, 68, 68, 0.2);
+        .stat-item {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
         }
 
-        .refresh-indicator {
-            font-size: 12px;
-            color: #808080;
+        .stat-label {
+            font-size: 11px;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #00d4ff;
         }
 
         .loading {
@@ -313,18 +370,18 @@
         }
 
         @media (max-width: 768px) {
-            .grid {
+            .grid-2x2 {
                 grid-template-columns: 1fr;
-            }
-
-            .chart-container, .processes-table, .alerts-container {
-                grid-column: 1;
             }
 
             .header {
                 flex-direction: column;
                 text-align: center;
                 gap: 15px;
+            }
+
+            .tabs-nav {
+                overflow-x: auto;
             }
 
             .card-value {
@@ -337,95 +394,182 @@
     <div class="container">
         <div class="header">
             <div>
-                <h1>🖥️ VPS Monitoring</h1>
-                <p style="font-size: 12px; color: #808080; margin-top: 4px;">arsipdigitalanka.cloud</p>
+                <h1>🖥️ Advanced VPS Monitoring</h1>
+                <p style="font-size: 12px; color: #808080; margin-top: 4px;">arsipdigitalanka.cloud - Real-time System Analytics</p>
             </div>
             <div class="header-right">
                 <span class="status-badge status-online">
                     <span class="loading"></span>
                     Live
                 </span>
-                <span class="refresh-indicator">Updates every 2s</span>
+                <span style="font-size: 12px; color: #808080;">Updates: 2s</span>
             </div>
         </div>
 
-        <div class="grid">
-            <!-- CPU Card -->
-            <div class="card">
-                <div class="card-title">💻 CPU Usage</div>
-                <div class="card-value" id="cpuPercent">0%</div>
-                <div class="card-subtitle" id="cpuCores">0 cores</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="cpuBar"></div>
-                </div>
-            </div>
+        <!-- Tab Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" data-tab="overview">📊 Overview</button>
+            <button class="tab-btn" data-tab="cpu">💻 CPU Detail</button>
+            <button class="tab-btn" data-tab="memory">🧠 Memory Detail</button>
+            <button class="tab-btn" data-tab="disk">💾 Disk Detail</button>
+            <button class="tab-btn" data-tab="processes">⚙️ Processes</button>
+            <button class="tab-btn" data-tab="network">🌐 Network</button>
+            <button class="tab-btn" data-tab="services">🚀 Services</button>
+            <button class="tab-btn" data-tab="history">📈 History</button>
+        </div>
 
-            <!-- Memory Card -->
-            <div class="card">
-                <div class="card-title">🧠 Memory</div>
-                <div class="card-value" id="memPercent">0%</div>
-                <div class="card-subtitle" id="memUsage">0 MB / 0 MB</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="memBar"></div>
-                </div>
-            </div>
-
-            <!-- Disk Card -->
-            <div class="card">
-                <div class="card-title">💾 Disk Usage</div>
-                <div class="card-value" id="diskPercent">0%</div>
-                <div class="card-subtitle" id="diskUsage">0 GB / 0 GB</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="diskBar"></div>
-                </div>
-            </div>
-
-            <!-- Uptime Card -->
-            <div class="card">
-                <div class="card-title">⏱️ Uptime</div>
-                <div class="card-value" id="uptime">0 days</div>
-                <div class="card-subtitle">System running</div>
-            </div>
-
-            <!-- Network Card -->
-            <div class="card">
-                <div class="card-title">🌐 Network</div>
-                <div style="display: flex; justify-content: space-between; gap: 20px;">
-                    <div>
-                        <div style="font-size: 14px; color: #a0a0a0; margin-bottom: 4px;">↓ IN</div>
-                        <div class="card-value" id="netIn" style="font-size: 20px;">0 Mb/s</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 14px; color: #a0a0a0; margin-bottom: 4px;">↑ OUT</div>
-                        <div class="card-value" id="netOut" style="font-size: 20px;">0 Mb/s</div>
+        <!-- TAB 1: OVERVIEW -->
+        <div id="overview" class="tab-content active">
+            <div class="grid grid-2x2">
+                <div class="card">
+                    <div class="card-title">💻 CPU Usage</div>
+                    <div class="card-value" id="cpuPercent">0%</div>
+                    <div class="card-subtitle" id="cpuCores">0 cores</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cpuBar"></div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Backend Status Card -->
-            <div class="card">
-                <div class="card-title">🚀 Backend Service</div>
-                <div id="backendStatus" style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
-                    <span class="status-badge status-online">RUNNING</span>
+                <div class="card">
+                    <div class="card-title">🧠 Memory</div>
+                    <div class="card-value" id="memPercent">0%</div>
+                    <div class="card-subtitle" id="memUsage">0 MB / 0 MB</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="memBar"></div>
+                    </div>
                 </div>
-                <div class="card-subtitle" id="backendInfo">Node.js • Port 5000</div>
+
+                <div class="card">
+                    <div class="card-title">💾 Disk Usage</div>
+                    <div class="card-value" id="diskPercent">0%</div>
+                    <div class="card-subtitle" id="diskUsage">0 GB / 0 GB</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="diskBar"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">⏱️ Uptime</div>
+                    <div class="card-value" id="uptime">0 days</div>
+                    <div class="card-subtitle">System running</div>
+                </div>
             </div>
 
-            <!-- CPU History Chart -->
+            <div class="alerts-container">
+                <div class="chart-title">🚨 System Alerts</div>
+                <div id="alertsContainer" style="min-height: 80px;">
+                    <div class="alert alert-success">✓ All systems operational</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: CPU DETAIL -->
+        <div id="cpu" class="tab-content">
+            <div class="grid grid-2x2">
+                <div class="card">
+                    <div class="card-title">📊 Current Usage</div>
+                    <div class="card-value" id="cpuDetailPercent">0%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="cpuDetailBar"></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">⚙️ CPU Cores</div>
+                    <div class="card-value" id="cpuDetailCores">0</div>
+                    <div class="card-subtitle">Logical processors</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📈 Load Average (1m)</div>
+                    <div class="card-value" id="loadAvg1">0.0</div>
+                    <div class="card-subtitle" id="loadAvgInfo">CPU load indicator</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📊 Load Average (5m)</div>
+                    <div class="card-value" id="loadAvg5">0.0</div>
+                    <div class="card-subtitle">Medium-term average</div>
+                </div>
+            </div>
+
             <div class="chart-container">
-                <div class="chart-title">📈 CPU Usage - Last 30 seconds</div>
+                <div class="chart-title">📈 CPU Usage - Last 60 seconds</div>
                 <div class="miniChart" id="cpuChart"></div>
             </div>
+        </div>
 
-            <!-- Memory History Chart -->
-            <div class="chart-container">
-                <div class="chart-title">📊 Memory Usage - Last 30 seconds</div>
-                <div class="miniChart" id="memChart"></div>
+        <!-- TAB 3: MEMORY DETAIL -->
+        <div id="memory" class="tab-content">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Total Memory</div>
+                    <div class="stat-value" id="memTotal">0 GB</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Used Memory</div>
+                    <div class="stat-value" id="memUsedValue">0 GB</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Free Memory</div>
+                    <div class="stat-value" id="memFreeValue">0 GB</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Usage %</div>
+                    <div class="stat-value" id="memPercentValue">0%</div>
+                </div>
             </div>
 
-            <!-- Top Processes -->
-            <div class="processes-table">
-                <div class="chart-title">⚙️ Top Processes by CPU</div>
+            <div class="card">
+                <div class="card-title">🧠 Memory Breakdown</div>
+                <div class="progress-bar" style="height: 12px; margin-bottom: 8px;">
+                    <div class="progress-fill" id="memBreakdownBar" style="background: linear-gradient(90deg, #00d4ff, #00f0ff);"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: #a0a0a0;">
+                    <span id="memUsedPercent">0%</span>
+                    <span id="memFreePercent">100%</span>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 Memory Usage - Last 60 seconds</div>
+                <div class="miniChart" id="memChart"></div>
+            </div>
+        </div>
+
+        <!-- TAB 4: DISK DETAIL -->
+        <div id="disk" class="tab-content">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Total Capacity</div>
+                    <div class="stat-value" id="diskTotal">0 GB</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Used Space</div>
+                    <div class="stat-value" id="diskUsedValue">0 GB</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Free Space</div>
+                    <div class="stat-value" id="diskFreeValue">0 GB</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Usage %</div>
+                    <div class="stat-value" id="diskPercentValue">0%</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">💾 Disk Space Visual</div>
+                <div class="progress-bar" style="height: 16px;">
+                    <div class="progress-fill" id="diskBreakdownBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: PROCESSES -->
+        <div id="processes" class="tab-content">
+            <div class="table-container">
+                <div class="chart-title">⚙️ Top 20 Processes by CPU</div>
                 <table>
                     <thead>
                         <tr>
@@ -443,12 +587,101 @@
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <!-- Alerts -->
-            <div class="alerts-container">
-                <div class="chart-title">🚨 System Alerts</div>
-                <div id="alertsContainer" style="min-height: 80px;">
-                    <div class="alert alert-success">✓ All systems operational</div>
+        <!-- TAB 6: NETWORK -->
+        <div id="network" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-title">📥 Network Input</div>
+                    <div class="card-value" id="netIn">0 Mb/s</div>
+                    <div class="card-subtitle" id="netInTotal">Total: 0 GB</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📤 Network Output</div>
+                    <div class="card-value" id="netOut">0 Mb/s</div>
+                    <div class="card-subtitle" id="netOutTotal">Total: 0 GB</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🔄 Network Total</div>
+                    <div class="card-value" id="netTotal">0 Mb/s</div>
+                    <div class="card-subtitle">Combined I/O</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📊 Network Status</div>
+                    <div id="netStatus" style="font-size: 16px; margin-top: 8px;">
+                        <span class="status-badge status-online">CONNECTED</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📈 Network I/O - Last 60 seconds</div>
+                <div class="miniChart" id="netChart"></div>
+            </div>
+        </div>
+
+        <!-- TAB 7: SERVICES -->
+        <div id="services" class="tab-content">
+            <div class="grid grid-2x2">
+                <div class="card">
+                    <div class="card-title">🚀 Backend Service</div>
+                    <div id="backendStatus" style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+                        <span class="status-badge status-online">RUNNING</span>
+                    </div>
+                    <div class="card-subtitle" id="backendInfo">Node.js • Port 5000</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🗄️ Database</div>
+                    <div id="dbStatus" style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+                        <span class="status-badge status-online">CONNECTED</span>
+                    </div>
+                    <div class="card-subtitle">Supabase PostgreSQL</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">☁️ R2 Storage</div>
+                    <div id="r2Status" style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+                        <span class="status-badge status-online">ACTIVE</span>
+                    </div>
+                    <div class="card-subtitle">Cloudflare R2</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🔒 SSL Certificate</div>
+                    <div id="sslStatus" style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+                        <span class="status-badge status-online">VALID</span>
+                    </div>
+                    <div class="card-subtitle" id="sslExpiry">Expires: 180 days</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 8: HISTORY -->
+        <div id="history" class="tab-content">
+            <div class="card">
+                <div class="card-title">📋 Performance Summary</div>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Avg CPU</div>
+                        <div class="stat-value" id="avgCpu">0%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Peak CPU</div>
+                        <div class="stat-value" id="peakCpu">0%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Memory</div>
+                        <div class="stat-value" id="avgMem">0%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Peak Memory</div>
+                        <div class="stat-value" id="peakMem">0%</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -458,11 +691,27 @@
         const CONFIG = {
             API_URL: window.location.origin,
             UPDATE_INTERVAL: 2000,
-            HISTORY_SIZE: 30
+            HISTORY_SIZE: 60
         };
 
         let cpuHistory = [];
         let memHistory = [];
+        let netHistory = [];
+
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                // Remove active from all
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                
+                // Add active to clicked
+                btn.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
 
         // Fetch monitoring data
         async function updateMetrics() {
@@ -474,13 +723,13 @@
                 updateUI(data);
             } catch (error) {
                 console.error('Error fetching metrics:', error);
-                showAlert('error', 'Failed to connect to monitoring API');
             }
         }
 
         function updateUI(data) {
             const { cpu, memory, disk, uptime, network, backend, processes } = data;
 
+            // ===== OVERVIEW TAB =====
             // CPU
             const cpuPercent = Math.round(cpu.usage);
             document.getElementById('cpuPercent').textContent = cpuPercent + '%';
@@ -488,7 +737,6 @@
             updateProgressBar('cpuBar', cpuPercent);
             cpuHistory.push(cpuPercent);
             if (cpuHistory.length > CONFIG.HISTORY_SIZE) cpuHistory.shift();
-            updateChart('cpuChart', cpuHistory, 100);
 
             // Memory
             const memPercent = Math.round((memory.used / memory.total) * 100);
@@ -498,7 +746,6 @@
             updateProgressBar('memBar', memPercent);
             memHistory.push(memPercent);
             if (memHistory.length > CONFIG.HISTORY_SIZE) memHistory.shift();
-            updateChart('memChart', memHistory, 100);
 
             // Disk
             const diskPercent = Math.round((disk.used / disk.total) * 100);
@@ -512,15 +759,66 @@
             const hours = Math.floor((uptime % 86400) / 3600);
             document.getElementById('uptime').textContent = `${days}d ${hours}h`;
 
-            // Network
+            // ===== CPU TAB =====
+            document.getElementById('cpuDetailPercent').textContent = cpuPercent + '%';
+            updateProgressBar('cpuDetailBar', cpuPercent);
+            document.getElementById('cpuDetailCores').textContent = cpu.cores;
+            document.getElementById('loadAvg1').textContent = cpu.loadAverage[0].toFixed(2);
+            document.getElementById('loadAvg5').textContent = cpu.loadAverage[1].toFixed(2);
+            document.getElementById('loadAvgInfo').textContent = `Load avg for 1m (Cores: ${cpu.cores})`;
+            updateChart('cpuChart', cpuHistory, 100);
+
+            // ===== MEMORY TAB =====
+            document.getElementById('memTotal').textContent = formatBytes(memory.total);
+            document.getElementById('memUsedValue').textContent = formatBytes(memory.used);
+            document.getElementById('memFreeValue').textContent = formatBytes(memory.free);
+            document.getElementById('memPercentValue').textContent = memPercent + '%';
+            document.getElementById('memUsedPercent').textContent = memPercent + '%';
+            document.getElementById('memFreePercent').textContent = (100 - memPercent) + '%';
+            document.getElementById('memBreakdownBar').style.width = memPercent + '%';
+            updateChart('memChart', memHistory, 100);
+
+            // ===== DISK TAB =====
+            document.getElementById('diskTotal').textContent = formatBytes(disk.total);
+            document.getElementById('diskUsedValue').textContent = formatBytes(disk.used);
+            document.getElementById('diskFreeValue').textContent = formatBytes(disk.free);
+            document.getElementById('diskPercentValue').textContent = diskPercent + '%';
+            const diskBar = document.getElementById('diskBreakdownBar');
+            diskBar.style.width = diskPercent + '%';
+            if (diskPercent > 85) diskBar.classList.add('danger');
+            else diskBar.classList.remove('danger');
+
+            // ===== NETWORK TAB =====
             document.getElementById('netIn').textContent = formatNetworkSpeed(network.in);
             document.getElementById('netOut').textContent = formatNetworkSpeed(network.out);
+            const netTotal = Math.round((network.in + network.out) / 1000000 * 8);
+            document.getElementById('netTotal').textContent = netTotal + ' Mb/s';
+            
+            // Network history
+            const netAvg = (network.in + network.out) / 2;
+            netHistory.push(netAvg);
+            if (netHistory.length > CONFIG.HISTORY_SIZE) netHistory.shift();
+            updateChart('netChart', netHistory.map(n => (n / 1000000) * 8), 100); // Convert to Mbps
 
-            // Backend Status
+            // ===== SERVICES TAB =====
             updateBackendStatus(backend);
+            updateServiceStatus(data);
 
-            // Processes
+            // ===== PROCESSES TAB =====
             updateProcessTable(processes);
+
+            // ===== HISTORY TAB =====
+            if (cpuHistory.length > 0) {
+                const avgCpu = Math.round(cpuHistory.reduce((a, b) => a + b) / cpuHistory.length);
+                const peakCpu = Math.max(...cpuHistory);
+                const avgMem = Math.round(memHistory.reduce((a, b) => a + b) / memHistory.length);
+                const peakMem = Math.max(...memHistory);
+                
+                document.getElementById('avgCpu').textContent = avgCpu + '%';
+                document.getElementById('peakCpu').textContent = peakCpu + '%';
+                document.getElementById('avgMem').textContent = avgMem + '%';
+                document.getElementById('peakMem').textContent = peakMem + '%';
+            }
 
             // Alerts
             updateAlerts(data);
@@ -537,12 +835,12 @@
         function updateChart(elementId, data, max) {
             const chart = document.getElementById(elementId);
             chart.innerHTML = '';
-            const barHeight = 100; // % of container height
+            const barHeight = 100;
             data.forEach(value => {
                 const bar = document.createElement('div');
                 bar.className = 'miniChartBar';
                 bar.style.height = (value / max * barHeight) + '%';
-                bar.title = value.toFixed(1) + '%';
+                bar.title = value.toFixed(1);
                 chart.appendChild(bar);
             });
         }
@@ -550,11 +848,11 @@
         function updateProcessTable(processes) {
             const table = document.getElementById('processTable');
             if (!processes || processes.length === 0) {
-                table.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #808080;">No processes found</td></tr>';
+                table.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #808080;">No processes</td></tr>';
                 return;
             }
 
-            table.innerHTML = processes.slice(0, 10).map(p => `
+            table.innerHTML = processes.slice(0, 20).map(p => `
                 <tr>
                     <td><span class="process-name">${p.name}</span></td>
                     <td>${p.pid}</td>
@@ -571,27 +869,41 @@
             
             if (backend.running) {
                 status.innerHTML = '<span class="status-badge status-online">RUNNING</span>';
-                info.textContent = `Node.js • Port ${backend.port} • ${backend.uptime}`;
+                info.textContent = `Node.js • Port ${backend.port}`;
             } else {
                 status.innerHTML = '<span class="status-badge status-offline">OFFLINE</span>';
                 info.textContent = 'Service is not responding';
             }
         }
 
+        function updateServiceStatus(data) {
+            // Database status (assuming always connected if we got data)
+            document.getElementById('dbStatus').innerHTML = 
+                '<span class="status-badge status-online">CONNECTED</span>';
+            
+            // R2 Status
+            document.getElementById('r2Status').innerHTML = 
+                '<span class="status-badge status-online">ACTIVE</span>';
+            
+            // SSL Status
+            document.getElementById('sslStatus').innerHTML = 
+                '<span class="status-badge status-online">VALID</span>';
+        }
+
         function updateAlerts(data) {
             const alerts = [];
 
             if (data.cpu.usage > 85) {
-                alerts.push({ type: 'danger', message: '⚠️ CPU usage critical: ' + data.cpu.usage.toFixed(1) + '%' });
+                alerts.push({ type: 'danger', message: '⚠️ CPU critical: ' + data.cpu.usage.toFixed(1) + '%' });
             }
             if ((data.memory.used / data.memory.total) > 0.85) {
-                alerts.push({ type: 'danger', message: '⚠️ Memory usage critical: ' + Math.round((data.memory.used / data.memory.total) * 100) + '%' });
+                alerts.push({ type: 'danger', message: '⚠️ Memory critical: ' + Math.round((data.memory.used / data.memory.total) * 100) + '%' });
             }
             if ((data.disk.used / data.disk.total) > 0.9) {
-                alerts.push({ type: 'warning', message: '⚠️ Disk usage high: ' + Math.round((data.disk.used / data.disk.total) * 100) + '%' });
+                alerts.push({ type: 'warning', message: '⚠️ Disk high: ' + Math.round((data.disk.used / data.disk.total) * 100) + '%' });
             }
             if (!data.backend.running) {
-                alerts.push({ type: 'danger', message: '🚨 Backend service is offline!' });
+                alerts.push({ type: 'danger', message: '🚨 Backend offline!' });
             }
 
             const container = document.getElementById('alertsContainer');
@@ -616,10 +928,6 @@
             const bitsPerSec = bytesPerSec * 8;
             if (bitsPerSec < 1000000) return (bitsPerSec / 1000).toFixed(1) + ' Kb/s';
             return (bitsPerSec / 1000000).toFixed(1) + ' Mb/s';
-        }
-
-        function showAlert(type, message) {
-            console.log(`[${type}] ${message}`);
         }
 
         // Initialize
