@@ -242,6 +242,29 @@ function registerMonitoringEndpoints(app, auth) {
         });
     });
 
+    // Get backend logs (real-time tail)
+    app.get('/api/monitoring/logs', (req, res) => {
+        try {
+            const limit = parseInt(req.query.limit) || 100;
+            
+            // Return in-memory logs buffer
+            // Note: In production, this could read from a log file instead
+            const logs = global.backendLogs || [];
+            
+            res.json({
+                logs: logs.slice(-limit),
+                total: logs.length,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error('[Monitoring] Error fetching logs:', error);
+            res.status(500).json({
+                error: 'Failed to fetch logs',
+                details: error.message
+            });
+        }
+    });
+
     console.log('[Monitoring] Endpoints registered successfully');
 }
 

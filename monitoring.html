@@ -416,6 +416,7 @@
             <button class="tab-btn" data-tab="network">🌐 Network</button>
             <button class="tab-btn" data-tab="services">🚀 Services</button>
             <button class="tab-btn" data-tab="history">📈 History</button>
+            <button class="tab-btn" data-tab="logs">📋 Backend Logs</button>
         </div>
 
         <!-- TAB 1: OVERVIEW -->
@@ -685,6 +686,40 @@
                 </div>
             </div>
         </div>
+
+        <!-- TAB 9: BACKEND LOGS -->
+        <div id="logs" class="tab-content">
+            <div class="chart-container">
+                <div class="chart-title">📋 Backend Real-time Logs</div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button id="logsClearBtn" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.3);">🗑️ Clear Logs</button>
+                    <button id="logsPauseBtn">⏸️ Pause</button>
+                    <button id="logsResumeBtn" style="display: none;">▶️ Resume</button>
+                    <button id="logsDownloadBtn">📥 Download</button>
+                    <span style="margin-left: auto; font-size: 12px; color: #a0a0a0;" id="logCount">Lines: 0</span>
+                </div>
+
+                <div style="
+                    background: rgba(0, 0, 0, 0.3);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    border-radius: 8px;
+                    padding: 12px;
+                    height: 600px;
+                    overflow-y: auto;
+                    font-family: 'Courier New', monospace;
+                    font-size: 11px;
+                    line-height: 1.4;
+                    color: #a0a0a0;
+                " id="logsContainer">
+                    <div style="color: #10b981;">🔄 Connecting to backend logs...</div>
+                </div>
+
+                <div style="margin-top: 12px; font-size: 11px; color: #808080;">
+                    💡 Tip: Logs auto-scroll. Click Pause to freeze. Tail view shows last 100 lines.
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -710,7 +745,105 @@
                 // Add active to clicked
                 btn.classList.add('active');
                 document.getElementById(tabName).classList.add('active');
+                
+                // Start logs polling when logs tab opened
+                if (tabName === 'logs') {
+                    startLogsPolling();
+                }
             });
+        });
+
+        // ===== LOGS SYSTEM =====
+        let logsData = [];
+        let isLogsPaused = false;
+        let logsPollingInterval = null;
+
+        function startLogsPolling() {
+            if (logsPollingInterval) return; // Already polling
+            
+            fetchLogs();
+            logsPollingInterval = setInterval(fetchLogs, 1000);
+        }
+
+        function stopLogsPolling() {
+            if (logsPollingInterval) {
+                clearInterval(logsPollingInterval);
+                logsPollingInterval = null;
+            }
+        }
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/api/monitoring/logs?limit=100`);
+                if (!response.ok) throw new Error('Failed to fetch logs');
+                
+                const data = await response.json();
+                if (data.logs && !isLogsPaused) {
+                    logsData = data.logs;
+                    renderLogs();
+                    document.getElementById('logCount').textContent = `Lines: ${data.logs.length}`;
+                }
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+            }
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logsContainer');
+            if (!container) return;
+
+            const logsHTML = logsData.map(log => {
+                const timestamp = new Date(log.timestamp).toLocaleTimeString();
+                const levelColor = getLogLevelColor(log.level);
+                return `<div style="color: ${levelColor};">[${timestamp}] ${log.level} - ${log.message}</div>`;
+            }).join('');
+
+            container.innerHTML = logsHTML || '<div style="color: #808080;">No logs yet...</div>';
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function getLogLevelColor(level) {
+            const colors = {
+                'ERROR': '#ef4444',
+                'WARN': '#f59e0b',
+                'INFO': '#3b82f6',
+                'DEBUG': '#a0a0a0',
+                'SUCCESS': '#10b981'
+            };
+            return colors[level] || '#a0a0a0';
+        }
+
+        // Logs controls
+        document.getElementById('logsClearBtn')?.addEventListener('click', () => {
+            logsData = [];
+            renderLogs();
+            document.getElementById('logCount').textContent = 'Lines: 0';
+        });
+
+        document.getElementById('logsPauseBtn')?.addEventListener('click', () => {
+            isLogsPaused = true;
+            document.getElementById('logsPauseBtn').style.display = 'none';
+            document.getElementById('logsResumeBtn').style.display = 'block';
+        });
+
+        document.getElementById('logsResumeBtn')?.addEventListener('click', () => {
+            isLogsPaused = false;
+            document.getElementById('logsPauseBtn').style.display = 'block';
+            document.getElementById('logsResumeBtn').style.display = 'none';
+        });
+
+        document.getElementById('logsDownloadBtn')?.addEventListener('click', () => {
+            const csv = logsData.map(log => 
+                `"${new Date(log.timestamp).toISOString()}","${log.level}","${log.message}"`
+            ).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backend-logs-${Date.now()}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
         });
 
         // Fetch monitoring data

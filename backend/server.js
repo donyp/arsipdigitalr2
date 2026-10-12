@@ -26,6 +26,55 @@ const R2Storage = require('./r2-storage');
 const { initializeClient: initializeSecretManager, getSecret } = require('./secretManager');
 const { logSecurityEvent, logWarning, logInfo, logDebug, logAudit, isDebugMode } = require('./security-logging');
 
+// ============================================================
+// GLOBAL LOGS BUFFER - untuk monitoring real-time
+// ============================================================
+global.backendLogs = [];
+const MAX_LOG_BUFFER = 500; // Keep last 500 logs
+
+// Intercept console.log untuk capture di monitoring
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+const originalInfo = console.info;
+
+function addLogToBuffer(level, args) {
+    const message = args.map(arg => 
+        typeof arg === 'string' ? arg : JSON.stringify(arg)
+    ).join(' ');
+    
+    global.backendLogs.push({
+        timestamp: new Date().toISOString(),
+        level: level,
+        message: message
+    });
+    
+    // Keep buffer size manageable
+    if (global.backendLogs.length > MAX_LOG_BUFFER) {
+        global.backendLogs.shift();
+    }
+}
+
+console.log = function(...args) {
+    originalLog.apply(console, args);
+    addLogToBuffer('INFO', args);
+};
+
+console.error = function(...args) {
+    originalError.apply(console, args);
+    addLogToBuffer('ERROR', args);
+};
+
+console.warn = function(...args) {
+    originalWarn.apply(console, args);
+    addLogToBuffer('WARN', args);
+};
+
+console.info = function(...args) {
+    originalInfo.apply(console, args);
+    addLogToBuffer('INFO', args);
+};
+
 // Create necessary directories at startup
 const dirsToCreate = [
     '/app/data/log',
