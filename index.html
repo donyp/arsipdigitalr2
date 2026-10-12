@@ -666,9 +666,9 @@
                 localStorage.setItem('user_info', JSON.stringify(data.user));
                 
                 // Determine correct dashboard based on role
-                let dashboardPage = '/dashboard.html';
+                let dashboardPage = '/dashboard';
                 if (data.user.role === 'admin_zona') {
-                    dashboardPage = '/dashboard-admin-zona.html';
+                    dashboardPage = '/zona/dashboard';
                 }
                 
                 // Show success and redirect
