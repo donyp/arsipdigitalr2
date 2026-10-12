@@ -677,11 +677,11 @@
                     title: 'Login Berhasil',
                     html: 'Anda akan dialihkan ke dalam dashboard',
                     showConfirmButton: false,
-                    timer: 1000,
-                    timerProgressBar: false,
+                    timer: 1500,
+                    timerProgressBar: true,
                     didOpen: async () => {
                         // Auto redirect immediately after popup shows
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        await new Promise(resolve => setTimeout(resolve, 1500));
                         window.location.href = dashboardPage;
                     }
                 });
