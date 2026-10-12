@@ -16,13 +16,16 @@ AND EXTRACT(YEAR FROM uploaded_at) = 2026;
 -- ============================================================
 -- STEP 1: Delete files from invoice_files table (September 2026)
 -- ============================================================
-DELETE FROM invoice_files
-WHERE EXTRACT(MONTH FROM uploaded_at) = 9
-AND EXTRACT(YEAR FROM uploaded_at) = 2026;
-
--- Confirm deletion
-SELECT 'Deletion complete' as status, 
-       ROW_COUNT() as rows_deleted;
+WITH deleted_rows AS (
+    DELETE FROM invoice_files
+    WHERE EXTRACT(MONTH FROM uploaded_at) = 9
+    AND EXTRACT(YEAR FROM uploaded_at) = 2026
+    RETURNING id
+)
+SELECT 
+    'Deletion complete' as status, 
+    COUNT(*) as rows_deleted
+FROM deleted_rows;
 
 -- ============================================================
 -- VERIFY: Check remaining files
