@@ -543,7 +543,7 @@
                 height: 8px;
                 background: #3b82f6;
                 border-radius: 50%;
-                animation: heartbeat-pulse 2s infinite;
+                animation: heartbeat-pulse 2s infinite ease-in-out;
             }
 
             .sidebar-item.active,
@@ -552,16 +552,13 @@
                 font-weight: 600;
             }
 
-            /* Smooth hover animation for non-dropdown items */
-            .sidebar-item:not(.active):hover {
+            /* Smooth hover animation - only for non-active items */
+            .sidebar-item:hover:not(.active),
+            .sidebar-dropdown-btn:hover:not(.expanded) {
                 transform: translateX(4px);
             }
 
-            /* Smooth hover animation for dropdown buttons */
-            .sidebar-dropdown-btn:hover {
-                transform: translateX(4px);
-            }
-
+            /* Dropdown button expanded state */
             .sidebar-dropdown-btn.expanded {
                 transform: translateX(0);
             }
