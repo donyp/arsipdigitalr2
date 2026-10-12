@@ -840,7 +840,7 @@
                     <button id="logsClearBtn">🗑️ Clear</button>
                     <button id="logsPauseBtn">⏸️ Pause</button>
                     <button id="logsResumeBtn" style="display: none;">▶️ Resume</button>
-                    <button id="logsDownloadBtn">📥 Download</button>
+                    <button id="logsCopyBtn">📋 Copy All</button>
                     <span style="margin-left: auto; font-size: 12px; color: #888; display: flex; align-items: center;" id="logCount">Lines: 0</span>
                 </div>
                 <div id="logsContainer" style="height: 600px; overflow-y: auto;"><div style="color: #10b981;">🔄 Connecting to backend logs...</div></div>
@@ -940,17 +940,22 @@
             document.getElementById('logsResumeBtn').style.display = 'none';
         });
 
-        document.getElementById('logsDownloadBtn')?.addEventListener('click', () => {
-            const csv = logsData.map(log => 
-                `"${new Date(log.timestamp).toISOString()}","${log.level}","${log.message}"`
-            ).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `backend-logs-${Date.now()}.csv`;
-            a.click();
-            window.URL.revokeObjectURL(url);
+        document.getElementById('logsCopyBtn')?.addEventListener('click', () => {
+            const logText = logsData.map(log => {
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                return `[${timestamp}] ${log.level} - ${log.message}`;
+            }).join('\n');
+            
+            navigator.clipboard.writeText(logText).then(() => {
+                const btn = document.getElementById('logsCopyBtn');
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
         });
 
         // Fetch monitoring data
