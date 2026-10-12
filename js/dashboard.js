@@ -2843,35 +2843,37 @@ async function renderInvoiceTable(invoices) {
             // Use files_uploaded_count from backend (already accurate from R2 sync)
             const actualUploadedCount = inv.files_uploaded_count || 0;
             
-            // For action menu, we still need to know which specific files exist
-            // Make file checks only for files that have DB paths
+            // IMPROVED LOGIC: Only make API checks if files have been uploaded
+            // If files_uploaded_count > 0, check file existence; otherwise, assume no files
             const checkPromises = [];
             
-            if (inv.invoice_pdf_path || inv.uploaded_file_path) {
+            // Only check files if any have been uploaded
+            if (actualUploadedCount > 0) {
+                // Check invoice file
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/invoice?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
                         .then(d => ({ type: 'invoice', exists: d.exists }))
                 );
-            }
-            
-            if (inv.bukti_bayar_path) {
+                
+                // Check bukti bayar
                 checkPromises.push(
                     fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/bukti_bayar?t=${Date.now()}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
                         .then(d => ({ type: 'bukti_bayar', exists: d.exists }))
                 );
-            }
-            
-            if (isPPN && inv.faktur_pajak_path) {
-                checkPromises.push(
-                    fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/faktur_pajak?t=${Date.now()}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                        .then(d => ({ type: 'faktur_pajak', exists: d.exists }))
-                );
+                
+                // Check faktur pajak if PPN
+                if (isPPN) {
+                    checkPromises.push(
+                        fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/faktur_pajak?t=${Date.now()}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
+                            .then(d => ({ type: 'faktur_pajak', exists: d.exists }))
+                    );
+                }
             }
         
             // Wait for checks (but use pre-calculated count for display)
@@ -2897,10 +2899,12 @@ async function renderInvoiceTable(invoices) {
             });
         
         // Store file status for popup usage later
+        // If files_uploaded_count > 0 but no specific files found, show generic "files exist" state
+        // This handles the case where invoice data was just added and files sync is pending
         const fileStatus = {
-            hasInvoice: invoiceExists,
-            hasBuktiBayar: buktiExists,
-            hasFakturPajak: fakturExists,
+            hasInvoice: invoiceExists || (actualUploadedCount > 0),
+            hasBuktiBayar: buktiExists || (actualUploadedCount > 1),
+            hasFakturPajak: fakturExists || (actualUploadedCount === requiredCount && isPPN),
             isPPN: inv.keterangan === 'PPN',
             isComplete: actualUploadedCount === requiredCount,
             actualCount: actualUploadedCount,
@@ -3678,9 +3682,9 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
         
         // If cached file status not available, try to get it from API without delay
         if (!fileStatus) {
-            // Fallback: use minimal data
+            // Fallback: assume no files until proven otherwise (safer than assuming files exist)
             fileStatus = {
-                hasInvoice: true,
+                hasInvoice: false,
                 hasBuktiBayar: false,
                 hasFakturPajak: false,
                 isPPN: false
