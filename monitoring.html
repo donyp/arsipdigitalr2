@@ -131,6 +131,18 @@
             grid-template-columns: repeat(2, 1fr);
         }
 
+        .grid-3x3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .grid-full {
+            grid-column: 1 / -1;
+        }
+
         .card {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -421,7 +433,7 @@
 
         <!-- TAB 1: OVERVIEW -->
         <div id="overview" class="tab-content active">
-            <div class="grid grid-2x2">
+            <div class="grid grid-4">
                 <div class="card">
                     <div class="card-title">💻 CPU Usage</div>
                     <div class="card-value" id="cpuPercent">0%</div>
@@ -466,7 +478,7 @@
 
         <!-- TAB 2: CPU DETAIL -->
         <div id="cpu" class="tab-content">
-            <div class="grid grid-2x2">
+            <div class="grid grid-4">
                 <div class="card">
                     <div class="card-title">📊 Current Usage</div>
                     <div class="card-value" id="cpuDetailPercent">0%</div>
@@ -482,19 +494,19 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-title">📈 Load Average (1m)</div>
+                    <div class="card-title">📈 Load (1m)</div>
                     <div class="card-value" id="loadAvg1">0.0</div>
-                    <div class="card-subtitle" id="loadAvgInfo">CPU load indicator</div>
+                    <div class="card-subtitle" id="loadAvgInfo">Per core</div>
                 </div>
 
                 <div class="card">
-                    <div class="card-title">📊 Load Average (5m)</div>
+                    <div class="card-title">📊 Load (5m)</div>
                     <div class="card-value" id="loadAvg5">0.0</div>
-                    <div class="card-subtitle">Medium-term average</div>
+                    <div class="card-subtitle">Medium avg</div>
                 </div>
             </div>
 
-            <div class="chart-container">
+            <div class="chart-container grid-full">
                 <div class="chart-title">📈 CPU Usage - Last 60 seconds</div>
                 <div class="miniChart" id="cpuChart"></div>
             </div>
@@ -592,17 +604,17 @@
 
         <!-- TAB 6: NETWORK -->
         <div id="network" class="tab-content">
-            <div class="grid">
+            <div class="grid grid-4">
                 <div class="card">
                     <div class="card-title">📥 Network Input</div>
                     <div class="card-value" id="netIn">0 Mb/s</div>
-                    <div class="card-subtitle" id="netInTotal">Total: 0 GB</div>
+                    <div class="card-subtitle" id="netInTotal">↓ Download</div>
                 </div>
 
                 <div class="card">
                     <div class="card-title">📤 Network Output</div>
                     <div class="card-value" id="netOut">0 Mb/s</div>
-                    <div class="card-subtitle" id="netOutTotal">Total: 0 GB</div>
+                    <div class="card-subtitle" id="netOutTotal">↑ Upload</div>
                 </div>
 
                 <div class="card">
@@ -619,7 +631,7 @@
                 </div>
             </div>
 
-            <div class="chart-container">
+            <div class="chart-container grid-full">
                 <div class="chart-title">📈 Network I/O - Last 60 seconds</div>
                 <div class="miniChart" id="netChart"></div>
             </div>
@@ -664,25 +676,22 @@
 
         <!-- TAB 8: HISTORY -->
         <div id="history" class="tab-content">
-            <div class="card">
-                <div class="card-title">📋 Performance Summary</div>
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <div class="stat-label">Avg CPU</div>
-                        <div class="stat-value" id="avgCpu">0%</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Peak CPU</div>
-                        <div class="stat-value" id="peakCpu">0%</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Avg Memory</div>
-                        <div class="stat-value" id="avgMem">0%</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Peak Memory</div>
-                        <div class="stat-value" id="peakMem">0%</div>
-                    </div>
+            <div class="stat-grid grid-4" style="margin-bottom: 20px;">
+                <div class="stat-item">
+                    <div class="stat-label">Avg CPU</div>
+                    <div class="stat-value" id="avgCpu">0%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Peak CPU</div>
+                    <div class="stat-value" id="peakCpu">0%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Avg Memory</div>
+                    <div class="stat-value" id="avgMem">0%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Peak Memory</div>
+                    <div class="stat-value" id="peakMem">0%</div>
                 </div>
             </div>
         </div>
