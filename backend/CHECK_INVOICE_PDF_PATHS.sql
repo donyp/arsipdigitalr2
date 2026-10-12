@@ -48,11 +48,7 @@ ORDER BY faktur, file_type, uploaded_at DESC;
 -- 3. DETAIL VIEW: Invoices with all file types (WIDE FORMAT)
 -- ============================================================
 SELECT 
-    COALESCE(
-        MAX(CASE WHEN file_type = 'invoice' THEN faktur END),
-        MAX(CASE WHEN file_type = 'bukti_bayar' THEN faktur END),
-        MAX(CASE WHEN file_type = 'faktur_pajak' THEN faktur END)
-    ) as faktur,
+    faktur,
     
     MAX(CASE WHEN file_type = 'invoice' THEN file_path END) as invoice_pdf_path,
     MAX(CASE WHEN file_type = 'invoice' THEN file_size END) as invoice_size,
@@ -66,7 +62,7 @@ SELECT
     MAX(CASE WHEN file_type = 'faktur_pajak' THEN file_size END) as faktur_pajak_size,
     MAX(CASE WHEN file_type = 'faktur_pajak' THEN uploaded_at END) as faktur_pajak_uploaded_at
 FROM invoice_files
-GROUP BY 1
+GROUP BY faktur
 ORDER BY faktur;
 
 -- ============================================================
