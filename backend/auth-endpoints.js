@@ -79,7 +79,14 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                     role: users.role || 'user'
                 }
             });
-
+        } catch (error) {
+            console.error('[Auth] ❌ Login error:', error.message);
+            return res.status(500).json({
+                success: false,
+                error: 'Server error'
+            });
+        }
+    });
 
 };
 
