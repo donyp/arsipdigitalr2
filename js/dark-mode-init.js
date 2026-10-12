@@ -52,13 +52,13 @@
             
             :root {
                 --color-bg-primary: #ffffff;
-                --color-bg-secondary: #f5f7fa;
-                --color-bg-tertiary: #f3f4f6;
-                --color-text-primary: #1f2937;
-                --color-text-secondary: #6b7280;
-                --color-text-tertiary: #9ca3af;
-                --color-border: #e5e7eb;
-                --color-border-dark: #d1d5db;
+                --color-bg-secondary: #f8f9fa;
+                --color-bg-tertiary: #f0f2f5;
+                --color-text-primary: #0a0e27;
+                --color-text-secondary: #4a5568;
+                --color-text-tertiary: #718096;
+                --color-border: #d2d6dc;
+                --color-border-dark: #bcc1cc;
             }
             
             html {
@@ -66,8 +66,8 @@
             }
             
             body {
-                background-color: #f5f7fa;
-                color: #1f2937;
+                background-color: #f8f9fa;
+                color: #0a0e27;
             }
             
             /* ========================================
@@ -110,15 +110,15 @@
             root.style.setProperty('--color-border', '#475569');
             root.style.setProperty('--color-border-dark', '#64748b');
         } else {
-            // Light mode variables
+            // Light mode variables (improved contrast)
             root.style.setProperty('--color-bg-primary', '#ffffff');
-            root.style.setProperty('--color-bg-secondary', '#f5f7fa');
-            root.style.setProperty('--color-bg-tertiary', '#f3f4f6');
-            root.style.setProperty('--color-text-primary', '#1f2937');
-            root.style.setProperty('--color-text-secondary', '#6b7280');
-            root.style.setProperty('--color-text-tertiary', '#9ca3af');
-            root.style.setProperty('--color-border', '#e5e7eb');
-            root.style.setProperty('--color-border-dark', '#d1d5db');
+            root.style.setProperty('--color-bg-secondary', '#f8f9fa');
+            root.style.setProperty('--color-bg-tertiary', '#f0f2f5');
+            root.style.setProperty('--color-text-primary', '#0a0e27');
+            root.style.setProperty('--color-text-secondary', '#4a5568');
+            root.style.setProperty('--color-text-tertiary', '#718096');
+            root.style.setProperty('--color-border', '#d2d6dc');
+            root.style.setProperty('--color-border-dark', '#bcc1cc');
         }
     };
 
