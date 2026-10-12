@@ -583,6 +583,11 @@ app.get('/penyimpanan', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'storage-handler.html'));
 });
 
+// Monitoring Dashboard
+app.get('/monitoring', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'monitoring.html'));
+});
+
 // Admin Zona Dashboard
 app.get('/zona/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
@@ -1313,6 +1318,7 @@ console.log('[INIT] Registering Phase 2 feature endpoints...');
 const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
 const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
+const { registerMonitoringEndpoints } = require('./monitoring-endpoints');
 
 // Create auth factory for session endpoints
 const createAuth = (allowedRoles = null) => {
@@ -1332,6 +1338,9 @@ const renameInvoiceHijauEndpoints = require('./rename-invoice-hijau-endpoints');
 const pdfToCsvEndpoints = require('./pdf-to-csv-endpoints');
 app.use('/api', faqEndpoints);
 app.use('/api', notificationEndpoints);
+
+// Register monitoring endpoints
+registerMonitoringEndpoints(app, authenticateToken);
 renameFakturEndpoints(app, supabase);
 renameInvoiceHijauEndpoints(app, supabase, auditLogger);
 pdfToCsvEndpoints(app, authenticateToken);

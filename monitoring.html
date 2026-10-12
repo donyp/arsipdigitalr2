@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖥️ VPS Monitoring - Real-time System Performance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border-left: 4px solid #00d4ff;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-online {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-offline {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-value {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #00d4ff;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: #808080;
+            margin-bottom: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00f0ff);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #f59e0b, #ff9800);
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(90deg, #ef4444, #ff5555);
+        }
+
+        .chart-container {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .miniChart {
+            height: 200px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+        }
+
+        .miniChartBar {
+            flex: 1;
+            background: linear-gradient(180deg, #00d4ff, #00a0cc);
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            min-height: 2px;
+        }
+
+        .miniChartBar:hover {
+            background: linear-gradient(180deg, #00f0ff, #00d4ff);
+        }
+
+        .processes-table {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            font-weight: 600;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        tr:hover td {
+            background: rgba(0, 212, 255, 0.05);
+        }
+
+        .process-name {
+            color: #00d4ff;
+            font-weight: 500;
+        }
+
+        .alerts-container {
+            grid-column: 1 / -1;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            border-left: 4px solid;
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: #f59e0b;
+            color: #fcd34d;
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: #ef4444;
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: #10b981;
+            color: #a7f3d0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 212, 255, 0.1);
+            color: #00d4ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+        }
+
+        button.danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        button.danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .refresh-indicator {
+            font-size: 12px;
+            color: #808080;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container, .processes-table, .alerts-container {
+                grid-column: 1;
+            }
+
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .card-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>🖥️ VPS Monitoring</h1>
+                <p style="font-size: 12px; color: #808080; margin-top: 4px;">arsipdigitalanka.cloud</p>
+            </div>
+            <div class="header-right">
+                <span class="status-badge status-online">
+                    <span class="loading"></span>
+                    Live
+                </span>
+                <span class="refresh-indicator">Updates every 2s</span>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- CPU Card -->
+            <div class="card">
+                <div class="card-title">💻 CPU Usage</div>
+                <div class="card-value" id="cpuPercent">0%</div>
+                <div class="card-subtitle" id="cpuCores">0 cores</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpuBar"></div>
+                </div>
+            </div>
+
+            <!-- Memory Card -->
+            <div class="card">
+                <div class="card-title">🧠 Memory</div>
+                <div class="card-value" id="memPercent">0%</div>
+                <div class="card-subtitle" id="memUsage">0 MB / 0 MB</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memBar"></div>
+                </div>
+            </div>
+
+            <!-- Disk Card -->
+            <div class="card">
+                <div class="card-title">💾 Disk Usage</div>
+                <div class="card-value" id="diskPercent">0%</div>
+                <div class="card-subtitle" id="diskUsage">0 GB / 0 GB</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="diskBar"></div>
+                </div>
+            </div>
+
+            <!-- Uptime Card -->
+            <div class="card">
+                <div class="card-title">⏱️ Uptime</div>
+                <div class="card-value" id="uptime">0 days</div>
+                <div class="card-subtitle">System running</div>
+            </div>
+
+            <!-- Network Card -->
+            <div class="card">
+                <div class="card-title">🌐 Network</div>
+                <div style="display: flex; justify-content: space-between; gap: 20px;">
+                    <div>
+                        <div style="font-size: 14px; color: #a0a0a0; margin-bottom: 4px;">↓ IN</div>
+                        <div class="card-value" id="netIn" style="font-size: 20px;">0 Mb/s</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 14px; color: #a0a0a0; margin-bottom: 4px;">↑ OUT</div>
+                        <div class="card-value" id="netOut" style="font-size: 20px;">0 Mb/s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backend Status Card -->
+            <div class="card">
+                <div class="card-title">🚀 Backend Service</div>
+                <div id="backendStatus" style="font-size: 18px; font-weight: 700; margin-bottom: 12px;">
+                    <span class="status-badge status-online">RUNNING</span>
+                </div>
+                <div class="card-subtitle" id="backendInfo">Node.js • Port 5000</div>
+            </div>
+
+            <!-- CPU History Chart -->
+            <div class="chart-container">
+                <div class="chart-title">📈 CPU Usage - Last 30 seconds</div>
+                <div class="miniChart" id="cpuChart"></div>
+            </div>
+
+            <!-- Memory History Chart -->
+            <div class="chart-container">
+                <div class="chart-title">📊 Memory Usage - Last 30 seconds</div>
+                <div class="miniChart" id="memChart"></div>
+            </div>
+
+            <!-- Top Processes -->
+            <div class="processes-table">
+                <div class="chart-title">⚙️ Top Processes by CPU</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Process</th>
+                            <th>PID</th>
+                            <th>CPU %</th>
+                            <th>Memory</th>
+                            <th>User</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processTable">
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: #808080;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Alerts -->
+            <div class="alerts-container">
+                <div class="chart-title">🚨 System Alerts</div>
+                <div id="alertsContainer" style="min-height: 80px;">
+                    <div class="alert alert-success">✓ All systems operational</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CONFIG = {
+            API_URL: window.location.origin,
+            UPDATE_INTERVAL: 2000,
+            HISTORY_SIZE: 30
+        };
+
+        let cpuHistory = [];
+        let memHistory = [];
+
+        // Fetch monitoring data
+        async function updateMetrics() {
+            try {
+                const response = await fetch(`${CONFIG.API_URL}/api/monitoring/stats`);
+                if (!response.ok) throw new Error('Failed to fetch stats');
+                
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+                showAlert('error', 'Failed to connect to monitoring API');
+            }
+        }
+
+        function updateUI(data) {
+            const { cpu, memory, disk, uptime, network, backend, processes } = data;
+
+            // CPU
+            const cpuPercent = Math.round(cpu.usage);
+            document.getElementById('cpuPercent').textContent = cpuPercent + '%';
+            document.getElementById('cpuCores').textContent = `${cpu.cores} cores`;
+            updateProgressBar('cpuBar', cpuPercent);
+            cpuHistory.push(cpuPercent);
+            if (cpuHistory.length > CONFIG.HISTORY_SIZE) cpuHistory.shift();
+            updateChart('cpuChart', cpuHistory, 100);
+
+            // Memory
+            const memPercent = Math.round((memory.used / memory.total) * 100);
+            document.getElementById('memPercent').textContent = memPercent + '%';
+            document.getElementById('memUsage').textContent = 
+                `${formatBytes(memory.used)} / ${formatBytes(memory.total)}`;
+            updateProgressBar('memBar', memPercent);
+            memHistory.push(memPercent);
+            if (memHistory.length > CONFIG.HISTORY_SIZE) memHistory.shift();
+            updateChart('memChart', memHistory, 100);
+
+            // Disk
+            const diskPercent = Math.round((disk.used / disk.total) * 100);
+            document.getElementById('diskPercent').textContent = diskPercent + '%';
+            document.getElementById('diskUsage').textContent = 
+                `${formatBytes(disk.used)} / ${formatBytes(disk.total)}`;
+            updateProgressBar('diskBar', diskPercent);
+
+            // Uptime
+            const days = Math.floor(uptime / 86400);
+            const hours = Math.floor((uptime % 86400) / 3600);
+            document.getElementById('uptime').textContent = `${days}d ${hours}h`;
+
+            // Network
+            document.getElementById('netIn').textContent = formatNetworkSpeed(network.in);
+            document.getElementById('netOut').textContent = formatNetworkSpeed(network.out);
+
+            // Backend Status
+            updateBackendStatus(backend);
+
+            // Processes
+            updateProcessTable(processes);
+
+            // Alerts
+            updateAlerts(data);
+        }
+
+        function updateProgressBar(elementId, percent) {
+            const bar = document.getElementById(elementId);
+            bar.style.width = percent + '%';
+            bar.className = 'progress-fill';
+            if (percent > 80) bar.classList.add('danger');
+            else if (percent > 60) bar.classList.add('warning');
+        }
+
+        function updateChart(elementId, data, max) {
+            const chart = document.getElementById(elementId);
+            chart.innerHTML = '';
+            const barHeight = 100; // % of container height
+            data.forEach(value => {
+                const bar = document.createElement('div');
+                bar.className = 'miniChartBar';
+                bar.style.height = (value / max * barHeight) + '%';
+                bar.title = value.toFixed(1) + '%';
+                chart.appendChild(bar);
+            });
+        }
+
+        function updateProcessTable(processes) {
+            const table = document.getElementById('processTable');
+            if (!processes || processes.length === 0) {
+                table.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #808080;">No processes found</td></tr>';
+                return;
+            }
+
+            table.innerHTML = processes.slice(0, 10).map(p => `
+                <tr>
+                    <td><span class="process-name">${p.name}</span></td>
+                    <td>${p.pid}</td>
+                    <td>${p.cpu.toFixed(1)}%</td>
+                    <td>${formatBytes(p.memory)}</td>
+                    <td>${p.user}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateBackendStatus(backend) {
+            const status = document.getElementById('backendStatus');
+            const info = document.getElementById('backendInfo');
+            
+            if (backend.running) {
+                status.innerHTML = '<span class="status-badge status-online">RUNNING</span>';
+                info.textContent = `Node.js • Port ${backend.port} • ${backend.uptime}`;
+            } else {
+                status.innerHTML = '<span class="status-badge status-offline">OFFLINE</span>';
+                info.textContent = 'Service is not responding';
+            }
+        }
+
+        function updateAlerts(data) {
+            const alerts = [];
+
+            if (data.cpu.usage > 85) {
+                alerts.push({ type: 'danger', message: '⚠️ CPU usage critical: ' + data.cpu.usage.toFixed(1) + '%' });
+            }
+            if ((data.memory.used / data.memory.total) > 0.85) {
+                alerts.push({ type: 'danger', message: '⚠️ Memory usage critical: ' + Math.round((data.memory.used / data.memory.total) * 100) + '%' });
+            }
+            if ((data.disk.used / data.disk.total) > 0.9) {
+                alerts.push({ type: 'warning', message: '⚠️ Disk usage high: ' + Math.round((data.disk.used / data.disk.total) * 100) + '%' });
+            }
+            if (!data.backend.running) {
+                alerts.push({ type: 'danger', message: '🚨 Backend service is offline!' });
+            }
+
+            const container = document.getElementById('alertsContainer');
+            if (alerts.length === 0) {
+                container.innerHTML = '<div class="alert alert-success">✓ All systems operational</div>';
+            } else {
+                container.innerHTML = alerts.map(a => 
+                    `<div class="alert alert-${a.type}">${a.message}</div>`
+                ).join('');
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatNetworkSpeed(bytesPerSec) {
+            const bitsPerSec = bytesPerSec * 8;
+            if (bitsPerSec < 1000000) return (bitsPerSec / 1000).toFixed(1) + ' Kb/s';
+            return (bitsPerSec / 1000000).toFixed(1) + ' Mb/s';
+        }
+
+        function showAlert(type, message) {
+            console.log(`[${type}] ${message}`);
+        }
+
+        // Initialize
+        updateMetrics();
+        setInterval(updateMetrics, CONFIG.UPDATE_INTERVAL);
+    </script>
+</body>
+</html>
