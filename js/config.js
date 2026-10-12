@@ -8,7 +8,7 @@ const CONFIG = {
     // For local development: use http://localhost:5000
     API_URL: (typeof window !== 'undefined' && window.location.hostname === 'localhost') 
         ? 'http://localhost:5000'
-        : 'https://arsipdigitalanka.my.id',
+        : 'https://arsipdigitalanka.cloud',
 
     // App Constants
     CATEGORIES: [
