@@ -730,8 +730,19 @@
 
     window.toggleDarkMode = function() {
         const isDark = localStorage.getItem('dark_mode_enabled') === 'true';
-        localStorage.setItem('dark_mode_enabled', String(!isDark));
-        document.documentElement.setAttribute('data-dark-mode', String(!isDark));
+        const newDarkState = !isDark;
+        localStorage.setItem('dark_mode_enabled', String(newDarkState));
+        document.documentElement.setAttribute('data-dark-mode', String(newDarkState));
+        
+        // Apply CSS variables immediately
+        if (window.applyDarkModeInlineStyles) {
+            window.applyDarkModeInlineStyles(newDarkState);
+        }
+        
+        // Add transition class for smooth animation
+        document.documentElement.classList.remove('no-transition');
+        document.documentElement.classList.add('with-transitions');
+        
         renderSidebar();
     };
 
