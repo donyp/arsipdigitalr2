@@ -675,15 +675,17 @@
                 await Swal.fire({
                     icon: 'success',
                     title: 'Login Berhasil',
-                    text: data.message || 'Selamat datang!',
-                    confirmButtonText: 'Masuk',
-                    confirmButtonColor: '#667eea',
-                    timer: 2000,
-                    timerProgressBar: true
+                    html: 'Anda akan dialihkan ke dalam dashboard',
+                    showConfirmButton: false,
+                    timer: 1000,
+                    timerProgressBar: false,
+                    didOpen: async () => {
+                        // Auto redirect immediately after popup shows
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        window.location.href = dashboardPage;
+                    }
                 });
                 
-                // Redirect to dashboard
-                window.location.href = dashboardPage;
                 return;
 
             } catch (err) {
