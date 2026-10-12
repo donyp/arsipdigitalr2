@@ -15,21 +15,21 @@
             id: 'dashboard',
             label: 'Dashboard',
             icon: '<i class="fas fa-th-large"></i>',
-            href: '/dashboard.html',
+            href: '/dashboard',
             children: []
         },
         {
             id: 'whatsapp',
             label: 'WhatsApp Messages',
             icon: '<i class="fab fa-whatsapp"></i>',
-            href: '/whatsapp-messages.html',
+            href: '/notifikasi',
             children: []
         },
         {
             id: 'support',
             label: 'Support',
             icon: '<i class="fas fa-headset"></i>',
-            href: '/support-dashboard.html',
+            href: '/support/admin',
             children: []
         },
         {
@@ -39,10 +39,10 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Upload Excel', icon: '<i class="fas fa-file-excel"></i>', href: '/upload-excel.html' },
-                { label: 'Upload Invoice PDF', icon: '<i class="fas fa-file-pdf"></i>', href: '/upload-invoice-pdf.html' },
-                { label: 'Upload Bukti Bayar', icon: '<i class="fas fa-receipt"></i>', href: '/upload-bukti-bayar.html' },
-                { label: 'Upload Faktur Pajak', icon: '<i class="fas fa-file-invoice"></i>', href: '/upload-faktur-pajak.html' }
+                { label: 'Upload Excel', icon: '<i class="fas fa-file-excel"></i>', href: '/excel' },
+                { label: 'Upload Invoice PDF', icon: '<i class="fas fa-file-pdf"></i>', href: '/invoice' },
+                { label: 'Upload Bukti Bayar', icon: '<i class="fas fa-receipt"></i>', href: '/buktibayar' },
+                { label: 'Upload Faktur Pajak', icon: '<i class="fas fa-file-invoice"></i>', href: '/fakturpajak' }
             ]
         },
         {
@@ -52,7 +52,7 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Rename Faktur', icon: '<i class="fas fa-edit"></i>', href: '/rename-faktur.html' }
+                { label: 'Rename Faktur', icon: '<i class="fas fa-edit"></i>', href: '/renamefaktur' }
             ]
         },
         {
@@ -62,10 +62,10 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Users', icon: '<i class="fas fa-users"></i>', href: '/users.html' },
-                { label: 'Tokos', icon: '<i class="fas fa-store"></i>', href: '/tokos.html' },
-                { label: 'Zonas', icon: '<i class="fas fa-map-marker-alt"></i>', href: '/zonas.html' },
-                { label: 'Kendaraan', icon: '<i class="fas fa-truck"></i>', href: '/kendaraan-dashboard.html' }
+                { label: 'Users', icon: '<i class="fas fa-users"></i>', href: '/user' },
+                { label: 'Tokos', icon: '<i class="fas fa-store"></i>', href: '/toko' },
+                { label: 'Zonas', icon: '<i class="fas fa-map-marker-alt"></i>', href: '/zona' },
+                { label: 'Kendaraan', icon: '<i class="fas fa-truck"></i>', href: '/kendaraan' }
             ]
         },
         {
@@ -75,8 +75,8 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Audit Logs', icon: '<i class="fas fa-history"></i>', href: '/audit-logs.html' },
-                { label: 'Storage Handler', icon: '<i class="fas fa-database"></i>', href: '/storage-handler.html' }
+                { label: 'Audit Logs', icon: '<i class="fas fa-history"></i>', href: '/logs' },
+                { label: 'Storage Handler', icon: '<i class="fas fa-database"></i>', href: '/penyimpanan' }
             ]
         }
     ];

@@ -511,6 +511,82 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
+// ============================================================
+// NEW CLEAN ROUTES
+// ============================================================
+
+// Dashboard
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'dashboard.html'));
+});
+
+// Notifications (WhatsApp)
+app.get('/notifikasi', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'whatsapp-messages.html'));
+});
+
+// Support
+app.get('/support/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));
+});
+
+// Support Ticket Detail (with ID param)
+app.get('/support/ticket', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'support-ticket-detail-moderator.html'));
+});
+
+// Upload Routes
+app.get('/excel', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-excel.html'));
+});
+
+app.get('/invoice', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-invoice-pdf.html'));
+});
+
+app.get('/buktibayar', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-bukti-bayar.html'));
+});
+
+app.get('/fakturpajak', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-faktur-pajak.html'));
+});
+
+// Tools
+app.get('/renamefaktur', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
+});
+
+// Management
+app.get('/user', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'users.html'));
+});
+
+app.get('/toko', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'tokos.html'));
+});
+
+app.get('/zona', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'zonas.html'));
+});
+
+app.get('/kendaraan', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'kendaraan-dashboard.html'));
+});
+
+// System
+app.get('/logs', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'audit-logs.html'));
+});
+
+app.get('/penyimpanan', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'storage-handler.html'));
+});
+
+// ============================================================
+// LEGACY ROUTES (for backward compatibility)
+// ============================================================
+
 app.get('/upload-invoice', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'upload-invoice-pdf.html'));
 });
