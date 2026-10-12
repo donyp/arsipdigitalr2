@@ -8,6 +8,17 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 
 /**
+ * Format bytes to human readable format
+ */
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+/**
  * Get CPU usage percentage
  */
 function getCPUUsage() {
@@ -224,6 +235,31 @@ function registerMonitoringEndpoints(app, auth) {
     // Detailed disk info endpoint
     app.get('/api/monitoring/disk', (req, res) => {
         res.json(getDiskUsage());
+    });
+
+    // Real-time storage stats endpoint
+    app.get('/api/monitoring/storage', (req, res) => {
+        try {
+            const diskUsage = getDiskUsage();
+            const storageStats = {
+                capacity: diskUsage.total,
+                used: diskUsage.used,
+                free: diskUsage.free,
+                percentage: diskUsage.percentage,
+                formattedCapacity: formatBytes(diskUsage.total),
+                formattedUsed: formatBytes(diskUsage.used),
+                formattedFree: formatBytes(diskUsage.free),
+                timestamp: new Date().toISOString(),
+                updated: new Date().toLocaleTimeString()
+            };
+            res.json(storageStats);
+        } catch (error) {
+            console.error('[Monitoring] Error fetching storage stats:', error);
+            res.status(500).json({
+                error: 'Failed to fetch storage stats',
+                details: error.message
+            });
+        }
     });
 
     // Top processes endpoint
