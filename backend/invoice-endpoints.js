@@ -67,14 +67,125 @@ try {
  * Checks for invoice PDF, bukti bayar, and faktur pajak files
  * Returns just the count - does NOT save to database (schema cache broken)
  */
+/**
+ * Batch sync all invoice file counts from invoice_files table
+ * This fixes the mismatch where invoices have PDFs but files_uploaded_count shows 0
+ */
+async function batchSyncAllFileCount(supabaseClient) {
+    try {
+        console.log('[BatchSync] Starting batch file count sync for ALL invoices...');
+        
+        // Get all invoices from invoice_file_list
+        const { data: allInvoices, error: fetchErr } = await supabaseClient
+            .from('invoice_file_list')
+            .select('faktur, keterangan');
+        
+        if (fetchErr) {
+            console.error('[BatchSync] Error fetching invoices:', fetchErr.message);
+            return { success: false, error: fetchErr.message };
+        }
+        
+        console.log(`[BatchSync] Found ${allInvoices?.length || 0} invoices to sync...`);
+        
+        let syncedCount = 0;
+        let correctedCount = 0;
+        let errorCount = 0;
+        const batchSize = 50;
+        
+        // Process in batches to avoid overwhelming the database
+        for (let i = 0; i < (allInvoices?.length || 0); i += batchSize) {
+            const batch = allInvoices.slice(i, i + batchSize);
+            
+            // Process each invoice in parallel within batch
+            const promises = batch.map(async (inv) => {
+                try {
+                    // Get file count from denormalized paths + invoice_files table
+                    const { data: invData, error: dataErr } = await supabaseClient
+                        .from('invoice_file_list')
+                        .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, files_uploaded_count, keterangan')
+                        .eq('faktur', inv.faktur)
+                        .single();
+                    
+                    if (dataErr) return { faktur: inv.faktur, error: true };
+                    
+                    // Count files from denormalized paths
+                    let filesUploaded = 0;
+                    if (invData.invoice_pdf_path) filesUploaded++;
+                    if (invData.bukti_bayar_path) filesUploaded++;
+                    if (invData.faktur_pajak_path) filesUploaded++;
+                    
+                    // Also check invoice_files table
+                    const { data: invoiceFiles, error: filesErr } = await supabaseClient
+                        .from('invoice_files')
+                        .select('file_type')
+                        .eq('faktur', inv.faktur);
+                    
+                    const tableCount = invoiceFiles?.length || 0;
+                    filesUploaded = Math.max(filesUploaded, tableCount);
+                    
+                    const isPPN = invData.keterangan?.toUpperCase() === 'PPN';
+                    const requiredCount = isPPN ? 3 : 2;
+                    const dbCount = invData.files_uploaded_count || 0;
+                    
+                    // Check if update is needed
+                    if (dbCount !== filesUploaded) {
+                        const { error: updateErr } = await supabaseClient
+                            .from('invoice_file_list')
+                            .update({ 
+                                files_uploaded_count: filesUploaded,
+                                files_required_count: requiredCount,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('faktur', inv.faktur);
+                        
+                        if (!updateErr) {
+                            return { faktur: inv.faktur, corrected: true, old: dbCount, new: filesUploaded };
+                        } else {
+                            return { faktur: inv.faktur, error: true };
+                        }
+                    } else {
+                        return { faktur: inv.faktur, corrected: false, count: filesUploaded };
+                    }
+                } catch (err) {
+                    return { faktur: inv.faktur, error: true, message: err.message };
+                }
+            });
+            
+            const results = await Promise.all(promises);
+            syncedCount += results.length;
+            correctedCount += results.filter(r => r.corrected).length;
+            errorCount += results.filter(r => r.error).length;
+            
+            // Log progress
+            const correctedInBatch = results.filter(r => r.corrected).length;
+            if (correctedInBatch > 0) {
+                console.log(`[BatchSync] Batch ${Math.floor(i / batchSize) + 1}: Fixed ${correctedInBatch} invoices`);
+            }
+        }
+        
+        console.log(`[BatchSync] ✅ Sync complete: ${syncedCount} invoices processed, ${correctedCount} corrected, ${errorCount} errors`);
+        
+        return {
+            success: true,
+            synced: syncedCount,
+            corrected: correctedCount,
+            errors: errorCount,
+            message: `Fixed ${correctedCount} invoices with file count mismatches`
+        };
+    } catch (err) {
+        console.error('[BatchSync] Batch sync error:', err.message);
+        return { success: false, error: err.message };
+    }
+}
+
 async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
     try {
-        console.log(`[UpdateCount] Scanning R2 for files for faktur: ${faktur}...`);
+        console.log(`[UpdateCount] Checking files for faktur: ${faktur}...`);
         
         // Get invoice details from database
         const { data: invoice, error: invError } = await supabaseClient
             .from('invoice_file_list')
-            .select('keterangan, tanggal, toko, faktur_pajak_path')
+            .select('keterangan, tanggal, toko, faktur_pajak_path, invoice_pdf_path, bukti_bayar_path')
             .eq('faktur', faktur)
             .single();
         
@@ -86,6 +197,54 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         if (!invoice || !invoice.tanggal) {
             console.warn(`[UpdateCount] No invoice date found for faktur: ${faktur}`);
             return 0;
+        }
+        
+        // OPTION 1: Check invoice_file_list table directly (fastest, uses denormalized paths)
+        console.log(`[UpdateCount] Checking denormalized file paths in invoice_file_list...`);
+        let filesUploaded = 0;
+        if (invoice.invoice_pdf_path) filesUploaded++;
+        if (invoice.bukti_bayar_path) filesUploaded++;
+        if (invoice.faktur_pajak_path) filesUploaded++;
+        
+        if (filesUploaded > 0) {
+            console.log(`[UpdateCount] ✅ Found ${filesUploaded} files from denormalized paths`);
+            
+            // OPTION 2: As fallback, also check invoice_files table for actual uploads
+            const { data: invoiceFiles, error: filesErr } = await supabaseClient
+                .from('invoice_files')
+                .select('file_type')
+                .eq('faktur', faktur);
+            
+            if (!filesErr && invoiceFiles && invoiceFiles.length > 0) {
+                const actualCount = invoiceFiles.length;
+                console.log(`[UpdateCount] Alternative source - invoice_files table has ${actualCount} files`);
+                // Use the higher of the two counts (in case one source is out of sync)
+                filesUploaded = Math.max(filesUploaded, actualCount);
+            }
+            
+            // Save count to database
+            try {
+                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
+                const requiredCount = isPPN ? 3 : 2;
+                const { error: updateErr } = await supabaseClient
+                    .from('invoice_file_list')
+                    .update({ 
+                        files_uploaded_count: filesUploaded,
+                        files_required_count: requiredCount,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('faktur', faktur);
+                
+                if (updateErr) {
+                    console.warn(`[UpdateCount] Warning: Could not save count to DB:`, updateErr.message);
+                } else {
+                    console.log(`[UpdateCount] ✅ Saved files_uploaded_count=${filesUploaded} to database for faktur ${faktur}`);
+                }
+            } catch (dbErr) {
+                console.warn(`[UpdateCount] DB update attempt failed:`, dbErr.message);
+            }
+            
+            return filesUploaded;
         }
         
         // Parse date from invoice (YYYY-MM-DD format)
@@ -4481,6 +4640,33 @@ function addFileExistenceVerificationEndpoint(app, supabase, createAuth, R2Stora
     );
 }
 
+/**
+ * Add endpoint to manually sync all file counts
+ * POST /api/invoice/batch-sync-file-counts
+ */
+function addBatchSyncEndpoint(app, supabase, createAuth) {
+    app.post('/api/invoice/batch-sync-file-counts',
+        createAuth(['super_admin']),
+        async (req, res) => {
+            try {
+                console.log('[API] Batch sync triggered by super_admin');
+                
+                const result = await batchSyncAllFileCount(supabase);
+                
+                res.json(result);
+                
+            } catch (error) {
+                console.error('[API] Batch sync error:', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Batch sync failed', 
+                    details: error.message 
+                });
+            }
+        }
+    );
+}
+
 // ============================================
 // POST /api/invoice/sync-all-file-counts
 // Manual trigger to sync all invoice file counts NOW
@@ -4528,5 +4714,7 @@ module.exports = {
     registerInvoiceEndpoints, 
     addFileExistenceVerificationEndpoint, 
     addClearFileEndpoint,
-    addManualSyncEndpoint
+    addBatchSyncEndpoint,
+    addManualSyncEndpoint,
+    batchSyncAllFileCount
 };

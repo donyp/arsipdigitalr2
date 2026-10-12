@@ -1369,7 +1369,7 @@ console.log('  �" R2 File Manager (Browse, Upload, Download, Delete, Rename)')
 console.log('[INIT] Registering Phase 2 feature endpoints...');
 const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
-const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
+const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addBatchSyncEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
 const { registerMonitoringEndpoints } = require('./monitoring-endpoints');
 
 // Create auth factory for session endpoints
@@ -1451,6 +1451,7 @@ const createInvoiceAuth = (allowedRoles = null) => {
 };
 registerInvoiceEndpoints(app, supabase, createInvoiceAuth, R2Storage);
 addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, R2Storage);
+addBatchSyncEndpoint(app, supabase, createInvoiceAuth);
 addClearFileEndpoint(app, supabase, createInvoiceAuth);
 addFakturPajakRenameEndpoints(app, supabase, createInvoiceAuth);
 console.log('[INIT] Invoice System endpoints registered ✅');
