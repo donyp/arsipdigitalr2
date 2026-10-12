@@ -474,9 +474,9 @@
                 </div>
 
                 <div class="card">
-                    <div class="card-title">⏱️ Uptime</div>
-                    <div class="card-value" id="uptime">0 days</div>
-                    <div class="card-subtitle">System running</div>
+                    <div class="card-title">⏱️ System Uptime</div>
+                    <div class="card-value" id="uptime" style="font-family: 'Courier New', monospace; font-size: 32px;">00:00:00:00</div>
+                    <div class="card-subtitle">DD:HH:MM:SS</div>
                 </div>
             </div>
 
@@ -753,6 +753,7 @@
         let cpuHistory = [];
         let memHistory = [];
         let netHistory = [];
+        let uptimeInterval = null;
 
         // Tab switching
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -912,6 +913,21 @@
             const days = Math.floor(uptime / 86400);
             const hours = Math.floor((uptime % 86400) / 3600);
             document.getElementById('uptime').textContent = `${days}d ${hours}h`;
+
+            // Start real-time uptime counter
+            if (!uptimeInterval) {
+                let currentUptime = uptime;
+                uptimeInterval = setInterval(() => {
+                    currentUptime++;
+                    const d = Math.floor(currentUptime / 86400);
+                    const h = Math.floor((currentUptime % 86400) / 3600);
+                    const m = Math.floor((currentUptime % 3600) / 60);
+                    const s = currentUptime % 60;
+                    
+                    const formatted = `${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+                    document.getElementById('uptime').textContent = formatted;
+                }, 1000);
+            }
 
             // ===== CPU TAB =====
             document.getElementById('cpuDetailPercent').textContent = cpuPercent + '%';
