@@ -75,6 +75,7 @@
             href: '#',
             isDropdown: true,
             children: [
+                { label: 'Monitoring', icon: '<i class="fas fa-chart-line"></i>', href: '/monitoring' },
                 { label: 'Audit Logs', icon: '<i class="fas fa-history"></i>', href: '/logs' },
                 { label: 'Storage Handler', icon: '<i class="fas fa-database"></i>', href: '/penyimpanan' }
             ]
