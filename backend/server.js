@@ -583,6 +583,11 @@ app.get('/penyimpanan', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'storage-handler.html'));
 });
 
+// Admin Zona Dashboard
+app.get('/zona/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
+});
+
 // ============================================================
 // LEGACY ROUTES (for backward compatibility)
 // ============================================================
@@ -625,11 +630,7 @@ app.get('/upload-faktur-pajak', (req, res) => {
 });
 
 app.get('/dashboard-zona', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
-});
-
-app.get('/zona/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
+    res.redirect(301, '/zona/dashboard');
 });
 
 app.get('/kendaraan', (req, res) => {
