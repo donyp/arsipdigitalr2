@@ -1220,11 +1220,6 @@ try {
     process.exit(1);
 }
 
-} catch (error) {
-    console.error('[INIT] ❌ Failed to initialize authentication:', error.message);
-    process.exit(1);
-}
-
 // ============================================================
 // STORAGE HANDLER ENDPOINTS (Cloudflare R2 File Manager)
 // ============================================================
