@@ -1807,6 +1807,10 @@ app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
             toko: f.toko
         })));
 
+        // Define pagination variables for response
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 50;
+
         res.json({
             files: enrichedData,
             total: count || 0,
