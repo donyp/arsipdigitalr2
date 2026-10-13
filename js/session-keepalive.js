@@ -17,9 +17,9 @@
      */
     window.initializeSessionKeepalive = function() {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             if (!token) {
-                console.warn('[SessionKeepalive] No token found, skipping initialization');
+                console.warn('[SessionKeepalive] No token found (checked jwt_token and token), skipping initialization');
                 return;
             }
 
