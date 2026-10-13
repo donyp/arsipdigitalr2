@@ -171,46 +171,40 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 console.error('[Auth] Failed to log successful login:', logErr.message);
             }
 
-            // Record active session
-            let sessionId = null;
+            // Record active session using jti as session_id
+            let sessionId = jti;
             try {
                 const { data: existing } = await supabase
                     .from('active_sessions')
-                    .select('id')
-                    .eq('user_id', users.id)
-                    .eq('is_valid', true);
+                    .select('session_id')
+                    .eq('session_id', jti);
 
                 if (existing && existing.length > 0) {
                     // Update existing session
-                    sessionId = existing[0].id;
+                    console.log('[Auth] Updating existing session for user:', users.username);
                     await supabase
                         .from('active_sessions')
                         .update({
-                            token_jti: jti,
-                            last_activity: new Date().toISOString(),
-                            ip_address: clientIp,
-                            user_agent: req.headers['user-agent']
+                            last_activity: new Date().toISOString()
                         })
-                        .eq('user_id', users.id)
-                        .eq('is_valid', true);
+                        .eq('session_id', jti);
                 } else {
-                    // Create new session
+                    // Create new session with jti as session_id
+                    console.log('[Auth] Creating new session for user:', users.username);
                     const { data: newSession, error: insertError } = await supabase
                         .from('active_sessions')
                         .insert([{
+                            session_id: jti,
                             user_id: users.id,
-                            username: users.username,
-                            user_role: users.role,
-                            token_jti: jti,
-                            ip_address: clientIp,
-                            user_agent: req.headers['user-agent'],
-                            is_valid: true,
-                            maintenance_forced_logout: false
+                            last_activity: new Date().toISOString()
                         }])
-                        .select('id');
+                        .select('session_id');
                     
-                    if (newSession && newSession.length > 0) {
-                        sessionId = newSession[0].id;
+                    if (insertError) {
+                        console.error('[Auth] Session insert error:', insertError.message);
+                    } else if (newSession && newSession.length > 0) {
+                        sessionId = newSession[0].session_id;
+                        console.log('[Auth] Session created with ID:', sessionId);
                     }
                 }
             } catch (sessionErr) {
