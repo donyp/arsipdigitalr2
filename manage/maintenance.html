@@ -528,7 +528,7 @@
         })();
 
         // Token management
-        const getToken = () => localStorage.getItem('token');
+        const getToken = () => localStorage.getItem('jwt_token') || localStorage.getItem('token');
         
         const showMessage = (type, message) => {
             const container = document.getElementById(`${type}Message`);
