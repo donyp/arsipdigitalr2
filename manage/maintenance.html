@@ -586,8 +586,8 @@
                 countdownWarning.style.display = 'none';
             }
 
+            // Only load active sessions (access logs will be lazy-loaded)
             loadActiveSessions();
-            loadAccessLogs();
         };
 
         const updateCountdown = (estimatedEnd) => {
@@ -828,8 +828,11 @@
         // Initial load
         loadMaintenanceStatus();
 
-        // Refresh status every 10 seconds
-        setInterval(loadMaintenanceStatus, 10000);
+        // Refresh status every 30 seconds (instead of 10 to reduce API load)
+        setInterval(loadMaintenanceStatus, 30000);
+        
+        // Load access logs on first render (lazy-loaded, not on auto-refresh)
+        loadAccessLogs();
     </script>
 </body>
 </html>
