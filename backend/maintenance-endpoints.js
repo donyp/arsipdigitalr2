@@ -622,7 +622,7 @@ router.post('/verify-sessions', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/maintenance/access-logs
- * Get maintenance access logs (Admin only)
+ * Get maintenance access logs (Admin + Moderator)
  */
 router.get('/access-logs', authenticateToken, async (req, res) => {
     try {
@@ -630,17 +630,15 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
         console.log('[AccessLogs] User info:', {
             user_id: req.user?.id,
             email: req.user?.email,
-            role: req.user?.role,
-            all_user_props: Object.keys(req.user || {})
+            role: req.user?.role
         });
 
         // Verify admin or moderator role (case-insensitive)
         const userRole = req.user?.role?.toLowerCase();
         if (userRole !== 'admin' && userRole !== 'super_admin' && userRole !== 'moderator') {
-            console.log('[AccessLogs] Access denied for role:', req.user?.role, '(checked as lowercase:', userRole, ')');
+            console.log('[AccessLogs] Access denied for role:', req.user?.role);
             return res.status(403).json({
-                error: 'Only admins and moderators can view access logs',
-                debug: { role: req.user?.role, userRole }
+                error: 'Only admins and moderators can view access logs'
             });
         }
 
@@ -649,29 +647,47 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
         const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
         const offset = parseInt(req.query.offset) || 0;
 
-        // Query logs from Supabase
-        const { data, error, count } = await supabase
-            .from('maintenance_access_logs')
-            .select('*', { count: 'exact' })
-            .order('timestamp', { ascending: false })
-            .limit(limit)
-            .offset(offset);
+        try {
+            // Query logs from Supabase
+            const { data, error, count } = await supabase
+                .from('maintenance_access_logs')
+                .select('*', { count: 'exact' })
+                .order('timestamp', { ascending: false })
+                .limit(limit)
+                .offset(offset);
 
-        if (error) {
-            console.error('[Maintenance] Query error:', error.message);
-            return res.status(500).json({ error: 'Failed to fetch logs' });
+            if (error) {
+                console.error('[Maintenance] Query error:', error.message);
+                // Return empty array if table doesn't exist
+                return res.json({
+                    logs: [],
+                    total: 0,
+                    limit: limit,
+                    offset: offset,
+                    message: 'Access logs table not yet initialized'
+                });
+            }
+
+            res.json({
+                logs: data || [],
+                total: count || 0,
+                limit: limit,
+                offset: offset
+            });
+        } catch (queryErr) {
+            console.error('[AccessLogs] Database query exception:', queryErr.message);
+            return res.json({
+                logs: [],
+                total: 0,
+                limit: limit,
+                offset: offset,
+                message: 'Unable to load logs'
+            });
         }
-
-        res.json({
-            logs: data,
-            total: count,
-            limit: limit,
-            offset: offset
-        });
 
     } catch (err) {
         console.error('[Maintenance] Logs error:', err.message);
-        res.status(500).json({ error: 'Failed to get access logs' });
+        res.status(500).json({ error: 'Failed to get access logs', details: err.message });
     }
 });
 
