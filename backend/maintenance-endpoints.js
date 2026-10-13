@@ -59,6 +59,7 @@ function authenticateToken(req, res, next) {
                 .single();
             
             if (error || !user) {
+                console.error('[Auth] User not found in database:', error?.message, 'for userId:', decoded.sub || decoded.userId);
                 return res.status(403).json({ error: 'Token tidak valid - user tidak ditemukan.' });
             }
 
@@ -72,9 +73,11 @@ function authenticateToken(req, res, next) {
             decoded.zona_id = user.zona_id;
             decoded.permissions = user.permissions || [];
             
+            console.log('[Auth] Token verified for user:', user.email, 'role:', user.role);
             req.user = decoded;
             next();
         } catch (err) {
+            console.error('[Auth] Authentication verification failed:', err.message);
             return res.status(403).json({ error: 'Authentication verification failed.' });
         }
     });
@@ -623,10 +626,20 @@ router.post('/verify-sessions', authenticateToken, async (req, res) => {
  */
 router.get('/access-logs', authenticateToken, async (req, res) => {
     try {
+        // Debug: Log user info
+        console.log('[AccessLogs] User info:', {
+            user_id: req.user?.id,
+            email: req.user?.email,
+            role: req.user?.role,
+            all_user_props: Object.keys(req.user || {})
+        });
+
         // Verify admin role
         if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
+            console.log('[AccessLogs] Access denied for role:', req.user?.role);
             return res.status(403).json({
-                error: 'Only admins and moderators can view access logs'
+                error: 'Only admins and moderators can view access logs',
+                debug: { role: req.user?.role }
             });
         }
 
