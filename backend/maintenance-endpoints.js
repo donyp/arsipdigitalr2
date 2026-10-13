@@ -430,21 +430,23 @@ router.put('/active-sessions/:sessionId/update-activity', async (req, res) => {
     try {
         console.log('[MAINTENANCE-ENDPOINT] PUT /active-sessions/:sessionId/update-activity reached');
         const { sessionId } = req.params;
+        console.log('[MAINTENANCE-ENDPOINT] sessionId:', sessionId);
         
-        // Check if session exists - query with minimal columns
+        // Check if session exists using correct column name: session_id
         const { data: session, error: queryError } = await supabase
             .from('active_sessions')
-            .select('id')
-            .eq('id', sessionId)
+            .select('session_id')
+            .eq('session_id', sessionId)
             .maybeSingle();
 
         console.log('[MAINTENANCE-ENDPOINT] Query result:', { exists: !!session, queryError: queryError?.message });
 
         if (!session) {
-            // Create new session - use ONLY id and user_id (must-have columns)
+            // Create new session - use CORRECT column names
             const insertData = {
-                id: sessionId,
-                user_id: '00000000-0000-0000-0000-000000000001'
+                session_id: sessionId,
+                user_id: '00000000-0000-0000-0000-000000000001',
+                last_activity: new Date().toISOString()
             };
 
             console.log('[MAINTENANCE-ENDPOINT] Creating session:', insertData);
@@ -458,11 +460,22 @@ router.put('/active-sessions/:sessionId/update-activity', async (req, res) => {
                 return res.status(500).json({ error: insertError.message });
             }
 
-            console.log('[MAINTENANCE-ENDPOINT] Session created');
+            console.log('[MAINTENANCE-ENDPOINT] Session created successfully');
             return res.json({ success: true, created: true, timestamp: new Date().toISOString() });
         }
 
-        // Session exists - just return success
+        // Session exists - update last_activity
+        const { error: updateError } = await supabase
+            .from('active_sessions')
+            .update({ last_activity: new Date().toISOString() })
+            .eq('session_id', sessionId);
+
+        if (updateError) {
+            console.error('[MAINTENANCE-ENDPOINT] Update error:', updateError.message);
+            return res.status(500).json({ error: updateError.message });
+        }
+
+        console.log('[MAINTENANCE-ENDPOINT] Session updated successfully');
         res.json({ success: true, created: false, timestamp: new Date().toISOString() });
 
     } catch (err) {
