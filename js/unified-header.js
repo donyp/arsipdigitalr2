@@ -251,49 +251,60 @@ function goToMaintenance() {
     let userRole = null;
     let debugInfo = {};
     
-    // Try 1: Get from user object in localStorage
-    try {
-        const userObj = localStorage.getItem('user');
-        debugInfo.userObj = userObj ? 'exists' : 'not found';
-        if (userObj) {
-            const user = JSON.parse(userObj);
-            userRole = user.role;
-            debugInfo.userObjRole = user.role;
-            debugInfo.userObjKeys = Object.keys(user);
-        }
-    } catch (err) {
-        console.error('Error parsing user object:', err);
-        debugInfo.userObjError = err.message;
+    // Try 1: Get from global currentUser (primary - used by auth.js)
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.role) {
+        userRole = currentUser.role;
+        debugInfo.currentUserRole = currentUser.role;
+        debugInfo.method = 'currentUser global';
     }
     
-    // Try 2: Get from individual role keys
+    // Try 2: Get from user object in localStorage
+    if (!userRole) {
+        try {
+            const userObj = localStorage.getItem('user');
+            if (userObj) {
+                const user = JSON.parse(userObj);
+                userRole = user.role;
+                debugInfo.localStorageUserRole = user.role;
+                debugInfo.method = 'localStorage user object';
+            }
+        } catch (err) {
+            console.error('Error parsing user object:', err);
+            debugInfo.userObjError = err.message;
+        }
+    }
+    
+    // Try 3: Get from individual role keys
     if (!userRole) {
         const userRole1 = localStorage.getItem('userRole');
         const userRole2 = localStorage.getItem('user_role');
-        debugInfo.userRoleKey = userRole1 || 'not found';
-        debugInfo.user_roleKey = userRole2 || 'not found';
         userRole = userRole1 || userRole2;
+        if (userRole) {
+            debugInfo.method = 'localStorage userRole keys';
+            debugInfo.foundKey = userRole1 ? 'userRole' : 'user_role';
+        }
     }
     
-    // Try 3: Get from session storage
+    // Try 4: Get from session storage
     if (!userRole) {
         const sessionRole = sessionStorage.getItem('userRole');
-        debugInfo.sessionRole = sessionRole || 'not found';
         userRole = sessionRole;
+        if (userRole) {
+            debugInfo.method = 'sessionStorage';
+        }
     }
     
-    // Try 4: Decode from JWT token
+    // Try 5: Decode from JWT token
     if (!userRole) {
         try {
             const token = localStorage.getItem('token');
-            debugInfo.token = token ? 'exists' : 'not found';
             if (token) {
                 const parts = token.split('.');
                 if (parts.length === 3) {
                     const payload = JSON.parse(atob(parts[1]));
                     userRole = payload.role;
                     debugInfo.tokenRole = payload.role;
-                    debugInfo.tokenKeys = Object.keys(payload);
+                    debugInfo.method = 'JWT token';
                 }
             }
         } catch (err) {
@@ -304,7 +315,7 @@ function goToMaintenance() {
     
     console.log('[Maintenance] Debug Info:', debugInfo);
     console.log('[Maintenance] Current user role:', userRole);
-    console.log('[Maintenance] All localStorage keys:', Object.keys(localStorage));
+    console.log('[Maintenance] currentUser global:', typeof currentUser !== 'undefined' ? currentUser : 'undefined');
     
     // Allow admin, super_admin, and moderator
     const allowedRoles = ['admin', 'super_admin', 'moderator'];
@@ -327,7 +338,7 @@ function showMaintenanceAccessDenied(userRole, debugInfo) {
             icon: 'warning',
             title: 'Akses Ditolak',
             text: message,
-            footer: `Debug: ${JSON.stringify(debugInfo).substring(0, 100)}...`,
+            footer: `Method: ${debugInfo.method || 'unknown'}`,
             confirmButtonText: 'OK',
             confirmButtonColor: '#667eea'
         });
