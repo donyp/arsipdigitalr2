@@ -377,19 +377,29 @@ router.get('/active-sessions', authenticateToken, async (req, res) => {
         }
 
         // Query active sessions directly from database (authoritative source)
+        console.log('[Maintenance] Querying active_sessions with is_valid=true filter');
+        
+        // Try without filter first to see if table is accessible
+        const { data: allSessions, error: allError, count: allCount } = await supabase
+            .from('active_sessions')
+            .select('*', { count: 'exact' });
+        
+        console.log('[Maintenance] All sessions (no filter):', { allCount, allError: allError?.message });
+        
+        // Now try with filter
         const { data: sessions, error, count } = await supabase
             .from('active_sessions')
             .select('*', { count: 'exact' })
             .eq('is_valid', true)
             .order('last_activity', { ascending: false })
-            .limit(100); // Only fetch latest 100 sessions for dashboard
+            .limit(100);
 
         if (error) {
             console.error('[Maintenance] Query error:', error.message);
             return res.status(500).json({ error: 'Failed to fetch active sessions' });
         }
 
-        console.log('[Maintenance] Active sessions query result:', { count, sessionsCount: sessions?.length, firstSession: sessions?.[0] });
+        console.log('[Maintenance] Active sessions (is_valid=true):', { count, sessionsCount: sessions?.length, firstSession: sessions?.[0] });
 
         // Transform session data for display
         const transformedSessions = (sessions || []).map(session => ({
