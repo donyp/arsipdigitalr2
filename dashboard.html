@@ -2786,16 +2786,14 @@
                 */
                 
                 // Initialize invoice system with role-based filters (ALWAYS call this)
-                setTimeout(async () => {
-                    
-                    if (typeof initInvoiceSystem === 'function') {
-                        await initInvoiceSystem();
-                    } else {
-                    }
-                    
-                    // DO NOT auto-load invoices here - wait for user to filter tahun/bulan first
-                    // Data will be loaded when user clicks "Terapkan Filter" button
-                }, 500);
+                // Removed 500ms delay - initialize immediately instead of adding artificial delay
+                if (typeof initInvoiceSystem === 'function') {
+                    await initInvoiceSystem();
+                } else {
+                }
+                
+                // DO NOT auto-load invoices here - wait for user to filter tahun/bulan first
+                // Data will be loaded when user clicks "Terapkan Filter" button
             } catch (error) {
             }
         });
