@@ -94,14 +94,33 @@ async function initAuth(requiredRole = null) {
 
 // ---- Login with Email & Password via Backend JWT ----
 async function loginWithCredentials(email, password) {
-    const { token, user } = await API.post('/api/auth/login', {
+    const response = await API.post('/api/auth/login', {
         email,
         password,
         session_id: API.getSessionId()
     });
 
+    const { token, user, sessionId } = response;
+
     // Store JWT + user in localStorage
     API.setAuth(token, user);
+
+    // Store session ID for keep-alive
+    if (sessionId) {
+        if (typeof setSessionId === 'function') {
+            setSessionId(sessionId);
+            console.log('[Auth] Session ID stored and keep-alive initialized');
+        } else {
+            localStorage.setItem('current_session_id', sessionId);
+            console.log('[Auth] Session ID stored to localStorage');
+        }
+    }
+
+    // Initialize keep-alive pinging if available
+    if (typeof initializeSessionKeepalive === 'function') {
+        initializeSessionKeepalive();
+        console.log('[Auth] Session keep-alive initialized');
+    }
 
     // Create session for device tracking
     try {
@@ -139,6 +158,14 @@ async function logout() {
 
     // If user confirmed logout
     if (result.isConfirmed) {
+        // Stop session keep-alive first
+        if (typeof stopSessionKeepalive === 'function') {
+            stopSessionKeepalive();
+        }
+        if (typeof clearSessionId === 'function') {
+            clearSessionId();
+        }
+
         try {
             // Fire-and-forget: Log logout for audit trail (don't wait for response)
             const sessionToken = localStorage.getItem('sessionToken');
@@ -154,6 +181,7 @@ async function logout() {
         localStorage.removeItem('sessionToken');
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('current_session_id');
         currentUser = null;
         
         // Redirect immediately (session invalidation happens server-side)
