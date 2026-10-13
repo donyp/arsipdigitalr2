@@ -147,19 +147,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
     
+    // ===== PERFORMANCE TIMING FOR DASHBOARD INIT =====
+    const initStart = performance.now();
+    const timers = {};
+    
+    function logTiming(name, startTime) {
+        const duration = performance.now() - startTime;
+        timers[name] = duration;
+        console.log(`[PERF] ${name}: ${duration.toFixed(2)}ms`);
+    }
+    
     setCurrentDate();
+    
+    let t1 = performance.now();
     await loadZonas();
+    logTiming('loadZonas', t1);
     
     // NEW DASHBOARD: Skip populateFilters and loadArchives - only load stats
     
     // populateFilters(); // DISABLED
     // await loadArchives(); // DISABLED
     
-    
+    let t2 = performance.now();
     await loadNotifications();
+    logTiming('loadNotifications', t2);
     // await loadBroadcast(); // Removed: now handled globally by sidebar.js
 
+    let t3 = performance.now();
     await loadStorageStats();
+    logTiming('loadStorageStats', t3);
 
     // Admin controls only for super admin
     if (hasPermission('view_dashboard_stats')) {
@@ -214,6 +230,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             notifMenu?.classList.add('invisible', 'opacity-0', 'translate-y-2');
         }
     });
+
+    const totalTime = performance.now() - initStart;
+    console.log(`[PERF] ===== DASHBOARD INIT COMPLETE =====`);
+    console.log(`[PERF] Total initialization time: ${totalTime.toFixed(2)}ms`);
+    console.log(`[PERF] Timing breakdown:`, timers);
 
     } catch (err) {
         if (window.Toast) {
