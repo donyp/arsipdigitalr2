@@ -9,7 +9,15 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { supabase } = require('./supabase-client');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+  {
+    realtime: { mode: 'manual' }
+  }
+);
 
 const MAINTENANCE_FILE = path.join(__dirname, '../data/maintenance-status.json');
 const ACTIVE_SESSIONS_FILE = path.join(__dirname, '../data/active-sessions.json');
