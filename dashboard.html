@@ -978,6 +978,33 @@
             transition: filter 0.5s ease-out;
         }
 
+        /* STAT CARD STYLE OVERRIDES - Light/Dark Mode Support */
+        /* Override hardcoded dark colors in stat cards */
+        div[style*="min-height: 80px"] {
+            background: var(--color-bg-secondary) !important;
+            border: 1px solid var(--color-border) !important;
+            transition: background 0.15s ease, border-color 0.15s ease !important;
+        }
+
+        div[style*="min-height: 80px"] > div > div:first-child {
+            color: var(--color-text-primary) !important;
+        }
+
+        div[style*="min-height: 80px"] > div > div:last-child {
+            color: var(--color-text-secondary) !important;
+        }
+
+        /* TABLE HEADER LIGHT MODE FIX */
+        /* Override hardcoded table header color in light mode */
+        :root:not([data-dark-mode="true"]) th[style*="color: #667eea"] {
+            color: var(--color-primary) !important;
+        }
+
+        :root:not([data-dark-mode="true"]) .invoice-table thead {
+            background: linear-gradient(135deg, var(--color-bg-secondary), var(--color-bg-secondary)) !important;
+            border-bottom: 3px solid rgba(102, 126, 234, 0.2) !important;
+        }
+
         .loader-content {
             text-align: center;
             color: white;

@@ -125,6 +125,15 @@
     // Add no-transition class initially to prevent flashing on load
     document.documentElement.classList.add('no-transition');
     
+    // Create early-loading style for header to show blur from start
+    const earlyBlurStyle = document.createElement('style');
+    earlyBlurStyle.textContent = `
+        #unified-header {
+            filter: blur(8px) !important;
+        }
+    `;
+    document.head.appendChild(earlyBlurStyle);
+    
     // Initialize dark mode on page load
     if (localStorage.getItem('dark_mode_enabled') === 'true') {
         document.documentElement.setAttribute('data-dark-mode', 'true');
@@ -133,18 +142,23 @@
         window.applyDarkModeInlineStyles(false);
     }
     
-    // Remove no-transition class and add with-transitions after page load to enable transitions
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                document.documentElement.classList.remove('no-transition');
-                document.documentElement.classList.add('with-transitions');
-            }, 50);
-        });
+    // Remove early blur and no-transition class after page loads
+    const removeBlurOnLoad = () => {
+        // Remove blur from header when page loads
+        const header = document.getElementById('unified-header');
+        if (header) {
+            header.style.filter = 'blur(0px)';
+        }
+        // Remove the early blur style
+        earlyBlurStyle.remove();
+        // Add transitions
+        document.documentElement.classList.remove('no-transition');
+        document.documentElement.classList.add('with-transitions');
+    };
+    
+    if (document.readyState === 'complete') {
+        removeBlurOnLoad();
     } else {
-        setTimeout(() => {
-            document.documentElement.classList.remove('no-transition');
-            document.documentElement.classList.add('with-transitions');
-        }, 50);
+        window.addEventListener('load', removeBlurOnLoad);
     }
 })();
