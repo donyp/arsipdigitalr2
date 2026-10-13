@@ -23,7 +23,7 @@ html.dark-mode {
     --header-text-secondary: #cbd5e1;
 }
 
-/* Main Header Container - spans full width but header content respects sidebar */
+/* Main Header Container - spans full width, aligned with sidebar brand */
 #unified-header {
     position: fixed;
     top: 0;
@@ -34,16 +34,20 @@ html.dark-mode {
     border-bottom: 1px solid var(--header-border);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 12px 32px;
+    padding: 0 32px;
     padding-left: calc(16rem + 32px);
+    height: var(--header-height);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     width: 100%;
     box-sizing: border-box;
+    display: flex;
+    align-items: center;
 }
 
 /* Push content below fixed header */
 #app {
     padding-top: var(--header-height);
+    margin-top: 0;
 }
 
 .unified-header-content {
@@ -51,8 +55,10 @@ html.dark-mode {
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 40px;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: nowrap;
+    width: 100%;
 }
 
 /* Left Section: Greeting */
@@ -80,8 +86,9 @@ html.dark-mode {
 }
 
 .greeting-emoji {
-    font-size: 28px;
+    font-size: 20px;
     animation: wave 2s ease-in-out infinite;
+    display: inline-block;
 }
 
 @keyframes wave {

@@ -145,10 +145,10 @@
         const sidebarHTML = `
             <div class="sidebar-container" style="
                 position: fixed;
-                top: 56px;
+                top: 0;
                 left: 0;
                 width: 16rem;
-                height: calc(100vh - 56px);
+                height: 100vh;
                 background-color: ${colors.bgColor};
                 border-right: 1px solid ${colors.borderColor};
                 display: flex;
