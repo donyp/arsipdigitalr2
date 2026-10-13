@@ -23,11 +23,11 @@ html.dark-mode {
     --header-text-secondary: #cbd5e1;
 }
 
-/* Main Header Container - full height at top, with left padding for sidebar */
+/* Main Header Container - positioned on right side only, below sidebar brand */
 #unified-header {
     position: fixed;
     top: 0;
-    left: 0;
+    left: 16rem;
     right: 0;
     z-index: 9999;
     background: var(--header-bg);
@@ -35,10 +35,9 @@ html.dark-mode {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 0 32px;
-    padding-left: calc(16rem + 32px);
     height: 56px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    width: 100%;
+    width: auto;
     box-sizing: border-box;
     display: flex;
     align-items: center;
