@@ -182,15 +182,19 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 if (existing && existing.length > 0) {
                     // Update existing session
                     console.log('[Auth] Updating existing session for user:', users.username);
-                    await supabase
+                    const { error: updateErr } = await supabase
                         .from('active_sessions')
                         .update({
                             last_activity: new Date().toISOString()
                         })
                         .eq('session_id', jti);
+                    
+                    if (updateErr) {
+                        console.error('[Auth] Session update error:', updateErr.message, updateErr.details);
+                    }
                 } else {
                     // Create new session with jti as session_id
-                    console.log('[Auth] Creating new session for user:', users.username);
+                    console.log('[Auth] Creating new session for user:', users.username, 'with session_id:', jti, 'user_id:', users.id);
                     const { data: newSession, error: insertError } = await supabase
                         .from('active_sessions')
                         .insert([{
@@ -202,14 +206,21 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                         .select('session_id');
                     
                     if (insertError) {
-                        console.error('[Auth] Session insert error:', insertError.message);
+                        console.error('[Auth] Session insert FAILED:', {
+                            message: insertError.message,
+                            details: insertError.details,
+                            hint: insertError.hint,
+                            code: insertError.code
+                        });
                     } else if (newSession && newSession.length > 0) {
                         sessionId = newSession[0].session_id;
-                        console.log('[Auth] Session created with ID:', sessionId);
+                        console.log('[Auth] ✅ Session created successfully with ID:', sessionId);
+                    } else {
+                        console.warn('[Auth] Session insert returned no data');
                     }
                 }
             } catch (sessionErr) {
-                console.error('[Auth] Failed to record session:', sessionErr.message);
+                console.error('[Auth] Session record exception:', sessionErr.message, sessionErr.stack);
             }
 
             return res.json({
