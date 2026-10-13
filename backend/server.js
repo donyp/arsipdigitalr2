@@ -1673,11 +1673,28 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 app.post('/api/logout', authenticateToken, async (req, res) => {
     try {
         const { session_id } = req.body;
-        if (session_id) {
-            await supabase.from('user_sessions').delete().eq('session_token', session_id);
+        const jti = req.user.jti;  // JTI from JWT token
+        
+        console.log('[LOGOUT] Processing logout for user:', req.user.email, 'session_id:', session_id, 'jti:', jti);
+        
+        // Invalidate session in active_sessions table using session_id (which is the JTI)
+        if (session_id || jti) {
+            const sessionIdentifier = session_id || jti;
+            const { error } = await supabase
+                .from('active_sessions')
+                .update({ is_valid: false })
+                .eq('session_id', sessionIdentifier);
+            
+            if (error) {
+                console.error('[LOGOUT] Error invalidating session:', error.message);
+            } else {
+                console.log('[LOGOUT] Session invalidated successfully:', sessionIdentifier);
+            }
         }
-        res.json({ success: true });
+        
+        res.json({ success: true, message: 'Logout berhasil' });
     } catch (err) {
+        console.error('[LOGOUT] Error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

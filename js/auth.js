@@ -167,11 +167,40 @@ async function logout() {
         }
 
         try {
-            // Fire-and-forget: Log logout for audit trail (don't wait for response)
+            // Get JTI from token before clearing
+            const token = localStorage.getItem('jwt_token');
+            let jti = null;
+            
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    jti = payload.jti;
+                    console.log('[Logout] JTI from token:', jti);
+                } catch (e) {
+                    console.log('[Logout] Could not decode JWT:', e.message);
+                }
+            }
+            
+            // Fire-and-forget: Log logout for audit trail + invalidate session
             const sessionToken = localStorage.getItem('sessionToken');
             API.post('/api/auth/logout', { sessionToken: sessionToken }).catch(() => {
                 // Silent fail - we're logging out anyway
             });
+            
+            // Invalidate session in active_sessions table
+            if (jti) {
+                fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ session_id: jti })
+                }).catch(err => {
+                    console.error('[Logout] Error invalidating session:', err);
+                    // Continue anyway - don't block logout
+                });
+            }
         } catch (_) {
             // Ignore
         }
@@ -182,6 +211,7 @@ async function logout() {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('current_session_id');
+        localStorage.removeItem('jwt_token');
         currentUser = null;
         
         // Redirect immediately (session invalidation happens server-side)

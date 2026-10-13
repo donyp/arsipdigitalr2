@@ -3094,7 +3094,7 @@
         // ============================================
         // LOGOUT
         // ============================================
-        function logout() {
+        async function logout() {
             // Determine current theme
             const isDarkMode = document.body.classList.contains('dark-mode');
             
@@ -3125,14 +3125,62 @@
                         }
                     }
                 }
-            }).then((result) => {
+            }).then(async (result) => {
                 if (result.isConfirmed) {
-                    localStorage.removeItem('jwt_token');
-                    localStorage.removeItem('currentUser');
-                    localStorage.removeItem('sessionToken');
-                    localStorage.removeItem('user_data');
-                    localStorage.removeItem('device_session_id');
-                    window.location.href = '/login';
+                    try {
+                        // Get JTI from token before clearing
+                        const token = localStorage.getItem('jwt_token');
+                        let jti = null;
+                        
+                        if (token) {
+                            try {
+                                const payload = JSON.parse(atob(token.split('.')[1]));
+                                jti = payload.jti;
+                            } catch (e) {
+                                console.log('[Logout] Could not decode JWT:', e.message);
+                            }
+                        }
+                        
+                        console.log('[Logout] Invalidating session with JTI:', jti);
+                        
+                        // Call logout endpoint to invalidate session in database
+                        await fetch('/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ session_id: jti })
+                        }).catch(err => {
+                            console.error('[Logout] Error calling logout endpoint:', err);
+                            // Continue anyway - don't block logout on API error
+                        });
+                        
+                        // Clear local storage
+                        localStorage.removeItem('jwt_token');
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('sessionToken');
+                        localStorage.removeItem('user_data');
+                        localStorage.removeItem('device_session_id');
+                        
+                        // Stop keep-alive if running
+                        if (window.sessionKeepaliveInterval) {
+                            clearInterval(window.sessionKeepaliveInterval);
+                            console.log('[Logout] Stopped session keep-alive');
+                        }
+                        
+                        console.log('[Logout] Redirect to login');
+                        window.location.href = '/login';
+                    } catch (err) {
+                        console.error('[Logout] Error:', err);
+                        // Fallback: just clear and redirect
+                        localStorage.removeItem('jwt_token');
+                        localStorage.removeItem('currentUser');
+                        localStorage.removeItem('sessionToken');
+                        localStorage.removeItem('user_data');
+                        localStorage.removeItem('device_session_id');
+                        window.location.href = '/login';
+                    }
                 }
             });
         }

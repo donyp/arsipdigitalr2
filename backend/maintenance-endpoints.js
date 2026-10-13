@@ -730,12 +730,13 @@ router.get('/forced-logouts', authenticateToken, async (req, res) => {
 /**
  * POST /api/maintenance/logout-non-moderators
  * Force logout all non-moderators (called automatically when maintenance starts)
+ * Allows: admin, super_admin, moderator
  */
 router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
     try {
-        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
             return res.status(403).json({
-                error: 'Only admins can trigger forced logouts'
+                error: 'Only admins and moderators can trigger forced logouts'
             });
         }
 
