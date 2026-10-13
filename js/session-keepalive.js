@@ -30,7 +30,8 @@
             }
 
             if (!sessionId) {
-                console.warn('[SessionKeepalive] No session ID found');
+                console.warn('[SessionKeepalive] No session ID found in localStorage or sessionStorage');
+                console.warn('[SessionKeepalive] Available localStorage keys:', Object.keys(localStorage).filter(k => k.includes('session') || k.includes('token') || k.includes('jwt')));
                 return;
             }
 
