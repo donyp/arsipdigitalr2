@@ -32,7 +32,16 @@
             if (!sessionId) {
                 console.warn('[SessionKeepalive] No session ID found in localStorage or sessionStorage');
                 console.warn('[SessionKeepalive] Available localStorage keys:', Object.keys(localStorage).filter(k => k.includes('session') || k.includes('token') || k.includes('jwt')));
-                return;
+                
+                // FALLBACK: Extract JTI from token
+                try {
+                    const decoded = JSON.parse(atob(token.split('.')[1]));
+                    sessionId = decoded.jti || 'session-' + Date.now();
+                    console.log('[SessionKeepalive] Using fallback session ID from token JTI:', sessionId);
+                } catch (e) {
+                    sessionId = 'session-' + Date.now();
+                    console.log('[SessionKeepalive] Using fallback session ID (generated):', sessionId);
+                }
             }
 
             // Clear previous interval if any
