@@ -145,15 +145,15 @@
         const sidebarHTML = `
             <div class="sidebar-container" style="
                 position: fixed;
-                top: 0;
+                top: 70px;
                 left: 0;
                 width: 16rem;
-                height: 100vh;
+                height: calc(100vh - 70px);
                 background-color: ${colors.bgColor};
                 border-right: 1px solid ${colors.borderColor};
                 display: flex;
                 flex-direction: column;
-                z-index: 9999;
+                z-index: 1000;
                 overflow: hidden;
                 transition: background-color 0.3s ease, border-color 0.3s ease;
             ">

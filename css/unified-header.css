@@ -353,14 +353,6 @@ html.dark-mode {
     height: calc(100vh - var(--header-height)) !important;
 }
 
-/* Main content adjustment */
-#main-content,
-[id*="main"],
-main {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-
 /* Light Mode Support */
 @media (prefers-color-scheme: light) {
     :root:not(.dark-mode) {
