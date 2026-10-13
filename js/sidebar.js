@@ -200,12 +200,12 @@
                     ${menuHTML}
                 </nav>
 
-                <!-- Quick Actions Footer -->
+                <!-- Quick Actions Footer - HIDDEN: Moved to unified header -->
                 <div style="
                     padding: 0.8rem 0.6rem;
                     border-top: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
-                    display: flex;
+                    display: none;
                     gap: 0.4rem;
                 ">
                     <button onclick="logout()" title="Logout" style="
