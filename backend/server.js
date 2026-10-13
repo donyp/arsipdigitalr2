@@ -7648,6 +7648,17 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         });
 
         // ============================================================
+        // Maintenance Mode Routes
+        // ============================================================
+        try {
+            const maintenanceRoutes = require('./maintenance-endpoints');
+            app.use('/api/maintenance', maintenanceRoutes);
+            console.log('[Routes] Maintenance endpoints registered');
+        } catch (err) {
+            console.error('[Routes] Failed to register maintenance endpoints:', err.message);
+        }
+
+        // ============================================================
         // Fleet Management Routes
         // ============================================================
         const fleetRoutes = require('./fleet-management-endpoints');
