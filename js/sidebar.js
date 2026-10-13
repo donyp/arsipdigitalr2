@@ -540,7 +540,7 @@
             .sidebar-child-item.active::before {
                 content: '';
                 position: absolute;
-                right: -8px;
+                right: 8px;
                 top: 50%;
                 transform: translateY(-50%);
                 width: 8px;
