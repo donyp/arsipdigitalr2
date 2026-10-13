@@ -1683,6 +1683,7 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
 
 // GET /api/files â€” list files (auto-filtered by zona for admin_zona)
 app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
+    const startTime = performance.now();
     try {
         if (LOG_LEVEL === "debug") console.log(`[/api/files] User role: ${req.user.role}, zona_id: ${req.user.zona_id}`);
         if (LOG_LEVEL === "debug") console.log(`[/api/files] Query params:`, { category: req.query.category, tipe_ppn: req.query.tipe_ppn, zona_id: req.query.zona_id });
@@ -1808,9 +1809,13 @@ app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
             limit,
             totalPages: Math.ceil((count || 0) / limit)
         });
+        
+        const duration = performance.now() - startTime;
+        console.log(`[API] GET /api/files: ${duration.toFixed(2)}ms (${count || 0} total records)`);
 
     } catch (err) {
-        console.error('List Files Error:', err);
+        const duration = performance.now() - startTime;
+        console.error(`[API] GET /api/files FAILED: ${duration.toFixed(2)}ms -`, err.message);
         res.status(500).json({ error: 'Gagal memuat daftar file.' });
     }
 });
@@ -5816,6 +5821,7 @@ app.get('/api/stats/alist', authenticateToken, async (req, res) => {
 
 // GET /api/stats/storage — storage usage statistics (UPDATED: Google Drive real stats)
 app.get('/api/stats/storage', authenticateToken, async (req, res) => {
+    const startTime = performance.now();
     try {
         console.log('[STATS] Fetching storage stats for user:', req.user.userId);
         // Today's start in local time (then to UTC-like ISO)
@@ -5867,8 +5873,12 @@ app.get('/api/stats/storage', authenticateToken, async (req, res) => {
             today_bytes: todayUsed,
             limit_bytes: 1024 * 1024 * 1024 * 80 // 80 GB (Google Drive)
         });
+        
+        const duration = performance.now() - startTime;
+        console.log(`[API] GET /api/stats/storage: ${duration.toFixed(2)}ms`);
     } catch (err) {
-        console.error('Storage Stats Error:', err);
+        const duration = performance.now() - startTime;
+        console.error(`[API] GET /api/stats/storage FAILED: ${duration.toFixed(2)}ms -`, err.message);
         res.status(500).json({ error: 'Gagal menghitung statistik penyimpanan.' });
     }
 });
@@ -6299,9 +6309,20 @@ app.get('/api/batches/:id/details', authenticateToken, async (req, res) => {
 
 // GET /api/zonas
 app.get('/api/zonas', authenticateToken, async (req, res) => {
-    const { data, error } = await supabase.from('zonas').select('*').order('id');
-    if (error) return res.status(500).json({ error: error.message });
-    res.json({ zonas: data });
+    const startTime = performance.now();
+    try {
+        const { data, error } = await supabase.from('zonas').select('*').order('id');
+        if (error) return res.status(500).json({ error: error.message });
+        
+        const duration = performance.now() - startTime;
+        console.log(`[API] GET /api/zonas: ${duration.toFixed(2)}ms (${data?.length || 0} records)`);
+        
+        res.json({ zonas: data });
+    } catch (err) {
+        const duration = performance.now() - startTime;
+        console.error(`[API] GET /api/zonas FAILED: ${duration.toFixed(2)}ms -`, err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // GET /api/zonas/:id - Get single zone by ID
@@ -7046,6 +7067,7 @@ async function createNotification({ user_id, role, zona_id, title, message, type
 
 // GET /api/notifications
 app.get('/api/notifications', authenticateToken, async (req, res) => {
+    const startTime = performance.now();
     try {
         let query = supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(30);
         let orFilter = `user_id.eq.${req.user.userId},and(user_id.is.null,target_role.is.null)`;
@@ -7056,8 +7078,14 @@ app.get('/api/notifications', authenticateToken, async (req, res) => {
         }
         const { data, error } = await query.or(orFilter);
         if (error) throw error;
+        
+        const duration = performance.now() - startTime;
+        console.log(`[API] GET /api/notifications: ${duration.toFixed(2)}ms (${data?.length || 0} records)`);
+        
         res.json({ notifications: data || [] });
     } catch (err) {
+        const duration = performance.now() - startTime;
+        console.error(`[API] GET /api/notifications FAILED: ${duration.toFixed(2)}ms -`, err.message);
         res.status(500).json({ error: 'Gagal memuat notifikasi.' });
     }
 });

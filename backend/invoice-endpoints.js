@@ -1444,14 +1444,20 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // Get invoice statistics
     // ============================================
     app.get('/api/invoice/stats', createAuth(), async (req, res) => {
+        const startTime = performance.now();
         try {
             const { data, error } = await supabase
                 .rpc('get_invoice_statistics');
             
             if (error) {
                 console.error('[Invoice API] Error fetching stats:', error);
+                const duration = performance.now() - startTime;
+                console.error(`[API] GET /api/invoice/stats FAILED: ${duration.toFixed(2)}ms -`, error.message);
                 return res.status(500).json({ error: 'Failed to fetch statistics' });
             }
+            
+            const duration = performance.now() - startTime;
+            console.log(`[API] GET /api/invoice/stats: ${duration.toFixed(2)}ms`);
             
             res.json({
                 success: true,
@@ -1459,7 +1465,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             });
             
         } catch (error) {
-            console.error('[Invoice API] Stats error:', error);
+            const duration = performance.now() - startTime;
+            console.error(`[API] GET /api/invoice/stats FAILED: ${duration.toFixed(2)}ms -`, error.message);
             res.status(500).json({ error: 'Server error' });
         }
     });

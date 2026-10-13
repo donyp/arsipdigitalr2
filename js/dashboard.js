@@ -1786,8 +1786,21 @@ async function deleteBroadcast(id) {
 // ---- Storage Stats ----
 async function loadStorageStats() {
     try {
-        // UPDATED: Google Drive storage + New Invoice System
-        const stats = await API.get('/api/stats/storage');
+        // OPTIMIZATION: Parallelize all 3 API calls instead of sequential
+        const [stats, filesResponse, invoiceStatsResponse] = await Promise.all([
+            API.get('/api/stats/storage').catch(err => {
+                console.warn('[loadStorageStats] Failed to load stats/storage:', err);
+                return null;
+            }),
+            API.get('/api/files').catch(err => {
+                console.warn('[loadStorageStats] Failed to load files:', err);
+                return null;
+            }),
+            API.get('/api/invoice/stats').catch(err => {
+                console.warn('[loadStorageStats] Failed to load invoice/stats:', err);
+                return null;
+            })
+        ]);
 
         // 1. Storage usage (from database/Google Drive)
         if (stats) {
@@ -1818,53 +1831,47 @@ async function loadStorageStats() {
         }
 
         // 3. Total Arsip Invoice Merah — dari Database (files table)
-        const invoiceEl = document.getElementById('stat-invoice');
-        try {
-            const response = await API.get('/api/files');
-            const invoiceCount = response.total || 0;
+        if (filesResponse) {
+            const invoiceEl = document.getElementById('stat-invoice');
+            const invoiceCount = filesResponse.total || 0;
             if (invoiceEl) {
                 invoiceEl.textContent = invoiceCount.toLocaleString('id-ID');
                 _alistInvoiceLoaded = true;
             }
-        } catch (err) {
         }
 
-        // 4. NEW: Invoice System Statistics (from invoice_file_list table)
-        try {
-            const invoiceStats = await API.get('/api/invoice/stats');
-            if (invoiceStats && invoiceStats.stats) {
-                const { total_count, uploaded_count, pending_count } = invoiceStats.stats;
-                
-                // Update stat cards in stats-grid
-                const invoiceNewEl = document.getElementById('stat-invoice-new');
-                if (invoiceNewEl) {
-                    invoiceNewEl.textContent = (total_count || 0).toLocaleString('id-ID');
-                }
-                
-                const uploadedEl = document.getElementById('stat-invoice-uploaded');
-                if (uploadedEl) {
-                    uploadedEl.textContent = (uploaded_count || 0).toLocaleString('id-ID');
-                }
-                
-                const pendingEl = document.getElementById('stat-invoice-pending');
-                if (pendingEl) {
-                    pendingEl.textContent = (pending_count || 0).toLocaleString('id-ID');
-                }
-
-                // Update quick stats in main dashboard card
-                const quickTotal = document.getElementById('quick-stat-total');
-                const quickUploaded = document.getElementById('quick-stat-uploaded');
-                const quickPending = document.getElementById('quick-stat-pending');
-                
-                if (quickTotal) quickTotal.textContent = (total_count || 0).toLocaleString('id-ID');
-                if (quickUploaded) quickUploaded.textContent = (uploaded_count || 0).toLocaleString('id-ID');
-                if (quickPending) quickPending.textContent = (pending_count || 0).toLocaleString('id-ID');
+        // 4. Invoice System Statistics (from invoice_file_list table)
+        if (invoiceStatsResponse && invoiceStatsResponse.stats) {
+            const { total_count, uploaded_count, pending_count } = invoiceStatsResponse.stats;
+            
+            // Update stat cards in stats-grid
+            const invoiceNewEl = document.getElementById('stat-invoice-new');
+            if (invoiceNewEl) {
+                invoiceNewEl.textContent = (total_count || 0).toLocaleString('id-ID');
             }
-        } catch (err) {
-            // Invoice system might not be available yet (dependencies not installed)
+            
+            const uploadedEl = document.getElementById('stat-invoice-uploaded');
+            if (uploadedEl) {
+                uploadedEl.textContent = (uploaded_count || 0).toLocaleString('id-ID');
+            }
+            
+            const pendingEl = document.getElementById('stat-invoice-pending');
+            if (pendingEl) {
+                pendingEl.textContent = (pending_count || 0).toLocaleString('id-ID');
+            }
+
+            // Update quick stats in main dashboard card
+            const quickTotal = document.getElementById('quick-stat-total');
+            const quickUploaded = document.getElementById('quick-stat-uploaded');
+            const quickPending = document.getElementById('quick-stat-pending');
+            
+            if (quickTotal) quickTotal.textContent = (total_count || 0).toLocaleString('id-ID');
+            if (quickUploaded) quickUploaded.textContent = (uploaded_count || 0).toLocaleString('id-ID');
+            if (quickPending) quickPending.textContent = (pending_count || 0).toLocaleString('id-ID');
         }
 
     } catch (err) {
+        console.error('[loadStorageStats] Unexpected error:', err);
     }
 }
 
