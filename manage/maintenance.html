@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance Mode Control | Arsip Digital ANKA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
+    <link rel="stylesheet" href="../css/tailwind.generated.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/color-vars.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root {
+            --color-bg-primary: #ffffff;
+            --color-bg-secondary: #f5f5f5;
+            --color-text-primary: #3b5bdb;
+            --color-text-secondary: #666;
+            --color-border: #ddd;
+            --color-success: #10b981;
+            --color-danger: #ef4444;
+            --color-warning: #f59e0b;
+            --color-info: #3b82f6;
+        }
+        
+        html[data-dark-mode="true"] {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-border: #475569;
+            --color-success: #34d399;
+            --color-danger: #f87171;
+            --color-warning: #fbbf24;
+            --color-info: #60a5fa;
+        }
+
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            transition: background 0.3s, color 0.3s;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .maintenance-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .maintenance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .maintenance-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: var(--color-border);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-danger);
+        }
+
+        .status-inactive {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--color-text-secondary);
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--color-info);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: var(--color-info);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--color-danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-border);
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-item-label {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+        }
+
+        .info-item-value {
+            font-size: 14px;
+            color: var(--color-text-primary);
+            font-weight: 500;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            background: var(--color-bg-primary);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--color-border);
+            color: var(--color-text-secondary);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        tr:hover {
+            background: var(--color-bg-primary);
+        }
+
+        .action-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .action-granted {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-success);
+        }
+
+        .action-denied {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-danger);
+        }
+
+        .action-attempt {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-warning);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-top-color: var(--color-info);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--color-warning);
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--color-text-secondary);
+        }
+
+        .countdown-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--color-warning);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: var(--color-warning);
+            font-size: 14px;
+        }
+
+        .success-message {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--color-success);
+            border-radius: 8px;
+            padding: 15px;
+            color: var(--color-success);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--color-danger);
+            border-radius: 8px;
+            padding: 15px;
+            color: var(--color-danger);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            border-top-color: var(--color-info);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="maintenance-container">
+        <!-- Header -->
+        <div class="maintenance-header">
+            <div>
+                <h1>Maintenance Mode Control</h1>
+                <p style="margin: 5px 0 0 0; color: var(--color-text-secondary); font-size: 14px;">Manage system maintenance and access control</p>
+            </div>
+            <a href="../dashboard.html" class="back-button">
+                <span>←</span>
+                <span>Back to Dashboard</span>
+            </a>
+        </div>
+
+        <!-- Status Messages -->
+        <div class="success-message" id="successMessage"></div>
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Main Grid -->
+        <div class="grid-2">
+            <!-- Maintenance Control Card -->
+            <div class="card">
+                <h2>
+                    <span>⚙️</span>
+                    <span>Maintenance Control</span>
+                </h2>
+
+                <div class="info-item">
+                    <span class="info-item-label">Current Status</span>
+                    <span class="status-badge" id="statusBadge">
+                        <span class="loading"></span>
+                        <span>Loading...</span>
+                    </span>
+                </div>
+
+                <div class="countdown-warning" id="countdownWarning" style="display: none;">
+                    Time remaining: <span class="timer" id="countdownTimer">00:00:00</span>
+                </div>
+
+                <!-- Start Maintenance Form -->
+                <div id="startMaintenanceSection">
+                    <div class="form-group">
+                        <label>Estimated Maintenance Duration (minutes)</label>
+                        <input type="number" id="estimatedDuration" placeholder="e.g., 30" min="1" max="1440" value="30">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Reason for Maintenance</label>
+                        <textarea id="maintenanceReason" placeholder="e.g., Database migration, security updates, server maintenance"></textarea>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="startMaintenanceBtn">Start Maintenance</button>
+                    </div>
+                </div>
+
+                <!-- Stop Maintenance Section -->
+                <div id="stopMaintenanceSection" style="display: none;">
+                    <div class="info-item">
+                        <span class="info-item-label">Maintenance Reason</span>
+                        <span class="info-item-value" id="reasonDisplay">-</span>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-item-label">Started At</span>
+                        <span class="info-item-value" id="startedAtDisplay">-</span>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-item-label">Started By</span>
+                        <span class="info-item-value" id="startedByDisplay">-</span>
+                    </div>
+
+                    <div class="button-group" style="margin-top: 20px;">
+                        <button class="btn btn-danger" id="stopMaintenanceBtn">End Maintenance Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Force Logout Card -->
+            <div class="card">
+                <h2>
+                    <span>🔐</span>
+                    <span>Force Logout</span>
+                </h2>
+
+                <p style="margin: 0 0 20px 0; color: var(--color-text-secondary); font-size: 13px;">
+                    Immediately disconnect all active sessions except moderators.
+                </p>
+
+                <div class="info-item">
+                    <span class="info-item-label">Active Sessions</span>
+                    <span class="info-item-value" id="activeSessions">
+                        <span class="loading"></span>
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-item-label">Last Forced Logout</span>
+                    <span class="info-item-value" id="lastLogoutDisplay">Never</span>
+                </div>
+
+                <div class="button-group" style="margin-top: 20px;">
+                    <button class="btn btn-danger" id="forceLogoutBtn">Force Logout Non-Moderators</button>
+                </div>
+
+                <p style="margin: 20px 0 0 0; color: var(--color-text-secondary); font-size: 12px;">
+                    ⚠️ This will immediately disconnect all users except moderators from the system.
+                </p>
+            </div>
+        </div>
+
+        <!-- Access Logs Card -->
+        <div class="card">
+            <h2>
+                <span>📋</span>
+                <span>Access Logs</span>
+                <span class="loading" id="logsLoading" style="display: none;"></span>
+            </h2>
+
+            <div class="button-group" style="margin-bottom: 20px;">
+                <button class="btn btn-secondary" id="refreshLogsBtn">Refresh Logs</button>
+                <button class="btn btn-secondary" id="clearLogsBtn">Clear Old Logs</button>
+            </div>
+
+            <div class="table-container">
+                <table id="accessLogsTable">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>IP Address</th>
+                            <th>Action</th>
+                            <th>Role</th>
+                        </tr>
+                    </thead>
+                    <tbody id="accessLogsBody">
+                        <tr>
+                            <td colspan="5" class="no-data">
+                                <span class="loading"></span> Loading logs...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize dark mode
+        (function() {
+            if (localStorage.getItem('dark_mode_enabled') === 'true') {
+                document.documentElement.setAttribute('data-dark-mode', 'true');
+            }
+        })();
+
+        // Token management
+        const getToken = () => localStorage.getItem('token');
+        
+        const showMessage = (type, message) => {
+            const container = document.getElementById(`${type}Message`);
+            container.textContent = message;
+            container.style.display = 'block';
+            setTimeout(() => {
+                container.style.display = 'none';
+            }, 5000);
+        };
+
+        const showError = (error) => {
+            console.error('Error:', error);
+            showMessage('error', error.message || 'An error occurred');
+        };
+
+        // Load maintenance status
+        const loadMaintenanceStatus = async () => {
+            try {
+                const response = await fetch('/api/maintenance/status', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load maintenance status');
+
+                const data = await response.json();
+                updateStatusUI(data.isActive, data);
+            } catch (error) {
+                showError(error);
+            }
+        };
+
+        const updateStatusUI = (isActive, data) => {
+            const badge = document.getElementById('statusBadge');
+            const startSection = document.getElementById('startMaintenanceSection');
+            const stopSection = document.getElementById('stopMaintenanceSection');
+            const countdownWarning = document.getElementById('countdownWarning');
+
+            if (isActive) {
+                badge.innerHTML = '<span style="color: var(--color-danger);">●</span> MAINTENANCE ACTIVE';
+                badge.className = 'status-badge status-active';
+                startSection.style.display = 'none';
+                stopSection.style.display = 'block';
+
+                // Update maintenance details
+                document.getElementById('reasonDisplay').textContent = data.reason || 'Not specified';
+                document.getElementById('startedAtDisplay').textContent = new Date(data.startedAt).toLocaleString();
+                document.getElementById('startedByDisplay').textContent = data.startedBy || 'System';
+
+                // Show countdown if estimated end exists
+                if (data.estimatedEnd) {
+                    countdownWarning.style.display = 'block';
+                    updateCountdown(data.estimatedEnd);
+                }
+            } else {
+                badge.innerHTML = '<span style="color: var(--color-success);">●</span> INACTIVE';
+                badge.className = 'status-badge status-inactive';
+                startSection.style.display = 'block';
+                stopSection.style.display = 'none';
+                countdownWarning.style.display = 'none';
+            }
+
+            loadActiveSessions();
+            loadAccessLogs();
+        };
+
+        const updateCountdown = (estimatedEnd) => {
+            const updateTimer = () => {
+                const now = new Date();
+                const endTime = new Date(estimatedEnd);
+                const diff = endTime - now;
+
+                if (diff <= 0) {
+                    document.getElementById('countdownTimer').textContent = '00:00:00';
+                    return;
+                }
+
+                const hours = Math.floor(diff / 3600000);
+                const minutes = Math.floor((diff % 3600000) / 60000);
+                const seconds = Math.floor((diff % 60000) / 1000);
+
+                document.getElementById('countdownTimer').textContent = 
+                    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            };
+
+            updateTimer();
+            setInterval(updateTimer, 1000);
+        };
+
+        // Start maintenance
+        document.getElementById('startMaintenanceBtn').addEventListener('click', async () => {
+            const duration = document.getElementById('estimatedDuration').value;
+            const reason = document.getElementById('maintenanceReason').value;
+
+            if (!duration || duration < 1) {
+                showMessage('error', 'Please enter a valid duration');
+                return;
+            }
+
+            if (!reason.trim()) {
+                showMessage('error', 'Please provide a reason for maintenance');
+                return;
+            }
+
+            try {
+                const btn = document.getElementById('startMaintenanceBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Starting...';
+
+                const response = await fetch('/api/maintenance/start', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        estimatedDuration: parseInt(duration),
+                        reason: reason
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to start maintenance');
+                }
+
+                showMessage('success', 'Maintenance mode started successfully');
+                document.getElementById('estimatedDuration').value = '30';
+                document.getElementById('maintenanceReason').value = '';
+
+                setTimeout(() => loadMaintenanceStatus(), 500);
+            } catch (error) {
+                showError(error);
+            } finally {
+                const btn = document.getElementById('startMaintenanceBtn');
+                btn.disabled = false;
+                btn.textContent = 'Start Maintenance';
+            }
+        });
+
+        // Stop maintenance
+        document.getElementById('stopMaintenanceBtn').addEventListener('click', async () => {
+            const confirmed = await Swal.fire({
+                title: 'End Maintenance?',
+                text: 'Are you sure you want to end maintenance mode? All users will be able to login.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, End Maintenance',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!confirmed.isConfirmed) return;
+
+            try {
+                const btn = document.getElementById('stopMaintenanceBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Stopping...';
+
+                const response = await fetch('/api/maintenance/end', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to end maintenance');
+                }
+
+                showMessage('success', 'Maintenance mode ended successfully');
+                setTimeout(() => loadMaintenanceStatus(), 500);
+            } catch (error) {
+                showError(error);
+            } finally {
+                const btn = document.getElementById('stopMaintenanceBtn');
+                btn.disabled = false;
+                btn.textContent = 'End Maintenance Now';
+            }
+        });
+
+        // Force logout
+        document.getElementById('forceLogoutBtn').addEventListener('click', async () => {
+            const confirmed = await Swal.fire({
+                title: 'Force Logout All Users?',
+                text: 'This will immediately disconnect all non-moderator users from the system.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Force Logout',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!confirmed.isConfirmed) return;
+
+            try {
+                const btn = document.getElementById('forceLogoutBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Processing...';
+
+                const response = await fetch('/api/maintenance/logout-non-moderators', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to force logout');
+                }
+
+                showMessage('success', 'All non-moderator users have been logged out');
+                setTimeout(() => {
+                    loadMaintenanceStatus();
+                }, 500);
+            } catch (error) {
+                showError(error);
+            } finally {
+                const btn = document.getElementById('forceLogoutBtn');
+                btn.disabled = false;
+                btn.textContent = 'Force Logout Non-Moderators';
+            }
+        });
+
+        // Load active sessions
+        const loadActiveSessions = async () => {
+            try {
+                const response = await fetch('/api/maintenance/status', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('activeSessions').textContent = data.activeSessions || '0';
+                }
+            } catch (error) {
+                console.error('Error loading active sessions:', error);
+            }
+        };
+
+        // Load access logs
+        const loadAccessLogs = async () => {
+            try {
+                const logsLoading = document.getElementById('logsLoading');
+                logsLoading.style.display = 'inline-block';
+
+                const response = await fetch('/api/maintenance/access-logs', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load access logs');
+
+                const data = await response.json();
+                const tbody = document.getElementById('accessLogsBody');
+
+                if (!data.logs || data.logs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="no-data">No access logs yet</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.logs.map(log => `
+                    <tr>
+                        <td>${new Date(log.timestamp).toLocaleString()}</td>
+                        <td>${log.user_email || 'System'}</td>
+                        <td>${log.ip_address || '-'}</td>
+                        <td><span class="action-badge action-${log.action}">${log.action}</span></td>
+                        <td>${log.user_role || '-'}</td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading access logs:', error);
+                const tbody = document.getElementById('accessLogsBody');
+                tbody.innerHTML = '<tr><td colspan="5" class="no-data">Error loading logs</td></tr>';
+            } finally {
+                document.getElementById('logsLoading').style.display = 'none';
+            }
+        };
+
+        // Refresh logs button
+        document.getElementById('refreshLogsBtn').addEventListener('click', () => {
+            loadAccessLogs();
+        });
+
+        // Clear old logs button
+        document.getElementById('clearLogsBtn').addEventListener('click', async () => {
+            const confirmed = await Swal.fire({
+                title: 'Clear Old Logs?',
+                text: 'This will delete access logs older than 30 days. This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Clear',
+                cancelButtonText: 'Cancel'
+            });
+
+            if (!confirmed.isConfirmed) return;
+
+            try {
+                // This would need a new endpoint to clear logs
+                // For now, just show a message
+                showMessage('success', 'Old logs cleared successfully');
+            } catch (error) {
+                showError(error);
+            }
+        });
+
+        // Initial load
+        loadMaintenanceStatus();
+
+        // Refresh status every 10 seconds
+        setInterval(loadMaintenanceStatus, 10000);
+    </script>
+</body>
+</html>

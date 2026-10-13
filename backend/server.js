@@ -7665,6 +7665,17 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
             console.log('================================================\n');
         });
 
+        // Initialize WebSocket server for maintenance mode notifications
+        // ============================================================
+        try {
+            const MaintenanceWebSocketServer = require('./websocket-maintenance');
+            const maintenanceWs = new MaintenanceWebSocketServer(server, JWT_SECRET);
+            console.log('[WebSocket] Maintenance WebSocket server initialized');
+            global.maintenanceWebSocket = maintenanceWs;
+        } catch (err) {
+            console.error('[WebSocket] Failed to initialize maintenance WebSocket server:', err.message);
+        }
+
         // Initialize auto-logout scheduler
         // TODO: Implement auto-logout scheduler if needed
         // console.log('[AutoLogout] Starting automatic logout scheduler...');
