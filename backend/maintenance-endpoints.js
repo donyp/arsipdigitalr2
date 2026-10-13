@@ -42,29 +42,39 @@ function authenticateToken(req, res, next) {
     const token = (authHeader && authHeader.split(' ')[1]);
 
     if (!token) {
+        console.log('[Auth] No token provided');
         return res.status(401).json({ error: 'Token tidak ditemukan. Silakan login.' });
     }
 
     jwt.verify(token, JWT_SECRET, async (err, decoded) => {
         if (err) {
+            console.error('[Auth] Token verification error:', err.message);
             return res.status(403).json({ error: 'Token tidak valid atau sudah expired.' });
         }
         
         try {
+            const userId = decoded.sub || decoded.userId;
+            console.log('[Auth] Token decoded, looking up user:', userId);
+            
             // Query database for authoritative user role
             const { data: user, error } = await supabase
                 .from('users')
                 .select('id, email, role, zona_id, permissions, is_active')
-                .eq('id', decoded.sub || decoded.userId)
+                .eq('id', userId)
                 .single();
             
-            if (error || !user) {
-                console.error('[Auth] User not found in database:', error?.message, 'for userId:', decoded.sub || decoded.userId);
+            if (error) {
+                console.error('[Auth] User lookup error:', error.message, 'code:', error.code);
+            }
+            
+            if (!user) {
+                console.error('[Auth] User not found in database for userId:', userId);
                 return res.status(403).json({ error: 'Token tidak valid - user tidak ditemukan.' });
             }
 
             // Check if user is active
             if (user.is_active === false) {
+                console.warn('[Auth] User account is inactive:', user.email);
                 return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan.' });
             }
 
@@ -72,13 +82,14 @@ function authenticateToken(req, res, next) {
             decoded.role = user.role;
             decoded.zona_id = user.zona_id;
             decoded.permissions = user.permissions || [];
+            decoded.id = user.id; // Set proper ID
             
             console.log('[Auth] Token verified for user:', user.email, 'role:', user.role);
             req.user = decoded;
             next();
         } catch (err) {
-            console.error('[Auth] Authentication verification failed:', err.message);
-            return res.status(403).json({ error: 'Authentication verification failed.' });
+            console.error('[Auth] Authentication verification failed:', err.message, err.stack);
+            return res.status(500).json({ error: 'Authentication verification failed.', details: err.message });
         }
     });
 }
