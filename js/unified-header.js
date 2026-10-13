@@ -230,9 +230,37 @@ if (document.readyState === 'loading') {
         if (!document.getElementById('unified-header')) {
             initializeUnifiedHeader();
         }
+        
+        // Listen for dark mode changes to update header immediately
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'data-dark-mode') {
+                    const header = document.getElementById('unified-header');
+                    if (header) {
+                        header.style.transition = 'background-color 0.15s ease, border-color 0.15s ease';
+                    }
+                }
+            });
+        });
+        
+        observer.observe(document.documentElement, { attributes: true });
     });
 } else {
     if (!document.getElementById('unified-header')) {
         initializeUnifiedHeader();
     }
+    
+    // Listen for dark mode changes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'data-dark-mode') {
+                const header = document.getElementById('unified-header');
+                if (header) {
+                    header.style.transition = 'background-color 0.15s ease, border-color 0.15s ease';
+                }
+            }
+        });
+    });
+    
+    observer.observe(document.documentElement, { attributes: true });
 }
