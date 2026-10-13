@@ -634,14 +634,17 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
             all_user_props: Object.keys(req.user || {})
         });
 
-        // Verify admin role
-        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
-            console.log('[AccessLogs] Access denied for role:', req.user?.role);
+        // Verify admin or moderator role (case-insensitive)
+        const userRole = req.user?.role?.toLowerCase();
+        if (userRole !== 'admin' && userRole !== 'super_admin' && userRole !== 'moderator') {
+            console.log('[AccessLogs] Access denied for role:', req.user?.role, '(checked as lowercase:', userRole, ')');
             return res.status(403).json({
                 error: 'Only admins and moderators can view access logs',
-                debug: { role: req.user?.role }
+                debug: { role: req.user?.role, userRole }
             });
         }
+
+        console.log('[AccessLogs] Access granted for role:', userRole);
 
         const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
         const offset = parseInt(req.query.offset) || 0;

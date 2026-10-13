@@ -831,8 +831,8 @@
         // Refresh status every 30 seconds (instead of 10 to reduce API load)
         setInterval(loadMaintenanceStatus, 30000);
         
-        // Load access logs on first render (lazy-loaded, not on auto-refresh)
-        loadAccessLogs();
+        // NOTE: access-logs loading removed from here - it was causing slow page load
+        // Access logs now load only when user manually clicks "Refresh Logs" button
     </script>
 </body>
 </html>
