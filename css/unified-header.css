@@ -281,6 +281,21 @@ html.dark-mode {
     color: var(--header-accent);
 }
 
+/* Maintenance Button */
+.maintenance-btn {
+    color: var(--header-text-secondary);
+}
+
+.maintenance-btn:hover {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+}
+
+.maintenance-btn:active {
+    transform: scale(0.95);
+}
+
 .logout-btn:hover {
     background: rgba(239, 68, 68, 0.15);
     border-color: rgba(239, 68, 68, 0.3);

@@ -9,6 +9,7 @@ function createUnifiedHeader(options = {}) {
         showSearch = true,
         showRefresh = true,
         showDarkMode = true,
+        showMaintenance = true,
         showLogout = true,
         customButtons = [],
         searchPlaceholder = 'Search...'
@@ -61,6 +62,12 @@ function createUnifiedHeader(options = {}) {
                 ${showDarkMode ? `
                 <button class="header-btn dark-mode-btn" id="header-dark-toggle" title="Toggle dark/light mode">
                     <i class="fas fa-moon"></i>
+                </button>
+                ` : ''}
+
+                ${showMaintenance ? `
+                <button class="header-btn maintenance-btn" id="header-maintenance-btn" title="Maintenance Mode" onclick="goToMaintenance()">
+                    <i class="fas fa-tools"></i>
                 </button>
                 ` : ''}
                 
@@ -237,6 +244,18 @@ function performSearch(query) {
     
     console.log('Search for:', query);
     // Can be overridden per-page
+}
+
+function goToMaintenance() {
+    // Check user role first
+    const userRole = localStorage.getItem('userRole');
+    if (!userRole || (userRole !== 'admin' && userRole !== 'super_admin' && userRole !== 'moderator')) {
+        alert('Hanya admin dan moderator yang dapat mengakses mode perbaikan');
+        return;
+    }
+    
+    // Navigate to maintenance dashboard
+    window.location.href = '/manage/maintenance.html';
 }
 
 // Auto-initialize if DOM is ready
