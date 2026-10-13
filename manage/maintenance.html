@@ -751,16 +751,21 @@
         // Load active sessions
         const loadActiveSessions = async () => {
             try {
-                const response = await fetch('/api/maintenance/status', {
+                const response = await fetch('/api/maintenance/active-sessions', {
                     headers: { 'Authorization': `Bearer ${getToken()}` }
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('activeSessions').textContent = data.activeSessions || '0';
+                    document.getElementById('activeSessions').textContent = data.total || '0';
+                    console.log('[Maintenance Dashboard] Active sessions loaded:', data.total);
+                } else {
+                    console.warn('[Maintenance Dashboard] Failed to load active sessions:', response.status);
+                    document.getElementById('activeSessions').textContent = '0';
                 }
             } catch (error) {
-                console.error('Error loading active sessions:', error);
+                console.error('[Maintenance Dashboard] Error loading active sessions:', error);
+                document.getElementById('activeSessions').textContent = '0';
             }
         };
 
