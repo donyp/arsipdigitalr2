@@ -442,14 +442,12 @@ router.put('/active-sessions/:sessionId/update-activity', async (req, res) => {
         console.log('[MAINTENANCE-ENDPOINT] Query result:', { exists: !!session, error: queryError?.message });
 
         if (!session) {
-            // Create new session - only use columns that exist
+            // Create new session - ONLY use columns we know exist
+            // Based on existing table, use minimal columns
             const insertData = {
                 id: sessionId,
                 user_id: '00000000-0000-0000-0000-000000000001',
                 username: 'test@example.com',
-                user_role: 'moderator',
-                is_valid: true,
-                maintenance_forced_logout: false,
                 last_activity: new Date().toISOString()
             };
 
