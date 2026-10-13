@@ -436,7 +436,7 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
             .from('active_sessions')
             .select('user_id')
             .eq('id', sessionId)
-            .single();
+            .maybeSingle(); // Use maybeSingle to handle not found gracefully
 
         console.log('[Maintenance] Query result:', { sessionExists: !!session, queryError: queryError?.message });
 
@@ -454,6 +454,7 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
                 is_valid: true,
                 maintenance_forced_logout: false,
                 last_activity: new Date().toISOString()
+                // Note: created_at will use database default NOW()
             };
 
             console.log('[Maintenance] Attempting to insert:', insertData);
