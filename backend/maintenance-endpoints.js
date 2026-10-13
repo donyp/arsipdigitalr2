@@ -422,15 +422,10 @@ router.get('/active-sessions', authenticateToken, async (req, res) => {
     }
 });
 
-/**
- * PUT /api/maintenance/active-sessions/:sessionId/update-activity
- * Update session last_activity timestamp (client-side ping)
- * Public endpoint - used by JavaScript to keep session alive
- * Auto-creates session if not exists
- */
 router.put('/active-sessions/:sessionId/update-activity', authenticateToken, async (req, res) => {
     try {
         const { sessionId } = req.params;
+        const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
 
         // Check if session exists
         const { data: session, error: queryError } = await supabase
@@ -450,7 +445,7 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
                     user_id: req.user.id,
                     username: req.user.email || req.user.username,
                     user_role: req.user.role,
-                    ip_address: req.clientIp,
+                    ip_address: clientIp,
                     user_agent: req.headers['user-agent'],
                     is_valid: true,
                     maintenance_forced_logout: false,
@@ -459,9 +454,10 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
 
             if (insertError) {
                 console.error('[Maintenance] Error creating session:', insertError.message);
-                return res.status(500).json({ error: 'Failed to create session' });
+                return res.status(500).json({ error: 'Failed to create session', details: insertError.message });
             }
 
+            console.log('[Maintenance] Session created successfully:', sessionId);
             return res.json({ 
                 success: true, 
                 message: 'Session created and activity updated',
@@ -495,7 +491,7 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
 
     } catch (err) {
         console.error('[Maintenance] Update activity error:', err.message);
-        res.status(500).json({ error: 'Failed to update session' });
+        res.status(500).json({ error: 'Failed to update session', details: err.message });
     }
 });
 
