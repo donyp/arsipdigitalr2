@@ -136,8 +136,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize session keep-alive
     if (typeof initializeSessionKeepalive === 'function') {
-        initializeSessionKeepalive();
-        console.log('[Dashboard] Session keep-alive initialized');
+        // Check if token is available in localStorage
+        const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+        if (token) {
+            initializeSessionKeepalive();
+            console.log('[Dashboard] Session keep-alive initialized');
+        } else {
+            console.warn('[Dashboard] Token not yet available, will retry session keep-alive in 500ms');
+            setTimeout(() => {
+                const retryToken = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+                if (retryToken && typeof initializeSessionKeepalive === 'function') {
+                    initializeSessionKeepalive();
+                    console.log('[Dashboard] Session keep-alive initialized (retry)');
+                }
+            }, 500);
+        }
     }
 
 
