@@ -3,10 +3,10 @@
    ============================================================ */
 
 :root {
-    --header-bg: #1e293b;
-    --header-border: #334155;
-    --header-text: #ffffff;
-    --header-text-secondary: #ffffff;
+    --header-bg: #ffffff;
+    --header-border: #e5e7eb;
+    --header-text: #1f2937;
+    --header-text-secondary: #6b7280;
     --header-accent: #667eea;
     --header-height: 80px;
 }
@@ -16,10 +16,11 @@ body {
     padding-top: 0 !important;
 }
 
+html[data-dark-mode="true"],
 html.dark-mode {
-    --header-bg: #0f172a;
-    --header-border: #1e293b;
-    --header-text: #f1f5f9;
+    --header-bg: #1e293b;
+    --header-border: #334155;
+    --header-text: #ffffff;
     --header-text-secondary: #cbd5e1;
 }
 
@@ -41,6 +42,17 @@ html.dark-mode {
     box-sizing: border-box;
     display: flex;
     align-items: center;
+    transition: filter 0.5s ease-out, background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Header blur during page loading */
+#unified-header.loading {
+    filter: blur(8px) !important;
+}
+
+/* Remove blur when page loads */
+#unified-header.loaded {
+    filter: blur(0px) !important;
 }
 
 /* Push content below fixed header */
@@ -74,6 +86,7 @@ html.dark-mode {
     align-items: center;
     gap: 4px;
     flex-wrap: wrap;
+    transition: color 0.15s ease;
 }
 
 .greeting-time {
@@ -98,6 +111,7 @@ html.dark-mode {
     font-size: 12px;
     color: var(--header-text-secondary);
     font-weight: 300;
+    transition: color 0.15s ease;
 }
 
 /* Date & Time Display - HIDDEN */

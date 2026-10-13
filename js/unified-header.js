@@ -19,6 +19,9 @@ function createUnifiedHeader(options = {}) {
     header.id = 'unified-header';
     header.className = 'unified-header';
     
+    // Add loading class immediately to show blur on load
+    header.classList.add('loading');
+    
     const headerHTML = `
         <div class="unified-header-content">
             <!-- Left: Greeting Section -->
@@ -101,6 +104,23 @@ function initializeUnifiedHeader(options = {}) {
         // Fallback: insert at top of body
         document.body.insertBefore(header, document.body.firstChild);
         console.log('[UNIFIED-HEADER] Inserted at top of body (fallback)');
+    }
+
+    // Remove blur when page finishes loading
+    if (document.readyState === 'complete') {
+        const headerEl = document.getElementById('unified-header');
+        if (headerEl) {
+            headerEl.classList.remove('loading');
+            headerEl.classList.add('loaded');
+        }
+    } else {
+        window.addEventListener('load', () => {
+            const headerEl = document.getElementById('unified-header');
+            if (headerEl) {
+                headerEl.classList.remove('loading');
+                headerEl.classList.add('loaded');
+            }
+        });
     }
 
     // Initialize dynamic features
