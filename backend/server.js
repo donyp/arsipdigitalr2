@@ -1503,7 +1503,7 @@ const csrfProtection = (req, res, next) => {
     if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) return next();
 
     // Skip untuk endpoint publik yang memang boleh diakses dari mana saja
-    const publicPaths = ['/api/auth/login', '/api/auth/refresh', '/api/share/'];
+    const publicPaths = ['/api/auth/login', '/api/auth/refresh', '/api/share/', '/api/maintenance/'];
     if (publicPaths.some(p => req.path.startsWith(p))) return next();
 
     const origin = req.headers['origin'];
@@ -1566,6 +1566,11 @@ const csrfProtection = (req, res, next) => {
     next();
 };
 app.use('/api/', csrfProtection);
+
+// Skip CSRF for maintenance keep-alive endpoint (it's state-changing but uses JWT auth)
+app.options('/api/maintenance/active-sessions/:sessionId/update-activity', (req, res) => {
+    res.status(200).end();
+});
 
 // --- SECURITY FIX #11: Apply comprehensive rate limiting ---
 // Apply general API rate limiter to all API endpoints (after auth)
