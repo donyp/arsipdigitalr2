@@ -20,6 +20,14 @@
         style.id = styleId;
         style.textContent = `
             /* ========================================
+               EARLY PAGE LOAD BLUR - MUST BE FIRST
+               ======================================== */
+            #unified-header {
+                filter: blur(8px) !important;
+                transition: filter 0.5s ease-out !important;
+            }
+
+            /* ========================================
                DARK MODE SMOOTH TRANSITIONS
                ======================================== */
             
@@ -125,15 +133,6 @@
     // Add no-transition class initially to prevent flashing on load
     document.documentElement.classList.add('no-transition');
     
-    // Create early-loading style for header to show blur from start
-    const earlyBlurStyle = document.createElement('style');
-    earlyBlurStyle.textContent = `
-        #unified-header {
-            filter: blur(8px) !important;
-        }
-    `;
-    document.head.appendChild(earlyBlurStyle);
-    
     // Initialize dark mode on page load
     if (localStorage.getItem('dark_mode_enabled') === 'true') {
         document.documentElement.setAttribute('data-dark-mode', 'true');
@@ -142,23 +141,21 @@
         window.applyDarkModeInlineStyles(false);
     }
     
-    // Remove early blur and no-transition class after page loads
-    const removeBlurOnLoad = () => {
-        // Remove blur from header when page loads
+    // Remove blur from header when page finishes loading
+    const removeHeaderBlur = () => {
         const header = document.getElementById('unified-header');
         if (header) {
+            // Remove blur filter
             header.style.filter = 'blur(0px)';
         }
-        // Remove the early blur style
-        earlyBlurStyle.remove();
-        // Add transitions
+        // Enable transitions
         document.documentElement.classList.remove('no-transition');
         document.documentElement.classList.add('with-transitions');
     };
     
     if (document.readyState === 'complete') {
-        removeBlurOnLoad();
+        removeHeaderBlur();
     } else {
-        window.addEventListener('load', removeBlurOnLoad);
+        window.addEventListener('load', removeHeaderBlur);
     }
 })();

@@ -994,6 +994,12 @@
             color: var(--color-text-secondary) !important;
         }
 
+        /* Dark mode stat cards - darker background */
+        html[data-dark-mode="true"] div[style*="min-height: 80px"] {
+            background: #0f172a !important;
+            border: 1px solid #1e293b !important;
+        }
+
         /* TABLE HEADER LIGHT MODE FIX */
         /* Override hardcoded table header color in light mode */
         :root:not([data-dark-mode="true"]) th[style*="color: #667eea"] {
