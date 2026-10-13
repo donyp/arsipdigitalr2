@@ -104,15 +104,16 @@ function createUnifiedHeader(options = {}) {
 function initializeUnifiedHeader(options = {}) {
     const header = createUnifiedHeader(options);
     
-    // Insert at the top of main content or body
-    const mainContent = document.querySelector('main') || 
-                       document.querySelector('#main-content') ||
-                       document.querySelector('.main-content');
-    
-    if (mainContent && mainContent.parentNode) {
-        mainContent.parentNode.insertBefore(header, mainContent);
+    // Insert at the very top of body (before everything)
+    const appDiv = document.querySelector('#app');
+    if (appDiv && appDiv.parentNode) {
+        // Insert before #app
+        appDiv.parentNode.insertBefore(header, appDiv);
+        console.log('[UNIFIED-HEADER] Inserted before #app');
     } else {
+        // Fallback: insert at top of body
         document.body.insertBefore(header, document.body.firstChild);
+        console.log('[UNIFIED-HEADER] Inserted at top of body (fallback)');
     }
 
     // Initialize dynamic features

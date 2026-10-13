@@ -13,7 +13,7 @@
 
 html,
 body {
-    padding-top: var(--header-height);
+    padding-top: 0 !important;
 }
 
 html.dark-mode {
@@ -29,7 +29,7 @@ html.dark-mode {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+    z-index: 9999;
     background: var(--header-bg);
     border-bottom: 1px solid var(--header-border);
     backdrop-filter: blur(10px);
@@ -37,6 +37,11 @@ html.dark-mode {
     padding: 20px 32px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     width: 100%;
+}
+
+/* Push content below fixed header */
+#app {
+    padding-top: var(--header-height);
 }
 
 .unified-header-content {
@@ -135,6 +140,7 @@ html.dark-mode {
 
 /* Center Section: Search */
 .header-center {
+    display: none;
     flex: 1;
     min-width: 250px;
     max-width: 400px;
