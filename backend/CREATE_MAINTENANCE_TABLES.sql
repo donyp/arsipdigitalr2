@@ -66,7 +66,6 @@ CREATE TABLE IF NOT EXISTS active_sessions (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_maintenance_is_active ON maintenance_mode_logs(is_active, status);
 CREATE INDEX IF NOT EXISTS idx_maintenance_logs_created ON maintenance_mode_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_access_logs_timestamp ON maintenance_access_logs(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_access_logs_action ON maintenance_access_logs(action);
@@ -75,128 +74,9 @@ CREATE INDEX IF NOT EXISTS idx_forced_logout_user ON forced_logout_sessions(user
 CREATE INDEX IF NOT EXISTS idx_forced_logout_jti ON forced_logout_sessions(token_jti);
 CREATE INDEX IF NOT EXISTS idx_active_sessions_user ON active_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_active_sessions_jti ON active_sessions(token_jti);
-CREATE INDEX IF NOT EXISTS idx_active_sessions_valid ON active_sessions(is_valid, user_role);
-
--- Create indexes for faster lookups
+CREATE INDEX IF NOT EXISTS idx_active_sessions_valid ON active_sessions(is_valid);
 CREATE INDEX IF NOT EXISTS idx_active_sessions_email ON active_sessions(user_email);
 CREATE INDEX IF NOT EXISTS idx_maintenance_access_logs_email ON maintenance_access_logs(user_email);
-
--- Function to get current maintenance status
-CREATE OR REPLACE FUNCTION get_maintenance_status()
-RETURNS TABLE (
-    is_active BOOLEAN,
-    allowed_role VARCHAR,
-    reason TEXT,
-    started_at TIMESTAMP,
-    started_by VARCHAR,
-    estimated_end TIMESTAMP,
-    estimated_minutes_remaining INT
-) AS $$
-BEGIN
-    RETURN QUERY
-    SELECT 
-        m.is_active,
-        m.allowed_role,
-        m.reason,
-        m.started_at,
-        m.started_by,
-        m.estimated_end,
-        EXTRACT(EPOCH FROM (m.estimated_end - NOW()))::INT / 60 as estimated_minutes
-    FROM maintenance_mode_logs m
-    WHERE m.is_active = TRUE
-    ORDER BY m.started_at DESC
-    LIMIT 1;
-END;
-$$ LANGUAGE plpgsql;
-
--- Function to start maintenance mode
-CREATE OR REPLACE FUNCTION start_maintenance_mode(
-    p_reason TEXT,
-    p_description TEXT,
-    p_duration_minutes INT,
-    p_started_by VARCHAR
-) RETURNS TABLE (
-    success BOOLEAN,
-    maintenance_id BIGINT,
-    message VARCHAR
-) AS $$
-DECLARE
-    v_existing_maintenance BIGINT;
-    v_new_id BIGINT;
-BEGIN
-    -- Check if maintenance already active
-    SELECT id INTO v_existing_maintenance 
-    FROM maintenance_mode_logs 
-    WHERE is_active = TRUE 
-    LIMIT 1;
-    
-    IF v_existing_maintenance IS NOT NULL THEN
-        RETURN QUERY SELECT 
-            false::BOOLEAN, 
-            v_existing_maintenance::BIGINT, 
-            'Maintenance mode already active'::VARCHAR;
-        RETURN;
-    END IF;
-    
-    -- Create new maintenance session
-    INSERT INTO maintenance_mode_logs (
-        is_active, allowed_role, reason, description,
-        estimated_duration_minutes, started_by, status,
-        estimated_end
-    ) VALUES (
-        TRUE, 'moderator', p_reason, p_description,
-        p_duration_minutes, p_started_by, 'active',
-        NOW() + (p_duration_minutes || ' minutes')::INTERVAL
-    )
-    RETURNING maintenance_mode_logs.id INTO v_new_id;
-    
-    RETURN QUERY SELECT 
-        true::BOOLEAN, 
-        v_new_id::BIGINT, 
-        'Maintenance mode started'::VARCHAR;
-END;
-$$ LANGUAGE plpgsql;
-
--- Function to end maintenance mode
-CREATE OR REPLACE FUNCTION end_maintenance_mode(
-    p_maintenance_id BIGINT,
-    p_ended_by VARCHAR
-) RETURNS TABLE (
-    success BOOLEAN,
-    message VARCHAR
-) AS $$
-BEGIN
-    UPDATE maintenance_mode_logs
-    SET 
-        is_active = FALSE,
-        status = 'completed',
-        end_time = NOW(),
-        ended_by = p_ended_by,
-        updated_at = NOW(),
-        updated_by = p_ended_by
-    WHERE id = p_maintenance_id;
-    
-    RETURN QUERY SELECT 
-        true::BOOLEAN, 
-        'Maintenance mode ended'::VARCHAR;
-END;
-$$ LANGUAGE plpgsql;
-
--- Cleanup old sessions (keep last 30 days)
-CREATE OR REPLACE FUNCTION cleanup_old_maintenance_logs()
-RETURNS void AS $$
-BEGIN
-    DELETE FROM maintenance_access_logs
-    WHERE timestamp < NOW() - INTERVAL '30 days';
-    
-    DELETE FROM forced_logout_sessions
-    WHERE logged_out_at < NOW() - INTERVAL '30 days';
-    
-    DELETE FROM active_sessions
-    WHERE login_timestamp < NOW() - INTERVAL '7 days'
-    AND is_valid = FALSE;
-END;
-$$ LANGUAGE plpgsql;
 
 -- Grant permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON maintenance_mode_logs TO authenticated;
