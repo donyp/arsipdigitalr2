@@ -668,6 +668,12 @@
                 localStorage.setItem('jwt_token', data.token);
                 localStorage.setItem('user_info', JSON.stringify(data.user));
                 
+                // Store session ID for keep-alive tracking
+                if (data.sessionId) {
+                    localStorage.setItem('current_session_id', data.sessionId);
+                    console.log('[Login] Session ID stored:', data.sessionId);
+                }
+                
                 // Determine correct dashboard based on role
                 let dashboardPage = '/dashboard';
                 if (data.user.role === 'admin_zona') {
