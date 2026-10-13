@@ -2,12 +2,14 @@
  * Dark Mode Initialization Script
  * This script handles dark mode CSS variables and initialization for all pages
  * Include this in the head of any page that needs dark mode support
+ * Also include css/color-vars.css for complete color theming
  * 
  * Features:
  * - Smooth transitions between dark/light mode (1s)
  * - No flickering or jumping on page load
  * - Global CSS variables for consistent theming
  * - Prevents FOUC (Flash of Unstyled Content)
+ * - Comprehensive color system for all components
  */
 
 (function() {

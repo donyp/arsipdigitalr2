@@ -1,0 +1,375 @@
+/* Unified Forms CSS - Dark Mode Support */
+/* Provides consistent styling for form elements across the application */
+
+/* Base Input, Textarea, Select Styling */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+input[type="search"],
+input[type="tel"],
+textarea,
+select {
+    background-color: var(--color-bg-primary, #ffffff);
+    color: var(--color-text-primary, #1f2937);
+    border: 1px solid var(--color-border, #ddd);
+    border-radius: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    font-family: inherit;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    transition: all 0.3s ease;
+}
+
+/* Focus States */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="search"]:focus,
+input[type="tel"]:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--color-primary, #3b82f6);
+    box-shadow: 0 0 0 3px var(--color-status-info-bg, rgba(59, 130, 246, 0.1));
+    outline: none;
+}
+
+/* Disabled States */
+input[type="text"]:disabled,
+input[type="email"]:disabled,
+input[type="password"]:disabled,
+input[type="number"]:disabled,
+input[type="date"]:disabled,
+input[type="time"]:disabled,
+input[type="search"]:disabled,
+input[type="tel"]:disabled,
+textarea:disabled,
+select:disabled {
+    background-color: var(--color-bg-secondary, #f5f5f5);
+    color: var(--color-text-secondary, #999);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Placeholder Text */
+::placeholder {
+    color: var(--color-text-tertiary, #999);
+    opacity: 1;
+}
+
+/* Dark Mode - Input Styling */
+html[data-dark-mode="true"] input[type="text"],
+html[data-dark-mode="true"] input[type="email"],
+html[data-dark-mode="true"] input[type="password"],
+html[data-dark-mode="true"] input[type="number"],
+html[data-dark-mode="true"] input[type="date"],
+html[data-dark-mode="true"] input[type="time"],
+html[data-dark-mode="true"] input[type="search"],
+html[data-dark-mode="true"] input[type="tel"],
+html[data-dark-mode="true"] textarea,
+html[data-dark-mode="true"] select {
+    background-color: var(--color-bg-secondary, #1e293b);
+    color: var(--color-text-primary, #f1f5f9);
+    border-color: var(--color-border, #475569);
+}
+
+/* Dark Mode - Focus States */
+html[data-dark-mode="true"] input[type="text"]:focus,
+html[data-dark-mode="true"] input[type="email"]:focus,
+html[data-dark-mode="true"] input[type="password"]:focus,
+html[data-dark-mode="true"] input[type="number"]:focus,
+html[data-dark-mode="true"] input[type="date"]:focus,
+html[data-dark-mode="true"] input[type="time"]:focus,
+html[data-dark-mode="true"] input[type="search"]:focus,
+html[data-dark-mode="true"] input[type="tel"]:focus,
+html[data-dark-mode="true"] textarea:focus,
+html[data-dark-mode="true"] select:focus {
+    border-color: var(--color-primary, #60a5fa);
+    box-shadow: 0 0 0 3px var(--color-status-info-bg, rgba(96, 165, 250, 0.1));
+}
+
+/* Dark Mode - Placeholder Text */
+html[data-dark-mode="true"] ::placeholder {
+    color: var(--color-text-tertiary, #64748b);
+}
+
+/* Dark Mode - Disabled States */
+html[data-dark-mode="true"] input[type="text"]:disabled,
+html[data-dark-mode="true"] input[type="email"]:disabled,
+html[data-dark-mode="true"] input[type="password"]:disabled,
+html[data-dark-mode="true"] input[type="number"]:disabled,
+html[data-dark-mode="true"] input[type="date"]:disabled,
+html[data-dark-mode="true"] input[type="time"]:disabled,
+html[data-dark-mode="true"] input[type="search"]:disabled,
+html[data-dark-mode="true"] input[type="tel"]:disabled,
+html[data-dark-mode="true"] textarea:disabled,
+html[data-dark-mode="true"] select:disabled {
+    background-color: var(--color-bg-tertiary, #334155);
+    color: var(--color-text-secondary, #94a3b8);
+}
+
+/* Textarea Specific */
+textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+/* Select Dropdown Styling */
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231f2937' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem auto;
+    padding-right: 2.5rem;
+}
+
+/* Dark Mode - Select Dropdown */
+html[data-dark-mode="true"] select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f1f5f9' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Input Group Styling */
+.input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--color-border, #ddd);
+    border-radius: 0.5rem;
+    background-color: var(--color-bg-primary, #ffffff);
+    overflow: hidden;
+}
+
+html[data-dark-mode="true"] .input-group {
+    border-color: var(--color-border, #475569);
+    background-color: var(--color-bg-secondary, #1e293b);
+}
+
+.input-group input {
+    border: none;
+    flex: 1;
+}
+
+.input-group-addon {
+    padding: 0.625rem 0.75rem;
+    background-color: var(--color-bg-secondary, #f5f5f5);
+    color: var(--color-text-secondary, #666);
+    border-right: 1px solid var(--color-border, #ddd);
+    font-weight: 500;
+}
+
+html[data-dark-mode="true"] .input-group-addon {
+    background-color: var(--color-bg-tertiary, #334155);
+    color: var(--color-text-secondary, #cbd5e1);
+    border-color: var(--color-border, #475569);
+}
+
+/* Form Label Styling */
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-primary, #1f2937);
+    font-weight: 500;
+    font-size: 0.9375rem;
+}
+
+html[data-dark-mode="true"] label {
+    color: var(--color-text-primary, #f1f5f9);
+}
+
+/* Form Field Container */
+.form-field {
+    margin-bottom: 1.5rem;
+}
+
+/* Error State */
+input.error,
+textarea.error,
+select.error {
+    border-color: var(--color-error, #ef4444);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+html[data-dark-mode="true"] input.error,
+html[data-dark-mode="true"] textarea.error,
+html[data-dark-mode="true"] select.error {
+    border-color: var(--color-error, #ef4444);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* Success State */
+input.success,
+textarea.success,
+select.success {
+    border-color: var(--color-success, #10b981);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+html[data-dark-mode="true"] input.success,
+html[data-dark-mode="true"] textarea.success,
+html[data-dark-mode="true"] select.success {
+    border-color: var(--color-success, #10b981);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* Help Text */
+.form-text {
+    display: block;
+    margin-top: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary, #666);
+}
+
+html[data-dark-mode="true"] .form-text {
+    color: var(--color-text-secondary, #cbd5e1);
+}
+
+.form-text.error {
+    color: var(--color-error, #ef4444);
+}
+
+.form-text.success {
+    color: var(--color-success, #10b981);
+}
+
+/* Checkbox and Radio Styling */
+input[type="checkbox"],
+input[type="radio"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    cursor: pointer;
+    accent-color: var(--color-primary, #3b82f6);
+    margin-right: 0.5rem;
+}
+
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Range Input */
+input[type="range"] {
+    width: 100%;
+    height: 0.375rem;
+    border-radius: 0.25rem;
+    background: var(--color-border, #ddd);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+html[data-dark-mode="true"] input[type="range"] {
+    background: var(--color-border, #475569);
+}
+
+/* Range thumb */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: var(--color-primary, #3b82f6);
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    background: var(--color-primary, #3b82f6);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    input[type="search"],
+    input[type="tel"],
+    textarea,
+    select {
+        font-size: 1rem; /* Prevent zoom on focus on iOS */
+    }
+
+    .input-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .input-group input {
+        border-bottom: 1px solid var(--color-border, #ddd);
+    }
+
+    html[data-dark-mode="true"] .input-group input {
+        border-color: var(--color-border, #475569);
+    }
+
+    .input-group-addon {
+        border-right: none;
+        border-bottom: 1px solid var(--color-border, #ddd);
+        width: 100%;
+    }
+
+    html[data-dark-mode="true"] .input-group-addon {
+        border-color: var(--color-border, #475569);
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    input[type="search"],
+    input[type="tel"],
+    textarea,
+    select,
+    input[type="range"]::-webkit-slider-thumb,
+    input[type="range"]::-moz-range-thumb {
+        transition: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    input[type="time"],
+    input[type="search"],
+    input[type="tel"],
+    textarea,
+    select {
+        border-width: 2px;
+    }
+}
