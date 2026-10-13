@@ -374,7 +374,8 @@ router.get('/active-sessions', authenticateToken, async (req, res) => {
             .from('active_sessions')
             .select('*', { count: 'exact' })
             .eq('is_valid', true)
-            .order('last_activity', { ascending: false });
+            .order('last_activity', { ascending: false })
+            .limit(100); // Only fetch latest 100 sessions for dashboard
 
         if (error) {
             console.error('[Maintenance] Query error:', error.message);
@@ -637,7 +638,8 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
             .from('maintenance_access_logs')
             .select('*', { count: 'exact' })
             .order('timestamp', { ascending: false })
-            .range(offset, offset + limit - 1);
+            .limit(limit)
+            .offset(offset);
 
         if (error) {
             console.error('[Maintenance] Query error:', error.message);
