@@ -25,13 +25,13 @@ CREATE TABLE IF NOT EXISTS maintenance_mode_logs (
 CREATE TABLE IF NOT EXISTS maintenance_access_logs (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id VARCHAR(255),
+    user_email VARCHAR(255),
     username VARCHAR(255),
     user_role VARCHAR(50),
-    action VARCHAR(20), -- granted, denied, attempt, failed_login
+    action VARCHAR(50), -- granted, denied, attempt, failed_login, maintenance_started, maintenance_ended
     timestamp TIMESTAMP DEFAULT NOW(),
     ip_address VARCHAR(50),
     user_agent TEXT,
-    maintenance_session_id BIGINT REFERENCES maintenance_mode_logs(id),
     reason VARCHAR(255),
     details JSONB
 );
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS maintenance_access_logs (
 -- Track forced logout sessions
 CREATE TABLE IF NOT EXISTS forced_logout_sessions (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-    maintenance_session_id BIGINT REFERENCES maintenance_mode_logs(id),
     user_id VARCHAR(255),
+    user_email VARCHAR(255),
     username VARCHAR(255),
     user_role VARCHAR(50),
     token_jti VARCHAR(255), -- JWT token ID
@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS forced_logout_sessions (
 CREATE TABLE IF NOT EXISTS active_sessions (
     id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     user_id VARCHAR(255) NOT NULL,
+    user_email VARCHAR(255),
     username VARCHAR(255),
     user_role VARCHAR(50),
     token_jti VARCHAR(255) UNIQUE, -- JWT Token ID
@@ -69,35 +70,16 @@ CREATE INDEX IF NOT EXISTS idx_maintenance_is_active ON maintenance_mode_logs(is
 CREATE INDEX IF NOT EXISTS idx_maintenance_logs_created ON maintenance_mode_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_access_logs_timestamp ON maintenance_access_logs(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_access_logs_action ON maintenance_access_logs(action);
+CREATE INDEX IF NOT EXISTS idx_access_logs_user ON maintenance_access_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_forced_logout_user ON forced_logout_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_forced_logout_jti ON forced_logout_sessions(token_jti);
 CREATE INDEX IF NOT EXISTS idx_active_sessions_user ON active_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_active_sessions_jti ON active_sessions(token_jti);
 CREATE INDEX IF NOT EXISTS idx_active_sessions_valid ON active_sessions(is_valid, user_role);
 
--- Function to log access attempts
-CREATE OR REPLACE FUNCTION log_maintenance_access(
-    p_user_id VARCHAR,
-    p_username VARCHAR,
-    p_role VARCHAR,
-    p_action VARCHAR,
-    p_ip VARCHAR,
-    p_user_agent TEXT,
-    p_reason VARCHAR DEFAULT NULL,
-    p_details JSONB DEFAULT NULL
-) RETURNS void AS $$
-BEGIN
-    INSERT INTO maintenance_access_logs (
-        user_id, username, user_role, action, 
-        ip_address, user_agent, maintenance_session_id,
-        reason, details
-    ) VALUES (
-        p_user_id, p_username, p_role, p_action,
-        p_ip, p_user_agent,
-        (SELECT id FROM maintenance_mode_logs WHERE is_active = TRUE LIMIT 1),
-        p_reason, p_details
-    );
-END;
-$$ LANGUAGE plpgsql;
+-- Create indexes for faster lookups
+CREATE INDEX IF NOT EXISTS idx_active_sessions_email ON active_sessions(user_email);
+CREATE INDEX IF NOT EXISTS idx_maintenance_access_logs_email ON maintenance_access_logs(user_email);
 
 -- Function to get current maintenance status
 CREATE OR REPLACE FUNCTION get_maintenance_status()
@@ -211,7 +193,8 @@ BEGIN
     WHERE logged_out_at < NOW() - INTERVAL '30 days';
     
     DELETE FROM active_sessions
-    WHERE login_timestamp < NOW() - INTERVAL '7 days';
+    WHERE login_timestamp < NOW() - INTERVAL '7 days'
+    AND is_valid = FALSE;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -221,26 +204,47 @@ GRANT SELECT, INSERT ON maintenance_access_logs TO authenticated;
 GRANT SELECT, INSERT ON forced_logout_sessions TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON active_sessions TO authenticated;
 
--- Add RLS (Row Level Security) policies
+-- Add RLS (Row Level Security) - simple allow all
 ALTER TABLE maintenance_mode_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE maintenance_access_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE forced_logout_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE active_sessions ENABLE ROW LEVEL SECURITY;
 
--- Allow authenticated users to read (but not modify their own sessions)
-CREATE POLICY "Allow authenticated read maintenance logs" 
+-- Allow authenticated users to read maintenance logs
+CREATE POLICY "Allow authenticated read maintenance" 
 ON maintenance_mode_logs FOR SELECT 
 TO authenticated 
 USING (true);
 
+-- Allow authenticated users to read access logs
 CREATE POLICY "Allow read access logs"
 ON maintenance_access_logs FOR SELECT
 TO authenticated
 USING (true);
 
--- Allow service role to manage (from backend)
+-- Allow authenticated users to read/write forced logouts
+CREATE POLICY "Allow manage forced logouts"
+ON forced_logout_sessions FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+-- Allow authenticated users to read/write active sessions
+CREATE POLICY "Allow manage active sessions"
+ON active_sessions FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+
+-- Allow service role to manage all
 CREATE POLICY "Allow service role manage maintenance"
 ON maintenance_mode_logs FOR ALL
+TO service_role
+USING (true)
+WITH CHECK (true);
+
+CREATE POLICY "Allow service role manage access logs"
+ON maintenance_access_logs FOR ALL
 TO service_role
 USING (true)
 WITH CHECK (true);
