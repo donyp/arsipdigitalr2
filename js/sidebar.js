@@ -338,17 +338,7 @@
                     border-left: ${isActive ? '3px solid ' + colors.activeTextColor : '3px solid transparent'};
                     padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} - 3px);
                     flex-shrink: 0;
-                "
-                onmouseover="
-                    this.style.backgroundColor = '${colors.hoverBg}';
-                    this.style.color = '${colors.activeTextColor}';
-                    this.style.borderLeftColor = '${colors.activeTextColor}';
-                "
-                onmouseout="
-                    const isActive = this.classList.contains('active');
-                    this.style.backgroundColor = isActive ? '${colors.hoverBg}' : 'transparent';
-                    this.style.color = isActive ? '${colors.activeTextColor}' : '${colors.textColor}';
-                    this.style.borderLeftColor = isActive ? '${colors.activeTextColor}' : 'transparent';
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 "
             >
                 <span style="
@@ -408,17 +398,6 @@
                         border-left: ${isActive ? '3px solid ' + colors.activeTextColor : '3px solid transparent'};
                         padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} + ${STYLES.iconSize} + ${STYLES.menuItemGap} - 3px);
                     "
-                    onmouseover="
-                        this.style.backgroundColor = '${colors.hoverBg}';
-                        this.style.color = '${colors.activeTextColor}';
-                        this.style.borderLeftColor = '${colors.activeTextColor}';
-                    "
-                    onmouseout="
-                        const isActive = this.classList.contains('active');
-                        this.style.backgroundColor = isActive ? '${colors.hoverBg}' : 'transparent';
-                        this.style.color = isActive ? '${colors.activeTextColor}' : '${colors.textMutedColor}';
-                        this.style.borderLeftColor = isActive ? '${colors.activeTextColor}' : 'transparent';
-                    "
                 >
                     <span style="
                         flex-shrink: 0;
@@ -472,16 +451,6 @@
                         border-left: 3px solid transparent;
                         padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} - 3px);
                         flex-shrink: 0;
-                    "
-                    onmouseover="
-                        this.style.backgroundColor = '${colors.hoverBg}';
-                        this.style.color = '${colors.activeTextColor}';
-                        this.style.borderLeftColor = '${colors.activeTextColor}';
-                    "
-                    onmouseout="
-                        this.style.backgroundColor = 'transparent';
-                        this.style.color = '${colors.textColor}';
-                        this.style.borderLeftColor = 'transparent';
                     "
                 >
                     <span style="
@@ -545,6 +514,14 @@
                 }
             }
 
+            /* CSS Variables for colors */
+            :root {
+                --sidebar-hover-bg: ${colors.hoverBg};
+                --sidebar-active-color: ${colors.activeTextColor};
+                --sidebar-text-color: ${colors.textColor};
+                --sidebar-muted-color: ${colors.textMutedColor};
+            }
+
             /* Sidebar CSS */
             #sidebar {
                 padding: 0 !important;
@@ -579,7 +556,7 @@
             .sidebar-child-item {
                 box-sizing: border-box;
                 flex-shrink: 0;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
                 transform: translateX(0);
                 will-change: transform;
             }
@@ -603,12 +580,19 @@
             .sidebar-child-item.active {
                 position: relative;
                 font-weight: 600;
+                background-color: var(--sidebar-hover-bg) !important;
+                color: var(--sidebar-active-color) !important;
+                border-left-color: var(--sidebar-active-color) !important;
             }
 
             /* Smooth hover animation - only for non-active items */
             .sidebar-item:hover:not(.active),
-            .sidebar-dropdown-btn:hover:not(.expanded) {
+            .sidebar-dropdown-btn:hover:not(.expanded),
+            .sidebar-child-item:hover:not(.active) {
                 transform: translateX(4px);
+                background-color: var(--sidebar-hover-bg) !important;
+                color: var(--sidebar-active-color) !important;
+                border-left-color: var(--sidebar-active-color) !important;
             }
 
             /* Dropdown button expanded state */
