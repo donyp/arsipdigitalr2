@@ -145,17 +145,36 @@
     const removeHeaderBlur = () => {
         const header = document.getElementById('unified-header');
         if (header) {
-            // Remove blur filter
-            header.style.filter = 'blur(0px)';
+            // Remove blur filter - check multiple times to ensure it sticks
+            header.style.filter = 'blur(0px) !important';
+            header.style.removeProperty('filter');
         }
         // Enable transitions
         document.documentElement.classList.remove('no-transition');
         document.documentElement.classList.add('with-transitions');
     };
     
+    // Wait for multiple indicators that page is truly loaded
+    let loadCheckCount = 0;
+    const checkPageLoaded = setInterval(() => {
+        if (document.readyState === 'complete') {
+            clearInterval(checkPageLoaded);
+            // Delay a bit more to ensure all content is rendered
+            setTimeout(removeHeaderBlur, 300);
+        }
+        loadCheckCount++;
+        if (loadCheckCount > 50) {
+            clearInterval(checkPageLoaded);
+            removeHeaderBlur();
+        }
+    }, 100);
+    
     if (document.readyState === 'complete') {
-        removeHeaderBlur();
+        // Page already loaded
+        setTimeout(removeHeaderBlur, 300);
     } else {
-        window.addEventListener('load', removeHeaderBlur);
+        window.addEventListener('load', () => {
+            setTimeout(removeHeaderBlur, 300);
+        });
     }
 })();
