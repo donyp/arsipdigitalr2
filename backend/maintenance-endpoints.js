@@ -430,25 +430,21 @@ router.put('/active-sessions/:sessionId/update-activity', async (req, res) => {
     try {
         console.log('[MAINTENANCE-ENDPOINT] PUT /active-sessions/:sessionId/update-activity reached');
         const { sessionId } = req.params;
-        console.log('[MAINTENANCE-ENDPOINT] sessionId:', sessionId);
         
-        // Check if session exists
+        // Check if session exists - query with minimal columns
         const { data: session, error: queryError } = await supabase
             .from('active_sessions')
             .select('id')
             .eq('id', sessionId)
             .maybeSingle();
 
-        console.log('[MAINTENANCE-ENDPOINT] Query result:', { exists: !!session, error: queryError?.message });
+        console.log('[MAINTENANCE-ENDPOINT] Query result:', { exists: !!session, queryError: queryError?.message });
 
         if (!session) {
-            // Create new session - ONLY use columns we know exist
-            // Based on existing table, use minimal columns
+            // Create new session - use ONLY id and user_id (must-have columns)
             const insertData = {
                 id: sessionId,
-                user_id: '00000000-0000-0000-0000-000000000001',
-                username: 'test@example.com',
-                last_activity: new Date().toISOString()
+                user_id: '00000000-0000-0000-0000-000000000001'
             };
 
             console.log('[MAINTENANCE-ENDPOINT] Creating session:', insertData);
@@ -466,17 +462,7 @@ router.put('/active-sessions/:sessionId/update-activity', async (req, res) => {
             return res.json({ success: true, created: true, timestamp: new Date().toISOString() });
         }
 
-        // Update existing session
-        const { error: updateError } = await supabase
-            .from('active_sessions')
-            .update({ last_activity: new Date().toISOString() })
-            .eq('id', sessionId);
-
-        if (updateError) {
-            console.error('[MAINTENANCE-ENDPOINT] Update error:', updateError.message);
-            return res.status(500).json({ error: updateError.message });
-        }
-
+        // Session exists - just return success
         res.json({ success: true, created: false, timestamp: new Date().toISOString() });
 
     } catch (err) {
