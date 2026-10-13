@@ -7652,6 +7652,7 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         // ============================================================
         try {
             const maintenanceRoutes = require('./maintenance-endpoints');
+            maintenanceRoutes.initializeSupabase(supabase, JWT_SECRET);
             app.use('/api/maintenance', maintenanceRoutes);
             console.log('[Routes] Maintenance endpoints registered');
         } catch (err) {

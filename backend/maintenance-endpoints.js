@@ -9,15 +9,76 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 
-const supabase = createClient(
+// Initialize supabase
+let supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
   {
     realtime: { mode: 'manual' }
   }
 );
+
+let JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Initialize function to set values from server.js
+function initializeSupabase(supabaseClient, jwtSecret) {
+    supabase = supabaseClient;
+    JWT_SECRET = jwtSecret;
+}
+
+// ============================================================
+// MIDDLEWARE
+// ============================================================
+
+/**
+ * Authentication Middleware
+ * Verifies JWT token and loads user from database
+ */
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = (authHeader && authHeader.split(' ')[1]);
+
+    if (!token) {
+        return res.status(401).json({ error: 'Token tidak ditemukan. Silakan login.' });
+    }
+
+    jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+        if (err) {
+            return res.status(403).json({ error: 'Token tidak valid atau sudah expired.' });
+        }
+        
+        try {
+            // Query database for authoritative user role
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('id, email, role, zona_id, permissions, is_active')
+                .eq('id', decoded.sub || decoded.userId)
+                .single();
+            
+            if (error || !user) {
+                return res.status(403).json({ error: 'Token tidak valid - user tidak ditemukan.' });
+            }
+
+            // Check if user is active
+            if (user.is_active === false) {
+                return res.status(403).json({ error: 'Akun Anda telah dinonaktifkan.' });
+            }
+
+            // Use DATABASE role (authoritative source)
+            decoded.role = user.role;
+            decoded.zona_id = user.zona_id;
+            decoded.permissions = user.permissions || [];
+            
+            req.user = decoded;
+            next();
+        } catch (err) {
+            return res.status(403).json({ error: 'Authentication verification failed.' });
+        }
+    });
+}
 
 const MAINTENANCE_FILE = path.join(__dirname, '../data/maintenance-status.json');
 const ACTIVE_SESSIONS_FILE = path.join(__dirname, '../data/active-sessions.json');
@@ -140,7 +201,7 @@ router.get('/status', (req, res) => {
  * Start maintenance mode (Admin only)
  * Forces logout all non-moderators
  */
-router.post('/start', async (req, res) => {
+router.post('/start', authenticateToken, async (req, res) => {
     try {
         // Verify admin role
         if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
@@ -233,7 +294,7 @@ router.post('/start', async (req, res) => {
  * POST /api/maintenance/end
  * End maintenance mode (Admin only)
  */
-router.post('/end', async (req, res) => {
+router.post('/end', authenticateToken, async (req, res) => {
     try {
         // Verify admin role
         if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
@@ -299,7 +360,7 @@ router.post('/end', async (req, res) => {
  * GET /api/maintenance/access-logs
  * Get maintenance access logs (Admin only)
  */
-router.get('/access-logs', async (req, res) => {
+router.get('/access-logs', authenticateToken, async (req, res) => {
     try {
         // Verify admin role
         if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
@@ -340,7 +401,7 @@ router.get('/access-logs', async (req, res) => {
  * GET /api/maintenance/forced-logouts
  * Get forced logout records (Admin only)
  */
-router.get('/forced-logouts', async (req, res) => {
+router.get('/forced-logouts', authenticateToken, async (req, res) => {
     try {
         if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
             return res.status(403).json({
@@ -378,7 +439,7 @@ router.get('/forced-logouts', async (req, res) => {
  * POST /api/maintenance/logout-non-moderators
  * Force logout all non-moderators (called automatically when maintenance starts)
  */
-router.post('/logout-non-moderators', async (req, res) => {
+router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
     try {
         if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
             return res.status(403).json({
@@ -455,3 +516,4 @@ router.post('/logout-non-moderators', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.initializeSupabase = initializeSupabase;
