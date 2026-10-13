@@ -157,7 +157,13 @@ async function logMaintenanceAccess(req, action, details) {
 }
 
 /**
- * GET /api/maintenance/status
+ * GET /api/maintenance/ping
+ * Simple ping test endpoint
+ */
+router.get('/ping', (req, res) => {
+    console.log('[Maintenance] GET /ping called');
+    res.json({ pong: true, timestamp: new Date().toISOString() });
+});
  * Get current maintenance mode status
  * Public endpoint - anyone can check
  */
@@ -418,6 +424,7 @@ router.get('/active-sessions', authenticateToken, async (req, res) => {
 });
 
 router.put('/active-sessions/:sessionId/update-activity', authenticateToken, async (req, res) => {
+    console.log('[=== MAINTENANCE PUT ENDPOINT REACHED ===]');
     try {
         const { sessionId } = req.params;
         const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
