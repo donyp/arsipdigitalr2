@@ -247,15 +247,74 @@ function performSearch(query) {
 }
 
 function goToMaintenance() {
-    // Check user role first
-    const userRole = localStorage.getItem('userRole');
-    if (!userRole || (userRole !== 'admin' && userRole !== 'super_admin' && userRole !== 'moderator')) {
-        alert('Hanya admin dan moderator yang dapat mengakses mode perbaikan');
+    // Check user role from multiple sources
+    let userRole = null;
+    
+    // Try 1: Get from user object in localStorage
+    try {
+        const userObj = localStorage.getItem('user');
+        if (userObj) {
+            const user = JSON.parse(userObj);
+            userRole = user.role;
+        }
+    } catch (err) {
+        console.error('Error parsing user object:', err);
+    }
+    
+    // Try 2: Get from individual role keys
+    if (!userRole) {
+        userRole = localStorage.getItem('userRole') || 
+                   localStorage.getItem('user_role') ||
+                   sessionStorage.getItem('userRole') ||
+                   sessionStorage.getItem('user_role');
+    }
+    
+    // Try 3: Decode from JWT token
+    if (!userRole) {
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userRole = payload.role;
+            }
+        } catch (err) {
+            console.error('Error decoding token:', err);
+        }
+    }
+    
+    console.log('[Maintenance] Current user role:', userRole);
+    
+    // Allow admin, super_admin, and moderator
+    const allowedRoles = ['admin', 'super_admin', 'moderator'];
+    if (!userRole || !allowedRoles.includes(userRole)) {
+        // Show styled alert instead of browser alert
+        showMaintenanceAccessDenied(userRole);
         return;
     }
     
     // Navigate to maintenance dashboard
     window.location.href = '/manage/maintenance.html';
+}
+
+function showMaintenanceAccessDenied(userRole) {
+    // Create a styled notification using SweetAlert2 if available, else fallback
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Akses Ditolak',
+            text: `Role "${userRole || 'Unknown'}" tidak memiliki akses ke Mode Perbaikan. Hanya admin dan moderator yang dapat mengakses.`,
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#667eea'
+        });
+    } else {
+        // Fallback to console log + toast if available
+        console.warn('[Maintenance] Access denied for role:', userRole);
+        if (typeof showToast === 'function') {
+            showToast('Hanya admin dan moderator yang dapat mengakses Mode Perbaikan', 'error');
+        } else {
+            alert('Hanya admin dan moderator yang dapat mengakses Mode Perbaikan');
+        }
+    }
 }
 
 // Auto-initialize if DOM is ready
