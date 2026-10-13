@@ -138,6 +138,8 @@ function getActiveSessions() {
  */
 async function logMaintenanceAccess(req, action, details) {
     try {
+        const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+        
         const { data, error } = await supabase
             .from('maintenance_access_logs')
             .insert([
@@ -146,7 +148,7 @@ async function logMaintenanceAccess(req, action, details) {
                     username: req.user?.email || null,
                     user_role: req.user?.role || null,
                     action: action,
-                    ip_address: req.clientIp,
+                    ip_address: clientIp,
                     user_agent: req.headers['user-agent'],
                     reason: details?.reason || null,
                     details: details || {}
@@ -427,6 +429,8 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
         const { sessionId } = req.params;
         const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
 
+        console.log('[Maintenance] PUT update-activity called:', { sessionId, userId: req.user?.id, clientIp });
+
         // Check if session exists
         const { data: session, error: queryError } = await supabase
             .from('active_sessions')
@@ -434,27 +438,41 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
             .eq('id', sessionId)
             .single();
 
+        console.log('[Maintenance] Query result:', { sessionExists: !!session, queryError: queryError?.message });
+
         if (queryError || !session) {
             // Session doesn't exist - CREATE IT
             console.log('[Maintenance] Session not found, creating new one:', sessionId);
             
+            const insertData = {
+                id: sessionId,
+                user_id: req.user.id,
+                username: req.user.email || req.user.username,
+                user_role: req.user.role,
+                ip_address: clientIp,
+                user_agent: req.headers['user-agent'],
+                is_valid: true,
+                maintenance_forced_logout: false,
+                last_activity: new Date().toISOString()
+            };
+
+            console.log('[Maintenance] Attempting to insert:', insertData);
+
             const { error: insertError } = await supabase
                 .from('active_sessions')
-                .insert([{
-                    id: sessionId,
-                    user_id: req.user.id,
-                    username: req.user.email || req.user.username,
-                    user_role: req.user.role,
-                    ip_address: clientIp,
-                    user_agent: req.headers['user-agent'],
-                    is_valid: true,
-                    maintenance_forced_logout: false,
-                    last_activity: new Date().toISOString()
-                }]);
+                .insert([insertData]);
 
             if (insertError) {
-                console.error('[Maintenance] Error creating session:', insertError.message);
-                return res.status(500).json({ error: 'Failed to create session', details: insertError.message });
+                console.error('[Maintenance] Error creating session:', {
+                    message: insertError.message,
+                    code: insertError.code,
+                    details: insertError.details
+                });
+                return res.status(500).json({ 
+                    error: 'Failed to create session', 
+                    details: insertError.message,
+                    code: insertError.code
+                });
             }
 
             console.log('[Maintenance] Session created successfully:', sessionId);
@@ -480,7 +498,8 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
             .eq('id', sessionId);
 
         if (updateError) {
-            return res.status(500).json({ error: 'Failed to update session activity' });
+            console.error('[Maintenance] Error updating session:', updateError.message);
+            return res.status(500).json({ error: 'Failed to update session activity', details: updateError.message });
         }
 
         res.json({ 
@@ -490,7 +509,7 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
         });
 
     } catch (err) {
-        console.error('[Maintenance] Update activity error:', err.message);
+        console.error('[Maintenance] Update activity error:', err.message, err);
         res.status(500).json({ error: 'Failed to update session', details: err.message });
     }
 });
