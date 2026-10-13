@@ -23,7 +23,7 @@ html.dark-mode {
     --header-text-secondary: #cbd5e1;
 }
 
-/* Main Header Container */
+/* Main Header Container - spans full width but header content respects sidebar */
 #unified-header {
     position: fixed;
     top: 0;
@@ -35,8 +35,10 @@ html.dark-mode {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     padding: 20px 32px;
+    padding-left: calc(16rem + 32px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     width: 100%;
+    box-sizing: border-box;
 }
 
 /* Push content below fixed header */
