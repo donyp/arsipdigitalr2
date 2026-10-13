@@ -25,12 +25,12 @@ function createUnifiedHeader(options = {}) {
             <div class="header-left">
                 <div class="greeting-section">
                     <h2 class="greeting-text">
-                        <span class="greeting-prefix">Good</span>
-                        <span class="greeting-time">Morning</span>,&nbsp;
+                        <span class="greeting-prefix">Selamat</span>
+                        <span class="greeting-time">Pagi</span>,&nbsp;
                         <span class="user-name" data-user-name>User</span>
                         <span class="greeting-emoji">👋</span>
                     </h2>
-                    <p class="greeting-subtitle">Here's what's happening with your infrastructure today.</p>
+                    <p class="greeting-subtitle">Kelola semua arsip digital disini</p>
                 </div>
             </div>
 
@@ -162,17 +162,17 @@ function updateGreeting(hours) {
     
     if (!timeEl || !prefixEl) return;
     
-    let greeting = 'Morning';
-    if (hours >= 12 && hours < 17) {
-        greeting = 'Afternoon';
-    } else if (hours >= 17 && hours < 21) {
-        greeting = 'Evening';
-    } else if (hours >= 21 || hours < 5) {
-        greeting = 'Night';
+    let greeting = 'Pagi';
+    if (hours >= 12 && hours < 15) {
+        greeting = 'Siang';
+    } else if (hours >= 15 && hours < 19) {
+        greeting = 'Sore';
+    } else if (hours >= 19 || hours < 5) {
+        greeting = 'Malam';
     }
     
     timeEl.textContent = greeting;
-    prefixEl.textContent = 'Good';
+    prefixEl.textContent = 'Selamat';
 }
 
 function loadUserGreeting() {

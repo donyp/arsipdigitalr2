@@ -162,7 +162,7 @@
                     padding: 1rem 0.8rem;
                     border-bottom: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
-                    height: 56px;
+                    height: 80px;
                     display: flex;
                     align-items: center;
                 ">

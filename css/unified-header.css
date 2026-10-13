@@ -5,10 +5,10 @@
 :root {
     --header-bg: #1e293b;
     --header-border: #334155;
-    --header-text: #f1f5f9;
-    --header-text-secondary: #cbd5e1;
+    --header-text: #ffffff;
+    --header-text-secondary: #ffffff;
     --header-accent: #667eea;
-    --header-height: 56px;
+    --header-height: 80px;
 }
 
 html,
@@ -34,8 +34,8 @@ html.dark-mode {
     border-bottom: 1px solid var(--header-border);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 0 32px;
-    height: 56px;
+    padding: 12px 32px;
+    height: 80px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     width: auto;
     box-sizing: border-box;
@@ -45,7 +45,7 @@ html.dark-mode {
 
 /* Push content below fixed header */
 #app {
-    padding-top: var(--header-height);
+    padding-top: 80px;
     margin-top: 0;
 }
 
@@ -67,12 +67,12 @@ html.dark-mode {
 
 .greeting-text {
     margin: 0;
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 700;
     color: var(--header-text);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     flex-wrap: wrap;
 }
 
@@ -96,9 +96,9 @@ html.dark-mode {
 }
 
 .greeting-subtitle {
-    display: none;
-    margin: 0;
-    font-size: 13px;
+    display: block;
+    margin: 4px 0 0 0;
+    font-size: 12px;
     color: var(--header-text-secondary);
     font-weight: 500;
 }
