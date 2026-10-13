@@ -370,9 +370,9 @@ router.post('/end', authenticateToken, async (req, res) => {
  */
 router.get('/active-sessions', authenticateToken, async (req, res) => {
     try {
-        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
             return res.status(403).json({
-                error: 'Only admins can view active sessions'
+                error: 'Only admins and moderators can view active sessions'
             });
         }
 
@@ -388,6 +388,8 @@ router.get('/active-sessions', authenticateToken, async (req, res) => {
             console.error('[Maintenance] Query error:', error.message);
             return res.status(500).json({ error: 'Failed to fetch active sessions' });
         }
+
+        console.log('[Maintenance] Active sessions query result:', { count, sessionsCount: sessions?.length, firstSession: sessions?.[0] });
 
         // Transform session data for display
         const transformedSessions = (sessions || []).map(session => ({
