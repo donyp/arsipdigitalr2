@@ -172,6 +172,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             }
 
             // Record active session
+            let sessionId = null;
             try {
                 const { data: existing } = await supabase
                     .from('active_sessions')
@@ -181,6 +182,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
                 if (existing && existing.length > 0) {
                     // Update existing session
+                    sessionId = existing[0].id;
                     await supabase
                         .from('active_sessions')
                         .update({
@@ -193,7 +195,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                         .eq('is_valid', true);
                 } else {
                     // Create new session
-                    await supabase
+                    const { data: newSession, error: insertError } = await supabase
                         .from('active_sessions')
                         .insert([{
                             user_id: users.id,
@@ -204,7 +206,12 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                             user_agent: req.headers['user-agent'],
                             is_valid: true,
                             maintenance_forced_logout: false
-                        }]);
+                        }])
+                        .select('id');
+                    
+                    if (newSession && newSession.length > 0) {
+                        sessionId = newSession[0].id;
+                    }
                 }
             } catch (sessionErr) {
                 console.error('[Auth] Failed to record session:', sessionErr.message);
@@ -214,6 +221,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 success: true,
                 message: 'Login berhasil',
                 token: jwtToken,
+                sessionId: sessionId, // Include session ID for keep-alive
                 user: {
                     id: users.id,
                     username: users.username,

@@ -357,6 +357,266 @@ router.post('/end', authenticateToken, async (req, res) => {
 });
 
 /**
+ * GET /api/maintenance/active-sessions
+ * Get all active sessions (Admin only)
+ * Shows real-time session data with user info
+ */
+router.get('/active-sessions', authenticateToken, async (req, res) => {
+    try {
+        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+            return res.status(403).json({
+                error: 'Only admins can view active sessions'
+            });
+        }
+
+        // Query active sessions directly from database (authoritative source)
+        const { data: sessions, error, count } = await supabase
+            .from('active_sessions')
+            .select('*', { count: 'exact' })
+            .eq('is_valid', true)
+            .order('last_activity', { ascending: false });
+
+        if (error) {
+            console.error('[Maintenance] Query error:', error.message);
+            return res.status(500).json({ error: 'Failed to fetch active sessions' });
+        }
+
+        // Transform session data for display
+        const transformedSessions = (sessions || []).map(session => ({
+            id: session.id,
+            user_id: session.user_id,
+            username: session.username,
+            user_email: session.username, // email might be stored in username field
+            user_role: session.user_role,
+            ip_address: session.ip_address,
+            user_agent: session.user_agent,
+            token_jti: session.token_jti,
+            is_valid: session.is_valid,
+            maintenance_forced_logout: session.maintenance_forced_logout,
+            created_at: session.created_at,
+            last_activity: session.last_activity,
+            // Calculate time since last activity
+            inactiveDurationSeconds: session.last_activity 
+                ? Math.floor((Date.now() - new Date(session.last_activity)) / 1000)
+                : null
+        }));
+
+        res.json({
+            total: count,
+            sessions: transformedSessions,
+            timestamp: new Date().toISOString(),
+            notes: {
+                is_valid: 'Whether session token is still active',
+                maintenance_forced_logout: 'Whether session was forcibly ended due to maintenance',
+                inactiveDurationSeconds: 'Seconds since last activity - WARNING if > 3600 (1 hour)'
+            }
+        });
+
+    } catch (err) {
+        console.error('[Maintenance] Active sessions error:', err.message);
+        res.status(500).json({ error: 'Failed to get active sessions' });
+    }
+});
+
+/**
+ * PUT /api/maintenance/active-sessions/:sessionId/update-activity
+ * Update session last_activity timestamp (client-side ping)
+ * Public endpoint - used by JavaScript to keep session alive
+ */
+router.put('/active-sessions/:sessionId/update-activity', authenticateToken, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        // Verify this is the user's own session
+        const { data: session, error: queryError } = await supabase
+            .from('active_sessions')
+            .select('user_id')
+            .eq('id', sessionId)
+            .single();
+
+        if (queryError || !session) {
+            return res.status(404).json({ error: 'Session not found' });
+        }
+
+        if (session.user_id !== req.user.id) {
+            return res.status(403).json({ error: 'Cannot update other users\' sessions' });
+        }
+
+        // Update last_activity
+        const { error: updateError } = await supabase
+            .from('active_sessions')
+            .update({ 
+                last_activity: new Date().toISOString()
+            })
+            .eq('id', sessionId);
+
+        if (updateError) {
+            return res.status(500).json({ error: 'Failed to update session activity' });
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Session activity updated',
+            last_activity: new Date().toISOString()
+        });
+
+    } catch (err) {
+        console.error('[Maintenance] Update activity error:', err.message);
+        res.status(500).json({ error: 'Failed to update session' });
+    }
+});
+
+/**
+ * DELETE /api/maintenance/active-sessions/:sessionId
+ * Manually invalidate a specific session (Admin only)
+ * Used to force logout a specific user
+ */
+router.delete('/active-sessions/:sessionId', authenticateToken, async (req, res) => {
+    try {
+        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+            return res.status(403).json({
+                error: 'Only admins can invalidate sessions'
+            });
+        }
+
+        const { sessionId } = req.params;
+
+        // Get session info before deletion
+        const { data: session, error: queryError } = await supabase
+            .from('active_sessions')
+            .select('*')
+            .eq('id', sessionId)
+            .single();
+
+        if (queryError || !session) {
+            return res.status(404).json({ error: 'Session not found' });
+        }
+
+        // Invalidate the session
+        const { error: updateError } = await supabase
+            .from('active_sessions')
+            .update({ 
+                is_valid: false,
+                maintenance_forced_logout: true
+            })
+            .eq('id', sessionId);
+
+        if (updateError) {
+            return res.status(500).json({ error: 'Failed to invalidate session' });
+        }
+
+        // Add token to forced logout list if available
+        if (session.token_jti) {
+            try {
+                const { addToForcedLogoutList } = require('./maintenance-middleware');
+                addToForcedLogoutList(session.token_jti);
+            } catch (err) {
+                console.error('[Maintenance] Could not add to forced logout list:', err.message);
+            }
+        }
+
+        // Log this admin action
+        await logMaintenanceAccess(req, 'session_invalidated', {
+            session_id: sessionId,
+            target_user: session.username,
+            target_role: session.user_role
+        });
+
+        res.json({
+            success: true,
+            message: 'Session invalidated',
+            invalidated_session: {
+                id: sessionId,
+                username: session.username,
+                user_role: session.user_role,
+                ip_address: session.ip_address
+            }
+        });
+
+    } catch (err) {
+        console.error('[Maintenance] Invalidate session error:', err.message);
+        res.status(500).json({ error: 'Failed to invalidate session' });
+    }
+});
+
+/**
+ * POST /api/maintenance/verify-sessions
+ * Verify and clean up stale sessions (Admin only)
+ * Checks session validity and removes expired/stale entries
+ */
+router.post('/verify-sessions', authenticateToken, async (req, res) => {
+    try {
+        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+            return res.status(403).json({
+                error: 'Only admins can verify sessions'
+            });
+        }
+
+        const { inactiveThresholdMinutes = 60 } = req.body;
+        const inactiveThresholdMs = inactiveThresholdMinutes * 60 * 1000;
+        const now = Date.now();
+
+        // Query all active sessions
+        const { data: allSessions, error } = await supabase
+            .from('active_sessions')
+            .select('*')
+            .eq('is_valid', true);
+
+        if (error) {
+            return res.status(500).json({ error: 'Failed to query sessions' });
+        }
+
+        // Identify stale sessions
+        const staleSessions = (allSessions || []).filter(session => {
+            if (!session.last_activity) return true;
+            const inactiveDuration = now - new Date(session.last_activity).getTime();
+            return inactiveDuration > inactiveThresholdMs;
+        });
+
+        // Invalidate stale sessions
+        if (staleSessions.length > 0) {
+            const staleIds = staleSessions.map(s => s.id);
+            
+            const { error: updateError } = await supabase
+                .from('active_sessions')
+                .update({ 
+                    is_valid: false,
+                    maintenance_forced_logout: false,
+                    // Comment: 'auto-invalidated due to inactivity'
+                })
+                .in('id', staleIds);
+
+            if (updateError) {
+                console.error('[Maintenance] Error invalidating stale sessions:', updateError.message);
+            }
+        }
+
+        res.json({
+            success: true,
+            message: 'Session verification completed',
+            stats: {
+                total_active_sessions: (allSessions || []).length,
+                stale_sessions_found: staleSessions.length,
+                stale_sessions_invalidated: staleSessions.length,
+                inactiveThresholdMinutes: inactiveThresholdMinutes,
+                timestamp: new Date().toISOString()
+            },
+            stale_sessions: staleSessions.map(s => ({
+                id: s.id,
+                username: s.username,
+                user_role: s.user_role,
+                last_activity: s.last_activity,
+                inactiveDurationMinutes: Math.floor((now - new Date(s.last_activity).getTime()) / 1000 / 60)
+            }))
+        });
+
+    } catch (err) {
+        console.error('[Maintenance] Verify sessions error:', err.message);
+        res.status(500).json({ error: 'Failed to verify sessions' });
+    }
+});
+
+/**
  * GET /api/maintenance/access-logs
  * Get maintenance access logs (Admin only)
  */
