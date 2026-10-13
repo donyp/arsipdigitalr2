@@ -8,6 +8,50 @@
     console.log('[SIDEBAR] Initializing clean sidebar...');
 
     // ============================================================
+    // INJECT SIDEBAR CSS IMMEDIATELY (Global - all pages)
+    // ============================================================
+    (function injectGlobalSidebarCSS() {
+        if (document.getElementById('sidebar-css-global')) return;
+        
+        const css = `
+            /* Pulsing Heartbeat Animation - GLOBAL */
+            @keyframes heartbeat-pulse {
+                0%, 100% {
+                    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+                }
+                50% {
+                    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+                }
+            }
+
+            /* Active menu item with pulsing heartbeat - applies to all pages */
+            .sidebar-item.active::before,
+            .sidebar-child-item.active::before {
+                content: '';
+                position: absolute;
+                right: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 8px;
+                height: 8px;
+                background: #3b82f6;
+                border-radius: 50%;
+                animation: heartbeat-pulse 2s infinite ease-in-out;
+            }
+
+            .sidebar-item.active,
+            .sidebar-child-item.active {
+                position: relative;
+            }
+        `;
+        
+        const style = document.createElement('style');
+        style.id = 'sidebar-css-global';
+        style.textContent = css;
+        document.head.appendChild(style);
+    })();
+
+    // ============================================================
     // MENU CONFIGURATION
     // ============================================================
     const menuConfig = [
