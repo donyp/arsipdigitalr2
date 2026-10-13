@@ -8,7 +8,7 @@
     --header-text: #f1f5f9;
     --header-text-secondary: #cbd5e1;
     --header-accent: #667eea;
-    --header-height: 70px;
+    --header-height: 56px;
 }
 
 html,
@@ -34,7 +34,7 @@ html.dark-mode {
     border-bottom: 1px solid var(--header-border);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    padding: 20px 32px;
+    padding: 12px 32px;
     padding-left: calc(16rem + 32px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     width: 100%;
@@ -57,17 +57,12 @@ html.dark-mode {
 
 /* Left Section: Greeting */
 .header-left {
-    flex: 1;
-    min-width: 300px;
-}
-
-.greeting-section {
-    margin-bottom: 12px;
+    flex: 0 0 auto;
 }
 
 .greeting-text {
     margin: 0;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--header-text);
     display: flex;
@@ -95,15 +90,16 @@ html.dark-mode {
 }
 
 .greeting-subtitle {
+    display: none;
     margin: 0;
     font-size: 13px;
     color: var(--header-text-secondary);
     font-weight: 500;
 }
 
-/* Date & Time Display */
+/* Date & Time Display - HIDDEN */
 .datetime-display {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 12px;
     margin-top: 8px;
@@ -275,29 +271,16 @@ html.dark-mode {
 
 @media (max-width: 768px) {
     #unified-header {
-        padding: 16px 20px;
+        padding: 12px 20px;
+        padding-left: 20px;
     }
     
     :root {
-        --header-height: 64px;
-    }
-    
-    html, body {
-        padding-top: var(--header-height);
-    }
-    
-    .unified-header-content {
-        gap: 16px;
-    }
-    
-    .header-left {
-        min-width: auto;
-        flex: 1 1 100%;
-        order: 1;
+        --header-height: 52px;
     }
     
     .greeting-text {
-        font-size: 20px;
+        font-size: 18px;
     }
     
     .greeting-subtitle {

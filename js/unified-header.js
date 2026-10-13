@@ -32,19 +32,6 @@ function createUnifiedHeader(options = {}) {
                     </h2>
                     <p class="greeting-subtitle">Here's what's happening with your infrastructure today.</p>
                 </div>
-                
-                <!-- Date & Time Display -->
-                <div class="datetime-display">
-                    <div class="datetime-item">
-                        <i class="far fa-calendar"></i>
-                        <span id="header-date" class="date-value">...</span>
-                    </div>
-                    <span class="datetime-separator">•</span>
-                    <div class="datetime-item">
-                        <i class="far fa-clock"></i>
-                        <span id="header-time" class="time-value">--:--</span>
-                    </div>
-                </div>
             </div>
 
             <!-- Center: Search Bar -->
