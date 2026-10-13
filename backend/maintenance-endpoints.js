@@ -427,94 +427,20 @@ router.get('/active-sessions', authenticateToken, async (req, res) => {
 });
 
 router.put('/active-sessions/:sessionId/update-activity', async (req, res) => {
-    console.log('[=== MAINTENANCE PUT ENDPOINT REACHED ===]');
     try {
+        console.log('[MAINTENANCE-ENDPOINT] PUT /active-sessions/:sessionId/update-activity reached');
         const { sessionId } = req.params;
-        const clientIp = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress || 'unknown';
-
-        console.log('[Maintenance] PUT update-activity called:', { sessionId, clientIp });
+        console.log('[MAINTENANCE-ENDPOINT] sessionId:', sessionId);
         
-        // For now, skip auth - just test the database
-        const fakeUserId = '00000000-0000-0000-0000-000000000001';
-        
-        console.log('[Maintenance] Testing session creation with fake user...');
-
-        // Check if session exists
-        const { data: session, error: queryError } = await supabase
-            .from('active_sessions')
-            .select('user_id')
-            .eq('id', sessionId)
-            .maybeSingle(); // Use maybeSingle to handle not found gracefully
-
-        console.log('[Maintenance] Query result:', { sessionExists: !!session, queryError: queryError?.message });
-
-        if (queryError || !session) {
-            // Session doesn't exist - CREATE IT
-            console.log('[Maintenance] Session not found, creating new one:', sessionId);
-            
-            const insertData = {
-                id: sessionId,
-                user_id: fakeUserId,
-                username: 'test@example.com',
-                user_role: 'moderator',
-                ip_address: clientIp,
-                user_agent: req.headers['user-agent'],
-                is_valid: true,
-                maintenance_forced_logout: false,
-                last_activity: new Date().toISOString()
-                // Note: created_at will use database default NOW()
-            };
-
-            console.log('[Maintenance] Attempting to insert:', insertData);
-
-            const { error: insertError } = await supabase
-                .from('active_sessions')
-                .insert([insertData]);
-
-            if (insertError) {
-                console.error('[Maintenance] Error creating session:', {
-                    message: insertError.message,
-                    code: insertError.code,
-                    details: insertError.details
-                });
-                return res.status(500).json({ 
-                    error: 'Failed to create session', 
-                    details: insertError.message,
-                    code: insertError.code
-                });
-            }
-
-            console.log('[Maintenance] Session created successfully:', sessionId);
-            return res.json({ 
-                success: true, 
-                message: 'Session created and activity updated',
-                last_activity: new Date().toISOString(),
-                created: true
-            });
-        }
-
-        // Session exists - update last_activity
-        const { error: updateError } = await supabase
-            .from('active_sessions')
-            .update({ 
-                last_activity: new Date().toISOString()
-            })
-            .eq('id', sessionId);
-
-        if (updateError) {
-            console.error('[Maintenance] Error updating session:', updateError.message);
-            return res.status(500).json({ error: 'Failed to update session activity', details: updateError.message });
-        }
-
+        // Just return success immediately to test
         res.json({ 
             success: true, 
-            message: 'Session activity updated',
-            last_activity: new Date().toISOString()
+            message: 'Test success',
+            timestamp: new Date().toISOString()
         });
-
     } catch (err) {
-        console.error('[Maintenance] Update activity error:', err.message, err);
-        res.status(500).json({ error: 'Failed to update session', details: err.message });
+        console.error('[MAINTENANCE-ENDPOINT] Error:', err.message, err.stack);
+        res.status(500).json({ error: err.message });
     }
 });
 
