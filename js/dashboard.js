@@ -174,7 +174,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (hasPermission('manage_system') || user.role === 'moderator' || user.role === 'super_admin') {
         document.getElementById('maintenance-btn')?.classList.replace('hidden', 'md:flex');
         document.getElementById('btn-manage-broadcast')?.classList.remove('hidden');
-        await loadMaintenanceStatus();
+        // REMOVED: await loadMaintenanceStatus();
+        // Load maintenance status only when user clicks the button (lazy-loading)
     } else {
         // Explicitly remove restricted elements for other roles
         document.getElementById('maintenance-btn')?.remove();
@@ -2422,6 +2423,9 @@ function updateMaintenanceUI(isActive) {
 async function toggleMaintenance() {
     const btn = document.getElementById('maintenance-btn');
     if (!btn) return;
+
+    // Load maintenance status first (lazy-loading when user clicks)
+    await loadMaintenanceStatus();
 
     const currentStatus = btn.dataset.maintenance || (document.getElementById('maintenance-text').textContent === 'PERBAIKAN AKTIF' ? 'active' : 'inactive');
     const isActive = currentStatus === 'active';
