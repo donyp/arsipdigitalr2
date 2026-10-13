@@ -164,6 +164,9 @@ router.get('/ping', (req, res) => {
     console.log('[Maintenance] GET /ping called');
     res.json({ pong: true, timestamp: new Date().toISOString() });
 });
+
+/**
+ * GET /api/maintenance/status
  * Get current maintenance mode status
  * Public endpoint - anyone can check
  */
