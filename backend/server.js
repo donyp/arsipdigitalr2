@@ -784,6 +784,10 @@ app.get('/shared/:token', (req, res) => {
 // Serve Static Frontend from root (AFTER URL rewriting)
 app.use(express.static(path.join(__dirname, '..')));
 
+// Explicitly serve JS files (ensure they're accessible)
+app.use('/js', express.static(path.join(__dirname, '..', 'js')));
+app.use('/css', express.static(path.join(__dirname, '..', 'css')));
+
 // Version Header
 app.use((req, res, next) => {
     res.setHeader('X-Backend-Version', '2.0.1-fixed');
