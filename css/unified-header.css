@@ -1,0 +1,331 @@
+/* ============================================================
+   Unified Header Component - Consistent across all pages
+   ============================================================ */
+
+:root {
+    --header-bg: #1e293b;
+    --header-border: #334155;
+    --header-text: #f1f5f9;
+    --header-text-secondary: #cbd5e1;
+    --header-accent: #667eea;
+}
+
+html.dark-mode {
+    --header-bg: #0f172a;
+    --header-border: #1e293b;
+    --header-text: #f1f5f9;
+    --header-text-secondary: #cbd5e1;
+}
+
+/* Main Header Container */
+#unified-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 20px 32px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.unified-header-content {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+/* Left Section: Greeting */
+.header-left {
+    flex: 1;
+    min-width: 300px;
+}
+
+.greeting-section {
+    margin-bottom: 12px;
+}
+
+.greeting-text {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--header-text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.greeting-time {
+    background: linear-gradient(135deg, #667eea, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+}
+
+.greeting-emoji {
+    font-size: 28px;
+    animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(20deg); }
+}
+
+.greeting-subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--header-text-secondary);
+    font-weight: 500;
+}
+
+/* Date & Time Display */
+.datetime-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--header-text-secondary);
+}
+
+.datetime-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    border-radius: 6px;
+}
+
+.datetime-item i {
+    color: var(--header-accent);
+    font-size: 12px;
+}
+
+.date-value,
+.time-value {
+    font-weight: 600;
+    color: var(--header-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.datetime-separator {
+    width: 4px;
+    height: 4px;
+    background: var(--header-text-secondary);
+    border-radius: 50%;
+}
+
+/* Center Section: Search */
+.header-center {
+    flex: 1;
+    min-width: 250px;
+    max-width: 400px;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: rgba(102, 126, 234, 0.05);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.search-box:hover {
+    border-color: rgba(102, 126, 234, 0.4);
+    background: rgba(102, 126, 234, 0.08);
+}
+
+.search-box:focus-within {
+    border-color: var(--header-accent);
+    background: rgba(102, 126, 234, 0.12);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box i {
+    color: var(--header-text-secondary);
+    font-size: 14px;
+}
+
+.search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--header-text);
+    font-size: 14px;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--header-text-secondary);
+}
+
+.search-hint {
+    display: none;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    color: var(--header-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+@media (min-width: 1200px) {
+    .search-hint {
+        display: inline-block;
+    }
+}
+
+/* Right Section: Action Buttons */
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    border-radius: 8px;
+    color: var(--header-text-secondary);
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.header-btn:hover {
+    background: rgba(102, 126, 234, 0.15);
+    border-color: rgba(102, 126, 234, 0.3);
+    color: var(--header-accent);
+}
+
+.header-btn:active {
+    transform: scale(0.95);
+}
+
+.refresh-btn:hover i {
+    animation: spin 0.6s linear;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.dark-mode-btn.active {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: var(--header-accent);
+    color: var(--header-accent);
+}
+
+.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .unified-header-content {
+        gap: 20px;
+    }
+    
+    .header-center {
+        flex: 0 1 300px;
+        order: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    #unified-header {
+        padding: 16px 20px;
+    }
+    
+    .unified-header-content {
+        gap: 16px;
+    }
+    
+    .header-left {
+        min-width: auto;
+        flex: 1 1 100%;
+        order: 1;
+    }
+    
+    .greeting-text {
+        font-size: 20px;
+    }
+    
+    .greeting-subtitle {
+        display: none;
+    }
+    
+    .header-center {
+        flex: 1 1 100%;
+        order: 3;
+        max-width: none;
+    }
+    
+    .header-right {
+        order: 2;
+        flex: 0 1 auto;
+    }
+    
+    .search-hint {
+        display: none !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #unified-header {
+        padding: 12px 16px;
+    }
+    
+    .greeting-text {
+        font-size: 18px;
+    }
+    
+    .header-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    
+    .datetime-display {
+        font-size: 12px;
+    }
+}
+
+/* Light Mode Support */
+@media (prefers-color-scheme: light) {
+    :root:not(.dark-mode) {
+        --header-bg: #ffffff;
+        --header-border: #e5e7eb;
+        --header-text: #1f2937;
+        --header-text-secondary: #6b7280;
+    }
+    
+    #unified-header:not(html.dark-mode *) {
+        background: #ffffff;
+        border-bottom-color: #e5e7eb;
+    }
+}
