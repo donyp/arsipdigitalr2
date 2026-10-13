@@ -179,8 +179,6 @@
             color: #4b5563 !important;
         }
 
-        html:not([data-dark-mode="true"]) #confirmationModal > div,
-        html:not([data-dark-mode="true"]) #edit-headline-modal > div,
         html:not([data-dark-mode="true"]) #pdfUploadModal > div,
         html:not([data-dark-mode="true"]) #buktiBayarUploadModal > div {
             background-color: #ffffff !important;
@@ -188,7 +186,6 @@
 
         html:not([data-dark-mode="true"]) #pdfUploadModal h2,
         html:not([data-dark-mode="true"]) #buktiBayarUploadModal h2,
-        html:not([data-dark-mode="true"]) #edit-headline-modal h2,
         html:not([data-dark-mode="true"]) #confirmationModal h3 {
             color: #1f2937 !important;
         }
@@ -474,10 +471,6 @@
             background-color: var(--color-bg-secondary) !important;
         }
 
-        html[data-dark-mode="true"] #edit-headline-modal > div {
-            background-color: var(--color-bg-secondary) !important;
-        }
-
         html[data-dark-mode="true"] #pdfUploadModal > div {
             background-color: var(--color-bg-secondary) !important;
         }
@@ -489,7 +482,6 @@
         /* Fix all modal headings */
         html[data-dark-mode="true"] #pdfUploadModal h2,
         html[data-dark-mode="true"] #buktiBayarUploadModal h2,
-        html[data-dark-mode="true"] #edit-headline-modal h2,
         html[data-dark-mode="true"] #confirmationModal h3 {
             color: var(--color-text-primary) !important;
         }
@@ -1664,43 +1656,6 @@
             }
         }
 
-        /* Broadcast Banner */
-        #broadcast-banner-container {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-        }
-
-        .broadcast-message {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            animation: scroll-message 20s linear infinite;
-            white-space: nowrap;
-            width: max-content;
-        }
-
-        @keyframes scroll-message {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-
-        .broadcast-icon {
-            width: 20px;
-            height: 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
         /* Premium Loading Animation */
         .premium-loader {
             text-align: center;
@@ -1928,24 +1883,8 @@
         <!-- Top Bar -->
         <header class="sticky top-0 z-[45] bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-2.5">
             <div class="flex items-center justify-between">
-                <!-- Left side: Broadcast Banner (if exists) -->
-                <div id="broadcast-banner-container" class="flex-1">
-                    <!-- Dynamic broadcast content will be injected here -->
-                </div>
-
                 <!-- Right side: Edit & Logout Buttons -->
                 <div class="flex items-center gap-3 ml-4" style="display: none;">
-                    <!-- Edit Headline Button -->
-                    <button onclick="openEditHeadlineModal()"
-                        class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-blue-600 hover:bg-blue-50 bg-blue-50/50 transition-all whitespace-nowrap"
-                        title="Edit headline banner text">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        <span class="hidden sm:inline">Edit</span>
-                    </button>
-                    
                     <!-- Dark Mode Toggle Button -->
                     <button id="dark-mode-toggle" onclick="toggleDarkMode()"
                         class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap"
@@ -2895,94 +2834,6 @@
 </body>
 
 </html>
-
-    <!-- Edit Headline Modal -->
-    <div id="edit-headline-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99999; align-items: center; justify-content: center;">
-        <div style="background: var(--color-bg-secondary); border-radius: 12px; padding: 30px; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); width: 90%; max-height: 80vh; overflow-y: auto;">
-            <h2 style="margin: 0 0 20px 0; font-size: 20px; color: var(--color-text-primary); font-weight: 600;">Edit Headline Banner</h2>
-            
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; font-size: 13px; color: var(--color-text-secondary); margin-bottom: 8px; font-weight: 600;">Teks Headline:</label>
-                <textarea id="headline-input" style="width: 100%; padding: 12px; border: 2px solid #d1d5db; border-radius: 6px; font-size: 14px; font-family: inherit; resize: vertical; min-height: 100px;" placeholder="Masukkan teks headline..."></textarea>
-                <p style="font-size: 12px; color: var(--color-text-tertiary); margin-top: 8px;">Teks akan ditampilkan sebagai headline banner yang bergerak di bagian atas setiap halaman.</p>
-            </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button onclick="closeEditHeadlineModal()" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
-                    Batal
-                </button>
-                <button onclick="saveHeadlineText()" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
-                    Simpan
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        function openEditHeadlineModal() {
-            const modal = document.getElementById('edit-headline-modal');
-            const input = document.getElementById('headline-input');
-            
-            // Get current headline text from localStorage or default
-            const currentText = localStorage.getItem('customHeadline') || 'Jika ada kendala, silahkan hubungi admin anka';
-            input.value = currentText;
-            
-            modal.style.display = 'flex';
-        }
-        
-        function closeEditHeadlineModal() {
-            const modal = document.getElementById('edit-headline-modal');
-            modal.style.display = 'none';
-        }
-        
-        async function saveHeadlineText() {
-            const input = document.getElementById('headline-input');
-            const newText = input.value.trim();
-            
-            if (!newText) {
-                Notify.error('Teks headline tidak boleh kosong!');
-                return;
-            }
-            
-            try {
-                // Save to localStorage
-                localStorage.setItem('customHeadline', newText);
-                
-                // Calculate animation duration based on text length
-                const textLength = newText.length;
-                const duration = Math.max(20, Math.ceil((textLength / 45) * 35));
-                
-                // Create single message with bullet separator (for both spans)
-                const message = `📢  ${newText}  •  `;
-                
-                // Update ALL announcement-message elements (there are 2 for seamless loop)
-                const messageElements = document.querySelectorAll('.announcement-message');
-                messageElements.forEach(element => {
-                    element.textContent = message;
-                    element.style.animationDuration = duration + 's';
-                });
-                
-                // Show success message
-                if (typeof Toast !== 'undefined') {
-                    Toast.success('Headline banner berhasil diperbarui!');
-                } else {
-                    Notify.success('Headline berhasil diperbarui!');
-                }
-                
-                closeEditHeadlineModal();
-            } catch (err) {
-                Notify.error('Gagal menyimpan headline: ' + err.message);
-            }
-        }
-        
-        // Close modal when clicking outside
-        document.getElementById('edit-headline-modal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeEditHeadlineModal();
-            }
-        });
-    </script>
-
 
     <!-- PDF Upload Modal -->
     <div id="pdfUploadModal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
