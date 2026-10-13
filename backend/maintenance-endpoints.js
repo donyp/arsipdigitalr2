@@ -426,12 +426,13 @@ router.get('/active-sessions', authenticateToken, async (req, res) => {
  * PUT /api/maintenance/active-sessions/:sessionId/update-activity
  * Update session last_activity timestamp (client-side ping)
  * Public endpoint - used by JavaScript to keep session alive
+ * Auto-creates session if not exists
  */
 router.put('/active-sessions/:sessionId/update-activity', authenticateToken, async (req, res) => {
     try {
         const { sessionId } = req.params;
 
-        // Verify this is the user's own session
+        // Check if session exists
         const { data: session, error: queryError } = await supabase
             .from('active_sessions')
             .select('user_id')
@@ -439,9 +440,37 @@ router.put('/active-sessions/:sessionId/update-activity', authenticateToken, asy
             .single();
 
         if (queryError || !session) {
-            return res.status(404).json({ error: 'Session not found' });
+            // Session doesn't exist - CREATE IT
+            console.log('[Maintenance] Session not found, creating new one:', sessionId);
+            
+            const { error: insertError } = await supabase
+                .from('active_sessions')
+                .insert([{
+                    id: sessionId,
+                    user_id: req.user.id,
+                    username: req.user.email || req.user.username,
+                    user_role: req.user.role,
+                    ip_address: req.clientIp,
+                    user_agent: req.headers['user-agent'],
+                    is_valid: true,
+                    maintenance_forced_logout: false,
+                    last_activity: new Date().toISOString()
+                }]);
+
+            if (insertError) {
+                console.error('[Maintenance] Error creating session:', insertError.message);
+                return res.status(500).json({ error: 'Failed to create session' });
+            }
+
+            return res.json({ 
+                success: true, 
+                message: 'Session created and activity updated',
+                last_activity: new Date().toISOString(),
+                created: true
+            });
         }
 
+        // Session exists - verify user owns it
         if (session.user_id !== req.user.id) {
             return res.status(403).json({ error: 'Cannot update other users\' sessions' });
         }
