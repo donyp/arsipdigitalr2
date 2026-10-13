@@ -249,46 +249,68 @@ function performSearch(query) {
 function goToMaintenance() {
     // Check user role from multiple sources
     let userRole = null;
+    let debugInfo = {};
     
     // Try 1: Get from user object in localStorage
     try {
         const userObj = localStorage.getItem('user');
+        debugInfo.userObj = userObj ? 'exists' : 'not found';
         if (userObj) {
             const user = JSON.parse(userObj);
             userRole = user.role;
+            debugInfo.userObjRole = user.role;
+            debugInfo.userObjKeys = Object.keys(user);
         }
     } catch (err) {
         console.error('Error parsing user object:', err);
+        debugInfo.userObjError = err.message;
     }
     
     // Try 2: Get from individual role keys
     if (!userRole) {
-        userRole = localStorage.getItem('userRole') || 
-                   localStorage.getItem('user_role') ||
-                   sessionStorage.getItem('userRole') ||
-                   sessionStorage.getItem('user_role');
+        const userRole1 = localStorage.getItem('userRole');
+        const userRole2 = localStorage.getItem('user_role');
+        debugInfo.userRoleKey = userRole1 || 'not found';
+        debugInfo.user_roleKey = userRole2 || 'not found';
+        userRole = userRole1 || userRole2;
     }
     
-    // Try 3: Decode from JWT token
+    // Try 3: Get from session storage
+    if (!userRole) {
+        const sessionRole = sessionStorage.getItem('userRole');
+        debugInfo.sessionRole = sessionRole || 'not found';
+        userRole = sessionRole;
+    }
+    
+    // Try 4: Decode from JWT token
     if (!userRole) {
         try {
             const token = localStorage.getItem('token');
+            debugInfo.token = token ? 'exists' : 'not found';
             if (token) {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                userRole = payload.role;
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    userRole = payload.role;
+                    debugInfo.tokenRole = payload.role;
+                    debugInfo.tokenKeys = Object.keys(payload);
+                }
             }
         } catch (err) {
             console.error('Error decoding token:', err);
+            debugInfo.tokenError = err.message;
         }
     }
     
+    console.log('[Maintenance] Debug Info:', debugInfo);
     console.log('[Maintenance] Current user role:', userRole);
+    console.log('[Maintenance] All localStorage keys:', Object.keys(localStorage));
     
     // Allow admin, super_admin, and moderator
     const allowedRoles = ['admin', 'super_admin', 'moderator'];
     if (!userRole || !allowedRoles.includes(userRole)) {
-        // Show styled alert instead of browser alert
-        showMaintenanceAccessDenied(userRole);
+        // Show styled alert with debug info
+        showMaintenanceAccessDenied(userRole, debugInfo);
         return;
     }
     
@@ -296,23 +318,27 @@ function goToMaintenance() {
     window.location.href = '/manage/maintenance.html';
 }
 
-function showMaintenanceAccessDenied(userRole) {
+function showMaintenanceAccessDenied(userRole, debugInfo) {
     // Create a styled notification using SweetAlert2 if available, else fallback
+    const message = `Role "${userRole || 'Unknown'}" tidak memiliki akses ke Mode Perbaikan. Hanya admin dan moderator yang dapat mengakses.`;
+    
     if (typeof Swal !== 'undefined') {
         Swal.fire({
             icon: 'warning',
             title: 'Akses Ditolak',
-            text: `Role "${userRole || 'Unknown'}" tidak memiliki akses ke Mode Perbaikan. Hanya admin dan moderator yang dapat mengakses.`,
+            text: message,
+            footer: `Debug: ${JSON.stringify(debugInfo).substring(0, 100)}...`,
             confirmButtonText: 'OK',
             confirmButtonColor: '#667eea'
         });
     } else {
         // Fallback to console log + toast if available
         console.warn('[Maintenance] Access denied for role:', userRole);
+        console.warn('[Maintenance] Debug info:', debugInfo);
         if (typeof showToast === 'function') {
-            showToast('Hanya admin dan moderator yang dapat mengakses Mode Perbaikan', 'error');
+            showToast(message, 'error');
         } else {
-            alert('Hanya admin dan moderator yang dapat mengakses Mode Perbaikan');
+            alert(message);
         }
     }
 }
