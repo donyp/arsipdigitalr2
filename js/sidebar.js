@@ -44,6 +44,8 @@
                 border-radius: 50% !important;
                 animation: heartbeat-pulse 2s infinite ease-in-out !important;
                 z-index: 10 !important;
+                display: block !important;
+                visibility: visible !important;
             }
         `;
         
@@ -51,6 +53,7 @@
         style.id = 'sidebar-css-global';
         style.textContent = css;
         document.head.appendChild(style);
+        console.log('[SIDEBAR CSS] Global heartbeat CSS injected');
     })();
 
     // ============================================================
@@ -664,24 +667,23 @@
         if (!href || href === '#') return false;
         
         const currentPath = window.location.pathname.toLowerCase();
-        const currentPathWithoutExt = currentPath.replace('.html', '');
-        const menuPath = href.toLowerCase().replace('.html', '');
+        const currentFile = currentPath.split('/').pop().replace('.html', '');
         
-        // Normalize paths - remove leading/trailing slashes for comparison
-        const normalizedCurrent = currentPathWithoutExt.replace(/^\/|\/$/g, '');
-        const normalizedMenu = menuPath.replace(/^\/|\/$/g, '');
+        // Extract filename/path from href
+        const hrefFile = href.toLowerCase().split('/').pop().replace('.html', '');
         
-        // Check multiple conditions for flexibility
-        const isActive = currentPath === menuPath || 
-                         currentPathWithoutExt === menuPath || 
-                         currentPath === menuPath + '.html' ||
-                         currentPathWithoutExt.endsWith('/' + normalizedMenu) ||
-                         normalizedCurrent === normalizedMenu ||
-                         currentPath.includes(normalizedMenu);
+        // Multiple comparison methods
+        const isActive = 
+            currentPath === href ||  // Exact match
+            currentPath === href + '.html' ||  // With .html
+            currentPath.includes('/' + hrefFile) ||  // Include as segment
+            currentFile === hrefFile ||  // Same filename
+            (href.includes('support') && currentFile.includes('support')) ||  // Any support pages
+            (href.includes('dashboard') && currentFile.includes('dashboard')) ||  // Any dashboard pages
+            (href.includes('whatsapp') && currentFile.includes('whatsapp'));  // Any whatsapp pages
         
-        // Debug log
         if (isActive) {
-            console.log('[SIDEBAR] Active menu found:', href, 'Current path:', currentPath);
+            console.log('[SIDEBAR] Active menu:', href, 'Current:', currentPath, 'Match:', isActive);
         }
         
         return isActive;
