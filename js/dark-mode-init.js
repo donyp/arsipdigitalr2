@@ -33,12 +33,12 @@
             html.with-transitions,
             html.with-transitions body,
             html.with-transitions * {
-                transition: background-color 1s ease, 
-                           color 1s ease, 
-                           border-color 1s ease,
-                           box-shadow 1s ease,
-                           fill 1s ease,
-                           stroke 1s ease !important;
+                transition: background-color 0.15s ease, 
+                           color 0.15s ease, 
+                           border-color 0.15s ease,
+                           box-shadow 0.15s ease,
+                           fill 0.15s ease,
+                           stroke 0.15s ease !important;
             }
             
             /* Prevent transition animations from blocking interactions */

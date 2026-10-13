@@ -897,7 +897,7 @@
         body {
             background: var(--color-bg-primary);
             color: var(--color-text-primary);
-            transition: background 0.3s, color 0.3s;
+            transition: background 0.15s ease, color 0.15s ease;
         }
 
         body.bg-gray-50 {
@@ -968,7 +968,7 @@
         body.loading-state #main-content,
         body.loading-state #app,
         body.loading-state #unified-header {
-            filter: blur(8px);
+            filter: blur(8px) !important;
             transition: filter 0.5s ease-out;
         }
 
@@ -2027,29 +2027,29 @@
                             <!-- First Row: Count Stats - MINIMAL CLEAN DESIGN -->
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
                                 <!-- Total Invoice Card -->
-                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 16px;">
-                                    <div style="font-size: 32px; color: #667eea;">📊</div>
-                                    <div>
-                                        <div style="font-size: 28px; font-weight: 700; color: #f1f5f9;" id="statTotal">0</div>
-                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 500; margin-top: 4px;">Total Invoice</div>
+                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; min-height: 80px;">
+                                    <svg style="width: 28px; height: 28px; color: #667eea; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 24px; font-weight: 700; color: #f1f5f9;" id="statTotal">0</div>
+                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-top: 2px;">Total Invoice</div>
                                     </div>
                                 </div>
 
                                 <!-- Lunas Card -->
-                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 16px;">
-                                    <div style="font-size: 32px; color: #10b981;">✓</div>
-                                    <div>
-                                        <div style="font-size: 28px; font-weight: 700; color: #f1f5f9;" id="statUploaded">0</div>
-                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 500; margin-top: 4px;">Lunas</div>
+                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; min-height: 80px;">
+                                    <svg style="width: 28px; height: 28px; color: #10b981; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 24px; font-weight: 700; color: #f1f5f9;" id="statUploaded">0</div>
+                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-top: 2px;">Lunas</div>
                                     </div>
                                 </div>
 
                                 <!-- Belum Lunas Card -->
-                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 16px;">
-                                    <div style="font-size: 32px; color: #f59e0b;">⏳</div>
-                                    <div>
-                                        <div style="font-size: 28px; font-weight: 700; color: #f1f5f9;" id="statPending">0</div>
-                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 500; margin-top: 4px;">Belum Lunas</div>
+                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; min-height: 80px;">
+                                    <svg style="width: 28px; height: 28px; color: #f59e0b; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 24px; font-weight: 700; color: #f1f5f9;" id="statPending">0</div>
+                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-top: 2px;">Belum Lunas</div>
                                     </div>
                                 </div>
                             </div>
@@ -2057,29 +2057,29 @@
                             <!-- Second Row: Rupiah Stats - MINIMAL CLEAN DESIGN -->
                             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
                                 <!-- Total Penjualan Card -->
-                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 16px;">
-                                    <div style="font-size: 32px; color: #8b5cf6;">💰</div>
-                                    <div>
-                                        <div style="font-size: 18px; font-weight: 700; color: #f1f5f9;" id="statTotalAmount">Rp 0</div>
-                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 500; margin-top: 4px;">Total Penjualan</div>
+                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; min-height: 80px;">
+                                    <svg style="width: 28px; height: 28px; color: #8b5cf6; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><path d="M12 1v6m0 6v6"></path><path d="M4.22 4.22l4.24 4.24m1.98 1.98l4.24 4.24M4.22 19.78l4.24-4.24m1.98-1.98l4.24-4.24M19.78 19.78l-4.24-4.24m-1.98-1.98l-4.24-4.24M19.78 4.22l-4.24 4.24m-1.98 1.98l-4.24 4.24"></path></svg>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 18px; font-weight: 700; color: #f1f5f9; line-height: 1.2;" id="statTotalAmount">Rp 0</div>
+                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-top: 2px;">Total Penjualan</div>
                                     </div>
                                 </div>
 
                                 <!-- Total Invoice Lunas (Rupiah) Card -->
-                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 16px;">
-                                    <div style="font-size: 32px; color: #059669;">✅</div>
-                                    <div>
-                                        <div style="font-size: 18px; font-weight: 700; color: #f1f5f9;" id="statLunasAmount">Rp 0</div>
-                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 500; margin-top: 4px;">Invoice Lunas</div>
+                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; min-height: 80px;">
+                                    <svg style="width: 28px; height: 28px; color: #059669; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 18px; font-weight: 700; color: #f1f5f9; line-height: 1.2;" id="statLunasAmount">Rp 0</div>
+                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-top: 2px;">Invoice Lunas</div>
                                     </div>
                                 </div>
 
                                 <!-- Total Belum Lunas (Rupiah) Card -->
-                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 16px;">
-                                    <div style="font-size: 32px; color: #dc2626;">🔴</div>
-                                    <div>
-                                        <div style="font-size: 18px; font-weight: 700; color: #f1f5f9;" id="statPendingAmount">Rp 0</div>
-                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 500; margin-top: 4px;">Belum Lunas</div>
+                                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(51, 65, 85, 0.5); padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; min-height: 80px;">
+                                    <svg style="width: 28px; height: 28px; color: #dc2626; flex-shrink: 0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 18px; font-weight: 700; color: #f1f5f9; line-height: 1.2;" id="statPendingAmount">Rp 0</div>
+                                        <div style="font-size: 12px; color: #94a3b8; font-weight: 400; margin-top: 2px;">Belum Lunas</div>
                                     </div>
                                 </div>
                             </div>
