@@ -134,7 +134,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    
+    // Initialize session keep-alive
+    if (typeof initializeSessionKeepalive === 'function') {
+        initializeSessionKeepalive();
+        console.log('[Dashboard] Session keep-alive initialized');
+    }
+
+
 
     // Endpoint tidak ada di backend - disabled
     /*
