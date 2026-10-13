@@ -1055,6 +1055,11 @@
     
     <!-- Initialize Support Page (SPA trigger) -->
     <script>
+        // Ensure sidebar renders
+        if (typeof renderSidebar === 'function') {
+            renderSidebar();
+        }
+        
         if (typeof initSupportPage === 'function') {
             initSupportPage();
         } else {
