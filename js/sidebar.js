@@ -24,24 +24,26 @@
                 }
             }
 
+            /* Ensure active items have position relative for ::before */
+            .sidebar-item.active,
+            .sidebar-child-item.active {
+                position: relative !important;
+            }
+
             /* Active menu item with pulsing heartbeat - applies to all pages */
             .sidebar-item.active::before,
             .sidebar-child-item.active::before {
                 content: '';
-                position: absolute;
-                right: 8px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 8px;
-                height: 8px;
-                background: #3b82f6;
-                border-radius: 50%;
-                animation: heartbeat-pulse 2s infinite ease-in-out;
-            }
-
-            .sidebar-item.active,
-            .sidebar-child-item.active {
-                position: relative;
+                position: absolute !important;
+                right: 8px !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                width: 8px !important;
+                height: 8px !important;
+                background: #3b82f6 !important;
+                border-radius: 50% !important;
+                animation: heartbeat-pulse 2s infinite ease-in-out !important;
+                z-index: 10 !important;
             }
         `;
         
@@ -662,10 +664,27 @@
         if (!href || href === '#') return false;
         
         const currentPath = window.location.pathname.toLowerCase();
+        const currentPathWithoutExt = currentPath.replace('.html', '');
         const menuPath = href.toLowerCase().replace('.html', '');
         
-        return currentPath === menuPath || currentPath === menuPath + '.html' || 
-               currentPath.endsWith(menuPath);
+        // Normalize paths - remove leading/trailing slashes for comparison
+        const normalizedCurrent = currentPathWithoutExt.replace(/^\/|\/$/g, '');
+        const normalizedMenu = menuPath.replace(/^\/|\/$/g, '');
+        
+        // Check multiple conditions for flexibility
+        const isActive = currentPath === menuPath || 
+                         currentPathWithoutExt === menuPath || 
+                         currentPath === menuPath + '.html' ||
+                         currentPathWithoutExt.endsWith('/' + normalizedMenu) ||
+                         normalizedCurrent === normalizedMenu ||
+                         currentPath.includes(normalizedMenu);
+        
+        // Debug log
+        if (isActive) {
+            console.log('[SIDEBAR] Active menu found:', href, 'Current path:', currentPath);
+        }
+        
+        return isActive;
     }
 
     function isDropdownExpanded(dropdownId) {
