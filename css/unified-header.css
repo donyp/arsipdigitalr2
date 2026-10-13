@@ -23,7 +23,7 @@ html.dark-mode {
     --header-text-secondary: #cbd5e1;
 }
 
-/* Main Header Container - spans full width, aligned with sidebar brand */
+/* Main Header Container - full height at top, with left padding for sidebar */
 #unified-header {
     position: fixed;
     top: 0;
@@ -36,7 +36,7 @@ html.dark-mode {
     -webkit-backdrop-filter: blur(10px);
     padding: 0 32px;
     padding-left: calc(16rem + 32px);
-    height: var(--header-height);
+    height: 56px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     width: 100%;
     box-sizing: border-box;
