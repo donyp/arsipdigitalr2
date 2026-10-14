@@ -172,6 +172,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
                 const cleaned = manualInvoiceNum.replace(/\D/g, '');
                 if (cleaned.length >= 14 && cleaned.length <= 18) {
                     invoiceNumber = cleaned;
+                    console.log('[RENAME] Using manual invoice number:', invoiceNumber);
                 }
             }
 
@@ -185,7 +186,8 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
                 
                 if (invoiceNumber) {
                     ocrDetected = true;
-                    ocrConfidence = req.body.ocrConfidence || 0.85; // Default confidence
+                    ocrConfidence = req.body.ocrConfidence || 0.85;
+                    console.log('[RENAME] Using OCR invoice number:', invoiceNumber);
                 }
             }
 
@@ -193,27 +195,37 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
             if (!invoiceNumber) {
                 const originalName = file.name.replace(/\.pdf$/i, '');
                 invoiceNumber = extractInvoiceNumber(originalName);
+                if (invoiceNumber) {
+                    console.log('[RENAME] Using filename invoice number:', invoiceNumber);
+                }
             }
 
             // Validate: Invoice number found
             if (!invoiceNumber) {
+                console.error('[RENAME] No invoice number found');
                 return res.status(400).json({
                     success: false,
                     message: 'Tidak dapat mengekstrak nomor faktur dari file atau OCR'
                 });
             }
 
+            console.log('[RENAME] Final invoice number:', invoiceNumber);
+
             // Step 4: Generate new filename
             const newFileName = `${invoiceNumber}.pdf`;
             const downloadPath = path.join(require('os').tmpdir(), `rename-${Date.now()}-${newFileName}`);
 
+            console.log('[RENAME] Download path:', downloadPath);
+
             // Write file to temp location for download
             await file.mv(downloadPath);
+            console.log('[RENAME] File moved to temp location');
 
-            // Step 5: Save to rename history in database
+            // Step 5: Save to rename history in database (optional, don't fail if error)
             // Only save if user is real (not placeholder)
             if (user.id && !user.id.startsWith('anonymous-')) {
                 try {
+                    console.log('[RENAME] Saving to history for user:', user.id);
                     const { data, error } = await supabase
                         .from('invoice_rename_history')
                         .insert({
@@ -230,24 +242,28 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
 
                     if (error) {
                         console.warn('[RENAME] History save warning:', error);
-                        // Don't fail the request if history save fails
+                    } else {
+                        console.log('[RENAME] History saved successfully');
                     }
                 } catch (historyError) {
                     console.warn('[RENAME] History save error:', historyError);
-                    // Continue with download even if history fails
                 }
             } else {
-                console.log('[RENAME] Skipping history save for placeholder user');
+                console.log('[RENAME] Skipping history save (no valid user)');
             }
 
             // Step 6: Stream file download
+            console.log('[RENAME] Sending file for download:', newFileName);
             res.download(downloadPath, newFileName, (err) => {
                 // Cleanup temp file after download
                 if (fs.existsSync(downloadPath)) {
                     fs.unlinkSync(downloadPath);
+                    console.log('[RENAME] Temp file cleaned up');
                 }
                 if (err) {
                     console.error('[RENAME] Download error:', err);
+                } else {
+                    console.log('[RENAME] Download completed successfully');
                 }
             });
 
