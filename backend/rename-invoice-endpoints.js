@@ -76,29 +76,28 @@ function extractInvoiceNumber(text) {
  * Register Rename Invoice Endpoints
  * Provides OCR extraction, auto-download, and history tracking
  */
-function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
+function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload) {
     // HEALTH CHECK endpoint (no auth required - for debugging)
     app.get('/api/invoice/rename-health', (req, res) => {
         res.json({ status: 'ok', message: 'Rename endpoints are active' });
     });
     
     // TEST endpoint (no auth - for debugging upload)
-    app.post('/api/invoice/rename-test', async (req, res) => {
+    app.post('/api/invoice/rename-test', multerUpload.single('file'), async (req, res) => {
         try {
             console.log('[RENAME-TEST] Test endpoint called');
-            console.log('[RENAME-TEST] Files:', req.files ? Object.keys(req.files) : 'none');
-            console.log('[RENAME-TEST] Body:', req.body);
+            console.log('[RENAME-TEST] req.file:', req.file ? { name: req.file.originalname, size: req.file.size } : 'none');
+            console.log('[RENAME-TEST] req.body:', req.body);
             
-            if (!req.files || !req.files.file) {
-                return res.status(400).json({ error: 'No file' });
+            if (!req.file) {
+                return res.status(400).json({ error: 'No file', details: 'req.file is undefined' });
             }
             
-            const file = req.files.file;
             res.json({ 
                 success: true,
-                filename: file.name,
-                mimetype: file.mimetype,
-                size: file.size,
+                filename: req.file.originalname,
+                mimetype: req.file.mimetype,
+                size: req.file.size,
                 message: 'Test endpoint works - file received'
             });
         } catch (err) {
@@ -109,14 +108,14 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
     // Endpoint: POST /api/invoice/rename-invoice
     // Accepts: PDF file + optional manual invoice number
     // Returns: Renamed PDF file download + saves to history
-    app.post('/api/invoice/rename-invoice', async (req, res) => {
+    app.post('/api/invoice/rename-invoice', multerUpload.single('file'), async (req, res) => {
         try {
             console.log('[RENAME] Endpoint called');
             console.log('[RENAME] Headers:', Object.keys(req.headers));
             console.log('[RENAME] Auth header:', req.headers.authorization ? 'present' : 'missing');
             console.log('[RENAME] User:', req.user);
-            console.log('[RENAME] Files:', req.files ? Object.keys(req.files) : 'none');
-            console.log('[RENAME] Body keys:', Object.keys(req.body));
+            console.log('[RENAME] req.file:', req.file ? { name: req.file.originalname, size: req.file.size } : 'none');
+            console.log('[RENAME] req.body:', req.body);
             
             // Get user (try from middleware first, then from token)
             let user = req.user;
@@ -139,7 +138,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
             }
             
             // Validate: File required
-            if (!req.files || !req.files.file) {
+            if (!req.file) {
                 console.error('[RENAME] No file provided');
                 return res.status(400).json({
                     success: false,
@@ -147,7 +146,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
                 });
             }
 
-            const file = req.files.file;
+            const file = req.file;
             const manualInvoiceNum = (req.body.manualInvoiceNum || req.body.invoiceNumber)?.trim();
             const ocrText = req.body.ocrText?.trim();
             
@@ -193,7 +192,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
 
             // Step 3: Fallback - try to extract from original filename
             if (!invoiceNumber) {
-                const originalName = file.name.replace(/\.pdf$/i, '');
+                const originalName = file.originalname.replace(/\.pdf$/i, '');
                 invoiceNumber = extractInvoiceNumber(originalName);
                 if (invoiceNumber) {
                     console.log('[RENAME] Using filename invoice number:', invoiceNumber);
@@ -217,9 +216,9 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
 
             console.log('[RENAME] Download path:', downloadPath);
 
-            // Write file to temp location for download
-            await file.mv(downloadPath);
-            console.log('[RENAME] File moved to temp location');
+            // Write file from multer buffer to temp location
+            await require('fs').promises.writeFile(downloadPath, file.buffer);
+            console.log('[RENAME] File written to temp location');
 
             // Step 5: Save to rename history in database (optional, don't fail if error)
             // Only save if user is real (not placeholder)
@@ -230,7 +229,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
                         .from('invoice_rename_history')
                         .insert({
                             user_id: user.id,
-                            original_filename: file.name,
+                            original_filename: file.originalname,
                             new_filename: newFileName,
                             invoice_number: invoiceNumber,
                             ocr_detected: ocrDetected,
