@@ -607,9 +607,7 @@ app.get('/renamefaktur', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
 });
 
-app.get('/rename-invoice', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'rename-invoice.html'));
-});
+
 
 // Management
 app.get('/user', (req, res) => {
@@ -671,9 +669,7 @@ app.get('/rename-faktur', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
 });
 
-app.get('/rename-invoice-hijau', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'rename-invoice-hijau.html'));
-});
+
 
 app.get('/upload-excel', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'upload-excel.html'));
@@ -759,7 +755,7 @@ app.get('/:page', (req, res, next) => {
     }
     
     // Skip upload pages and other SPA-routed pages - let SPA router handle them
-    const spaRoutedPages = ['upload-excel', 'upload-invoice-pdf', 'upload-bukti-bayar', 'upload-faktur-pajak', 'rename-faktur', 'rename-invoice', 'users', 'tokos', 'zonas', 'whatsapp-messages', 'support-dashboard'];
+    const spaRoutedPages = ['upload-excel', 'upload-invoice-pdf', 'upload-bukti-bayar', 'upload-faktur-pajak', 'rename-faktur', 'users', 'tokos', 'zonas', 'whatsapp-messages', 'support-dashboard'];
     if (spaRoutedPages.includes(page)) {
         return next();
     }
@@ -1379,7 +1375,6 @@ console.log('[INIT] Registering Phase 2 feature endpoints...');
 const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
 const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addBatchSyncEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
-const { registerFastRenameEndpoints } = require('./rename-invoice-fast');
 const { registerMonitoringEndpoints } = require('./monitoring-endpoints');
 
 // Create auth factory for session endpoints
@@ -1396,7 +1391,7 @@ console.log('[INIT] Audit endpoints registered ?');
 
 const { addFakturPajakRenameEndpoints } = require('./faktur-pajak-rename-endpoints');
 const renameFakturEndpoints = require('./rename-faktur-endpoints');
-const renameInvoiceHijauEndpoints = require('./rename-invoice-hijau-endpoints');
+
 const pdfToCsvEndpoints = require('./pdf-to-csv-endpoints');
 app.use('/api', faqEndpoints);
 app.use('/api', notificationEndpoints);
@@ -1404,7 +1399,6 @@ app.use('/api', notificationEndpoints);
 // Register monitoring endpoints
 registerMonitoringEndpoints(app, authenticateToken);
 renameFakturEndpoints(app, supabase);
-renameInvoiceHijauEndpoints(app, supabase, auditLogger);
 pdfToCsvEndpoints(app, authenticateToken);
 console.log('[INIT] Phase 2 feature endpoints registered ✅');
 
@@ -1463,7 +1457,6 @@ registerInvoiceEndpoints(app, supabase, createInvoiceAuth, R2Storage);
 addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, R2Storage);
 addBatchSyncEndpoint(app, supabase, createInvoiceAuth);
 addClearFileEndpoint(app, supabase, createInvoiceAuth);
-registerFastRenameEndpoints(app, supabase, createInvoiceAuth, upload);
 addFakturPajakRenameEndpoints(app, supabase, createInvoiceAuth);
 console.log('[INIT] Invoice System endpoints registered ✅');
 console.log('  ✓ Excel Upload & Parsing');
