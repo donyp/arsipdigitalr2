@@ -200,6 +200,8 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                         .insert([{
                             session_id: jti,
                             user_id: users.id,
+                            username: users.username,
+                            user_role: users.role,
                             last_activity: new Date().toISOString(),
                             is_valid: true
                         }])
