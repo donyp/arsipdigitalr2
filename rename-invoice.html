@@ -610,29 +610,29 @@
         
         function extractInvoiceNumber(text) {
             // Multiple patterns to find invoice number
-            // Invoice numbers start with 83510031
+            // Invoice numbers can be 14-18 digits, often start with 83510031
             const patterns = [
-                // Pattern starting with 83510031 (14-16 digits)
-                /(83510031\d{6,8})/i,
+                // Pattern starting with 83510031 (14-18 total digits = 8 + 6-10 more)
+                /(83510031\d{6,10})/i,
                 // "Invoice: XXXXX" format (with colon)
-                /Invoice\s*:\s*(\d{14,16})/i,
-                /Invoice\s*:\s*(\d{13,17})/i,
+                /Invoice\s*:\s*(\d{14,18})/i,
+                /Invoice\s*:\s*(\d{13,19})/i,
                 // "No Invoice: XXXXX" or "No. Invoice: XXXXX"
-                /No\.?\s+Invoice\s*:\s*(\d{13,17})/i,
+                /No\.?\s+Invoice\s*:\s*(\d{13,19})/i,
                 // "Nomor Invoice: XXXXX"
-                /Nomor\s+Invoice\s*:\s*(\d{13,17})/i,
-                // Just long digit sequences (13-17 digits)
-                /(?:^|\s)(\d{14,16})(?:\s|$)/,
-                // Any 14-16 digit number
-                /(\d{14,16})/
+                /Nomor\s+Invoice\s*:\s*(\d{13,19})/i,
+                // Just long digit sequences (14-18 digits)
+                /(?:^|\s)(\d{14,18})(?:\s|$)/,
+                // Any 14-18 digit number
+                /(\d{14,18})/
             ];
             
             for (const pattern of patterns) {
                 const match = text.match(pattern);
                 if (match) {
                     const number = match[1].trim();
-                    // Validate: should be 14-16 digits, preferably starts with 83510031
-                    if (/^\d{14,16}$/.test(number)) {
+                    // Validate: should be 14-18 digits
+                    if (/^\d{14,18}$/.test(number)) {
                         console.log(`[EXTRACT] Found with pattern: ${number}`);
                         return number;
                     }
