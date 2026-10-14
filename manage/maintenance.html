@@ -801,7 +801,7 @@
                 tbody.innerHTML = data.logs.map(log => `
                     <tr>
                         <td>${new Date(log.timestamp).toLocaleString()}</td>
-                        <td>${log.user_email || 'System'}</td>
+                        <td>${log.username || 'System'}</td>
                         <td>${log.ip_address || '-'}</td>
                         <td><span class="action-badge action-${log.action}">${log.action}</span></td>
                         <td>${log.user_role || '-'}</td>
