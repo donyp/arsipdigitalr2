@@ -3688,12 +3688,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     res.setHeader('Content-Length', fileBuffer.length);
                     res.setHeader('Cache-Control', 'public, max-age=86400, immutable'); // Browser cache 24 hours
                     res.setHeader('X-Content-Type-Options', 'nosniff');
-                    res.setHeader('ETag', `"${Buffer.from(filePath).toString('hex').substring(0, 16)}"`);
-                    
-                    // Enable compression if file is large
-                    if (fileBuffer.length > 100 * 1024) { // > 100KB
-                        res.setHeader('Content-Encoding', 'gzip');
-                    }
+                    res.setHeader('ETag', `"${Buffer.from(filePath).toString('hex').substring(0, 16)}"`)
                     
                     // Log to audit trail BEFORE sending response
                     const totalTime = Date.now() - startTime;
