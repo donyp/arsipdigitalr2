@@ -814,35 +814,22 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Invoice API] Checking ${validFakturs.length} valid fakturs...`);
                 console.log(`[Invoice API] Sample fakturs:`, validFakturs.slice(0, 5));
 
-                // Query database for existing fakturs using batches to avoid URL overflow
-                // Process in chunks of 100 to keep URL under 16KB limit
-                const batchSize = 100;
-                const existingFakturs = [];
-                
-                for (let i = 0; i < validFakturs.length; i += batchSize) {
-                    const batch = validFakturs.slice(i, i + batchSize);
-                    console.log(`[Invoice API] Querying batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(validFakturs.length/batchSize)} (${batch.length} fakturs)...`);
-                    
-                    const { data: batchResults, error: queryError } = await supabase
-                        .from('invoice_file_list')
-                        .select('faktur')
-                        .in('faktur', batch);
+                // Query database for existing fakturs
+                const { data: existingInvoices, error: queryError } = await supabase
+                    .from('invoice_file_list')
+                    .select('faktur')
+                    .in('faktur', validFakturs);
 
-                    if (queryError) {
-                        console.error('[Invoice API] Query error on batch:', queryError);
-                        return res.status(500).json({
-                            error: 'Database query failed',
-                            details: queryError.message
-                        });
-                    }
-
-                    // Collect results from this batch
-                    if (batchResults && batchResults.length > 0) {
-                        existingFakturs.push(...batchResults.map(inv => inv.faktur));
-                    }
+                if (queryError) {
+                    console.error('[Invoice API] Query error:', queryError);
+                    return res.status(500).json({
+                        error: 'Database query failed',
+                        details: queryError.message
+                    });
                 }
 
                 // Build list of duplicates
+                const existingFakturs = (existingInvoices || []).map(inv => inv.faktur);
                 const duplicates = validFakturs.filter(f => existingFakturs.includes(f));
 
                 console.log(`[Invoice API] Found ${duplicates.length} duplicates out of ${validFakturs.length}`);
@@ -4249,164 +4236,6 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
         }
     );
 
-    // ============================================================
-    // POST /api/invoice/rename-invoice
-    // Rename invoice PDF based on OCR-detected invoice number
-    // Auto-downloads renamed file to user, saves history to database
-    // ============================================================
-    app.post('/api/invoice/rename-invoice',
-        ...createAuth(['super_admin', 'moderator', 'user', 'admin_zona']),
-        upload.single('file'),
-        async (req, res) => {
-            try {
-                const { invoiceNumber, originalName } = req.body;
-                
-                if (!req.file) {
-                    return res.status(400).json({ error: 'No file uploaded' });
-                }
-                
-                if (!invoiceNumber || !/^\d{14,18}$/.test(invoiceNumber)) {
-                    return res.status(400).json({ error: 'Invalid invoice number format' });
-                }
-                
-                console.log(`[Invoice Rename] Processing: ${originalName} → ${invoiceNumber}.pdf`);
-                
-                // Validate file is PDF
-                if (req.file.mimetype !== 'application/pdf') {
-                    return res.status(400).json({ error: 'File must be PDF' });
-                }
-                
-                // Create filename
-                const newFilename = `${invoiceNumber}.pdf`;
-                const fileBuffer = req.file.buffer;
-                
-                // Save rename history to database
-                try {
-                    const { data: historyRecord, error: insertError } = await supabase
-                        .from('invoice_rename_history')
-                        .insert([
-                            {
-                                user_id: req.user.userId,
-                                user_email: req.user.email,
-                                user_role: req.user.role,
-                                zona_id: req.user.zona_id || null,
-                                original_filename: originalName,
-                                new_filename: newFilename,
-                                invoice_number: invoiceNumber,
-                                file_size: fileBuffer.length,
-                                status: 'success',
-                                processed_at: new Date().toISOString()
-                            }
-                        ]);
-                    
-                    if (insertError) {
-                        console.warn('[Invoice Rename] History insert failed:', insertError.message);
-                    }
-                } catch (dbError) {
-                    console.warn('[Invoice Rename] Database history save failed:', dbError.message);
-                }
-                
-                // Log to audit trail
-                const { ipAddress } = AuditLogger.extractClientInfo(req);
-                await auditLogger.log({
-                    userId: req.user.userId,
-                    userEmail: req.user.email,
-                    userRole: req.user.role,
-                    zonaId: req.user.zona_id || null,
-                    action: 'Rename Invoice PDF',
-                    resourceType: 'invoice_file',
-                    resourceId: invoiceNumber,
-                    resourceName: newFilename,
-                    operation: 'CREATE',
-                    details: {
-                        originalName: originalName,
-                        newName: newFilename,
-                        invoiceNumber: invoiceNumber,
-                        fileSize: fileBuffer.length
-                    },
-                    ipAddress: ipAddress,
-                    userAgent: req.headers['user-agent'] || 'Unknown',
-                    requestPath: '/api/invoice/rename-invoice',
-                    requestMethod: 'POST',
-                    statusCode: 200,
-                    responseMessage: 'Invoice renamed and downloaded successfully',
-                    errorMessage: null,
-                    isSuspicious: false,
-                    severity: 'info'
-                }).catch(err => {
-                    console.warn('[Invoice Rename] Audit log failed:', err.message);
-                });
-                
-                console.log(`[Invoice Rename] ✅ Success: ${invoiceNumber}.pdf (${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
-                
-                // Set response headers for file download
-                res.setHeader('Content-Type', 'application/pdf');
-                res.setHeader('Content-Disposition', `attachment; filename="${newFilename}"`);
-                res.setHeader('Content-Length', fileBuffer.length);
-                res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-                res.setHeader('Pragma', 'no-cache');
-                res.setHeader('Expires', '0');
-                
-                // Send file as binary download
-                res.end(fileBuffer, 'binary');
-                
-            } catch (error) {
-                console.error('[Invoice Rename] Error:', error.message);
-                
-                const { ipAddress } = AuditLogger.extractClientInfo(req);
-                
-                // Try to save failed attempt to history
-                try {
-                    await supabase
-                        .from('invoice_rename_history')
-                        .insert([
-                            {
-                                user_id: req.user?.userId || null,
-                                user_email: req.user?.email || null,
-                                user_role: req.user?.role || null,
-                                zona_id: req.user?.zona_id || null,
-                                original_filename: req.file?.originalname || 'unknown',
-                                new_filename: req.body?.invoiceNumber ? `${req.body.invoiceNumber}.pdf` : 'unknown',
-                                invoice_number: req.body?.invoiceNumber || 'unknown',
-                                file_size: req.file?.size || 0,
-                                status: 'failed',
-                                error_message: error.message,
-                                processed_at: new Date().toISOString()
-                            }
-                        ]);
-                } catch (dbError) {
-                    console.warn('[Invoice Rename] Failed history insert failed:', dbError.message);
-                }
-                
-                await auditLogger.log({
-                    userId: req.user?.userId || null,
-                    userEmail: req.user?.email || null,
-                    userRole: req.user?.role || null,
-                    zonaId: req.user?.zona_id || null,
-                    action: 'Rename Invoice PDF - Failed',
-                    resourceType: 'invoice_file',
-                    resourceId: req.body?.invoiceNumber || 'unknown',
-                    resourceName: req.file?.originalname || 'unknown',
-                    operation: 'CREATE',
-                    ipAddress: ipAddress,
-                    userAgent: req.headers['user-agent'] || 'Unknown',
-                    requestPath: '/api/invoice/rename-invoice',
-                    requestMethod: 'POST',
-                    statusCode: 500,
-                    responseMessage: null,
-                    errorMessage: error.message,
-                    isSuspicious: false,
-                    severity: 'error'
-                }).catch(() => {});
-                
-                res.status(500).json({
-                    error: 'Failed to rename invoice',
-                    details: error.message
-                });
-            }
-        }
-    );
-
     console.log('[Invoice API] Endpoints registered successfully');
 }
 
@@ -4898,5 +4727,3 @@ module.exports = {
     addManualSyncEndpoint,
     batchSyncAllFileCount
 };
-
-
