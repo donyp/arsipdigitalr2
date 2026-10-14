@@ -274,6 +274,45 @@ class MaintenanceWebSocketServer {
     }
 
     /**
+     * Broadcast forced logout to ALL users (including moderators)
+     * Used for "Disconnect All Users" feature
+     * Excludes users with specified sessionIds to preserve admin session
+     */
+    broadcastForcedLogoutAll(excludeSessionIds = [], reason = 'admin_forced_logout') {
+        const message = JSON.stringify({
+            type: 'forced_logout',
+            reason,
+            timestamp: new Date().toISOString()
+        });
+
+        let successCount = 0;
+        let failCount = 0;
+        let skipCount = 0;
+
+        this.connectedClients.forEach((clientInfo) => {
+            // Skip sessions in exclude list (e.g., current admin session)
+            if (excludeSessionIds.includes(clientInfo.sessionId)) {
+                console.log(`[WebSocket] Skipping logout for admin session: ${clientInfo.email}`);
+                skipCount++;
+                return;
+            }
+
+            if (clientInfo.ws.readyState === WebSocket.OPEN) {
+                try {
+                    clientInfo.ws.send(message);
+                    console.log(`[WebSocket] Sent forced logout to ${clientInfo.email}`);
+                    successCount++;
+                } catch (err) {
+                    console.error(`[WebSocket] Failed to send logout to ${clientInfo.email}:`, err.message);
+                    failCount++;
+                }
+            }
+        });
+
+        console.log(`[WebSocket] Broadcast forced logout ALL to ${successCount} clients (${failCount} failed, ${skipCount} skipped admin sessions)`);
+    }
+
+    /**
      * Broadcast notification to all clients
      */
     broadcastNotification(title, message, type = 'info') {

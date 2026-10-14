@@ -816,6 +816,21 @@ router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
                     console.error('[Maintenance] Error recording forced logouts:', insertError.message);
                     // Don't return error - we already invalidated sessions
                 }
+
+                // Broadcast forced logout via WebSocket to all affected sessions
+                if (global.maintenanceWebSocket && sessionsToLogout.length > 0) {
+                    try {
+                        // Broadcast to ALL users (except current admin)
+                        const currentSessionId = req.user.jti;
+                        global.maintenanceWebSocket.broadcastForcedLogoutAll(
+                            [currentSessionId], // Exclude current admin session
+                            'All users have been disconnected by admin'
+                        );
+                        console.log('[Maintenance] Broadcasted forced logout to all sessions via WebSocket');
+                    } catch (err) {
+                        console.error('[Maintenance] Error broadcasting forced logout:', err.message);
+                    }
+                }
             }
         }
 
