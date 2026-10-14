@@ -831,6 +831,20 @@ router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
                         console.error('[Maintenance] Error broadcasting forced logout:', err.message);
                     }
                 }
+                
+                // Also mark sessions with forced logout flag for faster polling detection
+                if (sessionsToLogout.length > 0) {
+                    try {
+                        const sessionIds = sessionsToLogout.map(s => s.id);
+                        await supabase
+                            .from('active_sessions')
+                            .update({ maintenance_forced_logout: true })
+                            .in('id', sessionIds);
+                        console.log('[Maintenance] Marked sessions with forced logout flag for polling detection');
+                    } catch (err) {
+                        console.error('[Maintenance] Error marking forced logout:', err.message);
+                    }
+                }
             }
         }
 
@@ -891,7 +905,13 @@ router.post('/check-session', authenticateToken, async (req, res) => {
             });
         }
 
-        const isValid = sessions && sessions.length > 0;
+        let isValid = sessions && sessions.length > 0;
+        
+        // Check if session was forcibly logged out (even if still marked as is_valid=true for a moment)
+        if (isValid && sessions[0].maintenance_forced_logout) {
+            console.log('[Maintenance] Session marked with forced logout flag');
+            isValid = false;
+        }
         
         console.log('[Maintenance] Session validity check for', jti, ':', isValid);
 

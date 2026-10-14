@@ -9,7 +9,9 @@
 (function() {
     'use strict';
 
-    const SESSION_CHECK_INTERVAL = 10 * 1000; // Check every 10 seconds
+    const SESSION_CHECK_INTERVAL = 10 * 1000; // Normal: Check every 10 seconds
+    const FAST_CHECK_INTERVAL = 2 * 1000; // Fast: Check every 2 seconds (untuk instant logout detection)
+    const FAST_CHECK_DURATION = 30 * 1000; // Duration to use fast polling (30 seconds)
     let sessionCheckInterval = null;
     let isCheckingSession = false;
 
@@ -119,7 +121,7 @@
                 return;
             }
 
-            console.log('[SessionStatusChecker] Initialized - checking session every 10 seconds');
+            console.log('[SessionStatusChecker] Initialized - checking session with fast polling (2s) for first 30 seconds');
             
             // Clear previous interval if any
             if (sessionCheckInterval) {
@@ -129,8 +131,21 @@
             // Perform initial check
             checkSessionValidity();
             
-            // Set up periodic checks
-            sessionCheckInterval = setInterval(checkSessionValidity, SESSION_CHECK_INTERVAL);
+            // Use FAST polling for first 30 seconds, then switch to normal
+            let checkCount = 0;
+            const checksNeeded = FAST_CHECK_DURATION / FAST_CHECK_INTERVAL;
+            
+            sessionCheckInterval = setInterval(() => {
+                checkSessionValidity();
+                checkCount++;
+                
+                // Switch to normal polling after fast period
+                if (checkCount >= checksNeeded) {
+                    clearInterval(sessionCheckInterval);
+                    console.log('[SessionStatusChecker] Switching to normal polling (10s)');
+                    sessionCheckInterval = setInterval(checkSessionValidity, SESSION_CHECK_INTERVAL);
+                }
+            }, FAST_CHECK_INTERVAL);
         } catch (error) {
             console.error('[SessionStatusChecker] Error initializing:', error);
         }
