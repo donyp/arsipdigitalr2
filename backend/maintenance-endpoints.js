@@ -219,7 +219,7 @@ router.post('/start', authenticateToken, async (req, res) => {
             });
         }
 
-        const { reason, description, estimatedDurationMinutes } = req.body;
+        const { reason, description, estimatedDuration } = req.body;
 
         if (!reason || !reason.trim()) {
             return res.status(400).json({ error: 'Reason is required' });
@@ -234,8 +234,9 @@ router.post('/start', authenticateToken, async (req, res) => {
             });
         }
 
-        // Calculate estimated end time
-        const estimatedEnd = new Date(Date.now() + (estimatedDurationMinutes || 60) * 60 * 1000);
+        // Calculate estimated end time (use provided duration or default to 60 minutes)
+        const durationMinutes = estimatedDuration ? parseInt(estimatedDuration) : 60;
+        const estimatedEnd = new Date(Date.now() + durationMinutes * 60 * 1000);
 
         const newStatus = {
             isActive: true,
@@ -244,7 +245,7 @@ router.post('/start', authenticateToken, async (req, res) => {
             description: description?.trim() || null,
             startedAt: new Date().toISOString(),
             startedBy: req.user.email,
-            estimatedDurationMinutes: estimatedDurationMinutes || 60,
+            estimatedDurationMinutes: durationMinutes,
             estimatedEnd: estimatedEnd.toISOString()
         };
 
