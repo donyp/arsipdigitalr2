@@ -22,7 +22,7 @@ async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileNam
         if (extractedNumber && extractedNumber.length >= 14) {
             console.log('[DB-SEARCH] Strategy 1: Trying exact match for', extractedNumber);
             const { data, error } = await supabase
-                .from('invoices')
+                .from('invoice_file_list')
                 .select('faktur')
                 .eq('faktur', extractedNumber)
                 .limit(1);
@@ -40,7 +40,7 @@ async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileNam
             const suffix = extractedNumber.substring(extractedNumber.length - 4);
             
             const { data, error } = await supabase
-                .from('invoices')
+                .from('invoice_file_list')
                 .select('faktur')
                 .ilike('faktur', `${prefix}%${suffix}`)
                 .limit(10);
@@ -69,21 +69,21 @@ async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileNam
             }
         }
         
-        // Strategy 3: Extract all numbers from OCR text and search
+        // Strategy 3: Extract all numbers from text and search
         if (ocrText && ocrText.length > 0) {
-            console.log('[DB-SEARCH] Strategy 3: Extract numbers from OCR text');
+            console.log('[DB-SEARCH] Strategy 3: Extract numbers from text');
             const numbers = ocrText.match(/\d{14,18}/g) || [];
-            console.log('[DB-SEARCH] Found', numbers.length, 'number sequences in OCR text');
+            console.log('[DB-SEARCH] Found', numbers.length, 'number sequences in text');
             
             for (const num of numbers) {
                 const { data, error } = await supabase
-                    .from('invoices')
+                    .from('invoice_file_list')
                     .select('faktur')
                     .eq('faktur', num)
                     .limit(1);
                 
                 if (!error && data && data.length > 0) {
-                    console.log('[DB-SEARCH] Strategy 3 SUCCESS: Found exact match via OCR:', data[0].faktur);
+                    console.log('[DB-SEARCH] Strategy 3 SUCCESS: Found exact match via text:', data[0].faktur);
                     return data[0].faktur;
                 }
             }
@@ -100,7 +100,7 @@ async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileNam
             
             for (const num of mainNumbers) {
                 const { data, error } = await supabase
-                    .from('invoices')
+                    .from('invoice_file_list')
                     .select('faktur')
                     .eq('faktur', num)
                     .limit(1);
@@ -119,7 +119,7 @@ async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileNam
             if (partialNumbers.length > 0) {
                 // Get sample of DB invoices that might match
                 const { data: allInvoices, error } = await supabase
-                    .from('invoices')
+                    .from('invoice_file_list')
                     .select('faktur')
                     .limit(100); // Sample for fuzzy matching
                 
@@ -152,14 +152,14 @@ async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileNam
             }
         }
         
-        // Strategy 5: Brute-force search if OCR is completely garbled
+        // Strategy 5: Brute-force search if text is completely garbled
         // Try to find ANY recent invoice in database
         if (!extractedNumber && ocrText && ocrText.length > 50) {
             console.log('[DB-SEARCH] Strategy 5: Text extraction exists but unreadable, searching for recent invoices');
             const { data, error } = await supabase
-                .from('invoices')
+                .from('invoice_file_list')
                 .select('faktur')
-                .order('created_at', { ascending: false })
+                .order('tanggal', { ascending: false })
                 .limit(100); // Get many recent invoices
             
             if (!error && data && data.length > 0) {
@@ -447,7 +447,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
                     // Fallback: Get recent invoices untuk UI dropdown
                     try {
                         const { data: recentInvoices, error: listError } = await supabase
-                            .from('invoices')
+                            .from('invoice_file_list')
                             .select('faktur, toko, tanggal, keterangan')
                             .order('tanggal', { ascending: false })
                             .limit(50);
