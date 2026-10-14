@@ -8,9 +8,48 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Smart filename parsing - extract invoice number dari berbagai format
- * FAST - no external ML/OCR required
+ * Extract invoice number dari PDF content using lightweight text extraction
+ * FAST - uses pdf-parse library (if available) or falls back to filename
  */
+async function extractFromPDFContent(fileBuffer) {
+    try {
+        // Try to extract text from PDF using pdfparse library
+        const pdfParse = require('pdf-parse');
+        const pdfData = await pdfParse(fileBuffer);
+        const pdfText = pdfData.text || '';
+        
+        console.log('[PDF-EXTRACT] PDF text length:', pdfText.length);
+        
+        // Look for invoice number patterns
+        const patterns = [
+            /\b(\d{14,18})\b/,                              // 14-18 digits
+            /(?:INV|NO|FAKTUR)[.\s-]*(\d{14,18})/i,        // With prefix
+            /(\d{3})[.\s-](\d{3})[.\s-](\d{3})[.\s-](\d{3,6})/ // Formatted
+        ];
+        
+        for (const pattern of patterns) {
+            const match = pdfText.match(pattern);
+            if (match) {
+                let number = match[1];
+                if (match.length > 2) {
+                    // Formatted pattern - combine groups
+                    number = match[1] + match[2] + match[3] + match[4];
+                }
+                number = number.replace(/\D/g, '');
+                if (number.length >= 14 && number.length <= 18) {
+                    console.log('[PDF-EXTRACT] Found:', number);
+                    return number;
+                }
+            }
+        }
+        
+        return null;
+    } catch (err) {
+        // pdfParse not available or error occurred
+        console.warn('[PDF-EXTRACT] Error:', err.message);
+        return null;
+    }
+}
 function extractNumberFromFilename(filename) {
     const cleanName = filename.replace(/\.pdf$/i, '').trim();
     
@@ -121,7 +160,22 @@ function registerFastRenameEndpoints(app, supabase, createAuth, multerUpload) {
                 }
             }
 
-            // Step 2: Filename parsing (FAST - no OCR)
+            // Step 2: Try PDF content extraction (FAST - text layer only, no OCR)
+            if (!invoiceNumber) {
+                console.log('[RENAME] Attempting PDF content extraction...');
+                invoiceNumber = await extractFromPDFContent(file.buffer);
+                if (invoiceNumber) {
+                    console.log('[RENAME] PDF extract:', invoiceNumber);
+                    // Try fuzzy match against DB
+                    const matched = await findInvoiceAggressive(supabase, invoiceNumber);
+                    if (matched) {
+                        console.log('[RENAME] DB fuzzy matched:', invoiceNumber, '→', matched);
+                        invoiceNumber = matched;
+                    }
+                }
+            }
+
+            // Step 3: Filename parsing (if PDF extraction failed)
             if (!invoiceNumber) {
                 invoiceNumber = extractNumberFromFilename(file.originalname);
                 if (invoiceNumber) {
@@ -135,7 +189,7 @@ function registerFastRenameEndpoints(app, supabase, createAuth, multerUpload) {
                 }
             }
 
-            // Step 3: Latest invoice fallback
+            // Step 4: Latest invoice fallback
             if (!invoiceNumber) {
                 console.log('[RENAME] Using latest invoice from DB');
                 const { data: latest } = await supabase
@@ -146,6 +200,7 @@ function registerFastRenameEndpoints(app, supabase, createAuth, multerUpload) {
                 
                 if (latest?.length > 0) {
                     invoiceNumber = latest[0].faktur;
+                    console.log('[RENAME] Fallback to latest:', invoiceNumber);
                 } else {
                     return res.status(400).json({
                         success: false,
