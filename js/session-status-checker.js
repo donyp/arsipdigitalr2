@@ -91,7 +91,7 @@
         }
         
         // Redirect to login page (clean URL, no query params)
-        window.location.href = '/index.html';
+        window.location.href = '/login';
     }
 
     /**
