@@ -611,20 +611,6 @@
 
         checkMaintenanceOnLogin();
 
-        // Initialize Modern Maintenance Banner
-        if (typeof maintenanceBanner === 'undefined') {
-            window.maintenanceBanner = null;
-        }
-        
-        if (!maintenanceBanner && typeof MaintenanceBanner !== 'undefined') {
-            window.maintenanceBanner = new MaintenanceBanner({
-                containerSelector: 'body',
-                enableWebSocket: true
-            });
-            maintenanceBanner.init();
-            console.log('[Login] Maintenance banner initialized');
-        }
-
         function togglePasswordVisibility() {
             const pwdInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eye-icon');
