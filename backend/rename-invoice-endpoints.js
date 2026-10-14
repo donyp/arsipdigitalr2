@@ -433,28 +433,36 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
                 }
             }
 
-            // Validate: Invoice number found
+            // Step 4: If STILL no invoice number, try database fallback
+            // This is for completely garbled OCR but filename might have clues
             if (!invoiceNumber) {
-                console.error('[RENAME] No invoice number found');
-                return res.status(400).json({
-                    success: false,
-                    message: 'Tidak dapat mengekstrak nomor faktur dari file atau OCR'
-                });
+                console.log('[RENAME] No direct extraction, attempting database fallback...');
+                invoiceNumber = await findInvoiceInDatabase(supabase, null, ocrText || '', file.originalname);
+                if (invoiceNumber) {
+                    console.log('[RENAME] Database fallback found:', invoiceNumber);
+                    ocrDetected = false; // Mark as fallback
+                } else {
+                    console.error('[RENAME] No invoice number found after all strategies');
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Tidak dapat mengekstrak nomor faktur dari file, OCR, atau database'
+                    });
+                }
             }
 
             console.log('[RENAME] Extracted invoice number:', invoiceNumber);
             
-            // Step 3b: Try to find similar invoice in database
+            // Step 5 (was 3b): Try to find similar invoice in database for final validation
             console.log('[RENAME] Attempting database validation...');
             const dbValidated = await findInvoiceInDatabase(supabase, invoiceNumber, ocrText || '', file.originalname);
-            if (dbValidated) {
+            if (dbValidated && dbValidated !== invoiceNumber) {
                 console.log('[RENAME] Database auto-corrected:', invoiceNumber, '→', dbValidated);
                 invoiceNumber = dbValidated;
             } else {
-                console.log('[RENAME] No database match found, using extracted number');
+                console.log('[RENAME] Database validation: no correction needed');
             }
 
-            // Step 4: Generate new filename
+            // Step 6: Generate new filename
             const newFileName = `${invoiceNumber}.pdf`;
             const downloadPath = path.join(require('os').tmpdir(), `rename-${Date.now()}-${newFileName}`);
 
@@ -464,7 +472,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
             await require('fs').promises.writeFile(downloadPath, file.buffer);
             console.log('[RENAME] File written to temp location');
 
-            // Step 5: Save to rename history in database (optional, don't fail if error)
+            // Step 7: Save to rename history in database (optional, don't fail if error)
             // Only save if user is real (not placeholder)
             if (user.id && !user.id.startsWith('anonymous-')) {
                 try {
@@ -495,8 +503,9 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
                 console.log('[RENAME] Skipping history save (no valid user)');
             }
 
-            // Step 6: Stream file download
+            // Step 8: Stream file download with invoice number in header
             console.log('[RENAME] Sending file for download:', newFileName);
+            res.setHeader('X-Invoice-Number', invoiceNumber);
             res.download(downloadPath, newFileName, (err) => {
                 // Cleanup temp file after download
                 if (fs.existsSync(downloadPath)) {

@@ -591,7 +591,17 @@
                 }
                 
                 if (!invoiceNumber) {
-                    throw new Error('Invoice number not found in any page');
+                    console.log(`[FILE ${idx}] Invoice number not found in OCR, attempting backend fallback...`);
+                    // Don't throw error - send OCR text and filename to backend for Strategy 4/5 fallback
+                    updateProgress(idx, 'processing', `OCR incomplete, trying database lookup...`);
+                    try {
+                        await renameFileWithBackendFallback(file, ocrText, idx);
+                        console.log(`[FILE ${idx}] Backend fallback successful`);
+                        return; // Exit early, success already handled
+                    } catch (fallbackError) {
+                        console.error(`[FILE ${idx}] Backend fallback error:`, fallbackError);
+                        throw new Error(`Invoice number not found in any page and no database match: ${fallbackError.message}`);
+                    }
                 }
                 
                 console.log(`[FILE ${idx}] Found invoice: ${invoiceNumber}`);
@@ -673,6 +683,93 @@
             }
             
             return null;
+        }
+        
+        async function renameFileWithBackendFallback(file, ocrText, idx) {
+            // Fallback when OCR fails completely
+            // Send garbled OCR text + filename to backend
+            // Backend will use Strategy 4 (filename parsing) or Strategy 5 (recent invoices)
+            
+            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+            console.log(`[FALLBACK ${idx}] Attempting backend fallback with garbled OCR`);
+            
+            const formData = new FormData();
+            const fileToUpload = file.file || file;
+            const fileName = file.name || (file.file ? file.name : 'unknown');
+            
+            formData.append('file', fileToUpload);
+            // Don't append invoiceNumber - let backend use Strategy 4/5
+            if (ocrText) {
+                formData.append('ocrText', ocrText);
+            }
+            formData.append('originalName', fileName);
+            
+            console.log(`[FALLBACK ${idx}] FormData: OCR=${ocrText?.length || 0} chars, Filename=${fileName}`);
+            
+            const apiUrl = `/api/invoice/rename-invoice`;
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                console.log(`[FALLBACK ${idx}] Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    let errorMsg = `HTTP ${response.status}`;
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        try {
+                            const error = await response.json();
+                            errorMsg = error.message || error.error || error.details || errorMsg;
+                        } catch (e) {
+                            // Ignore parse error
+                        }
+                    }
+                    
+                    throw new Error(errorMsg);
+                }
+                
+                // Success - response is binary PDF file with invoice number in header
+                const blob = await response.blob();
+                const invoiceNumber = response.headers.get('X-Invoice-Number') || 'unknown';
+                const newFilename = `${invoiceNumber}.pdf`;
+                
+                console.log(`[FALLBACK ${idx}] Got result: ${invoiceNumber}, size: ${blob.size} bytes`);
+                
+                // Download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = newFilename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                // Update state
+                selectedFiles[idx].invoiceNumber = invoiceNumber;
+                selectedFiles[idx].status = 'success';
+                addToHistory(fileName, invoiceNumber, 'success');
+                
+                processingResults.push({
+                    originalName: fileName,
+                    newName: newFilename,
+                    invoiceNumber: invoiceNumber,
+                    status: 'success'
+                });
+                
+                console.log(`[FALLBACK ${idx}] Success`);
+                
+            } catch (error) {
+                console.error(`[FALLBACK ${idx}] Error:`, error);
+                throw error;
+            }
         }
         
         async function renameFile(file, invoiceNumber, ocrText, idx) {
