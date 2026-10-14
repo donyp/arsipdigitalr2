@@ -27,10 +27,12 @@
             const sessionId = localStorage.getItem('current_session_id');
             
             if (!token || !sessionId) {
-                console.log('[SessionStatusChecker] No token or session ID, skipping check');
+                console.log('[SessionStatusChecker] ⚠️ No token or session ID found - token:', !!token, 'sessionId:', !!sessionId);
                 return;
             }
 
+            console.log('[SessionStatusChecker] 📡 Polling check-session endpoint...');
+            
             // Call endpoint to verify session is still valid
             const response = await fetch('/api/maintenance/check-session', {
                 method: 'POST',
@@ -42,33 +44,31 @@
                     sessionId: sessionId
                 })
             });
+            
+            console.log('[SessionStatusChecker] ✉️ Response status:', response.status);
 
             if (response.status === 401 || response.status === 403) {
                 // Session is invalid
-                console.warn('[SessionStatusChecker] Session invalidated by server (401/403)');
+                console.warn('[SessionStatusChecker] ❌ Session invalidated by server (401/403)');
                 handleSessionInvalidated('Server returned 401/403');
                 return;
             }
 
             if (!response.ok) {
-                console.warn('[SessionStatusChecker] Failed to check session:', response.status);
+                console.warn('[SessionStatusChecker] ⚠️ Failed to check session:', response.status);
                 return;
             }
 
             const data = await response.json();
-            console.log('[SessionStatusChecker] Session check response:', {
-                isValid: data.isValid,
-                maintenanceForcedLogout: data.maintenanceForcedLogout,
-                message: data.message
-            });
+            console.log('[SessionStatusChecker] 📊 Response:', data);
             
             if (!data.isValid) {
-                console.warn('[SessionStatusChecker] Session marked as invalid on server (forced_logout: ' + data.maintenanceForcedLogout + ')');
+                console.warn('[SessionStatusChecker] 🔴 SESSION INVALID - forced_logout:', data.maintenanceForcedLogout);
                 handleSessionInvalidated('Server marked session invalid');
                 return;
             }
 
-            // Uncomment for detailed logging: console.log('[SessionStatusChecker] Session is valid');
+            console.log('[SessionStatusChecker] ✅ Session still valid');
         } catch (error) {
             console.error('[SessionStatusChecker] Error checking session:', error.message);
         } finally {
@@ -122,18 +122,19 @@
         try {
             const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             if (!token) {
-                console.log('[SessionStatusChecker] No token found, skipping initialization');
+                console.log('[SessionStatusChecker] ⚠️ No token found, skipping initialization');
                 return;
             }
 
-            console.log('[SessionStatusChecker] Initialized - checking session with fast polling (2s) for first 30 seconds');
+            console.log('[SessionStatusChecker] 🚀 INITIALIZING - Fast polling every 2s for 30s, then 10s');
             
             // Clear previous interval if any
             if (sessionCheckInterval) {
                 clearInterval(sessionCheckInterval);
             }
 
-            // Perform initial check
+            // Perform initial check immediately
+            console.log('[SessionStatusChecker] 🔍 Running initial check...');
             checkSessionValidity();
             
             // Use FAST polling for first 30 seconds, then switch to normal
@@ -141,18 +142,19 @@
             const checksNeeded = FAST_CHECK_DURATION / FAST_CHECK_INTERVAL;
             
             sessionCheckInterval = setInterval(() => {
-                checkSessionValidity();
                 checkCount++;
+                console.log('[SessionStatusChecker] 🔄 Check #' + checkCount + ' of ' + checksNeeded);
+                checkSessionValidity();
                 
                 // Switch to normal polling after fast period
                 if (checkCount >= checksNeeded) {
                     clearInterval(sessionCheckInterval);
-                    console.log('[SessionStatusChecker] Switching to normal polling (10s)');
+                    console.log('[SessionStatusChecker] ⏱️ Switching to normal polling (10s)');
                     sessionCheckInterval = setInterval(checkSessionValidity, SESSION_CHECK_INTERVAL);
                 }
             }, FAST_CHECK_INTERVAL);
         } catch (error) {
-            console.error('[SessionStatusChecker] Error initializing:', error);
+            console.error('[SessionStatusChecker] ❌ Error initializing:', error);
         }
     };
 
