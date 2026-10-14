@@ -257,6 +257,114 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
             });
         }
     });
+
+    // Alias endpoint for backward compatibility with frontend
+    // POST /api/invoice/rename-faktur → same as rename-invoice but simpler response
+    app.post('/api/invoice/rename-faktur', createAuth(), async (req, res) => {
+        try {
+            const user = req.user;
+            
+            // Validate: File required
+            if (!req.files || !req.files.file) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'File PDF diperlukan'
+                });
+            }
+
+            const file = req.files.file;
+
+            // Validate: PDF file only
+            if (file.mimetype !== 'application/pdf') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Hanya file PDF yang diterima'
+                });
+            }
+
+            let invoiceNumber = null;
+            let ocrDetected = false;
+            let ocrConfidence = 0;
+
+            // Step 1: Try OCR text if provided
+            if (req.body.ocrText) {
+                let ocrText = req.body.ocrText.trim();
+                ocrText = fixOCRErrors(ocrText);
+                invoiceNumber = extractInvoiceNumber(ocrText);
+                
+                if (invoiceNumber) {
+                    ocrDetected = true;
+                    ocrConfidence = req.body.ocrConfidence || 0.85;
+                }
+            }
+
+            // Step 2: Fallback - try to extract from filename
+            if (!invoiceNumber) {
+                const originalName = file.name.replace(/\.pdf$/i, '');
+                invoiceNumber = extractInvoiceNumber(originalName);
+            }
+
+            // Validate: Invoice number found
+            if (!invoiceNumber) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Tidak dapat mengekstrak nomor faktur'
+                });
+            }
+
+            // Generate new filename
+            const newFileName = `${invoiceNumber}.pdf`;
+            const tempPath = path.join(require('os').tmpdir(), `rename-${Date.now()}-${invoiceNumber}.pdf`);
+
+            // Write file to temp location
+            await file.mv(tempPath);
+
+            // Read file as base64 for response (frontend expects base64)
+            const fileBuffer = fs.readFileSync(tempPath);
+            const base64Data = fileBuffer.toString('base64');
+
+            // Save to history (fire-and-forget)
+            try {
+                await supabase
+                    .from('invoice_rename_history')
+                    .insert({
+                        user_id: user.id,
+                        original_filename: file.name,
+                        new_filename: newFileName,
+                        invoice_number: invoiceNumber,
+                        ocr_detected: ocrDetected,
+                        ocr_confidence: ocrConfidence,
+                        method: ocrDetected ? 'ocr' : 'filename',
+                        status: 'completed',
+                        created_at: new Date().toISOString()
+                    });
+            } catch (err) {
+                console.warn('[RENAME] History save warning:', err);
+            }
+
+            // Return response with base64-encoded file (compatible with rename-faktur.html)
+            res.json({
+                success: true,
+                newName: newFileName,
+                invoiceNumber: invoiceNumber,
+                fileData: base64Data,
+                ocrDetected: ocrDetected,
+                ocrConfidence: ocrConfidence
+            });
+
+            // Cleanup temp file
+            if (fs.existsSync(tempPath)) {
+                fs.unlinkSync(tempPath);
+            }
+
+        } catch (error) {
+            console.error('[RENAME] Error in rename-faktur endpoint:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message || 'Gagal memproses file'
+            });
+        }
+    });
 }
 
 module.exports = { registerRenameInvoiceEndpoints };
