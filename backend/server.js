@@ -1379,7 +1379,7 @@ console.log('[INIT] Registering Phase 2 feature endpoints...');
 const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
 const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addBatchSyncEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
-const { registerRenameInvoiceEndpoints } = require('./rename-invoice-fast');
+const { registerFastRenameEndpoints } = require('./rename-invoice-fast');
 const { registerMonitoringEndpoints } = require('./monitoring-endpoints');
 
 // Create auth factory for session endpoints
