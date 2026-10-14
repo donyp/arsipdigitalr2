@@ -710,12 +710,24 @@
             console.log(`[RENAME ${idx}] Token exists: ${!!token}`);
             
             const formData = new FormData();
-            formData.append('file', file.file);
+            
+            console.log(`[RENAME ${idx}] File object:`, file);
+            console.log(`[RENAME ${idx}] File keys:`, Object.keys(file));
+            console.log(`[RENAME ${idx}] file.file:`, file.file);
+            console.log(`[RENAME ${idx}] file.name:`, file.name);
+            
+            // Handle both { file: File, name: String } and direct File object
+            const fileToUpload = file.file || file;
+            const fileName = file.name || (file.file ? file.name : 'unknown');
+            
+            formData.append('file', fileToUpload);
             formData.append('invoiceNumber', invoiceNumber);
             if (ocrText) {
                 formData.append('ocrText', ocrText);
             }
-            formData.append('originalName', file.name);
+            formData.append('originalName', fileName);
+            
+            console.log(`[RENAME ${idx}] FormData entries:`, Array.from(formData.entries()).map(e => [e[0], typeof e[1], e[1]?.name || e[1]?.length || e[1]]));
             
             const apiUrl = `/api/invoice/rename-invoice`;
             console.log(`[RENAME ${idx}] Sending to ${apiUrl}`);
