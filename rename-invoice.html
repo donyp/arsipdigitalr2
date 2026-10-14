@@ -610,7 +610,10 @@
         
         function extractInvoiceNumber(text) {
             // Multiple patterns to find invoice number
+            // Invoice numbers start with 83510031
             const patterns = [
+                // Pattern starting with 83510031 (14-16 digits)
+                /(83510031\d{6,8})/i,
                 // "Invoice: XXXXX" format (with colon)
                 /Invoice\s*:\s*(\d{14,16})/i,
                 /Invoice\s*:\s*(\d{13,17})/i,
@@ -628,7 +631,7 @@
                 const match = text.match(pattern);
                 if (match) {
                     const number = match[1].trim();
-                    // Validate: should be 14-16 digits
+                    // Validate: should be 14-16 digits, preferably starts with 83510031
                     if (/^\d{14,16}$/.test(number)) {
                         console.log(`[EXTRACT] Found with pattern: ${number}`);
                         return number;
@@ -648,54 +651,77 @@
             formData.append('invoiceNumber', invoiceNumber);
             formData.append('originalName', file.name);
             
-            console.log(`[RENAME ${idx}] Sending to /api/invoice/rename-invoice`);
+            const apiUrl = `/api/invoice/rename-invoice`;
+            console.log(`[RENAME ${idx}] Sending to ${apiUrl}`);
             
-            const response = await fetch('/api/invoice/rename-invoice', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-            
-            console.log(`[RENAME ${idx}] Response status: ${response.status}`);
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || `HTTP ${response.status}`);
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+                
+                console.log(`[RENAME ${idx}] Response status: ${response.status}`);
+                
+                if (!response.ok) {
+                    // Try to parse error response
+                    const contentType = response.headers.get('content-type');
+                    let errorMsg = `HTTP ${response.status}`;
+                    
+                    if (contentType && contentType.includes('application/json')) {
+                        try {
+                            const error = await response.json();
+                            errorMsg = error.error || error.details || errorMsg;
+                        } catch (e) {
+                            console.warn('[RENAME] Could not parse error JSON');
+                        }
+                    } else if (contentType && contentType.includes('text/html')) {
+                        // 404 might return HTML error page
+                        console.error('[RENAME] Received HTML response (possible 404)');
+                        errorMsg = `Endpoint not found (HTTP ${response.status})`;
+                    }
+                    
+                    throw new Error(errorMsg);
+                }
+                
+                // Response is binary PDF file
+                const blob = await response.blob();
+                const newFilename = `${invoiceNumber}.pdf`;
+                
+                console.log(`[RENAME ${idx}] Downloaded blob size: ${blob.size} bytes`);
+                
+                // Trigger browser download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = newFilename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                // Update local state
+                selectedFiles[idx].invoiceNumber = invoiceNumber;
+                selectedFiles[idx].status = 'success';
+                
+                // Add to history
+                addToHistory(file.name, invoiceNumber, 'success');
+                
+                processingResults.push({
+                    originalName: file.name,
+                    newName: newFilename,
+                    invoiceNumber: invoiceNumber,
+                    status: 'success'
+                });
+                
+                console.log(`[RENAME ${idx}] Added to results. Total:`, processingResults.length);
+                
+            } catch (error) {
+                console.error(`[RENAME ${idx}] Fetch error:`, error);
+                throw error;
             }
-            
-            // Response is binary PDF file
-            const blob = await response.blob();
-            const newFilename = `${invoiceNumber}.pdf`;
-            
-            console.log(`[RENAME ${idx}] Downloaded blob size: ${blob.size} bytes`);
-            
-            // Trigger browser download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = newFilename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            // Update local state
-            selectedFiles[idx].invoiceNumber = invoiceNumber;
-            selectedFiles[idx].status = 'success';
-            
-            // Add to history
-            addToHistory(file.name, invoiceNumber, 'success');
-            
-            processingResults.push({
-                originalName: file.name,
-                newName: newFilename,
-                invoiceNumber: invoiceNumber,
-                status: 'success'
-            });
-            
-            console.log(`[RENAME ${idx}] Added to results. Total:`, processingResults.length);
         }
         
         // ============================================================
