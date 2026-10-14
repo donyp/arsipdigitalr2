@@ -729,7 +729,8 @@ router.get('/forced-logouts', authenticateToken, async (req, res) => {
 
 /**
  * POST /api/maintenance/logout-non-moderators
- * Force logout all non-moderators (called automatically when maintenance starts)
+ * Force logout ALL users (including moderators) to disconnect everyone
+ * This is used before starting maintenance mode
  * Allows: admin, super_admin, moderator
  */
 router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
@@ -742,7 +743,7 @@ router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
 
         console.log('[Maintenance] Force logout requested by:', req.user.email, 'role:', req.user.role);
 
-        // Query all active sessions from database (not from file)
+        // Query ALL active sessions from database (not filtering by role - logout everyone)
         const { data: allSessions, error: queryError } = await supabase
             .from('active_sessions')
             .select('*')
@@ -753,63 +754,68 @@ router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
             return res.status(500).json({ error: 'Failed to query sessions' });
         }
 
-        console.log('[Maintenance] Found active sessions:', allSessions?.length || 0);
+        console.log('[Maintenance] Found active sessions to logout:', allSessions?.length || 0);
 
-        // Filter non-moderators
-        const nonModeratorSessions = (allSessions || []).filter(session => {
-            return session.user_role && session.user_role !== 'moderator';
-        });
-
-        console.log('[Maintenance] Non-moderator sessions to logout:', nonModeratorSessions.length);
-
-        // Invalidate non-moderator sessions
+        // Invalidate ALL sessions (except the current user's session if admin wants to continue)
         let logoutCount = 0;
-        if (nonModeratorSessions.length > 0) {
-            const sessionIds = nonModeratorSessions.map(s => s.id);
+        if (allSessions && allSessions.length > 0) {
+            // Get current user's session ID to potentially exclude it
+            const currentSessionId = req.user.jti; // JTI from current token
             
-            const { error: updateError } = await supabase
-                .from('active_sessions')
-                .update({ 
-                    is_valid: false,
-                    maintenance_forced_logout: true
-                })
-                .in('id', sessionIds);
+            // Filter sessions to logout (all except current user's own session)
+            const sessionsToLogout = allSessions.filter(session => {
+                return session.session_id !== currentSessionId;
+            });
 
-            if (updateError) {
-                console.error('[Maintenance] Error invalidating sessions:', updateError.message);
-                return res.status(500).json({ error: 'Failed to invalidate sessions' });
+            console.log('[Maintenance] Sessions to logout (excluding current):', sessionsToLogout.length);
+
+            if (sessionsToLogout.length > 0) {
+                const sessionIds = sessionsToLogout.map(s => s.id);
+                
+                const { error: updateError } = await supabase
+                    .from('active_sessions')
+                    .update({ 
+                        is_valid: false,
+                        maintenance_forced_logout: true
+                    })
+                    .in('id', sessionIds);
+
+                if (updateError) {
+                    console.error('[Maintenance] Error invalidating sessions:', updateError.message);
+                    return res.status(500).json({ error: 'Failed to invalidate sessions' });
+                }
+
+                logoutCount = sessionsToLogout.length;
+                console.log('[Maintenance] Invalidated sessions:', logoutCount);
             }
 
-            logoutCount = nonModeratorSessions.length;
-            console.log('[Maintenance] Invalidated sessions:', logoutCount);
-        }
+            // Record forced logouts
+            if (sessionsToLogout.length > 0) {
+                const logoutsToRecord = sessionsToLogout.map(session => ({
+                    user_id: session.user_id,
+                    username: session.username,
+                    user_role: session.user_role,
+                    token_jti: session.session_id,
+                    logout_reason: 'admin_forced_all',
+                    ip_address: session.ip_address,
+                    forced_by: req.user.id
+                }));
 
-        // Record forced logouts
-        if (nonModeratorSessions.length > 0) {
-            const logoutsToRecord = nonModeratorSessions.map(session => ({
-                user_id: session.user_id,
-                username: session.username,
-                user_role: session.user_role,
-                token_jti: session.session_id,
-                logout_reason: 'admin_forced',
-                ip_address: session.ip_address,
-                forced_by: req.user.id
-            }));
+                const { error: insertError } = await supabase
+                    .from('forced_logout_sessions')
+                    .insert(logoutsToRecord);
 
-            const { error: insertError } = await supabase
-                .from('forced_logout_sessions')
-                .insert(logoutsToRecord);
-
-            if (insertError) {
-                console.error('[Maintenance] Error recording forced logouts:', insertError.message);
-                // Don't return error - we already invalidated sessions
+                if (insertError) {
+                    console.error('[Maintenance] Error recording forced logouts:', insertError.message);
+                    // Don't return error - we already invalidated sessions
+                }
             }
         }
 
         res.json({
             success: true,
             logoutCount: logoutCount,
-            message: `Forced logout completed for ${logoutCount} non-moderators`
+            message: `Force logout completed - ${logoutCount} users disconnected. You may continue using this session.`
         });
 
     } catch (err) {

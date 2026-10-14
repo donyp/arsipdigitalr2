@@ -454,31 +454,31 @@
             <div class="card">
                 <h2>
                     <span>🔐</span>
-                    <span>Force Logout</span>
+                    <span>Disconnect All Users</span>
                 </h2>
 
                 <p style="margin: 0 0 20px 0; color: var(--color-text-secondary); font-size: 13px;">
-                    Immediately disconnect all active sessions except moderators.
+                    Disconnect all active users from the system. Your session will remain active so you can activate maintenance mode.
                 </p>
 
                 <div class="info-item">
-                    <span class="info-item-label">Active Sessions</span>
+                    <span class="info-item-label">Active Users</span>
                     <span class="info-item-value" id="activeSessions">
                         <span class="loading"></span>
                     </span>
                 </div>
 
                 <div class="info-item">
-                    <span class="info-item-label">Last Forced Logout</span>
+                    <span class="info-item-label">Last Disconnected</span>
                     <span class="info-item-value" id="lastLogoutDisplay">Never</span>
                 </div>
 
                 <div class="button-group" style="margin-top: 20px;">
-                    <button class="btn btn-danger" id="forceLogoutBtn">Force Logout Non-Moderators</button>
+                    <button class="btn btn-danger" id="forceLogoutBtn">Disconnect All Users</button>
                 </div>
 
                 <p style="margin: 20px 0 0 0; color: var(--color-text-secondary); font-size: 12px;">
-                    ⚠️ This will immediately disconnect all users except moderators from the system.
+                    ⚠️ This will immediately disconnect all users. Your current session will remain active.
                 </p>
             </div>
         </div>
@@ -710,11 +710,11 @@
         // Force logout
         document.getElementById('forceLogoutBtn').addEventListener('click', async () => {
             const confirmed = await Swal.fire({
-                title: 'Force Logout All Users?',
-                text: 'This will immediately disconnect all non-moderator users from the system.',
+                title: 'Disconnect All Users?',
+                text: 'This will immediately disconnect all active users from the system. Your session will remain active.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'Yes, Force Logout',
+                confirmButtonText: 'Yes, Disconnect All',
                 cancelButtonText: 'Cancel'
             });
 
@@ -731,20 +731,20 @@
                 });
 
                 if (!response.ok) {
-                    let errorMsg = 'Failed to force logout';
+                    let errorMsg = 'Failed to disconnect users';
                     try {
                         const errorData = await response.json();
                         errorMsg = errorData.error || errorData.message || errorMsg;
                     } catch (e) {
                         errorMsg = `HTTP ${response.status}: ${response.statusText}`;
                     }
-                    console.error('[Force Logout] Error:', errorMsg);
+                    console.error('[Disconnect] Error:', errorMsg);
                     throw new Error(errorMsg);
                 }
 
                 const result = await response.json();
-                console.log('[Force Logout] Success:', result);
-                showMessage('success', `${result.logoutCount} non-moderator users have been logged out`);
+                console.log('[Disconnect] Success:', result);
+                showMessage('success', `${result.logoutCount} users have been disconnected. ${result.message || ''}`);
                 setTimeout(() => {
                     loadMaintenanceStatus();
                 }, 500);
@@ -753,7 +753,7 @@
             } finally {
                 const btn = document.getElementById('forceLogoutBtn');
                 btn.disabled = false;
-                btn.textContent = 'Force Logout Non-Moderators';
+                btn.textContent = 'Disconnect All Users';
             }
         });
 
