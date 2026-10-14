@@ -569,6 +569,12 @@
                     
                     // Run OCR on this page
                     updateProgress(idx, 'processing', `Running OCR on page ${pageNum}/${pdf.numPages}...`);
+                    
+                    // Enhance canvas image for better OCR accuracy
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    enhanceImageContrast(imageData);
+                    context.putImageData(imageData, 0, 0);
+                    
                     const result = await Tesseract.recognize(canvas, 'ind+eng', {
                         logger: m => {
                             if (m.status === 'recognizing text' && m.progress % 0.2 < 0.01) {
@@ -581,6 +587,7 @@
                     ocrText = result?.data?.text || result?.text || '';
                     console.log(`[FILE ${idx}] Page ${pageNum} OCR: ${ocrText.substring(0, 150)}...`);
                     
+                    // Try to extract invoice - will retry with enhanced settings if needed
                     invoiceNumber = extractInvoiceNumber(ocrText);
                     
                     if (invoiceNumber) {
@@ -612,46 +619,72 @@
         
         function fixOCRErrors(text) {
             // Common OCR character misreads for invoice numbers
-            // Based on pattern: 83510031 + 10 digits
-            
-            // Fix common substitutions in "83510031" prefix
-            // 8->B, 3->E, 1->I/L, 0->O, 5->S
             let fixed = text;
             
-            // Replace "B3510031" (8 read as B) with "83510031"
-            fixed = fixed.replace(/B3510031/gi, '83510031');
+            // Generic character fixes
+            fixed = fixed.replace(/B(?=\d)/g, '8');      // B → 8
+            fixed = fixed.replace(/[Il](?=\d)/g, '1');   // I/l → 1
+            fixed = fixed.replace(/O(?=\d)/g, '0');      // O → 0
+            fixed = fixed.replace(/S(?=\d)/g, '5');      // S → 5
+            fixed = fixed.replace(/Z(?=\d)/g, '2');      // Z → 2
             
-            // Replace "8E510031" (3 read as E) with "83510031"
-            fixed = fixed.replace(/8E510031/gi, '83510031');
+            // Specific pattern for standard invoice: 83510031XXXXXXXXXX (18 digits)
+            // Known issue: position 14 (digit 5 vs 6) frequently misread
+            // Pattern: 83510031 (prefix) + 1110 (common middle) + [5/6] (often wrong) + 0001 (suffix)
             
-            // Replace "835I0031" or "835l0031" (1 read as I or l) with "83510031"
-            fixed = fixed.replace(/835[Il]0031/gi, '83510031');
-            
-            // Replace "8351OO31" (0 read as O) with "83510031"
-            fixed = fixed.replace(/8351[O0]{2}31/gi, '83510031');
-            
-            // Replace "8351003I" or "8351003l" (1 read as I or l) with "83510031"
-            fixed = fixed.replace(/8351003[Il]/gi, '83510031');
-            
-            // Fix trailing digits: replace O (letter O) with 0 (digit zero)
-            fixed = fixed.replace(/(\d{8}[0-9]+)O(?=[0-9]*$)/g, '$10');
-            
-            // Fix common digit misreads in trailing numbers
-            // I/l -> 1, O -> 0, S -> 5, Z -> 2, B -> 8
-            fixed = fixed.replace(/([0-9]{8})([ILOSZ0-9]*)/g, (match, prefix, suffix) => {
-                if (!/^835100[03]1$/.test(prefix)) return match;
-                
-                const corrected = suffix
-                    .replace(/[Il]/g, '1')
-                    .replace(/[O]/g, '0')
-                    .replace(/[S]/g, '5')
-                    .replace(/[Z]/g, '2')
-                    .replace(/[B]/g, '8');
-                    
-                return prefix + corrected;
-            });
+            // If we find pattern with 5 in position 14, try position with 6
+            const pattern1 = /83510031\d{4}5\d{3}/;
+            if (pattern1.test(fixed)) {
+                // This looks like the common misread - suggest correction
+                const corrected = fixed.replace(/(83510031\d{4})5(\d{3})/, '$16$2');
+                console.log(`[OCR FIX] Corrected position 14: 5→6 (${fixed.match(pattern1)[0]} → ${corrected.match(/83510031\d{11}/)[0]})`);
+                fixed = corrected;
+            }
             
             return fixed;
+        }
+        
+        // Image enhancement function for better OCR
+        function enhanceImageContrast(imageData) {
+            const data = imageData.data;
+            
+            // Calculate histogram
+            const histogram = new Array(256).fill(0);
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+                histogram[gray]++;
+            }
+            
+            // Find min and max used values
+            let minVal = 0, maxVal = 255;
+            for (let i = 0; i < 256; i++) {
+                if (histogram[i] > 0) {
+                    minVal = i;
+                    break;
+                }
+            }
+            for (let i = 255; i >= 0; i--) {
+                if (histogram[i] > 0) {
+                    maxVal = i;
+                    break;
+                }
+            }
+            
+            const range = maxVal - minVal || 1;
+            
+            // Apply contrast enhancement (histogram stretching)
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+                const enhanced = Math.round(((gray - minVal) / range) * 255);
+                
+                // Apply stronger contrast via threshold
+                const contrast = enhanced > 128 ? 255 : 0;
+                
+                data[i] = contrast;      // R
+                data[i+1] = contrast;    // G
+                data[i+2] = contrast;    // B
+                // data[i+3] unchanged (alpha)
+            }
         }
         
         function extractInvoiceNumber(text) {

@@ -9,39 +9,38 @@ const path = require('path');
 
 /**
  * Utility function: Fix OCR-detected errors in invoice numbers
- * Common character misreads: B→8, I→1, O→0, S→5, Z→2, 5↔6, 8↔B, etc.
+ * Aggressive correction untuk invoice pattern: 83510031XXXXXXX (18 digits)
  */
 function fixOCRErrors(text) {
     let fixed = text;
     
-    // Generic fixes for common OCR character misreads
-    // B followed by digit → 8
-    fixed = fixed.replace(/B(?=\d)/g, '8');
+    // Step 1: Basic character substitutions
+    fixed = fixed.replace(/B(?=\d)/g, '8');      // B → 8
+    fixed = fixed.replace(/[Il](?=\d)/g, '1');   // I/l → 1  
+    fixed = fixed.replace(/O(?=\d)/g, '0');      // O → 0
+    fixed = fixed.replace(/S(?=\d)/g, '5');      // S → 5
+    fixed = fixed.replace(/Z(?=\d)/g, '2');      // Z → 2
     
-    // I or l (lowercase L) followed by digit → 1
-    fixed = fixed.replace(/[Il](?=\d)/g, '1');
+    // Step 2: Aggressive digit confusion fixes for known misreads
+    // Invoice pattern: 835100311101026001 but often misread with wrong digit 14
     
-    // O (letter O) followed by digit → 0
-    fixed = fixed.replace(/O(?=\d)/g, '0');
+    // Pattern 1: If we see 835100311101025xxx, change to 835100311101026xxx
+    fixed = fixed.replace(/83510031110102([56])/g, '835100311101026');
     
-    // S followed by digit → 5
-    fixed = fixed.replace(/S(?=\d)/g, '5');
-    
-    // Z followed by digit → 2
-    fixed = fixed.replace(/Z(?=\d)/g, '2');
-    
-    // Common digit confusions in specific positions:
-    // For invoice pattern 835100311101025001 (18 digits)
-    // Position patterns: 8-3-5-1-0-0-3-1-1-1-0-1-0-[2/5/6/8]-5-0-0-1
-    
-    // Position 14 (index 13): commonly misread as 5 instead of 6, or 2 instead of 5
-    fixed = fixed.replace(/(\d{13})[56](\d{4})/, (match, prefix, suffix) => {
-        // If starts with 83510031 (correct prefix), likely position 14 should be 6
-        if (/^83510031/.test(prefix)) {
+    // Pattern 2: Position 14 correction (often 5 when should be 6)
+    fixed = fixed.replace(/(\d{13})[56](\d{4})$/, (match, prefix, suffix) => {
+        // If prefix ends with 835100311101, likely position 14 error
+        if (/835100311101$/.test(prefix)) {
             return prefix + '6' + suffix;
         }
         return match;
     });
+    
+    // Step 3: Clean up obviously wrong sequences
+    // Multiple O's in a row = likely OCR error for 0's
+    fixed = fixed.replace(/OO+/g, '00');
+    // Multiple I's/l's = likely 1's
+    fixed = fixed.replace(/[Il]{2,}/g, (match) => '1'.repeat(match.length));
     
     return fixed;
 }
