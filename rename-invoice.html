@@ -595,15 +595,10 @@
                 
                 console.log(`[FILE ${idx}] Found invoice: ${invoiceNumber}`);
                 
-                // Ask user to confirm/correct invoice number
-                const confirmedNumber = await confirmInvoiceNumber(invoiceNumber, file.name);
-                if (!confirmedNumber) {
-                    throw new Error('Invoice rename cancelled by user');
-                }
-                
+                // Auto-rename without user confirmation (fully automatic)
                 // Send to backend for rename
-                updateProgress(idx, 'processing', `Renaming to: ${confirmedNumber}.pdf`);
-                await renameFile(file, confirmedNumber, idx);
+                updateProgress(idx, 'processing', `Renaming to: ${invoiceNumber}.pdf`);
+                await renameFile(file, invoiceNumber, idx);
                 
                 console.log(`[FILE ${idx}] Rename successful`);
                 updateProgress(idx, 'success', `✅ Renamed to: ${confirmedNumber}.pdf`);
@@ -707,98 +702,6 @@
             }
             
             return null;
-        }
-        
-        // Confirm or correct invoice number before rename
-        async function confirmInvoiceNumber(extractedNumber, fileName) {
-            return new Promise((resolve) => {
-                // Create modal HTML
-                const modal = document.createElement('div');
-                modal.id = 'confirmModal';
-                modal.className = 'fixed inset-0 bg-black/60 flex items-center justify-center z-50';
-                modal.innerHTML = `
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl max-w-md w-full mx-4">
-                        <div class="p-6 border-b border-gray-200 dark:border-slate-700">
-                            <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                <i class="fas fa-file-invoice text-blue-600"></i>
-                                Konfirmasi Nomor Faktur
-                            </h2>
-                        </div>
-                        <div class="p-6 space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    File: <span class="font-mono text-blue-600 dark:text-blue-400">${fileName}</span>
-                                </label>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Nomor Faktur yang Terdeteksi:
-                                </label>
-                                <input type="text" id="invoiceInput" value="${extractedNumber}" 
-                                    class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg 
-                                    bg-white dark:bg-slate-700 text-gray-900 dark:text-white
-                                    font-mono text-lg font-bold focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                    <i class="fas fa-lightbulb"></i> Sesuaikan jika ada kesalahan deteksi OCR
-                                </p>
-                            </div>
-                        </div>
-                        <div class="p-6 border-t border-gray-200 dark:border-slate-700 flex gap-3">
-                            <button id="cancelBtn" class="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 
-                                rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-slate-700 transition">
-                                <i class="fas fa-times mr-1"></i>Batal
-                            </button>
-                            <button id="confirmBtn" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium 
-                                hover:bg-blue-700 transition">
-                                <i class="fas fa-check mr-1"></i>Konfirmasi
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                // Add modal to DOM
-                document.body.appendChild(modal);
-                
-                // Get input and buttons
-                const input = modal.querySelector('#invoiceInput');
-                const confirmBtn = modal.querySelector('#confirmBtn');
-                const cancelBtn = modal.querySelector('#cancelBtn');
-                
-                // Focus input
-                setTimeout(() => input.focus(), 100);
-                
-                // Handle confirm
-                const confirm = () => {
-                    const value = input.value.trim();
-                    // Validate: must be 14-18 digits
-                    if (!/^\d{14,18}$/.test(value)) {
-                        alert('Nomor faktur harus berisi 14-18 angka');
-                        input.focus();
-                        return;
-                    }
-                    modal.remove();
-                    resolve(value);
-                };
-                
-                // Handle cancel
-                const cancel = () => {
-                    modal.remove();
-                    resolve(null);
-                };
-                
-                confirmBtn.addEventListener('click', confirm);
-                cancelBtn.addEventListener('click', cancel);
-                
-                // Allow Enter to confirm
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') confirm();
-                });
-                
-                // Allow Escape to cancel
-                modal.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') cancel();
-                });
-            });
         }
         
         async function renameFile(file, invoiceNumber, idx) {
