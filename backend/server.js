@@ -365,6 +365,7 @@ app.use((req, res, next) => {
         "img-src 'self' data: blob: https://static.cloudflareinsights.com",
         "media-src 'self' blob:",
         "object-src 'self' blob:",
+        "worker-src 'self' blob:",
         "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tailwindcss.com https://cdn.sheetjs.com https://unpkg.com https://static.cloudflareinsights.com",
         "frame-ancestors 'none'",
         "form-action 'self'",
