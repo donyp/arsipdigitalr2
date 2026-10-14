@@ -752,34 +752,7 @@
                         
                         // Check if requires selection
                         if (errorData.requires_selection && errorData.invoices && errorData.invoices.length > 0) {
-                            console.log(`[FALLBACK ${idx}] Showing invoice selection with ${errorData.invoices.length} options`);
-                            
-                            // Build list string for prompt
-                            let promptText = `${errorData.message}\n\n`;
-                            promptText += `Found ${errorData.invoices.length} invoices. Enter the number (1-${errorData.invoices.length}) or the invoice number directly:\n\n`;
-                            promptText += errorData.invoices.map((inv, i) => `${i+1}. ${inv.label}`).join('\n');
-                            
-                            // Show dialog untuk user pilih
-                            const userInput = prompt(promptText, '1');
-                            
-                            if (userInput) {
-                                let selected = userInput.trim();
-                                
-                                // If user entered a number (1-50), get that invoice
-                                if (/^\d+$/.test(selected)) {
-                                    const idx_num = parseInt(selected) - 1;
-                                    if (idx_num >= 0 && idx_num < errorData.invoices.length) {
-                                        selected = errorData.invoices[idx_num].faktur;
-                                    }
-                                }
-                                
-                                console.log(`[FALLBACK ${idx}] User selected: ${selected}`);
-                                updateProgress(idx, 'processing', `User selected: ${selected}, renaming...`);
-                                await renameFile(file, selected, pdfText, idx);
-                                return;
-                            } else {
-                                throw new Error('User canceled invoice selection');
-                            }
+                            console.log(`[FALLBACK ${idx}] Should not reach here - auto-selection on backend now`);
                         }
                     } catch (parseErr) {
                         console.warn(`[FALLBACK ${idx}] Could not parse error JSON:`, parseErr);

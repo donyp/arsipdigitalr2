@@ -444,35 +444,31 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
                 } else {
                     console.log('[RENAME] No invoice found via any method, fetching invoice list for user selection');
                     
-                    // Fallback: Get recent invoices untuk UI dropdown
+                    // Fallback: Get FIRST (most recent) invoice untuk auto-use
                     try {
                         const { data: recentInvoices, error: listError } = await supabase
                             .from('invoice_file_list')
                             .select('faktur, toko, tanggal, keterangan')
                             .order('tanggal', { ascending: false })
-                            .limit(50);
+                            .limit(1);
                         
                         if (!listError && recentInvoices && recentInvoices.length > 0) {
-                            console.log('[RENAME] Returning list of invoices for user selection');
+                            console.log('[RENAME] Using most recent invoice:', recentInvoices[0].faktur);
+                            invoiceNumber = recentInvoices[0].faktur;
+                        } else {
+                            // If still nothing, return error
                             return res.status(400).json({
                                 success: false,
-                                message: 'Nomor faktur tidak dapat diekstrak dari file. Pilih dari daftar berikut atau upload invoice data terlebih dahulu.',
-                                requires_selection: true,
-                                invoices: recentInvoices.map(inv => ({
-                                    faktur: inv.faktur,
-                                    label: `${inv.faktur} - ${inv.toko || 'Unknown'}`
-                                }))
+                                message: 'Tidak ada data invoice di database. Silakan upload invoice data terlebih dahulu.'
                             });
                         }
                     } catch (listErr) {
-                        console.warn('[RENAME] Error fetching invoice list:', listErr);
+                        console.warn('[RENAME] Error fetching first invoice:', listErr);
+                        return res.status(400).json({
+                            success: false,
+                            message: 'Gagal mengakses database invoice'
+                        });
                     }
-                    
-                    // If still nothing, return generic error
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Tidak dapat mengekstrak nomor faktur dari file PDF. Pastikan file berisi data invoice yang jelas atau upload invoice data terlebih dahulu.'
-                    });
                 }
             }
 
