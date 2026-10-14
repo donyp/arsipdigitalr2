@@ -88,12 +88,7 @@ class MaintenanceBanner {
                 </div>
                 <div class="maintenance-banner-content">
                     <div class="maintenance-banner-title">
-                        🔧 Sistem Sedang Diperbarui
-                    </div>
-                    <div class="maintenance-banner-message">
-                        <p><strong>Alasan:</strong> ${data.reason || 'Sistem diperbarui untuk peningkatan kualitas layanan'}</p>
-                        ${data.description ? `<p><strong>Detail:</strong> ${data.description}</p>` : ''}
-                        <p style="font-size: 13px; opacity: 0.85; margin-top: 8px;"><strong>Estimasi Selesai:</strong> ${timeRemaining}</p>
+                        Sistem Sedang Diperbarui
                     </div>
                 </div>
                 <div class="maintenance-banner-timer">

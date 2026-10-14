@@ -123,9 +123,8 @@ html[data-dark-mode="true"] .maintenance-banner-icon {
 }
 
 .maintenance-banner-title {
-    font-size: 17px;
+    font-size: 16px;
     font-weight: 700;
-    margin-bottom: 6px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -133,22 +132,7 @@ html[data-dark-mode="true"] .maintenance-banner-icon {
 }
 
 .maintenance-banner-message {
-    font-size: 13px;
-    line-height: 1.6;
-    opacity: 0.95;
-}
-
-.maintenance-banner-message p {
-    margin: 3px 0;
-}
-
-.maintenance-banner-message p:first-child {
-    margin-top: 0;
-    font-weight: 500;
-}
-
-.maintenance-banner-message p:last-child {
-    margin-bottom: 0;
+    display: none;
 }
 
 /* Countdown Timer */
