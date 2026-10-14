@@ -615,24 +615,12 @@
             console.log(`[RENAME ${idx}] Token exists: ${!!token}`);
             
             const formData = new FormData();
-            
-            console.log(`[RENAME ${idx}] File object:`, file);
-            console.log(`[RENAME ${idx}] File keys:`, Object.keys(file));
-            console.log(`[RENAME ${idx}] file.file:`, file.file);
-            console.log(`[RENAME ${idx}] file.name:`, file.name);
-            
-            // Handle both { file: File, name: String } and direct File object
             const fileToUpload = file.file || file;
             const fileName = file.name || (file.file ? file.name : 'unknown');
             
             formData.append('file', fileToUpload);
-            formData.append('invoiceNumber', invoiceNumber);
-            if (ocrText) {
-                formData.append('ocrText', ocrText);
-            }
+            if (invoiceNumber) formData.append('invoiceNumber', invoiceNumber);
             formData.append('originalName', fileName);
-            
-            console.log(`[RENAME ${idx}] FormData entries:`, Array.from(formData.entries()).map(e => [e[0], typeof e[1], e[1]?.name || e[1]?.length || e[1]]));
             
             const apiUrl = `/api/invoice/rename-invoice`;
             console.log(`[RENAME ${idx}] Sending to ${apiUrl}`);
@@ -640,42 +628,36 @@
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
                 });
                 
                 console.log(`[RENAME ${idx}] Response status: ${response.status}`);
                 
                 if (!response.ok) {
-                    // Try to parse error response
-                    const contentType = response.headers.get('content-type');
-                    let errorMsg = `HTTP ${response.status}`;
-                    
-                    if (contentType && contentType.includes('application/json')) {
-                        try {
-                            const error = await response.json();
-                            errorMsg = error.error || error.details || errorMsg;
-                        } catch (e) {
-                            console.warn('[RENAME] Could not parse error JSON');
-                        }
-                    } else if (contentType && contentType.includes('text/html')) {
-                        // 404 might return HTML error page
-                        console.error('[RENAME] Received HTML response (possible 404)');
-                        errorMsg = `Endpoint not found (HTTP ${response.status})`;
-                    }
-                    
-                    throw new Error(errorMsg);
+                    const error = await response.json().catch(() => ({ error: response.statusText }));
+                    throw new Error(error.message || error.error || `HTTP ${response.status}`);
                 }
                 
-                // Response is binary PDF file
-                const blob = await response.blob();
-                const newFilename = `${invoiceNumber}.pdf`;
+                // Parse JSON response
+                const data = await response.json();
+                if (!data.success) throw new Error(data.message || 'Unknown error');
                 
-                console.log(`[RENAME ${idx}] Downloaded blob size: ${blob.size} bytes`);
+                const finalInvoiceNumber = data.invoiceNumber;
+                const newFilename = data.newFileName;
+                const base64Data = data.fileData;
                 
-                // Trigger browser download
+                console.log(`[RENAME ${idx}] Got result: ${finalInvoiceNumber}, size: ${data.fileSize} bytes`);
+                
+                // Convert base64 to blob and download
+                const binaryData = atob(base64Data);
+                const bytes = new Uint8Array(binaryData.length);
+                for (let i = 0; i < binaryData.length; i++) {
+                    bytes[i] = binaryData.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: 'application/pdf' });
+                
+                // Trigger download
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -685,21 +667,19 @@
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
                 
-                // Update local state
-                selectedFiles[idx].invoiceNumber = invoiceNumber;
+                // Update state
+                selectedFiles[idx].invoiceNumber = finalInvoiceNumber;
                 selectedFiles[idx].status = 'success';
-                
-                // Add to history
-                addToHistory(file.name, invoiceNumber, 'success');
+                addToHistory(fileName, finalInvoiceNumber, 'success');
                 
                 processingResults.push({
-                    originalName: file.name,
+                    originalName: fileName,
                     newName: newFilename,
-                    invoiceNumber: invoiceNumber,
+                    invoiceNumber: finalInvoiceNumber,
                     status: 'success'
                 });
                 
-                console.log(`[RENAME ${idx}] Added to results. Total:`, processingResults.length);
+                console.log(`[RENAME ${idx}] Success`);
                 
             } catch (error) {
                 console.error(`[RENAME ${idx}] Fetch error:`, error);

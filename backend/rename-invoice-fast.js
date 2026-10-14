@@ -156,15 +156,16 @@ function registerFastRenameEndpoints(app, supabase, createAuth, multerUpload) {
 
             console.log('[RENAME] Final invoice:', invoiceNumber);
             const newFileName = `${invoiceNumber}.pdf`;
-            const downloadPath = path.join(require('os').tmpdir(), `rename-${Date.now()}-${newFileName}`);
 
-            // Write & download
-            await require('fs').promises.writeFile(downloadPath, file.buffer);
-            res.setHeader('X-Invoice-Number', invoiceNumber);
-            res.download(downloadPath, newFileName, (err) => {
-                if (fs.existsSync(downloadPath)) fs.unlinkSync(downloadPath);
-                if (err) console.error('[RENAME] Download error:', err);
-                else console.log('[RENAME] Success');
+            // Return file as base64 + metadata in JSON
+            const base64 = file.buffer.toString('base64');
+            
+            res.status(200).json({ 
+                success: true, 
+                invoiceNumber: invoiceNumber,
+                newFileName: newFileName,
+                fileData: base64,
+                fileSize: file.buffer.length
             });
 
             // Save history (async, don't block)
