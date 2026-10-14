@@ -548,6 +548,7 @@
                 
                 // Scan all pages to find invoice number
                 let invoiceNumber = null;
+                let ocrText = null;
                 let foundOnPage = -1;
                 
                 for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -577,7 +578,7 @@
                     });
                     
                     // Extract invoice number from this page
-                    const ocrText = result?.data?.text || result?.text || '';
+                    ocrText = result?.data?.text || result?.text || '';
                     console.log(`[FILE ${idx}] Page ${pageNum} OCR: ${ocrText.substring(0, 150)}...`);
                     
                     invoiceNumber = extractInvoiceNumber(ocrText);
@@ -596,12 +597,12 @@
                 console.log(`[FILE ${idx}] Found invoice: ${invoiceNumber}`);
                 
                 // Auto-rename without user confirmation (fully automatic)
-                // Send to backend for rename
+                // Send to backend for rename with OCR text for server-side correction
                 updateProgress(idx, 'processing', `Renaming to: ${invoiceNumber}.pdf`);
-                await renameFile(file, invoiceNumber, idx);
+                await renameFile(file, invoiceNumber, ocrText, idx);
                 
                 console.log(`[FILE ${idx}] Rename successful`);
-                updateProgress(idx, 'success', `✅ Renamed to: ${confirmedNumber}.pdf`);
+                updateProgress(idx, 'success', `✅ Renamed to: ${invoiceNumber}.pdf`);
                 
             } catch (error) {
                 console.error(`[FILE ${idx}] Error:`, error);
@@ -704,13 +705,16 @@
             return null;
         }
         
-        async function renameFile(file, invoiceNumber, idx) {
+        async function renameFile(file, invoiceNumber, ocrText, idx) {
             const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             console.log(`[RENAME ${idx}] Token exists: ${!!token}`);
             
             const formData = new FormData();
             formData.append('file', file.file);
             formData.append('invoiceNumber', invoiceNumber);
+            if (ocrText) {
+                formData.append('ocrText', ocrText);
+            }
             formData.append('originalName', file.name);
             
             const apiUrl = `/api/invoice/rename-invoice`;

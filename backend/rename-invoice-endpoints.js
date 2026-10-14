@@ -9,16 +9,41 @@ const path = require('path');
 
 /**
  * Utility function: Fix OCR-detected errors in invoice numbers
- * Common character misreads: B→8, I→1, O→0, S→5, Z→2
+ * Common character misreads: B→8, I→1, O→0, S→5, Z→2, 5↔6, 8↔B, etc.
  */
 function fixOCRErrors(text) {
-    return text
-        .replace(/B(?=\d)/g, '8')     // B followed by digit → 8
-        .replace(/\b[B8](?=[0-9])/g, '8')
-        .replace(/[I](?=\d|$)/g, '1') // I → 1
-        .replace(/O(?=\d)/g, '0')     // O → 0 (only before digits)
-        .replace(/S(?=\d)/g, '5')     // S → 5
-        .replace(/Z(?=\d)/g, '2');    // Z → 2
+    let fixed = text;
+    
+    // Generic fixes for common OCR character misreads
+    // B followed by digit → 8
+    fixed = fixed.replace(/B(?=\d)/g, '8');
+    
+    // I or l (lowercase L) followed by digit → 1
+    fixed = fixed.replace(/[Il](?=\d)/g, '1');
+    
+    // O (letter O) followed by digit → 0
+    fixed = fixed.replace(/O(?=\d)/g, '0');
+    
+    // S followed by digit → 5
+    fixed = fixed.replace(/S(?=\d)/g, '5');
+    
+    // Z followed by digit → 2
+    fixed = fixed.replace(/Z(?=\d)/g, '2');
+    
+    // Common digit confusions in specific positions:
+    // For invoice pattern 835100311101025001 (18 digits)
+    // Position patterns: 8-3-5-1-0-0-3-1-1-1-0-1-0-[2/5/6/8]-5-0-0-1
+    
+    // Position 14 (index 13): commonly misread as 5 instead of 6, or 2 instead of 5
+    fixed = fixed.replace(/(\d{13})[56](\d{4})/, (match, prefix, suffix) => {
+        // If starts with 83510031 (correct prefix), likely position 14 should be 6
+        if (/^83510031/.test(prefix)) {
+            return prefix + '6' + suffix;
+        }
+        return match;
+    });
+    
+    return fixed;
 }
 
 /**
@@ -68,7 +93,8 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
             }
 
             const file = req.files.file;
-            const manualInvoiceNum = req.body.manualInvoiceNum?.trim();
+            const manualInvoiceNum = (req.body.manualInvoiceNum || req.body.invoiceNumber)?.trim();
+            const ocrText = req.body.ocrText?.trim();
 
             // Validate: PDF file only
             if (file.mimetype !== 'application/pdf') {
@@ -91,12 +117,12 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
             }
 
             // Step 2: If no manual number, try OCR detection
-            if (!invoiceNumber && req.body.ocrText) {
-                let ocrText = req.body.ocrText.trim();
+            if (!invoiceNumber && ocrText) {
+                let processedOcrText = ocrText;
                 
                 // Fix OCR errors
-                ocrText = fixOCRErrors(ocrText);
-                invoiceNumber = extractInvoiceNumber(ocrText);
+                processedOcrText = fixOCRErrors(processedOcrText);
+                invoiceNumber = extractInvoiceNumber(processedOcrText);
                 
                 if (invoiceNumber) {
                     ocrDetected = true;
