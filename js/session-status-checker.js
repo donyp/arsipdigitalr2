@@ -45,8 +45,8 @@
 
             if (response.status === 401 || response.status === 403) {
                 // Session is invalid
-                console.warn('[SessionStatusChecker] Session invalidated by server');
-                handleSessionInvalidated();
+                console.warn('[SessionStatusChecker] Session invalidated by server (401/403)');
+                handleSessionInvalidated('Server returned 401/403');
                 return;
             }
 
@@ -56,14 +56,19 @@
             }
 
             const data = await response.json();
+            console.log('[SessionStatusChecker] Session check response:', {
+                isValid: data.isValid,
+                maintenanceForcedLogout: data.maintenanceForcedLogout,
+                message: data.message
+            });
             
             if (!data.isValid) {
-                console.warn('[SessionStatusChecker] Session marked as invalid on server');
-                handleSessionInvalidated();
+                console.warn('[SessionStatusChecker] Session marked as invalid on server (forced_logout: ' + data.maintenanceForcedLogout + ')');
+                handleSessionInvalidated('Server marked session invalid');
                 return;
             }
 
-            console.log('[SessionStatusChecker] Session is valid');
+            // Uncomment for detailed logging: console.log('[SessionStatusChecker] Session is valid');
         } catch (error) {
             console.error('[SessionStatusChecker] Error checking session:', error.message);
         } finally {

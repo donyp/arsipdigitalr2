@@ -906,17 +906,20 @@ router.post('/check-session', authenticateToken, async (req, res) => {
         }
 
         let isValid = sessions && sessions.length > 0;
+        let maintenanceForcedLogout = false;
         
         // Check if session was forcibly logged out (even if still marked as is_valid=true for a moment)
         if (isValid && sessions[0].maintenance_forced_logout) {
             console.log('[Maintenance] Session marked with forced logout flag');
             isValid = false;
+            maintenanceForcedLogout = true;
         }
         
-        console.log('[Maintenance] Session validity check for', jti, ':', isValid);
+        console.log('[Maintenance] Session validity check for', jti, ':', isValid, 'forced_logout:', maintenanceForcedLogout);
 
         res.json({
             isValid: isValid,
+            maintenanceForcedLogout: maintenanceForcedLogout,
             message: isValid ? 'Session is valid' : 'Session has been invalidated'
         });
 
