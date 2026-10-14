@@ -4727,3 +4727,122 @@ module.exports = {
     addManualSyncEndpoint,
     batchSyncAllFileCount
 };
+
+
+// ============================================================
+// POST /api/invoice/rename-invoice
+// Rename invoice PDF based on OCR-detected invoice number
+// Accepts PDF file and detected invoice number from frontend
+// ============================================================
+app.post('/api/invoice/rename-invoice',
+    ...createAuth(['super_admin', 'moderator', 'user', 'admin_zona']),
+    upload.single('file'),
+    async (req, res) => {
+        try {
+            const { invoiceNumber, originalName } = req.body;
+            
+            if (!req.file) {
+                return res.status(400).json({ error: 'No file uploaded' });
+            }
+            
+            if (!invoiceNumber || !/^\d{14,16}$/.test(invoiceNumber)) {
+                return res.status(400).json({ error: 'Invalid invoice number format' });
+            }
+            
+            console.log(`[Invoice Rename] Processing: ${originalName} → ${invoiceNumber}.pdf`);
+            
+            // Validate file is PDF
+            if (req.file.mimetype !== 'application/pdf') {
+                return res.status(400).json({ error: 'File must be PDF' });
+            }
+            
+            // Create filename
+            const newFilename = `${invoiceNumber}.pdf`;
+            const fileBuffer = req.file.buffer;
+            
+            // Generate unique path to avoid overwrites
+            const timestamp = Date.now();
+            const storagePath = `INVOICES/RENAMED/${invoiceNumber}/${timestamp}_${newFilename}`;
+            
+            console.log(`[Invoice Rename] Uploading to R2: ${storagePath}`);
+            
+            // Upload to R2
+            await R2Storage.uploadBuffer(storagePath, fileBuffer, 'application/pdf');
+            
+            // Log to audit trail
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user.userId,
+                userEmail: req.user.email,
+                userRole: req.user.role,
+                zonaId: req.user.zona_id || null,
+                action: 'Rename Invoice PDF',
+                resourceType: 'invoice_file',
+                resourceId: invoiceNumber,
+                resourceName: newFilename,
+                operation: 'CREATE',
+                details: {
+                    originalName: originalName,
+                    newName: newFilename,
+                    invoiceNumber: invoiceNumber,
+                    storagePath: storagePath,
+                    fileSize: fileBuffer.length
+                },
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/invoice/rename-invoice',
+                requestMethod: 'POST',
+                statusCode: 200,
+                responseMessage: 'Invoice renamed successfully',
+                errorMessage: null,
+                isSuspicious: false,
+                severity: 'info'
+            }).catch(err => {
+                console.warn('[Invoice Rename] Audit log failed:', err.message);
+            });
+            
+            console.log(`[Invoice Rename] ✅ Success: ${invoiceNumber}.pdf (${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
+            
+            res.json({
+                success: true,
+                message: 'Invoice renamed successfully',
+                invoiceNumber: invoiceNumber,
+                newFilename: newFilename,
+                originalName: originalName,
+                storagePath: storagePath,
+                fileSize: fileBuffer.length,
+                timestamp: new Date().toISOString()
+            });
+            
+        } catch (error) {
+            console.error('[Invoice Rename] Error:', error.message);
+            
+            const { ipAddress } = AuditLogger.extractClientInfo(req);
+            await auditLogger.log({
+                userId: req.user?.userId || null,
+                userEmail: req.user?.email || null,
+                userRole: req.user?.role || null,
+                zonaId: req.user?.zona_id || null,
+                action: 'Rename Invoice PDF - Failed',
+                resourceType: 'invoice_file',
+                resourceId: req.body?.invoiceNumber || 'unknown',
+                resourceName: req.file?.originalname || 'unknown',
+                operation: 'CREATE',
+                ipAddress: ipAddress,
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                requestPath: '/api/invoice/rename-invoice',
+                requestMethod: 'POST',
+                statusCode: 500,
+                responseMessage: null,
+                errorMessage: error.message,
+                isSuspicious: false,
+                severity: 'error'
+            }).catch(() => {});
+            
+            res.status(500).json({
+                error: 'Failed to rename invoice',
+                details: error.message
+            });
+        }
+    }
+);

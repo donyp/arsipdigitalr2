@@ -606,6 +606,10 @@ app.get('/renamefaktur', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
 });
 
+app.get('/rename-invoice', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'rename-invoice.html'));
+});
+
 // Management
 app.get('/user', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'users.html'));
@@ -754,7 +758,7 @@ app.get('/:page', (req, res, next) => {
     }
     
     // Skip upload pages and other SPA-routed pages - let SPA router handle them
-    const spaRoutedPages = ['upload-excel', 'upload-invoice-pdf', 'upload-bukti-bayar', 'upload-faktur-pajak', 'rename-faktur', 'users', 'tokos', 'zonas', 'whatsapp-messages', 'support-dashboard'];
+    const spaRoutedPages = ['upload-excel', 'upload-invoice-pdf', 'upload-bukti-bayar', 'upload-faktur-pajak', 'rename-faktur', 'rename-invoice', 'users', 'tokos', 'zonas', 'whatsapp-messages', 'support-dashboard'];
     if (spaRoutedPages.includes(page)) {
         return next();
     }
