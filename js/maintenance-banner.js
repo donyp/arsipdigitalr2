@@ -254,7 +254,7 @@ class MaintenanceBanner {
      */
     setupWebSocketListener() {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             if (!token) {
                 console.log('[MaintenanceBanner] No token available, skipping WebSocket connection');
                 return;
