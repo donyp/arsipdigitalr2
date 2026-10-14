@@ -170,5 +170,6 @@
         }
     };
 
-    console.log('[SessionStatusChecker] Module loaded - call initializeSessionStatusChecker() after login');
+    console.log('[SessionStatusChecker] 📦 Module loaded - ready to initialize after login');
+console.log('[SessionStatusChecker] Global function available:', typeof window.initializeSessionStatusChecker);
 })();

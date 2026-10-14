@@ -124,8 +124,11 @@ async function loginWithCredentials(email, password) {
 
     // Initialize session status checker to detect forced logouts
     if (typeof initializeSessionStatusChecker === 'function') {
+        console.log('[Auth] ✅ Calling initializeSessionStatusChecker()...');
         initializeSessionStatusChecker();
-        console.log('[Auth] Session status checker initialized');
+        console.log('[Auth] ✅ initializeSessionStatusChecker() completed');
+    } else {
+        console.error('[Auth] ❌ initializeSessionStatusChecker() NOT FOUND - session polling will NOT work!');
     }
 
     // Create session for device tracking
