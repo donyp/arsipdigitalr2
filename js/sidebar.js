@@ -101,8 +101,7 @@
             href: '#',
             isDropdown: true,
             children: [
-                { label: 'Rename Faktur', icon: '<i class="fas fa-edit"></i>', href: '/renamefaktur' },
-                { label: 'Rename Invoice', icon: '<i class="fas fa-receipt"></i>', href: '/rename-invoice' }
+                { label: 'Rename Faktur', icon: '<i class="fas fa-edit"></i>', href: '/renamefaktur' }
             ]
         },
         {
