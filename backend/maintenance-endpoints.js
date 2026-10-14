@@ -656,8 +656,7 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
                 .from('maintenance_access_logs')
                 .select('*', { count: 'exact' })
                 .order('timestamp', { ascending: false })
-                .limit(limit)
-                .offset(offset);
+                .range(offset, offset + limit - 1);
 
             if (error) {
                 console.error('[AccessLogs] Query error:', error.message);
