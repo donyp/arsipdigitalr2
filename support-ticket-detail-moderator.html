@@ -808,6 +808,12 @@
 
             document.addEventListener('DOMContentLoaded', async () => {
                 
+                // Initialize session status checker on page load
+                if (typeof initializeSessionStatusChecker === 'function') {
+                    console.log('[TicketDetailModerator] Initializing session status checker...');
+                    initializeSessionStatusChecker();
+                }
+                
                 // Get ticket ID from URL
                 const params = new URLSearchParams(window.location.search);
                 ticketId = params.get('id');

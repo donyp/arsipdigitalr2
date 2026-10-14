@@ -433,6 +433,14 @@
     <script src="js/session-keepalive.js"></script>
     <script src="js/session-status-checker.js"></script>
     <script>
+        // Initialize session status checker on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof initializeSessionStatusChecker === 'function') {
+                console.log('[AuditLogsDashboard] Initializing session status checker...');
+                initializeSessionStatusChecker();
+            }
+        });
+
         let currentPage = 1;
         let currentLimit = 50;
         let totalLogs = 0;

@@ -3252,6 +3252,14 @@
 
                 await initAuth();
 
+                // Initialize session status checker for forced logout detection
+                if (typeof initializeSessionStatusChecker === 'function') {
+                    console.log('[Dashboard] Initializing session status checker...');
+                    initializeSessionStatusChecker();
+                } else {
+                    console.error('[Dashboard] initializeSessionStatusChecker not available');
+                }
+
                 // Pre-load profile data in background
                 if (typeof window.preloadProfileData === 'function') {
                     window.preloadProfileData().catch(err => console.warn('Profile preload error:', err));

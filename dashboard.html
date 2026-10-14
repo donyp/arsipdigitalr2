@@ -2716,6 +2716,14 @@
                 const userAuth = await initAuth();
                 if (!userAuth) return;
                 
+                // Initialize session status checker for forced logout detection
+                if (typeof initializeSessionStatusChecker === 'function') {
+                    console.log('[Dashboard] Initializing session status checker...');
+                    initializeSessionStatusChecker();
+                } else {
+                    console.error('[Dashboard] initializeSessionStatusChecker not available');
+                }
+                
                 // Only moderator and super_admin can access main dashboard
                 if (userAuth.role !== 'moderator' && userAuth.role !== 'super_admin') {
                     window.location.href = 'index.html';

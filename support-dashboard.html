@@ -1058,6 +1058,12 @@
     
     <!-- Initialize Support Page (SPA trigger) -->
     <script>
+        // Initialize session status checker on page load
+        if (typeof initializeSessionStatusChecker === 'function') {
+            console.log('[SupportDashboard] Initializing session status checker...');
+            initializeSessionStatusChecker();
+        }
+        
         // Ensure sidebar renders
         if (typeof renderSidebar === 'function') {
             renderSidebar();
