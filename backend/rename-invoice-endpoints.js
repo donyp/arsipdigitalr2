@@ -8,73 +8,172 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Query database untuk cari faktur mirip
- * Gunakan Levenshtein distance atau simple pattern matching
+ * Query database untuk cari faktur dengan berbagai strategy
+ * Handles OCR failures by using fuzzy matching dan partial patterns
  */
-async function findSimilarInvoiceInDatabase(supabase, extractedNumber) {
+async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileName) {
     try {
-        if (!extractedNumber || extractedNumber.length < 14) {
-            return null;
-        }
+        console.log('[DB-SEARCH] Starting database search...');
+        console.log('[DB-SEARCH] Extracted number:', extractedNumber);
+        console.log('[DB-SEARCH] OCR text length:', ocrText?.length || 0);
+        console.log('[DB-SEARCH] Filename:', fileName);
         
-        // Search strategy: cari dengan prefix + suffix matching
-        // Format: 83510031XXXXXXXXXX (18 digits)
-        const prefix = extractedNumber.substring(0, 8);  // 83510031
-        const suffix = extractedNumber.substring(14);     // last 4 digits
-        
-        console.log(`[DB-VALIDATE] Searching for similar invoice: prefix=${prefix}, suffix=${suffix}`);
-        
-        // Query untuk cari faktur dengan prefix & suffix yang sama
-        const { data, error } = await supabase
-            .from('invoices')
-            .select('faktur')
-            .ilike('faktur', `${prefix}%${suffix}`)
-            .limit(5);
-        
-        if (error) {
-            console.warn('[DB-VALIDATE] Query error:', error);
-            return null;
-        }
-        
-        if (data && data.length > 0) {
-            // Found similar faktur in database
-            const corrected = data[0].faktur;
-            console.log(`[DB-VALIDATE] Found in DB: ${extractedNumber} → ${corrected}`);
-            return corrected;
-        }
-        
-        // If not found with pattern, try fuzzy search
-        // Get all faktur yang start dengan prefix
-        const { data: candidates, error: err2 } = await supabase
-            .from('invoices')
-            .select('faktur')
-            .ilike('faktur', `${prefix}%`)
-            .limit(10);
-        
-        if (err2 || !candidates || candidates.length === 0) {
-            return null;
-        }
-        
-        // Simple Levenshtein distance untuk find closest match
-        let bestMatch = null;
-        let bestDistance = Infinity;
-        
-        for (const candidate of candidates) {
-            const dist = levenshteinDistance(extractedNumber, candidate.faktur);
-            if (dist < bestDistance && dist <= 2) { // Max 2 differences
-                bestDistance = dist;
-                bestMatch = candidate.faktur;
+        // Strategy 1: Direct exact match if we have a number
+        if (extractedNumber && extractedNumber.length >= 14) {
+            console.log('[DB-SEARCH] Strategy 1: Trying exact match for', extractedNumber);
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('faktur')
+                .eq('faktur', extractedNumber)
+                .limit(1);
+            
+            if (!error && data && data.length > 0) {
+                console.log('[DB-SEARCH] Strategy 1 SUCCESS: Found exact match:', data[0].faktur);
+                return data[0].faktur;
             }
         }
         
-        if (bestMatch) {
-            console.log(`[DB-VALIDATE] Fuzzy match: ${extractedNumber} → ${bestMatch} (distance: ${bestDistance})`);
-            return bestMatch;
+        // Strategy 2: Prefix + suffix matching (robust against digit misreads)
+        if (extractedNumber && extractedNumber.length >= 14) {
+            console.log('[DB-SEARCH] Strategy 2: Trying prefix+suffix fuzzy match');
+            const prefix = extractedNumber.substring(0, 8);
+            const suffix = extractedNumber.substring(extractedNumber.length - 4);
+            
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('faktur')
+                .ilike('faktur', `${prefix}%${suffix}`)
+                .limit(10);
+            
+            if (!error && data && data.length > 0) {
+                console.log('[DB-SEARCH] Found', data.length, 'candidates with prefix/suffix match');
+                // Use fuzzy match to find closest
+                let bestMatch = data[0].faktur;
+                let bestDistance = levenshteinDistance(extractedNumber, bestMatch);
+                
+                for (const inv of data) {
+                    const dist = levenshteinDistance(extractedNumber, inv.faktur);
+                    if (dist < bestDistance) {
+                        bestDistance = dist;
+                        bestMatch = inv.faktur;
+                    }
+                }
+                
+                // Allow distance up to 4 (allows 4 digit misreads like 835100311101025001 → 835100311101026001)
+                if (bestDistance <= 4) {
+                    console.log(`[DB-SEARCH] Strategy 2 SUCCESS: Found match: ${extractedNumber} → ${bestMatch} (distance: ${bestDistance})`);
+                    return bestMatch;
+                } else {
+                    console.log(`[DB-SEARCH] Strategy 2: Best match has distance ${bestDistance}, too high, skipping`);
+                }
+            }
         }
         
+        // Strategy 3: Extract all numbers from OCR text and search
+        if (ocrText && ocrText.length > 0) {
+            console.log('[DB-SEARCH] Strategy 3: Extract numbers from OCR text');
+            const numbers = ocrText.match(/\d{14,18}/g) || [];
+            console.log('[DB-SEARCH] Found', numbers.length, 'number sequences in OCR text');
+            
+            for (const num of numbers) {
+                const { data, error } = await supabase
+                    .from('invoices')
+                    .select('faktur')
+                    .eq('faktur', num)
+                    .limit(1);
+                
+                if (!error && data && data.length > 0) {
+                    console.log('[DB-SEARCH] Strategy 3 SUCCESS: Found exact match via OCR:', data[0].faktur);
+                    return data[0].faktur;
+                }
+            }
+        }
+        
+        // Strategy 4: Extract numbers from filename (including partial numbers)
+        if (fileName && fileName.length > 0) {
+            console.log('[DB-SEARCH] Strategy 4: Extract numbers from filename');
+            const cleanFileName = fileName.replace(/\.pdf$/i, '');
+            
+            // Try 14-18 digit numbers first
+            const mainNumbers = cleanFileName.match(/\d{14,18}/g) || [];
+            console.log('[DB-SEARCH] Found', mainNumbers.length, 'invoice-sized numbers in filename');
+            
+            for (const num of mainNumbers) {
+                const { data, error } = await supabase
+                    .from('invoices')
+                    .select('faktur')
+                    .eq('faktur', num)
+                    .limit(1);
+                
+                if (!error && data && data.length > 0) {
+                    console.log('[DB-SEARCH] Strategy 4 SUCCESS: Found exact match via filename:', data[0].faktur);
+                    return data[0].faktur;
+                }
+            }
+            
+            // Try fuzzy match on filename patterns
+            // Extract any digit sequences >= 8 digits from filename
+            const partialNumbers = cleanFileName.match(/\d{8,}/g) || [];
+            console.log('[DB-SEARCH] Found', partialNumbers.length, 'partial number sequences in filename');
+            
+            if (partialNumbers.length > 0) {
+                // Get sample of DB invoices that might match
+                const { data: allInvoices, error } = await supabase
+                    .from('invoices')
+                    .select('faktur')
+                    .limit(100); // Sample for fuzzy matching
+                
+                if (!error && allInvoices && allInvoices.length > 0) {
+                    for (const partial of partialNumbers) {
+                        let bestMatch = null;
+                        let bestDistance = Infinity;
+                        
+                        for (const inv of allInvoices) {
+                            // Check if filename number is contained in faktur
+                            if (inv.faktur.includes(partial)) {
+                                console.log('[DB-SEARCH] Strategy 4b: Found partial match:', inv.faktur);
+                                return inv.faktur;
+                            }
+                            
+                            // Or try fuzzy match
+                            const dist = levenshteinDistance(partial, inv.faktur.substring(0, partial.length));
+                            if (dist < bestDistance) {
+                                bestDistance = dist;
+                                bestMatch = inv.faktur;
+                            }
+                        }
+                        
+                        if (bestDistance <= 2 && bestMatch) {
+                            console.log(`[DB-SEARCH] Strategy 4c: Found fuzzy match via partial: ${partial} → ${bestMatch} (distance: ${bestDistance})`);
+                            return bestMatch;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Strategy 5: Brute-force search if OCR is completely garbled
+        // Try to find ANY recent invoice in database
+        if (!extractedNumber && ocrText && ocrText.length > 50) {
+            console.log('[DB-SEARCH] Strategy 5: OCR text exists but unreadable, searching for recent invoices');
+            const { data, error } = await supabase
+                .from('invoices')
+                .select('faktur')
+                .order('created_at', { ascending: false })
+                .limit(5);
+            
+            if (!error && data && data.length > 0) {
+                console.log('[DB-SEARCH] Found recent invoices in DB:', data.map(d => d.faktur).join(', '));
+                // Return first one as fallback (user will see these in error message)
+                return null; // Don't auto-select, let user choose
+            }
+        }
+        
+        console.log('[DB-SEARCH] All strategies exhausted, no match found');
         return null;
     } catch (err) {
-        console.warn('[DB-VALIDATE] Validation error:', err);
+        console.warn('[DB-SEARCH] Error:', err.message);
+        console.warn('[DB-SEARCH] Stack:', err.stack);
         return null;
     }
 }
@@ -105,26 +204,103 @@ function levenshteinDistance(str1, str2) {
 }
 
 /**
- * Extract invoice number from OCR text or filename
- * Supports 14-18 digit invoice numbers (format: referensi.digits)
+ * Fix OCR character misreads commonly found in invoice numbers
+ */
+function fixOCRErrors(text) {
+    if (!text) return '';
+    
+    let fixed = text;
+    
+    // Fix position-based errors specific to invoice numbers
+    // Position 14 often misread: 5 → 6 or vice versa
+    // Common patterns: B→8, I/l→1, O→0, S→5, Z→2, etc.
+    
+    // Generic character substitutions (common OCR errors)
+    fixed = fixed.replace(/B/g, '8');      // B → 8
+    fixed = fixed.replace(/[Il|]/g, '1');  // I/l/| → 1
+    fixed = fixed.replace(/O/g, '0');      // O → 0
+    fixed = fixed.replace(/S/g, '5');      // S → 5
+    fixed = fixed.replace(/Z/g, '2');      // Z → 2
+    fixed = fixed.replace(/G/g, '6');      // G → 6
+    fixed = fixed.replace(/T/g, '1');      // T → 1 (in digit context)
+    
+    return fixed;
+}
+
+/**
+ * Extract invoice number from text with multiple fallback strategies
+ * Supports 14-18 digit invoice numbers with optional delimiters
  */
 function extractInvoiceNumber(text) {
-    // Pattern: allows 14-18 consecutive digits, optionally with dots or spaces
+    if (!text || text.length === 0) return null;
+    
+    // Fix common OCR errors first
+    const correctedText = fixOCRErrors(text);
+    
+    // Pattern list in priority order
     const patterns = [
-        /\b\d{14,18}\b/,                           // Plain 14-18 digits
-        /(\d{3})\.?(\d{3})\.?(\d{3})\.?(\d{3,6})/, // Formatted with dots
-        /\d+[\s.]*\d{3}[\s.]*\d{3}[\s.]*\d{3,6}/   // Flexible formatting
+        // Exact: 14-18 consecutive digits
+        /\b(\d{14,18})\b/,
+        // "Invoice: XXXXX" format with various spacing
+        /[Ii]nvoice\s*:\s*(\d{14,18})/,
+        // "No Invoice:" or "No. Invoice:"
+        /[Nn]o\.?\s+[Ii]nvoice\s*:\s*(\d{14,18})/,
+        // "Nomor Invoice:" (Indonesian)
+        /[Nn]omor\s+[Ii]nvoice\s*:\s*(\d{14,18})/,
+        // Formatted with dots: XXX.XXX.XXX.XXXXXX
+        /(\d{3})\.(\d{3})\.(\d{3})\.(\d{3,6})/,
+        // Formatted with spaces
+        /\d+[\s.]*\d{3}[\s.]*\d{3}[\s.]*\d{3,6}/
     ];
     
+    // Try corrected text first
+    for (const pattern of patterns) {
+        const match = correctedText.match(pattern);
+        if (match) {
+            let number;
+            if (match.length === 5 && match[1] && match[2]) {
+                // Dot-formatted pattern, combine groups
+                number = match[1] + match[2] + match[3] + match[4];
+            } else {
+                number = match[1] || match[0];
+            }
+            
+            // Extract only digits
+            number = number.replace(/\D/g, '');
+            
+            // Validate length
+            if (number.length >= 14 && number.length <= 18) {
+                console.log(`[EXTRACT] Found with corrected text: ${number}`);
+                return number;
+            }
+        }
+    }
+    
+    // Fallback: try original (uncorrected) text
     for (const pattern of patterns) {
         const match = text.match(pattern);
         if (match) {
-            // Extract only digits
-            const invoiceNum = match[0].replace(/\D/g, '');
-            if (invoiceNum.length >= 14 && invoiceNum.length <= 18) {
-                return invoiceNum;
+            let number;
+            if (match.length === 5 && match[1] && match[2]) {
+                number = match[1] + match[2] + match[3] + match[4];
+            } else {
+                number = match[1] || match[0];
+            }
+            
+            number = number.replace(/\D/g, '');
+            
+            if (number.length >= 14 && number.length <= 18) {
+                console.log(`[EXTRACT] Found with original text: ${number}`);
+                return number;
             }
         }
+    }
+    
+    // Last resort: extract ANY 14-18 digit sequence from corrected text
+    const lastResort = correctedText.match(/\d{14,18}/);
+    if (lastResort) {
+        console.log(`[EXTRACT] Found with last resort: ${lastResort[0]}`);
+        return lastResort[0];
     }
     
     return null;
@@ -270,7 +446,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
             
             // Step 3b: Try to find similar invoice in database
             console.log('[RENAME] Attempting database validation...');
-            const dbValidated = await findSimilarInvoiceInDatabase(supabase, invoiceNumber);
+            const dbValidated = await findInvoiceInDatabase(supabase, invoiceNumber, ocrText || '', file.originalname);
             if (dbValidated) {
                 console.log('[RENAME] Database auto-corrected:', invoiceNumber, '→', dbValidated);
                 invoiceNumber = dbValidated;
