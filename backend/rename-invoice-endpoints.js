@@ -77,15 +77,59 @@ function extractInvoiceNumber(text) {
  * Provides OCR extraction, auto-download, and history tracking
  */
 function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
+    // HEALTH CHECK endpoint (no auth required - for debugging)
+    app.get('/api/invoice/rename-health', (req, res) => {
+        res.json({ status: 'ok', message: 'Rename endpoints are active' });
+    });
+    
+    // TEST endpoint (no auth - for debugging upload)
+    app.post('/api/invoice/rename-test', async (req, res) => {
+        try {
+            console.log('[RENAME-TEST] Test endpoint called');
+            console.log('[RENAME-TEST] Files:', req.files ? Object.keys(req.files) : 'none');
+            console.log('[RENAME-TEST] Body:', req.body);
+            
+            if (!req.files || !req.files.file) {
+                return res.status(400).json({ error: 'No file' });
+            }
+            
+            const file = req.files.file;
+            res.json({ 
+                success: true,
+                filename: file.name,
+                mimetype: file.mimetype,
+                size: file.size,
+                message: 'Test endpoint works - file received'
+            });
+        } catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    
     // Endpoint: POST /api/invoice/rename-invoice
     // Accepts: PDF file + optional manual invoice number
     // Returns: Renamed PDF file download + saves to history
     app.post('/api/invoice/rename-invoice', createAuth(), async (req, res) => {
         try {
+            console.log('[RENAME] Endpoint called');
+            console.log('[RENAME] User:', req.user);
+            console.log('[RENAME] Files:', req.files ? Object.keys(req.files) : 'none');
+            console.log('[RENAME] Body keys:', Object.keys(req.body));
+            
             const user = req.user;
+            
+            // Validate authentication
+            if (!user || !user.id) {
+                console.error('[RENAME] User not authenticated');
+                return res.status(401).json({
+                    success: false,
+                    message: 'User not authenticated'
+                });
+            }
             
             // Validate: File required
             if (!req.files || !req.files.file) {
+                console.error('[RENAME] No file provided');
                 return res.status(400).json({
                     success: false,
                     message: 'File PDF diperlukan'
@@ -95,9 +139,13 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
             const file = req.files.file;
             const manualInvoiceNum = (req.body.manualInvoiceNum || req.body.invoiceNumber)?.trim();
             const ocrText = req.body.ocrText?.trim();
+            
+            console.log('[RENAME] manualInvoiceNum:', manualInvoiceNum);
+            console.log('[RENAME] ocrText length:', ocrText?.length || 0);
 
             // Validate: PDF file only
             if (file.mimetype !== 'application/pdf') {
+                console.error('[RENAME] Invalid file type:', file.mimetype);
                 return res.status(400).json({
                     success: false,
                     message: 'Hanya file PDF yang diterima'
@@ -189,6 +237,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
 
         } catch (error) {
             console.error('[RENAME] Error in rename-invoice endpoint:', error);
+            console.error('[RENAME] Error stack:', error.stack);
             res.status(500).json({
                 success: false,
                 message: 'Gagal memproses file',
@@ -288,10 +337,13 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
     // POST /api/invoice/rename-faktur → same as rename-invoice but simpler response
     app.post('/api/invoice/rename-faktur', createAuth(), async (req, res) => {
         try {
+            console.log('[RENAME-FAKTUR] Alias endpoint called');
             const user = req.user;
+            console.log('[RENAME-FAKTUR] User:', user?.id);
             
             // Validate: File required
             if (!req.files || !req.files.file) {
+                console.error('[RENAME-FAKTUR] No file provided');
                 return res.status(400).json({
                     success: false,
                     error: 'File PDF diperlukan'
@@ -302,6 +354,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth) {
 
             // Validate: PDF file only
             if (file.mimetype !== 'application/pdf') {
+                console.error('[RENAME-FAKTUR] Invalid file type:', file.mimetype);
                 return res.status(400).json({
                     success: false,
                     error: 'Hanya file PDF yang diterima'
