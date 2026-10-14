@@ -143,8 +143,7 @@ async function logMaintenanceAccess(req, action, details) {
                     action: action,
                     ip_address: clientIp,
                     user_agent: req.headers['user-agent'],
-                    reason: details?.reason || null,
-                    details: details || {}
+                    reason: details?.reason || null
                 }
             ]);
         
@@ -210,13 +209,13 @@ router.get('/status', (req, res) => {
  */
 router.post('/start', authenticateToken, async (req, res) => {
     try {
-        // Verify admin role
-        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+        // Verify admin or moderator role
+        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
             await logMaintenanceAccess(req, 'denied', {
                 reason: 'Insufficient permissions to start maintenance'
             });
             return res.status(403).json({
-                error: 'Only admins can start maintenance mode'
+                error: 'Only admins and moderators can start maintenance mode'
             });
         }
 
@@ -303,13 +302,13 @@ router.post('/start', authenticateToken, async (req, res) => {
  */
 router.post('/end', authenticateToken, async (req, res) => {
     try {
-        // Verify admin role
-        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin') {
+        // Verify admin or moderator role
+        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
             await logMaintenanceAccess(req, 'denied', {
                 reason: 'Insufficient permissions to end maintenance'
             });
             return res.status(403).json({
-                error: 'Only admins can end maintenance mode'
+                error: 'Only admins and moderators can end maintenance mode'
             });
         }
 
