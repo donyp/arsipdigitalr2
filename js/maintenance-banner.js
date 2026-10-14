@@ -83,12 +83,12 @@ class MaintenanceBanner {
         banner.className = 'maintenance-banner maintenance-banner-warning';
         banner.innerHTML = `
             <div class="maintenance-banner-container">
-                <div class="maintenance-banner-icon">
-                    <i class="fas fa-wrench"></i>
+                <div class="maintenance-banner-heartbeat">
+                    <div class="heartbeat-dot"></div>
                 </div>
                 <div class="maintenance-banner-content">
                     <div class="maintenance-banner-title">
-                        Sistem Sedang Diperbarui
+                        Sistem sedang dalam proses maintenance
                     </div>
                 </div>
                 <div class="maintenance-banner-timer">
@@ -96,9 +96,6 @@ class MaintenanceBanner {
                         ${timeRemaining}
                     </div>
                 </div>
-                <button class="maintenance-banner-close" onclick="maintenanceBanner.hideBannerManual()" title="Tutup">
-                    ✕
-                </button>
             </div>
         `;
 

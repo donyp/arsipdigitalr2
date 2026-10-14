@@ -705,15 +705,21 @@
                     errorMessage = err.message || 'Username tidak valid. Hubungi administrator';
                     errorTitle = 'Akses Ditolak';
                 } else if (err.status === 503) {
-                    errorMessage = 'Sistem sedang dalam perbaikan (Maintenance Mode). Coba lagi nanti.';
-                    errorTitle = 'Maintenance Mode';
+                    errorMessage = 'Mohon Maaf, Sistem sedang dalam perbaikan';
+                    errorTitle = 'Sedang Maintenance';
+                }
+                
+                // Determine button text based on error type
+                let buttonText = 'OK, Coba Lagi';
+                if (err.status === 503) {
+                    buttonText = 'Baik';
                 }
                 
                 await Swal.fire({
                     icon: 'error',
                     title: errorTitle,
                     text: errorMessage,
-                    confirmButtonText: 'OK, Coba Lagi',
+                    confirmButtonText: buttonText,
                     confirmButtonColor: '#ef4444',
                     allowOutsideClick: false
                 });

@@ -93,6 +93,45 @@ html[data-dark-mode="true"] .maintenance-banner-info {
 
 /* ============ ICON ============ */
 
+.maintenance-banner-heartbeat {
+    flex-shrink: 0;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.heartbeat-dot {
+    width: 16px;
+    height: 16px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: heartbeat 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    25% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    75% {
+        transform: scale(1.15);
+        opacity: 0.9;
+    }
+}
+
 .maintenance-banner-icon {
     flex-shrink: 0;
     width: 44px;
@@ -149,8 +188,9 @@ html[data-dark-mode="true"] .maintenance-banner-info {
 .maintenance-countdown {
     font-size: 18px;
     font-weight: 700;
-    font-family: 'Courier New', monospace;
-    letter-spacing: 1px;
+    font-family: 'Monaco', 'Courier New', monospace;
+    letter-spacing: 2px;
+    line-height: 1;
 }
 
 .maintenance-banner-timer-label {
@@ -164,31 +204,7 @@ html[data-dark-mode="true"] .maintenance-banner-info {
 
 /* ============ CLOSE BUTTON ============ */
 
-.maintenance-banner-close {
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.15);
-    color: inherit;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: all 0.2s ease;
-}
-
-.maintenance-banner-close:hover {
-    background: rgba(255, 255, 255, 0.25);
-    transform: scale(1.1) rotate(90deg);
-}
-
-.maintenance-banner-close:active {
-    transform: scale(0.95) rotate(90deg);
-}
+/* Close button removed - no close button in banner */
 
 /* ============ RESPONSIVE ============ */
 
@@ -219,12 +235,6 @@ html[data-dark-mode="true"] .maintenance-banner-info {
         font-size: 16px;
         letter-spacing: 0.8px;
     }
-
-    .maintenance-banner-close {
-        width: 32px;
-        height: 32px;
-        font-size: 16px;
-    }
 }
 
 @media (max-width: 480px) {
@@ -251,13 +261,6 @@ html[data-dark-mode="true"] .maintenance-banner-info {
         order: 2;
         flex: 0 1 auto;
     }
-
-    .maintenance-banner-close {
-        order: 3;
-        width: 30px;
-        height: 30px;
-        font-size: 14px;
-    }
 }
 
 /* ============ ACCESSIBILITY ============ */
@@ -278,10 +281,6 @@ html[data-dark-mode="true"] .maintenance-banner-info {
 
     .maintenance-banner-title {
         font-weight: 700;
-    }
-
-    .maintenance-banner-close {
-        border-width: 2px;
     }
 }
 
