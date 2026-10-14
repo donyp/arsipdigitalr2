@@ -814,23 +814,36 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 console.log(`[Invoice API] Checking ${validFakturs.length} valid fakturs...`);
                 console.log(`[Invoice API] Sample fakturs:`, validFakturs.slice(0, 5));
 
-                // Query database for existing fakturs
-                const { data: existingInvoices, error: queryError } = await supabase
-                    .from('invoice_file_list')
-                    .select('faktur')
-                    .in('faktur', validFakturs);
+                // Query database for existing fakturs using batches to avoid URL overflow
+                // Process in chunks of 100 to keep URL under 16KB limit
+                const batchSize = 100;
+                const existingFaktursList = [];
+                
+                for (let i = 0; i < validFakturs.length; i += batchSize) {
+                    const batch = validFakturs.slice(i, i + batchSize);
+                    console.log(`[Invoice API] Querying batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(validFakturs.length/batchSize)} (${batch.length} fakturs)...`);
+                    
+                    const { data: batchResults, error: queryError } = await supabase
+                        .from('invoice_file_list')
+                        .select('faktur')
+                        .in('faktur', batch);
 
-                if (queryError) {
-                    console.error('[Invoice API] Query error:', queryError);
-                    return res.status(500).json({
-                        error: 'Database query failed',
-                        details: queryError.message
-                    });
+                    if (queryError) {
+                        console.error('[Invoice API] Query error on batch:', queryError);
+                        return res.status(500).json({
+                            error: 'Database query failed',
+                            details: queryError.message
+                        });
+                    }
+
+                    // Collect results from this batch
+                    if (batchResults && batchResults.length > 0) {
+                        existingFaktursList.push(...batchResults.map(inv => inv.faktur));
+                    }
                 }
 
                 // Build list of duplicates
-                const existingFakturs = (existingInvoices || []).map(inv => inv.faktur);
-                const duplicates = validFakturs.filter(f => existingFakturs.includes(f));
+                const duplicates = validFakturs.filter(f => existingFaktursList.includes(f));
 
                 console.log(`[Invoice API] Found ${duplicates.length} duplicates out of ${validFakturs.length}`);
                 if (duplicates.length > 0) {
