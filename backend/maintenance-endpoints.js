@@ -797,8 +797,7 @@ router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
                     user_role: session.user_role,
                     token_jti: session.session_id,
                     logout_reason: 'admin_forced_all',
-                    ip_address: session.ip_address,
-                    forced_by: req.user.id
+                    ip_address: session.ip_address
                 }));
 
                 const { error: insertError } = await supabase
