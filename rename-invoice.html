@@ -519,11 +519,13 @@
             document.getElementById('resultsSection').style.display = 'none';
             
             processingResults = [];
+            console.log('[PROCESS] Starting processing of', selectedFiles.length, 'files');
             
             for (let i = 0; i < selectedFiles.length; i++) {
                 await processFile(i);
             }
             
+            console.log('[PROCESS] Completed. Results:', processingResults);
             displayResults();
         }
         
@@ -532,6 +534,8 @@
             updateProgress(idx, 'processing', 'Extracting PDF pages...');
             
             try {
+                console.log(`[FILE ${idx}] Processing ${file.name}`);
+                
                 // Load PDF
                 const arrayBuffer = await file.file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -566,19 +570,25 @@
                     throw new Error('OCR failed - no text extracted');
                 }
                 
+                console.log(`[FILE ${idx}] OCR text: ${ocrText.substring(0, 100)}...`);
+                
                 const invoiceNumber = extractInvoiceNumber(ocrText);
                 
                 if (!invoiceNumber) {
                     throw new Error('Invoice number not found in page 2');
                 }
                 
+                console.log(`[FILE ${idx}] Found invoice: ${invoiceNumber}`);
+                
                 // Send to backend for rename
                 updateProgress(idx, 'processing', `Renaming to: ${invoiceNumber}.pdf`);
                 await renameFile(file, invoiceNumber, idx);
                 
+                console.log(`[FILE ${idx}] Rename successful`);
                 updateProgress(idx, 'success', `✅ Renamed to: ${invoiceNumber}.pdf`);
                 
             } catch (error) {
+                console.error(`[FILE ${idx}] Error:`, error);
                 updateProgress(idx, 'error', `❌ Error: ${error.message}`);
             }
         }
@@ -609,11 +619,14 @@
         
         async function renameFile(file, invoiceNumber, idx) {
             const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+            console.log(`[RENAME ${idx}] Token exists: ${!!token}`);
             
             const formData = new FormData();
             formData.append('file', file.file);
             formData.append('invoiceNumber', invoiceNumber);
             formData.append('originalName', file.name);
+            
+            console.log(`[RENAME ${idx}] Sending to /api/invoice/rename-invoice`);
             
             const response = await fetch('/api/invoice/rename-invoice', {
                 method: 'POST',
@@ -623,14 +636,18 @@
                 body: formData
             });
             
+            console.log(`[RENAME ${idx}] Response status: ${response.status}`);
+            
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'Rename failed');
+                throw new Error(error.error || `HTTP ${response.status}`);
             }
             
             // Response is binary PDF file
             const blob = await response.blob();
             const newFilename = `${invoiceNumber}.pdf`;
+            
+            console.log(`[RENAME ${idx}] Downloaded blob size: ${blob.size} bytes`);
             
             // Trigger browser download
             const url = window.URL.createObjectURL(blob);
@@ -655,6 +672,8 @@
                 invoiceNumber: invoiceNumber,
                 status: 'success'
             });
+            
+            console.log(`[RENAME ${idx}] Added to results. Total:`, processingResults.length);
         }
         
         // ============================================================
