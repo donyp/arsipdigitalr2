@@ -731,11 +731,20 @@
                 });
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.message || 'Failed to force logout');
+                    let errorMsg = 'Failed to force logout';
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.error || errorData.message || errorMsg;
+                    } catch (e) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    console.error('[Force Logout] Error:', errorMsg);
+                    throw new Error(errorMsg);
                 }
 
-                showMessage('success', 'All non-moderator users have been logged out');
+                const result = await response.json();
+                console.log('[Force Logout] Success:', result);
+                showMessage('success', `${result.logoutCount} non-moderator users have been logged out`);
                 setTimeout(() => {
                     loadMaintenanceStatus();
                 }, 500);

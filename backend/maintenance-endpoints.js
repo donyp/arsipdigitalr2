@@ -740,59 +740,69 @@ router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
             });
         }
 
-        const maintenance = getMaintenanceStatus();
-        if (!maintenance.isActive) {
-            return res.status(409).json({
-                error: 'Maintenance mode not active'
-            });
+        console.log('[Maintenance] Force logout requested by:', req.user.email, 'role:', req.user.role);
+
+        // Query all active sessions from database (not from file)
+        const { data: allSessions, error: queryError } = await supabase
+            .from('active_sessions')
+            .select('*')
+            .eq('is_valid', true);
+
+        if (queryError) {
+            console.error('[Maintenance] Error querying sessions:', queryError.message);
+            return res.status(500).json({ error: 'Failed to query sessions' });
         }
 
-        // Get all active sessions
-        const activeSessions = getActiveSessions();
-        let logoutCount = 0;
+        console.log('[Maintenance] Found active sessions:', allSessions?.length || 0);
 
-        // Mark non-moderators for logout
-        const logoutsToRecord = [];
-        activeSessions.forEach(session => {
-            if (session.userRole && session.userRole !== 'moderator') {
-                logoutCount++;
-                logoutsToRecord.push({
-                    user_id: session.userId,
-                    username: session.username,
-                    user_role: session.userRole,
-                    token_jti: session.tokenJti,
-                    logout_reason: 'maintenance_start',
-                    ip_address: session.ipAddress
-                });
-                session.maintenanceForcedLogout = true;
-            }
+        // Filter non-moderators
+        const nonModeratorSessions = (allSessions || []).filter(session => {
+            return session.user_role && session.user_role !== 'moderator';
         });
 
-        // Record forced logouts in database
-        if (logoutsToRecord.length > 0) {
-            const { error } = await supabase
+        console.log('[Maintenance] Non-moderator sessions to logout:', nonModeratorSessions.length);
+
+        // Invalidate non-moderator sessions
+        let logoutCount = 0;
+        if (nonModeratorSessions.length > 0) {
+            const sessionIds = nonModeratorSessions.map(s => s.id);
+            
+            const { error: updateError } = await supabase
+                .from('active_sessions')
+                .update({ 
+                    is_valid: false,
+                    maintenance_forced_logout: true
+                })
+                .in('id', sessionIds);
+
+            if (updateError) {
+                console.error('[Maintenance] Error invalidating sessions:', updateError.message);
+                return res.status(500).json({ error: 'Failed to invalidate sessions' });
+            }
+
+            logoutCount = nonModeratorSessions.length;
+            console.log('[Maintenance] Invalidated sessions:', logoutCount);
+        }
+
+        // Record forced logouts
+        if (nonModeratorSessions.length > 0) {
+            const logoutsToRecord = nonModeratorSessions.map(session => ({
+                user_id: session.user_id,
+                username: session.username,
+                user_role: session.user_role,
+                token_jti: session.session_id,
+                logout_reason: 'admin_forced',
+                ip_address: session.ip_address,
+                forced_by: req.user.id
+            }));
+
+            const { error: insertError } = await supabase
                 .from('forced_logout_sessions')
                 .insert(logoutsToRecord);
 
-            if (error) {
-                console.error('[Maintenance] Error recording forced logouts:', error.message);
-            }
-        }
-
-        // Save updated sessions
-        fs.writeFileSync(ACTIVE_SESSIONS_FILE, JSON.stringify({
-            sessions: activeSessions,
-            updatedAt: new Date().toISOString()
-        }));
-
-        console.log(`[Maintenance] Forced logout for ${logoutCount} non-moderators`);
-
-        // Broadcast forced logout via WebSocket
-        if (global.maintenanceWebSocket) {
-            try {
-                global.maintenanceWebSocket.broadcastForcedLogout('maintenance_start');
-            } catch (err) {
-                console.error('[Maintenance] WebSocket broadcast error:', err.message);
+            if (insertError) {
+                console.error('[Maintenance] Error recording forced logouts:', insertError.message);
+                // Don't return error - we already invalidated sessions
             }
         }
 
