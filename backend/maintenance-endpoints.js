@@ -221,9 +221,8 @@ router.post('/start', authenticateToken, async (req, res) => {
 
         const { reason, description, estimatedDuration } = req.body;
 
-        if (!reason || !reason.trim()) {
-            return res.status(400).json({ error: 'Reason is required' });
-        }
+        // Reason is now optional - use a default if not provided
+        const maintenanceReason = (reason || 'System Maintenance').trim();
 
         // Check if already active
         const currentStatus = getMaintenanceStatus();
@@ -241,7 +240,7 @@ router.post('/start', authenticateToken, async (req, res) => {
         const newStatus = {
             isActive: true,
             allowedRole: 'moderator',
-            reason: reason.trim(),
+            reason: maintenanceReason,
             description: description?.trim() || null,
             startedAt: new Date().toISOString(),
             startedBy: req.user.email,
@@ -256,7 +255,7 @@ router.post('/start', authenticateToken, async (req, res) => {
 
         // Log this action
         await logMaintenanceAccess(req, 'maintenance_started', {
-            reason: reason,
+            reason: maintenanceReason,
             estimatedDuration: durationMinutes
         });
 
@@ -269,7 +268,7 @@ router.post('/start', authenticateToken, async (req, res) => {
             console.error('[Maintenance] Error forcing logout non-moderators:', err.message);
         }
 
-        console.log(`[Maintenance] Mode started by ${req.user.email}: ${reason}`);
+        console.log(`[Maintenance] Mode started by ${req.user.email}: ${maintenanceReason}`);
 
         // Broadcast to all connected clients via WebSocket
         if (global.maintenanceWebSocket) {
