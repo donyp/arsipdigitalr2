@@ -1,8 +1,3 @@
-/**
- * Maintenance Mode Banner Styling
- * Full dark/light mode support with CSS variables
- */
-
 /* Maintenance Banner Container */
 .maintenance-banner {
     position: fixed;
@@ -12,12 +7,13 @@
     z-index: 9999;
     width: 100%;
     padding: 16px 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    animation: slideDown 0.3s ease-out;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(10px);
 }
 
 html[data-dark-mode="true"] .maintenance-banner {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
 @keyframes slideDown {
@@ -45,8 +41,8 @@ html[data-dark-mode="true"] .maintenance-banner {
 /* Banner Variants */
 .maintenance-banner-warning {
     background: linear-gradient(135deg, #fef3c7 0%, #fde047 100%);
-    border-bottom: 2px solid #f59e0b;
-    color: #92400e;
+    border-bottom: 3px solid #f59e0b;
+    color: #78350f;
 }
 
 html[data-dark-mode="true"] .maintenance-banner-warning {
@@ -57,7 +53,7 @@ html[data-dark-mode="true"] .maintenance-banner-warning {
 
 .maintenance-banner-error {
     background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
-    border-bottom: 2px solid #ef4444;
+    border-bottom: 3px solid #ef4444;
     color: #7f1d1d;
 }
 
@@ -69,7 +65,7 @@ html[data-dark-mode="true"] .maintenance-banner-error {
 
 .maintenance-banner-info {
     background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-    border-bottom: 2px solid #3b82f6;
+    border-bottom: 3px solid #3b82f6;
     color: #1e40af;
 }
 
@@ -83,7 +79,7 @@ html[data-dark-mode="true"] .maintenance-banner-info {
 .maintenance-banner-container {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     max-width: 1400px;
     margin: 0 auto;
     position: relative;
@@ -92,27 +88,31 @@ html[data-dark-mode="true"] .maintenance-banner-info {
 /* Banner Icon */
 .maintenance-banner-icon {
     flex-shrink: 0;
-    font-size: 24px;
+    font-size: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    animation: spin 2s linear infinite;
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 12px;
+    animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 html[data-dark-mode="true"] .maintenance-banner-icon {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.25);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
     }
-    to {
-        transform: rotate(360deg);
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
     }
 }
 
@@ -123,26 +123,28 @@ html[data-dark-mode="true"] .maintenance-banner-icon {
 }
 
 .maintenance-banner-title {
-    font-size: 16px;
+    font-size: 17px;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
     gap: 8px;
+    letter-spacing: -0.3px;
 }
 
 .maintenance-banner-message {
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.6;
     opacity: 0.95;
 }
 
 .maintenance-banner-message p {
-    margin: 4px 0;
+    margin: 3px 0;
 }
 
 .maintenance-banner-message p:first-child {
     margin-top: 0;
+    font-weight: 500;
 }
 
 .maintenance-banner-message p:last-child {
@@ -155,64 +157,79 @@ html[data-dark-mode="true"] .maintenance-banner-icon {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    min-width: 70px;
+    gap: 6px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    min-width: 80px;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 html[data-dark-mode="true"] .maintenance-banner-timer {
     background: rgba(0, 0, 0, 0.2);
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
 .maintenance-countdown {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     font-family: 'Courier New', monospace;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+html[data-dark-mode="true"] .maintenance-countdown {
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .maintenance-banner-timer-label {
     font-size: 11px;
     opacity: 0.8;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    font-weight: 600;
 }
 
 /* Close Button */
 .maintenance-banner-close {
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border: none;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     color: inherit;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
 }
 
 html[data-dark-mode="true"] .maintenance-banner-close {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.25);
+    border-color: rgba(0, 0, 0, 0.1);
 }
 
 .maintenance-banner-close:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.35);
+    transform: scale(1.08) rotate(90deg);
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 html[data-dark-mode="true"] .maintenance-banner-close:hover {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.35);
 }
 
 .maintenance-banner-close:active {
-    transform: scale(0.95);
+    transform: scale(0.92) rotate(90deg);
 }
 
 /* Status Messages Inside Banner */
@@ -244,25 +261,25 @@ html[data-dark-mode="true"] .maintenance-banner-close:hover {
     }
 
     .maintenance-banner-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 20px;
+        width: 40px;
+        height: 40px;
+        font-size: 22px;
     }
 
     .maintenance-banner-timer {
-        min-width: 60px;
+        min-width: 70px;
         order: 3;
         width: 100%;
     }
 
     .maintenance-banner-close {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
     }
 
     .maintenance-banner-title {
-        font-size: 14px;
+        font-size: 15px;
         margin-bottom: 4px;
     }
 
@@ -271,7 +288,7 @@ html[data-dark-mode="true"] .maintenance-banner-close:hover {
     }
 
     .maintenance-countdown {
-        font-size: 16px;
+        font-size: 18px;
     }
 }
 
@@ -298,14 +315,14 @@ html[data-dark-mode="true"] .maintenance-banner-close:hover {
     .maintenance-banner-close {
         order: 4;
         align-self: flex-start;
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
         flex-shrink: 0;
     }
 
     .maintenance-banner-title {
-        font-size: 13px;
+        font-size: 14px;
         margin-bottom: 2px;
     }
 
@@ -339,13 +356,13 @@ html[data-dark-mode="true"] .maintenance-banner-close:hover {
 /* High Contrast Mode */
 @media (prefers-contrast: more) {
     .maintenance-banner {
-        border-bottom-width: 3px;
+        border-bottom-width: 4px;
     }
 
     .maintenance-banner-icon,
     .maintenance-banner-timer,
     .maintenance-banner-close {
-        border: 1px solid currentColor;
+        border: 2px solid currentColor;
     }
 
     .maintenance-banner-title {

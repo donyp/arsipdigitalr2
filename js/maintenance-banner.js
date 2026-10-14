@@ -77,32 +77,23 @@ class MaintenanceBanner {
         const estimatedEnd = new Date(data.estimatedEnd);
         const timeRemaining = this.formatTimeRemaining(estimatedEnd);
 
-        // Create banner HTML
+        // Create banner HTML with modern, fancy design
         const banner = document.createElement('div');
         banner.id = 'maintenance-banner';
         banner.className = 'maintenance-banner maintenance-banner-warning';
         banner.innerHTML = `
             <div class="maintenance-banner-container">
                 <div class="maintenance-banner-icon">
-                    <i class="fas fa-tools"></i>
+                    <i class="fas fa-wrench"></i>
                 </div>
                 <div class="maintenance-banner-content">
                     <div class="maintenance-banner-title">
-                        🔧 Sistem dalam Mode Pemeliharaan
+                        ✨ Pemeliharaan Sistem
                     </div>
                     <div class="maintenance-banner-message">
-                        <p><strong>Alasan:</strong> ${data.reason || 'Maintenance'}</p>
-                        ${data.description ? `<p>${data.description}</p>` : ''}
-                        <p><strong>Diperkirakan selesai:</strong> ${estimatedEnd.toLocaleString('id-ID')} (${timeRemaining})</p>
-                        ${!data.canAccess ? `
-                            <p style="color: #dc2626; margin-top: 8px;">
-                                <i class="fas fa-lock"></i> Hanya moderator yang dapat mengakses sistem saat ini
-                            </p>
-                        ` : `
-                            <p style="color: #10b981; margin-top: 8px;">
-                                <i class="fas fa-check-circle"></i> Anda memiliki akses sebagai moderator
-                            </p>
-                        `}
+                        <p><strong>${data.reason || 'Sistem sedang diperbarui'}</strong></p>
+                        ${data.description ? `<p style="font-size: 12px; opacity: 0.9;">${data.description}</p>` : ''}
+                        <p style="font-size: 12px; opacity: 0.85; margin-top: 6px;">Selesai dalam ${timeRemaining}</p>
                     </div>
                 </div>
                 <div class="maintenance-banner-timer">
@@ -110,7 +101,7 @@ class MaintenanceBanner {
                         ${timeRemaining}
                     </div>
                 </div>
-                <button class="maintenance-banner-close" onclick="maintenanceBanner.hideBannerManual()">
+                <button class="maintenance-banner-close" onclick="maintenanceBanner.hideBannerManual()" title="Tutup">
                     ✕
                 </button>
             </div>
