@@ -287,13 +287,37 @@
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📋 Rename Invoice</h1>
-            <p>Rename file PDF based on invoice number detected from scanned documents using OCR</p>
-        </div>
+<body class="bg-gray-50">
+    <!-- Apply dark mode if enabled -->
+    <script>
+        if (localStorage.getItem('dark_mode_enabled') === 'true') {
+            document.documentElement.setAttribute('data-dark-mode', 'true');
+        }
+    </script>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+    
+    <div id="app" style="width: 100%; display: flex; margin: 0; padding: 0; overflow-x: hidden;">
+        <!-- Sidebar -->
+        <div id="sidebar"></div>
+
+        <!-- Main Content -->
+        <div id="main-content" style="flex: 1; min-width: 0; transition: all 300ms ease; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div class="bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white sticky top-0 z-30 shadow-lg" style="padding: 1rem; display: flex; align-items: center; gap: 1rem;">
+                <button id="sidebarToggle" style="display: none; background: none; border: none; color: white; cursor: pointer; font-size: 1.5rem;">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 style="margin: 0; font-size: 1.5rem; font-weight: 700;">📋 Rename Invoice</h1>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="p-6 w-full flex-1 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-slate-900 dark:to-slate-800" style="overflow-y: auto;">
+                <div class="max-w-4xl mx-auto space-y-6">
         
         <!-- Info Box -->
         <div class="card">
@@ -733,5 +757,16 @@
         // Initialize
         updateHistoryDisplay();
     </script>
+
+    <!-- Scripts -->
+    <script src="/js/config.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/sidebar.js?t=20261014041000"></script>
+    <script src="/js/spa-page-handler.js"></script>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
-</html>
+</html>>
