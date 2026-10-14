@@ -3541,11 +3541,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     });
                 }
                 
-                // Get invoice data
+                // Get invoice data (optimized: select only needed columns)
                 const queryStartTime = Date.now();
                 const { data: invoice, error: queryError } = await supabase
                     .from('invoice_file_list')
-                    .select('*')
+                    .select('zona_id, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -3682,11 +3682,18 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Extract filename from path
                     const filename = filePath.split('/').pop();
                     
-                    // Set headers for PDF download
+                    // Set headers for PDF download with optimization
                     res.setHeader('Content-Type', 'application/pdf');
                     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
                     res.setHeader('Content-Length', fileBuffer.length);
-                    res.setHeader('Cache-Control', 'public, max-age=3600'); // Browser cache 1 hour
+                    res.setHeader('Cache-Control', 'public, max-age=86400, immutable'); // Browser cache 24 hours
+                    res.setHeader('X-Content-Type-Options', 'nosniff');
+                    res.setHeader('ETag', `"${Buffer.from(filePath).toString('hex').substring(0, 16)}"`);
+                    
+                    // Enable compression if file is large
+                    if (fileBuffer.length > 100 * 1024) { // > 100KB
+                        res.setHeader('Content-Encoding', 'gzip');
+                    }
                     
                     // Log to audit trail BEFORE sending response
                     const totalTime = Date.now() - startTime;
@@ -3724,9 +3731,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         console.warn('[Invoice Download] Audit log failed:', err.message);
                     });
                     
-                    // Send file (this completes the response)
+                    // Send file with end callback
                     console.log(`[Invoice Download] ✅ Complete in ${totalTime}ms (${source})`);
-                    res.send(fileBuffer);
+                    res.end(fileBuffer, 'binary');
                     
                 } catch (downloadErr) {
                     console.error(`[Invoice Download] Download error:`, downloadErr.message);
