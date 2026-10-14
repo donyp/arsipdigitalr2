@@ -20,8 +20,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/color-vars.css">
     
-    <!-- PDF.js for PDF extraction -->
+    <!-- PDF.js for PDF extraction - SET WORKER PATH -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Set PDF.js worker path
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
     
     <!-- Tesseract.js for OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -555,7 +561,12 @@
                 });
                 
                 // Extract invoice number
-                const invoiceNumber = extractInvoiceNumber(result.data.text);
+                const ocrText = result?.data?.text || result?.text || '';
+                if (!ocrText) {
+                    throw new Error('OCR failed - no text extracted');
+                }
+                
+                const invoiceNumber = extractInvoiceNumber(ocrText);
                 
                 if (!invoiceNumber) {
                     throw new Error('Invoice number not found in page 2');
@@ -759,9 +770,6 @@
     </script>
 
     <!-- Scripts -->
-    <script src="/js/config.js"></script>
-    <script src="/js/api.js"></script>
-    <script src="/js/auth.js"></script>
     <script src="/js/sidebar.js?t=20261014041000"></script>
     <script src="/js/spa-page-handler.js"></script>
                 </div>
