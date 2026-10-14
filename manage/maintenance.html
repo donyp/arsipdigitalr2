@@ -417,11 +417,6 @@
                         <input type="number" id="estimatedDuration" placeholder="e.g., 30" min="1" max="1440" value="30">
                     </div>
 
-                    <div class="form-group">
-                        <label>Reason for Maintenance</label>
-                        <textarea id="maintenanceReason" placeholder="e.g., Database migration, security updates, server maintenance"></textarea>
-                    </div>
-
                     <div class="button-group">
                         <button class="btn btn-primary" id="startMaintenanceBtn">Start Maintenance</button>
                     </div>
@@ -620,15 +615,9 @@
         // Start maintenance
         document.getElementById('startMaintenanceBtn').addEventListener('click', async () => {
             const duration = document.getElementById('estimatedDuration').value;
-            const reason = document.getElementById('maintenanceReason').value;
 
             if (!duration || duration < 1) {
                 showMessage('error', 'Please enter a valid duration');
-                return;
-            }
-
-            if (!reason.trim()) {
-                showMessage('error', 'Please provide a reason for maintenance');
                 return;
             }
 
@@ -644,8 +633,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        estimatedDuration: parseInt(duration),
-                        reason: reason
+                        estimatedDuration: parseInt(duration)
                     })
                 });
 
@@ -656,7 +644,6 @@
 
                 showMessage('success', 'Maintenance mode started successfully');
                 document.getElementById('estimatedDuration').value = '30';
-                document.getElementById('maintenanceReason').value = '';
 
                 setTimeout(() => loadMaintenanceStatus(), 500);
             } catch (error) {
