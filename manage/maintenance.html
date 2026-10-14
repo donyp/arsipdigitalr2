@@ -854,26 +854,51 @@
 
         // Track maintenance state to detect when it ends
         let previousMaintenanceState = false;
+        
+        // First check to initialize state
+        (async () => {
+            try {
+                const response = await fetch('/api/maintenance/status', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    previousMaintenanceState = data.isActive;
+                }
+            } catch (error) {
+                console.error('[Maintenance Dashboard] Initial state check error:', error);
+            }
+        })();
 
-        // Refresh status every 10 seconds (faster detection of maintenance end)
+        // Refresh status every 5 seconds (faster detection of maintenance end)
         const statusCheckInterval = setInterval(async () => {
             try {
                 const response = await fetch('/api/maintenance/status', {
                     headers: { 'Authorization': `Bearer ${getToken()}` }
                 });
 
-                if (!response.ok) return;
+                if (!response.ok) {
+                    console.warn('[Maintenance Dashboard] Status check failed:', response.status);
+                    return;
+                }
 
                 const data = await response.json();
                 const currentMaintenanceState = data.isActive;
 
+                console.log('[Maintenance Dashboard] Status check - Current:', currentMaintenanceState, 'Previous:', previousMaintenanceState);
+
                 // Detect when maintenance transitions from ACTIVE to INACTIVE
                 if (previousMaintenanceState && !currentMaintenanceState) {
-                    console.log('[Maintenance Dashboard] Maintenance just ended - auto-refreshing page');
-                    // Wait a moment for all users to be logged in, then refresh
+                    console.log('[Maintenance Dashboard] ✅ Maintenance just ended - auto-refreshing page');
+                    previousMaintenanceState = currentMaintenanceState;
+                    
+                    // Refresh page after a short delay
                     setTimeout(() => {
+                        console.log('[Maintenance Dashboard] Performing page reload');
                         location.reload();
-                    }, 1000);
+                    }, 1500);
+                    
+                    return;
                 }
 
                 previousMaintenanceState = currentMaintenanceState;
@@ -883,7 +908,7 @@
             } catch (error) {
                 console.error('[Maintenance Dashboard] Auto-refresh check error:', error);
             }
-        }, 10000);
+        }, 5000);
 
         // Cleanup interval on page unload
         window.addEventListener('beforeunload', () => {

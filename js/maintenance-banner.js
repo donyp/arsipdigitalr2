@@ -166,6 +166,8 @@ class MaintenanceBanner {
      * Start countdown timer
      */
     startCountdownTimer(estimatedEnd) {
+        let hasEndedMaintenance = false;
+        
         // Update countdown every second
         const updateCountdown = () => {
             if (!this.bannerElement) {
@@ -175,14 +177,18 @@ class MaintenanceBanner {
             const now = new Date();
             const remaining = estimatedEnd - now;
 
-            if (remaining <= 0) {
+            if (remaining <= 0 && !hasEndedMaintenance) {
+                hasEndedMaintenance = true;
                 const countdownEl = document.getElementById('maintenance-countdown');
                 if (countdownEl) {
                     countdownEl.textContent = 'Selesai';
                 }
                 
-                // Auto-hide banner when maintenance time expires
-                console.log('[MaintenanceBanner] Maintenance time expired, auto-hiding banner');
+                // Auto-end maintenance when timer reaches zero
+                console.log('[MaintenanceBanner] Maintenance time expired - calling auto-end maintenance endpoint');
+                this.autoEndMaintenance();
+                
+                // Hide banner after a short delay
                 setTimeout(() => {
                     this.hideMaintenanceBanner();
                 }, 500);
@@ -204,6 +210,33 @@ class MaintenanceBanner {
         // Store interval ID for cleanup
         if (this.bannerElement) {
             this.bannerElement._countdownInterval = countdownInterval;
+        }
+    }
+
+    /**
+     * Auto-end maintenance when timer expires
+     */
+    async autoEndMaintenance() {
+        try {
+            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
+            
+            // If no token, try calling without auth (public endpoint should work)
+            const response = await fetch('/api/maintenance/end', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token && { 'Authorization': `Bearer ${token}` })
+                }
+            });
+
+            if (response.ok) {
+                console.log('[MaintenanceBanner] ✅ Maintenance auto-ended successfully');
+            } else {
+                const error = await response.json();
+                console.error('[MaintenanceBanner] Maintenance auto-end failed:', error.message);
+            }
+        } catch (err) {
+            console.error('[MaintenanceBanner] Error auto-ending maintenance:', err.message);
         }
     }
 

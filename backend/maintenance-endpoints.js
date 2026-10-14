@@ -298,22 +298,46 @@ router.post('/start', authenticateToken, async (req, res) => {
 
 /**
  * POST /api/maintenance/end
- * End maintenance mode (Admin only)
+ * End maintenance mode (Admin only OR automatic when time expires)
+ * Can be called with token (normal admin end) or without (auto-end when timer expires)
  */
-router.post('/end', authenticateToken, async (req, res) => {
+router.post('/end', async (req, res) => {
     try {
-        // Verify admin or moderator role
-        if (req.user?.role !== 'admin' && req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
-            await logMaintenanceAccess(req, 'denied', {
-                reason: 'Insufficient permissions to end maintenance'
+        const token = req.headers.authorization?.split(' ')[1];
+        let user = null;
+        let isAutoEnd = false;
+
+        // Check if authenticated
+        if (token) {
+            // Verify token
+            jwt.verify(token, JWT_SECRET, (err, decoded) => {
+                if (!err && decoded) {
+                    user = {
+                        id: decoded.userId || decoded.sub,
+                        email: decoded.email,
+                        role: decoded.role || 'user'
+                    };
+                }
             });
-            return res.status(403).json({
-                error: 'Only admins and moderators can end maintenance mode'
-            });
+
+            // If authenticated, verify admin/moderator role
+            if (user && user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'moderator') {
+                await logMaintenanceAccess({ user }, 'denied', {
+                    reason: 'Insufficient permissions to end maintenance'
+                });
+                return res.status(403).json({
+                    error: 'Only admins and moderators can end maintenance mode'
+                });
+            }
+        } else {
+            // No token = automatic end (timer expired)
+            isAutoEnd = true;
+            console.log('[Maintenance] Auto-end maintenance (timer expired)');
         }
 
         const currentStatus = getMaintenanceStatus();
         if (!currentStatus.isActive) {
+            console.log('[Maintenance] End request received but maintenance not active');
             return res.status(409).json({
                 error: 'Maintenance mode not active'
             });
@@ -324,17 +348,21 @@ router.post('/end', authenticateToken, async (req, res) => {
             ...currentStatus,
             isActive: false,
             endedAt: new Date().toISOString(),
-            endedBy: req.user.email
+            endedBy: isAutoEnd ? 'system_auto' : (user?.email || 'system'),
+            autoEnded: isAutoEnd
         };
 
         setMaintenanceStatus(endedStatus);
 
         // Log this action
-        await logMaintenanceAccess(req, 'maintenance_ended', {
-            duration: Math.floor((Date.now() - new Date(currentStatus.startedAt)) / 1000 / 60)
-        });
+        if (user) {
+            await logMaintenanceAccess({ user }, 'maintenance_ended', {
+                duration: Math.floor((Date.now() - new Date(currentStatus.startedAt)) / 1000 / 60)
+            });
+        }
 
-        console.log(`[Maintenance] Mode ended by ${req.user.email}`);
+        const endMessage = isAutoEnd ? '[Maintenance] ✅ Mode auto-ended (timer expired)' : `[Maintenance] Mode ended by ${user?.email}`;
+        console.log(endMessage);
 
         // Broadcast to all connected clients
         if (global.maintenanceWebSocket) {
@@ -352,7 +380,7 @@ router.post('/end', authenticateToken, async (req, res) => {
 
         res.json({
             success: true,
-            message: 'Maintenance mode ended',
+            message: isAutoEnd ? 'Maintenance mode auto-ended' : 'Maintenance mode ended',
             maintenance: endedStatus
         });
 
