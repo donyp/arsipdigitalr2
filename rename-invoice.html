@@ -540,42 +540,57 @@
                 const arrayBuffer = await file.file.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
                 
-                // Extract page 2 (index 1)
-                if (pdf.numPages < 2) {
-                    throw new Error('PDF must have at least 2 pages');
+                console.log(`[FILE ${idx}] PDF has ${pdf.numPages} pages`);
+                
+                if (pdf.numPages < 1) {
+                    throw new Error('PDF has no pages');
                 }
                 
-                updateProgress(idx, 'processing', 'Reading page 2...');
-                const page = await pdf.getPage(2);
+                // Scan all pages to find invoice number
+                let invoiceNumber = null;
+                let foundOnPage = -1;
                 
-                // Render page to canvas
-                const scale = 2;
-                const viewport = page.getViewport({ scale });
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                
-                const context = canvas.getContext('2d');
-                await page.render({ canvasContext: context, viewport }).promise;
-                
-                // Run OCR
-                updateProgress(idx, 'processing', 'Running OCR...');
-                const result = await Tesseract.recognize(canvas, 'ind+eng', {
-                    logger: m => console.log(`[OCR] ${m.status}: ${Math.round(m.progress * 100)}%`)
-                });
-                
-                // Extract invoice number
-                const ocrText = result?.data?.text || result?.text || '';
-                if (!ocrText) {
-                    throw new Error('OCR failed - no text extracted');
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    updateProgress(idx, 'processing', `Scanning page ${pageNum}/${pdf.numPages}...`);
+                    console.log(`[FILE ${idx}] Scanning page ${pageNum}`);
+                    
+                    const page = await pdf.getPage(pageNum);
+                    
+                    // Render page to canvas
+                    const scale = 2;
+                    const viewport = page.getViewport({ scale });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+                    
+                    const context = canvas.getContext('2d');
+                    await page.render({ canvasContext: context, viewport }).promise;
+                    
+                    // Run OCR on this page
+                    updateProgress(idx, 'processing', `Running OCR on page ${pageNum}/${pdf.numPages}...`);
+                    const result = await Tesseract.recognize(canvas, 'ind+eng', {
+                        logger: m => {
+                            if (m.status === 'recognizing text' && m.progress % 0.2 < 0.01) {
+                                console.log(`[OCR p${pageNum}] ${m.status}: ${Math.round(m.progress * 100)}%`);
+                            }
+                        }
+                    });
+                    
+                    // Extract invoice number from this page
+                    const ocrText = result?.data?.text || result?.text || '';
+                    console.log(`[FILE ${idx}] Page ${pageNum} OCR: ${ocrText.substring(0, 150)}...`);
+                    
+                    invoiceNumber = extractInvoiceNumber(ocrText);
+                    
+                    if (invoiceNumber) {
+                        console.log(`[FILE ${idx}] Found invoice on page ${pageNum}: ${invoiceNumber}`);
+                        foundOnPage = pageNum;
+                        break;
+                    }
                 }
-                
-                console.log(`[FILE ${idx}] OCR text: ${ocrText.substring(0, 100)}...`);
-                
-                const invoiceNumber = extractInvoiceNumber(ocrText);
                 
                 if (!invoiceNumber) {
-                    throw new Error('Invoice number not found in page 2');
+                    throw new Error('Invoice number not found in any page');
                 }
                 
                 console.log(`[FILE ${idx}] Found invoice: ${invoiceNumber}`);
@@ -594,13 +609,19 @@
         }
         
         function extractInvoiceNumber(text) {
-            // Pattern: "Invoice: XXXXXXXXXXXXX" where X are digits
-            // Also try: "Invoice : XXXXXXXXXXXXX" (with space)
+            // Multiple patterns to find invoice number
             const patterns = [
-                /Invoice\s*:\s*(\d{15})/i,
-                /Invoice\s*:\s*(\d{14})/i,
-                /Invoice\s*:\s*(\d{16})/i,
-                /No\.?\s+Invoice\s*:\s*(\d+)/i
+                // "Invoice: XXXXX" format (with colon)
+                /Invoice\s*:\s*(\d{14,16})/i,
+                /Invoice\s*:\s*(\d{13,17})/i,
+                // "No Invoice: XXXXX" or "No. Invoice: XXXXX"
+                /No\.?\s+Invoice\s*:\s*(\d{13,17})/i,
+                // "Nomor Invoice: XXXXX"
+                /Nomor\s+Invoice\s*:\s*(\d{13,17})/i,
+                // Just long digit sequences (13-17 digits)
+                /(?:^|\s)(\d{14,16})(?:\s|$)/,
+                // Any 14-16 digit number
+                /(\d{14,16})/
             ];
             
             for (const pattern of patterns) {
@@ -609,6 +630,7 @@
                     const number = match[1].trim();
                     // Validate: should be 14-16 digits
                     if (/^\d{14,16}$/.test(number)) {
+                        console.log(`[EXTRACT] Found with pattern: ${number}`);
                         return number;
                     }
                 }
