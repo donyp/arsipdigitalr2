@@ -531,80 +531,16 @@
         
         async function processFile(idx) {
             const file = selectedFiles[idx];
-            updateProgress(idx, 'processing', 'Extracting PDF text...');
+            updateProgress(idx, 'processing', 'Renaming...');
             
             try {
                 console.log(`[FILE ${idx}] Processing ${file.name}`);
-                
-                // Load PDF
-                const arrayBuffer = await file.file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                
-                console.log(`[FILE ${idx}] PDF has ${pdf.numPages} pages`);
-                
-                if (pdf.numPages < 1) {
-                    throw new Error('PDF has no pages');
-                }
-                
-                // Scan all pages to find invoice number using TEXT EXTRACTION (not OCR)
-                let invoiceNumber = null;
-                let pdfText = '';
-                let foundOnPage = -1;
-                
-                for (let pageNum = 1; pageNum <= Math.min(pdf.numPages, 5); pageNum++) {
-                    updateProgress(idx, 'processing', `Extracting text from page ${pageNum}/${Math.min(pdf.numPages, 5)}...`);
-                    console.log(`[FILE ${idx}] Extracting text from page ${pageNum}`);
-                    
-                    const page = await pdf.getPage(pageNum);
-                    
-                    // Extract text layer (embedded text, not OCR)
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    
-                    pdfText += pageText + '\n';
-                    console.log(`[FILE ${idx}] Page ${pageNum} text: ${pageText.substring(0, 200)}...`);
-                    
-                    // Try to extract invoice number from this page
-                    invoiceNumber = extractInvoiceNumber(pageText);
-                    
-                    if (invoiceNumber) {
-                        console.log(`[FILE ${idx}] Found invoice on page ${pageNum}: ${invoiceNumber}`);
-                        foundOnPage = pageNum;
-                        break;
-                    }
-                }
-                
-                // If not found in first 5 pages, try full PDF text
-                if (!invoiceNumber) {
-                    console.log(`[FILE ${idx}] Not found in first 5 pages, searching full PDF text...`);
-                    invoiceNumber = extractInvoiceNumber(pdfText);
-                }
-                
-                if (!invoiceNumber) {
-                    console.log(`[FILE ${idx}] Invoice not found in PDF text, attempting database lookup...`);
-                    updateProgress(idx, 'processing', `PDF text incomplete, trying database...`);
-                    try {
-                        await renameFileWithBackendFallback(file, pdfText, idx);
-                        console.log(`[FILE ${idx}] Database fallback successful`);
-                        return; // Exit early, success already handled
-                    } catch (fallbackError) {
-                        console.error(`[FILE ${idx}] Database fallback error:`, fallbackError);
-                        throw new Error(`Invoice number not found in PDF and no database match: ${fallbackError.message}`);
-                    }
-                }
-                
-                console.log(`[FILE ${idx}] Found invoice: ${invoiceNumber}`);
-                
-                // Auto-rename without user confirmation (fully automatic)
-                updateProgress(idx, 'processing', `Renaming to: ${invoiceNumber}.pdf`);
-                await renameFile(file, invoiceNumber, pdfText, idx);
-                
-                console.log(`[FILE ${idx}] Rename successful`);
-                updateProgress(idx, 'success', `✅ Renamed to: ${invoiceNumber}.pdf`);
-                
+                await renameFile(file, null, '', idx);
+                console.log(`[FILE ${idx}] Success`);
+                updateProgress(idx, 'success', `✅ Renamed`);
             } catch (error) {
                 console.error(`[FILE ${idx}] Error:`, error);
-                updateProgress(idx, 'error', `❌ Error: ${error.message}`);
+                updateProgress(idx, 'error', `❌ ${error.message}`);
             }
         }
         
@@ -673,101 +609,7 @@
             return null;
         }
         
-        async function renameFileWithBackendFallback(file, pdfText, idx) {
-            // Fallback when text extraction fails completely
-            // Send PDF text to backend for database lookup
-            // Backend will try to find invoice via fuzzy matching or return list for selection
-            
-            const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
-            console.log(`[FALLBACK ${idx}] Attempting backend fallback with incomplete PDF text`);
-            
-            const formData = new FormData();
-            const fileToUpload = file.file || file;
-            const fileName = file.name || (file.file ? file.name : 'unknown');
-            
-            formData.append('file', fileToUpload);
-            // Don't append invoiceNumber - let backend use database
-            if (pdfText) {
-                formData.append('ocrText', pdfText);
-            }
-            formData.append('originalName', fileName);
-            
-            console.log(`[FALLBACK ${idx}] FormData: Text=${pdfText?.length || 0} chars, Filename=${fileName}`);
-            
-            const apiUrl = `/api/invoice/rename-invoice`;
-            
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                });
-                
-                console.log(`[FALLBACK ${idx}] Response status: ${response.status}`);
-                
-                if (response.ok) {
-                    // Success - got the file with invoice number in header
-                    const blob = await response.blob();
-                    const invoiceNumber = response.headers.get('X-Invoice-Number') || 'unknown';
-                    const newFilename = `${invoiceNumber}.pdf`;
-                    
-                    console.log(`[FALLBACK ${idx}] Got result: ${invoiceNumber}, size: ${blob.size} bytes`);
-                    
-                    // Download
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = newFilename;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    
-                    // Update state
-                    selectedFiles[idx].invoiceNumber = invoiceNumber;
-                    selectedFiles[idx].status = 'success';
-                    addToHistory(fileName, invoiceNumber, 'success');
-                    
-                    processingResults.push({
-                        originalName: fileName,
-                        newName: newFilename,
-                        invoiceNumber: invoiceNumber,
-                        status: 'success'
-                    });
-                    
-                    console.log(`[FALLBACK ${idx}] Success`);
-                    return;
-                }
-                
-                // Error response - check if it has invoice list
-                const contentType = response.headers.get('content-type');
-                let errorData = null;
-                
-                if (contentType && contentType.includes('application/json')) {
-                    try {
-                        errorData = await response.json();
-                        console.log(`[FALLBACK ${idx}] Error response:`, errorData);
-                        
-                        // Check if requires selection
-                        if (errorData.requires_selection && errorData.invoices && errorData.invoices.length > 0) {
-                            console.log(`[FALLBACK ${idx}] Should not reach here - auto-selection on backend now`);
-                        }
-                    } catch (parseErr) {
-                        console.warn(`[FALLBACK ${idx}] Could not parse error JSON:`, parseErr);
-                    }
-                }
-                
-                const errorMsg = errorData?.message || `HTTP ${response.status}`;
-                throw new Error(errorMsg);
-                
-            } catch (error) {
-                console.error(`[FALLBACK ${idx}] Error:`, error);
-                throw error;
-            }
-        }
-        
+
         async function renameFile(file, invoiceNumber, ocrText, idx) {
             const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             console.log(`[RENAME ${idx}] Token exists: ${!!token}`);
