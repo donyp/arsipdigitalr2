@@ -122,6 +122,12 @@ async function loginWithCredentials(email, password) {
         console.log('[Auth] Session keep-alive initialized');
     }
 
+    // Initialize session status checker to detect forced logouts
+    if (typeof initializeSessionStatusChecker === 'function') {
+        initializeSessionStatusChecker();
+        console.log('[Auth] Session status checker initialized');
+    }
+
     // Create session for device tracking
     try {
         const { sessionToken } = await API.post('/api/sessions/create', {
@@ -162,6 +168,12 @@ async function logout() {
         if (typeof stopSessionKeepalive === 'function') {
             stopSessionKeepalive();
         }
+        
+        // Stop session status checker
+        if (typeof stopSessionStatusChecker === 'function') {
+            stopSessionStatusChecker();
+        }
+        
         if (typeof clearSessionId === 'function') {
             clearSessionId();
         }

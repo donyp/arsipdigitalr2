@@ -250,6 +250,48 @@ module.exports = function registerAuthEndpoints(app, supabase) {
         }
     });
 
+    /**
+     * POST /api/logout
+     * Invalidate user session by marking it as invalid in active_sessions table
+     */
+    app.post('/api/logout', async (req, res) => {
+        try {
+            const { session_id } = req.body;
+            const token = req.headers.authorization?.split(' ')[1];
+
+            if (!session_id || !token) {
+                return res.status(400).json({
+                    error: 'Missing session_id or token'
+                });
+            }
+
+            // Invalidate session in active_sessions table
+            const { error: updateError } = await supabase
+                .from('active_sessions')
+                .update({ is_valid: false })
+                .eq('session_id', session_id);
+
+            if (updateError) {
+                console.error('[Auth] Error invalidating session:', updateError.message);
+                return res.status(500).json({
+                    error: 'Failed to invalidate session'
+                });
+            }
+
+            console.log('[Auth] Session invalidated:', session_id);
+
+            res.json({
+                success: true,
+                message: 'Session invalidated'
+            });
+        } catch (err) {
+            console.error('[Auth] Logout error:', err.message);
+            res.status(500).json({
+                error: 'Failed to logout'
+            });
+        }
+    });
+
 };
 
 

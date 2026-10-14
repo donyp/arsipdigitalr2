@@ -257,7 +257,7 @@ router.post('/start', authenticateToken, async (req, res) => {
         // Log this action
         await logMaintenanceAccess(req, 'maintenance_started', {
             reason: reason,
-            estimatedDuration: estimatedDurationMinutes
+            estimatedDuration: durationMinutes
         });
 
         // Trigger forced logout for all non-moderators
@@ -828,6 +828,69 @@ router.post('/logout-non-moderators', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('[Maintenance] Forced logout error:', err.message);
         res.status(500).json({ error: 'Failed to force logout users' });
+    }
+});
+
+/**
+ * POST /api/maintenance/check-session
+ * Check if current session is still valid
+ * Returns { isValid: true/false }
+ */
+router.post('/check-session', authenticateToken, async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        const userToken = req.headers.authorization?.split(' ')[1];
+
+        if (!sessionId || !userToken) {
+            return res.status(400).json({ 
+                isValid: false,
+                error: 'Missing sessionId or token'
+            });
+        }
+
+        // Decode token to get JTI
+        let jti;
+        try {
+            const decoded = jwt.verify(userToken, JWT_SECRET);
+            jti = decoded.jti;
+        } catch (err) {
+            console.log('[Maintenance] Token verification failed:', err.message);
+            return res.status(401).json({ 
+                isValid: false,
+                error: 'Invalid token'
+            });
+        }
+
+        // Query database to check if session is still valid
+        const { data: sessions, error } = await supabase
+            .from('active_sessions')
+            .select('*')
+            .eq('session_id', jti)
+            .eq('is_valid', true);
+
+        if (error) {
+            console.error('[Maintenance] Error checking session:', error.message);
+            return res.status(500).json({ 
+                isValid: false,
+                error: 'Failed to check session'
+            });
+        }
+
+        const isValid = sessions && sessions.length > 0;
+        
+        console.log('[Maintenance] Session validity check for', jti, ':', isValid);
+
+        res.json({
+            isValid: isValid,
+            message: isValid ? 'Session is valid' : 'Session has been invalidated'
+        });
+
+    } catch (err) {
+        console.error('[Maintenance] Check session error:', err.message);
+        res.status(500).json({ 
+            isValid: false,
+            error: 'Failed to check session'
+        });
     }
 });
 
