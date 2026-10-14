@@ -781,23 +781,41 @@
         // Load access logs
         const loadAccessLogs = async () => {
             try {
+                console.log('[AccessLogs] Starting to load logs...');
                 const logsLoading = document.getElementById('logsLoading');
                 logsLoading.style.display = 'inline-block';
 
+                const token = getToken();
+                console.log('[AccessLogs] Token present:', !!token);
+
                 const response = await fetch('/api/maintenance/access-logs', {
-                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
-                if (!response.ok) throw new Error('Failed to load access logs');
+                console.log('[AccessLogs] Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('[AccessLogs] Error response:', errorText);
+                    throw new Error(`Failed to load access logs: ${response.status}`);
+                }
 
                 const data = await response.json();
+                console.log('[AccessLogs] Data received:', data);
+                
                 const tbody = document.getElementById('accessLogsBody');
 
                 if (!data.logs || data.logs.length === 0) {
+                    console.log('[AccessLogs] No logs found, showing empty message');
                     tbody.innerHTML = '<tr><td colspan="5" class="no-data">No access logs yet</td></tr>';
                     return;
                 }
 
+                console.log('[AccessLogs] Rendering', data.logs.length, 'logs');
                 tbody.innerHTML = data.logs.map(log => `
                     <tr>
                         <td>${new Date(log.timestamp).toLocaleString()}</td>
@@ -808,9 +826,9 @@
                     </tr>
                 `).join('');
             } catch (error) {
-                console.error('Error loading access logs:', error);
+                console.error('[AccessLogs] Error loading access logs:', error);
                 const tbody = document.getElementById('accessLogsBody');
-                tbody.innerHTML = '<tr><td colspan="5" class="no-data">Error loading logs</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="5" class="no-data">Error: ${error.message}</td></tr>`;
             } finally {
                 document.getElementById('logsLoading').style.display = 'none';
             }

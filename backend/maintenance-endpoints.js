@@ -624,6 +624,8 @@ router.post('/verify-sessions', authenticateToken, async (req, res) => {
  */
 router.get('/access-logs', authenticateToken, async (req, res) => {
     try {
+        console.log('[AccessLogs] GET /access-logs called');
+        
         // Debug: Log user info
         console.log('[AccessLogs] User info:', {
             user_id: req.user?.id,
@@ -645,8 +647,11 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
         const limit = Math.min(parseInt(req.query.limit) || 100, 1000);
         const offset = parseInt(req.query.offset) || 0;
 
+        console.log('[AccessLogs] Query params - limit:', limit, 'offset:', offset);
+
         try {
             // Query logs from Supabase
+            console.log('[AccessLogs] Querying maintenance_access_logs table...');
             const { data, error, count } = await supabase
                 .from('maintenance_access_logs')
                 .select('*', { count: 'exact' })
@@ -655,17 +660,20 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
                 .offset(offset);
 
             if (error) {
-                console.error('[Maintenance] Query error:', error.message);
+                console.error('[AccessLogs] Query error:', error.message);
                 // Return empty array if table doesn't exist
+                console.log('[AccessLogs] Returning empty result due to error');
                 return res.json({
                     logs: [],
                     total: 0,
                     limit: limit,
                     offset: offset,
-                    message: 'Access logs table not yet initialized'
+                    message: 'Access logs table not yet initialized',
+                    error: error.message
                 });
             }
 
+            console.log('[AccessLogs] Query successful - found', data?.length || 0, 'logs, total:', count);
             res.json({
                 logs: data || [],
                 total: count || 0,
@@ -679,12 +687,13 @@ router.get('/access-logs', authenticateToken, async (req, res) => {
                 total: 0,
                 limit: limit,
                 offset: offset,
-                message: 'Unable to load logs'
+                message: 'Unable to load logs',
+                error: queryErr.message
             });
         }
 
     } catch (err) {
-        console.error('[Maintenance] Logs error:', err.message);
+        console.error('[AccessLogs] General error:', err.message);
         res.status(500).json({ error: 'Failed to get access logs', details: err.message });
     }
 });
