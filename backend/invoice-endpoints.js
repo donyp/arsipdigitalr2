@@ -4252,7 +4252,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(400).json({ error: 'No file uploaded' });
                 }
                 
-                if (!invoiceNumber || !/^\d{14,16}$/.test(invoiceNumber)) {
+                if (!invoiceNumber || !/^\d{14,18}$/.test(invoiceNumber)) {
                     return res.status(400).json({ error: 'Invalid invoice number format' });
                 }
                 
