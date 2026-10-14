@@ -8,41 +8,100 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Utility function: Fix OCR-detected errors in invoice numbers
- * Aggressive correction untuk invoice pattern: 83510031XXXXXXX (18 digits)
+ * Query database untuk cari faktur mirip
+ * Gunakan Levenshtein distance atau simple pattern matching
  */
-function fixOCRErrors(text) {
-    let fixed = text;
-    
-    // Step 1: Basic character substitutions
-    fixed = fixed.replace(/B(?=\d)/g, '8');      // B → 8
-    fixed = fixed.replace(/[Il](?=\d)/g, '1');   // I/l → 1  
-    fixed = fixed.replace(/O(?=\d)/g, '0');      // O → 0
-    fixed = fixed.replace(/S(?=\d)/g, '5');      // S → 5
-    fixed = fixed.replace(/Z(?=\d)/g, '2');      // Z → 2
-    
-    // Step 2: Aggressive digit confusion fixes for known misreads
-    // Invoice pattern: 835100311101026001 but often misread with wrong digit 14
-    
-    // Pattern 1: If we see 835100311101025xxx, change to 835100311101026xxx
-    fixed = fixed.replace(/83510031110102([56])/g, '835100311101026');
-    
-    // Pattern 2: Position 14 correction (often 5 when should be 6)
-    fixed = fixed.replace(/(\d{13})[56](\d{4})$/, (match, prefix, suffix) => {
-        // If prefix ends with 835100311101, likely position 14 error
-        if (/835100311101$/.test(prefix)) {
-            return prefix + '6' + suffix;
+async function findSimilarInvoiceInDatabase(supabase, extractedNumber) {
+    try {
+        if (!extractedNumber || extractedNumber.length < 14) {
+            return null;
         }
-        return match;
-    });
+        
+        // Search strategy: cari dengan prefix + suffix matching
+        // Format: 83510031XXXXXXXXXX (18 digits)
+        const prefix = extractedNumber.substring(0, 8);  // 83510031
+        const suffix = extractedNumber.substring(14);     // last 4 digits
+        
+        console.log(`[DB-VALIDATE] Searching for similar invoice: prefix=${prefix}, suffix=${suffix}`);
+        
+        // Query untuk cari faktur dengan prefix & suffix yang sama
+        const { data, error } = await supabase
+            .from('invoices')
+            .select('faktur')
+            .ilike('faktur', `${prefix}%${suffix}`)
+            .limit(5);
+        
+        if (error) {
+            console.warn('[DB-VALIDATE] Query error:', error);
+            return null;
+        }
+        
+        if (data && data.length > 0) {
+            // Found similar faktur in database
+            const corrected = data[0].faktur;
+            console.log(`[DB-VALIDATE] Found in DB: ${extractedNumber} → ${corrected}`);
+            return corrected;
+        }
+        
+        // If not found with pattern, try fuzzy search
+        // Get all faktur yang start dengan prefix
+        const { data: candidates, error: err2 } = await supabase
+            .from('invoices')
+            .select('faktur')
+            .ilike('faktur', `${prefix}%`)
+            .limit(10);
+        
+        if (err2 || !candidates || candidates.length === 0) {
+            return null;
+        }
+        
+        // Simple Levenshtein distance untuk find closest match
+        let bestMatch = null;
+        let bestDistance = Infinity;
+        
+        for (const candidate of candidates) {
+            const dist = levenshteinDistance(extractedNumber, candidate.faktur);
+            if (dist < bestDistance && dist <= 2) { // Max 2 differences
+                bestDistance = dist;
+                bestMatch = candidate.faktur;
+            }
+        }
+        
+        if (bestMatch) {
+            console.log(`[DB-VALIDATE] Fuzzy match: ${extractedNumber} → ${bestMatch} (distance: ${bestDistance})`);
+            return bestMatch;
+        }
+        
+        return null;
+    } catch (err) {
+        console.warn('[DB-VALIDATE] Validation error:', err);
+        return null;
+    }
+}
+
+/**
+ * Simple Levenshtein distance implementation
+ */
+function levenshteinDistance(str1, str2) {
+    const len1 = str1.length;
+    const len2 = str2.length;
+    const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(0));
     
-    // Step 3: Clean up obviously wrong sequences
-    // Multiple O's in a row = likely OCR error for 0's
-    fixed = fixed.replace(/OO+/g, '00');
-    // Multiple I's/l's = likely 1's
-    fixed = fixed.replace(/[Il]{2,}/g, (match) => '1'.repeat(match.length));
+    for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+    for (let j = 0; j <= len2; j++) matrix[j][0] = j;
     
-    return fixed;
+    for (let j = 1; j <= len2; j++) {
+        for (let i = 1; i <= len1; i++) {
+            const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[j][i] = Math.min(
+                matrix[j][i - 1] + 1,      // insertion
+                matrix[j - 1][i] + 1,      // deletion
+                matrix[j - 1][i - 1] + indicator  // substitution
+            );
+        }
+    }
+    
+    return matrix[len2][len1];
 }
 
 /**
@@ -207,7 +266,17 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
                 });
             }
 
-            console.log('[RENAME] Final invoice number:', invoiceNumber);
+            console.log('[RENAME] Extracted invoice number:', invoiceNumber);
+            
+            // Step 3b: Try to find similar invoice in database
+            console.log('[RENAME] Attempting database validation...');
+            const dbValidated = await findSimilarInvoiceInDatabase(supabase, invoiceNumber);
+            if (dbValidated) {
+                console.log('[RENAME] Database auto-corrected:', invoiceNumber, '→', dbValidated);
+                invoiceNumber = dbValidated;
+            } else {
+                console.log('[RENAME] No database match found, using extracted number');
+            }
 
             // Step 4: Generate new filename
             const newFileName = `${invoiceNumber}.pdf`;
