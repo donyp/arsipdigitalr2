@@ -593,7 +593,19 @@
                 throw new Error(error.error || 'Rename failed');
             }
             
-            const result = await response.json();
+            // Response is binary PDF file
+            const blob = await response.blob();
+            const newFilename = `${invoiceNumber}.pdf`;
+            
+            // Trigger browser download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = newFilename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
             
             // Update local state
             selectedFiles[idx].invoiceNumber = invoiceNumber;
@@ -604,7 +616,7 @@
             
             processingResults.push({
                 originalName: file.name,
-                newName: `${invoiceNumber}.pdf`,
+                newName: newFilename,
                 invoiceNumber: invoiceNumber,
                 status: 'success'
             });
