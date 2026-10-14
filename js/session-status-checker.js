@@ -19,19 +19,28 @@
      * Check if current session is still valid on the server
      */
     async function checkSessionValidity() {
-        if (isCheckingSession) return; // Prevent concurrent checks
+        if (isCheckingSession) {
+            console.log('[SessionStatusChecker] ⏸️ Check already in progress, skipping');
+            return;
+        }
         
         try {
             isCheckingSession = true;
             const token = localStorage.getItem('jwt_token') || localStorage.getItem('token');
             const sessionId = localStorage.getItem('current_session_id');
             
-            if (!token || !sessionId) {
-                console.log('[SessionStatusChecker] ⚠️ No token or session ID found - token:', !!token, 'sessionId:', !!sessionId);
+            if (!token) {
+                console.warn('[SessionStatusChecker] ⚠️ NO TOKEN FOUND - cannot check session');
+                return;
+            }
+            
+            if (!sessionId) {
+                console.warn('[SessionStatusChecker] ⚠️ NO SESSION ID FOUND - cannot check session');
                 return;
             }
 
-            console.log('[SessionStatusChecker] 📡 Polling check-session endpoint...');
+            console.log('[SessionStatusChecker] 📡 Calling /api/maintenance/check-session...');
+            console.log('[SessionStatusChecker]   token:', token.substring(0, 20) + '...', 'sessionId:', sessionId.substring(0, 16) + '...');
             
             // Call endpoint to verify session is still valid
             const response = await fetch('/api/maintenance/check-session', {
@@ -45,7 +54,7 @@
                 })
             });
             
-            console.log('[SessionStatusChecker] ✉️ Response status:', response.status);
+            console.log('[SessionStatusChecker] ✉️ Response received - status:', response.status, 'ok:', response.ok);
 
             if (response.status === 401 || response.status === 403) {
                 // Session is invalid

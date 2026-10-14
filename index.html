@@ -578,14 +578,9 @@
                 const status = await response.json();
 
                 isMaintenanceActive = !!status.isActive;
-
-                if (isMaintenanceActive) {
-                    // Disable login button when maintenance is active
-                    setButtonState('disabled');
-                    // Modern banner will be shown by maintenanceBanner.init()
-                } else {
-                    setButtonState('enabled');
-                }
+                
+                // On login page: Always enable button, validation happens on submit
+                setButtonState('enabled');
             } catch (err) {
                 console.error('[Login] Error checking maintenance:', err.message);
                 setButtonState('enabled');
