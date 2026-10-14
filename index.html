@@ -466,7 +466,7 @@
                 </div>
 
                 <!-- Maintenance Notice -->
-                <div id="maintenance-notice" class="hidden mb-6 p-4 bg-red-50 border border-red-100 rounded-xl">
+                <div id="maintenance-notice" class="hidden mb-6 p-4 bg-red-50 border border-red-100 rounded-xl" style="display: none;">
                     <div class="flex items-start gap-3">
                         <div class="w-6 h-6 rounded bg-red-500/10 flex items-center justify-center text-red-500 flex-shrink-0 mt-0.5">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -571,26 +571,24 @@
         window.alert = showAlert;
 
         // Check for Maintenance Mode
+        // Check maintenance status using modern banner
         async function checkMaintenanceOnLogin() {
             try {
-                const response = await fetch(`${CONFIG.API_URL}/api/system/maintenance`);
+                const response = await fetch(`${CONFIG.API_URL}/api/maintenance/status`);
                 const status = await response.json();
 
-                isMaintenanceActive = !!status.isMaintenance;
+                isMaintenanceActive = !!status.isActive;
 
                 if (isMaintenanceActive) {
-                    const noticeEl = document.getElementById('maintenance-notice');
-                    noticeEl?.classList.remove('hidden');
+                    // Disable login button when maintenance is active
                     setButtonState('disabled');
+                    // Modern banner will be shown by maintenanceBanner.init()
                 } else {
-                    // Make sure alert is hidden if not in maintenance mode
-                    const modal = document.getElementById('custom-alert');
-                    modal?.classList.add('hidden');
+                    setButtonState('enabled');
                 }
             } catch (err) {
-                // Hide alert on error
-                const modal = document.getElementById('custom-alert');
-                modal?.classList.add('hidden');
+                console.error('[Login] Error checking maintenance:', err.message);
+                setButtonState('enabled');
             }
         }
 
@@ -602,7 +600,7 @@
                 btn.style.background = '#d1d5db';
                 btn.style.color = '#9ca3af';
                 btn.disabled = true;
-                btn.textContent = '❌ Tidak Bisa Login';
+                btn.textContent = '⏳ Sistem Dalam Pemeliharaan';
             } else {
                 btn.style.background = '#1a1a1a';
                 btn.style.color = 'white';
