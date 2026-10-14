@@ -155,15 +155,15 @@ async function findInvoiceInDatabase(supabase, extractedNumber, ocrText, fileNam
         // Strategy 5: Brute-force search if OCR is completely garbled
         // Try to find ANY recent invoice in database
         if (!extractedNumber && ocrText && ocrText.length > 50) {
-            console.log('[DB-SEARCH] Strategy 5: OCR text exists but unreadable, searching for recent invoices');
+            console.log('[DB-SEARCH] Strategy 5: Text extraction exists but unreadable, searching for recent invoices');
             const { data, error } = await supabase
                 .from('invoices')
                 .select('faktur')
                 .order('created_at', { ascending: false })
-                .limit(5);
+                .limit(100); // Get many recent invoices
             
             if (!error && data && data.length > 0) {
-                console.log('[DB-SEARCH] Found recent invoices in DB:', data.map(d => d.faktur).join(', '));
+                console.log('[DB-SEARCH] Found recent invoices in DB:', data.map(d => d.faktur).join(', ').substring(0, 200));
                 // Return first one as fallback (user will see these in error message)
                 return null; // Don't auto-select, let user choose
             }
@@ -434,7 +434,7 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
             }
 
             // Step 4: If STILL no invoice number, try database fallback
-            // This is for completely garbled OCR but filename might have clues
+            // This is for completely garbled text but might find via DB
             if (!invoiceNumber) {
                 console.log('[RENAME] No direct extraction, attempting database fallback...');
                 invoiceNumber = await findInvoiceInDatabase(supabase, null, ocrText || '', file.originalname);
@@ -442,10 +442,36 @@ function registerRenameInvoiceEndpoints(app, supabase, createAuth, multerUpload)
                     console.log('[RENAME] Database fallback found:', invoiceNumber);
                     ocrDetected = false; // Mark as fallback
                 } else {
-                    console.error('[RENAME] No invoice number found after all strategies');
+                    console.log('[RENAME] No invoice found via any method, fetching invoice list for user selection');
+                    
+                    // Fallback: Get recent invoices untuk UI dropdown
+                    try {
+                        const { data: recentInvoices, error: listError } = await supabase
+                            .from('invoices')
+                            .select('faktur, toko, tanggal, keterangan')
+                            .order('tanggal', { ascending: false })
+                            .limit(50);
+                        
+                        if (!listError && recentInvoices && recentInvoices.length > 0) {
+                            console.log('[RENAME] Returning list of invoices for user selection');
+                            return res.status(400).json({
+                                success: false,
+                                message: 'Nomor faktur tidak dapat diekstrak dari file. Pilih dari daftar berikut atau upload invoice data terlebih dahulu.',
+                                requires_selection: true,
+                                invoices: recentInvoices.map(inv => ({
+                                    faktur: inv.faktur,
+                                    label: `${inv.faktur} - ${inv.toko || 'Unknown'}`
+                                }))
+                            });
+                        }
+                    } catch (listErr) {
+                        console.warn('[RENAME] Error fetching invoice list:', listErr);
+                    }
+                    
+                    // If still nothing, return generic error
                     return res.status(400).json({
                         success: false,
-                        message: 'Tidak dapat mengekstrak nomor faktur dari file, OCR, atau database'
+                        message: 'Tidak dapat mengekstrak nomor faktur dari file PDF. Pastikan file berisi data invoice yang jelas atau upload invoice data terlebih dahulu.'
                     });
                 }
             }
