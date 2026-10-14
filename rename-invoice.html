@@ -595,12 +595,18 @@
                 
                 console.log(`[FILE ${idx}] Found invoice: ${invoiceNumber}`);
                 
+                // Ask user to confirm/correct invoice number
+                const confirmedNumber = await confirmInvoiceNumber(invoiceNumber, file.name);
+                if (!confirmedNumber) {
+                    throw new Error('Invoice rename cancelled by user');
+                }
+                
                 // Send to backend for rename
-                updateProgress(idx, 'processing', `Renaming to: ${invoiceNumber}.pdf`);
-                await renameFile(file, invoiceNumber, idx);
+                updateProgress(idx, 'processing', `Renaming to: ${confirmedNumber}.pdf`);
+                await renameFile(file, confirmedNumber, idx);
                 
                 console.log(`[FILE ${idx}] Rename successful`);
-                updateProgress(idx, 'success', `✅ Renamed to: ${invoiceNumber}.pdf`);
+                updateProgress(idx, 'success', `✅ Renamed to: ${confirmedNumber}.pdf`);
                 
             } catch (error) {
                 console.error(`[FILE ${idx}] Error:`, error);
@@ -608,7 +614,54 @@
             }
         }
         
+        function fixOCRErrors(text) {
+            // Common OCR character misreads for invoice numbers
+            // Based on pattern: 83510031 + 10 digits
+            
+            // Fix common substitutions in "83510031" prefix
+            // 8->B, 3->E, 1->I/L, 0->O, 5->S
+            let fixed = text;
+            
+            // Replace "B3510031" (8 read as B) with "83510031"
+            fixed = fixed.replace(/B3510031/gi, '83510031');
+            
+            // Replace "8E510031" (3 read as E) with "83510031"
+            fixed = fixed.replace(/8E510031/gi, '83510031');
+            
+            // Replace "835I0031" or "835l0031" (1 read as I or l) with "83510031"
+            fixed = fixed.replace(/835[Il]0031/gi, '83510031');
+            
+            // Replace "8351OO31" (0 read as O) with "83510031"
+            fixed = fixed.replace(/8351[O0]{2}31/gi, '83510031');
+            
+            // Replace "8351003I" or "8351003l" (1 read as I or l) with "83510031"
+            fixed = fixed.replace(/8351003[Il]/gi, '83510031');
+            
+            // Fix trailing digits: replace O (letter O) with 0 (digit zero)
+            fixed = fixed.replace(/(\d{8}[0-9]+)O(?=[0-9]*$)/g, '$10');
+            
+            // Fix common digit misreads in trailing numbers
+            // I/l -> 1, O -> 0, S -> 5, Z -> 2, B -> 8
+            fixed = fixed.replace(/([0-9]{8})([ILOSZ0-9]*)/g, (match, prefix, suffix) => {
+                if (!/^835100[03]1$/.test(prefix)) return match;
+                
+                const corrected = suffix
+                    .replace(/[Il]/g, '1')
+                    .replace(/[O]/g, '0')
+                    .replace(/[S]/g, '5')
+                    .replace(/[Z]/g, '2')
+                    .replace(/[B]/g, '8');
+                    
+                return prefix + corrected;
+            });
+            
+            return fixed;
+        }
+        
         function extractInvoiceNumber(text) {
+            // Fix OCR errors first
+            const correctedText = fixOCRErrors(text);
+            
             // Multiple patterns to find invoice number
             // Invoice numbers can be 14-18 digits, often start with 83510031
             const patterns = [
@@ -627,13 +680,27 @@
                 /(\d{14,18})/
             ];
             
+            // Try corrected text first
             for (const pattern of patterns) {
-                const match = text.match(pattern);
+                const match = correctedText.match(pattern);
                 if (match) {
                     const number = match[1].trim();
                     // Validate: should be 14-18 digits
                     if (/^\d{14,18}$/.test(number)) {
                         console.log(`[EXTRACT] Found with pattern: ${number}`);
+                        return number;
+                    }
+                }
+            }
+            
+            // Fallback: try original text
+            for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    const number = match[1].trim();
+                    // Validate: should be 14-18 digits, all digits
+                    if (/^\d{14,18}$/.test(number)) {
+                        console.log(`[EXTRACT] Found with pattern (original): ${number}`);
                         return number;
                     }
                 }
