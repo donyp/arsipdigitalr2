@@ -852,8 +852,43 @@
         loadMaintenanceStatus();
         loadAccessLogs();  // Load access logs on page open
 
-        // Refresh status every 30 seconds (instead of 10 to reduce API load)
-        setInterval(loadMaintenanceStatus, 30000);
+        // Track maintenance state to detect when it ends
+        let previousMaintenanceState = false;
+
+        // Refresh status every 10 seconds (faster detection of maintenance end)
+        const statusCheckInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/api/maintenance/status', {
+                    headers: { 'Authorization': `Bearer ${getToken()}` }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const currentMaintenanceState = data.isActive;
+
+                // Detect when maintenance transitions from ACTIVE to INACTIVE
+                if (previousMaintenanceState && !currentMaintenanceState) {
+                    console.log('[Maintenance Dashboard] Maintenance just ended - auto-refreshing page');
+                    // Wait a moment for all users to be logged in, then refresh
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                }
+
+                previousMaintenanceState = currentMaintenanceState;
+
+                // Continue normal loading
+                loadMaintenanceStatus();
+            } catch (error) {
+                console.error('[Maintenance Dashboard] Auto-refresh check error:', error);
+            }
+        }, 10000);
+
+        // Cleanup interval on page unload
+        window.addEventListener('beforeunload', () => {
+            clearInterval(statusCheckInterval);
+        });
         
         // Refresh access logs every 60 seconds
         setInterval(loadAccessLogs, 60000);

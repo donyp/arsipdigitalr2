@@ -118,8 +118,9 @@ class MaintenanceBanner {
             return;
         }
 
-        console.log('[MaintenanceBanner] Hiding banner');
+        console.log('[MaintenanceBanner] Hiding banner with slide-up animation');
         
+        // Add slide-up animation class
         this.bannerElement.classList.add('maintenance-banner-fade-out');
         
         setTimeout(() => {
@@ -128,7 +129,7 @@ class MaintenanceBanner {
             }
             this.bannerElement = null;
             this.restorePagePadding();
-        }, 300);
+        }, 400);
     }
 
     /**
@@ -179,6 +180,13 @@ class MaintenanceBanner {
                 if (countdownEl) {
                     countdownEl.textContent = 'Selesai';
                 }
+                
+                // Auto-hide banner when maintenance time expires
+                console.log('[MaintenanceBanner] Maintenance time expired, auto-hiding banner');
+                setTimeout(() => {
+                    this.hideMaintenanceBanner();
+                }, 500);
+                
                 return;
             }
 
