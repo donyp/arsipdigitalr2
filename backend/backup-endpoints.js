@@ -279,10 +279,17 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
             } catch (r2Error) {
                 console.warn(`[BackupAPI] R2 download failed:`, r2Error.message);
                 
-                // Fallback to local file
+                // Fallback to local file - map type to correct folder name
                 const path = require('path');
                 const fs = require('fs');
-                const localPath = path.join(__dirname, '..', 'data', 'backups', type, backupName);
+                const folderMap = {
+                    'database': 'database',
+                    'files': 'file',
+                    'file': 'file',
+                    'config': 'config'
+                };
+                const folderName = folderMap[type] || type;
+                const localPath = path.join(__dirname, '..', 'BACKUP', folderName, backupName);
                 
                 if (fs.existsSync(localPath)) {
                     console.log(`[BackupAPI] Falling back to local file: ${localPath}`);

@@ -17,12 +17,13 @@ class BackupManager {
     constructor(supabaseClient, r2Storage) {
         this.supabase = supabaseClient;
         this.r2 = r2Storage;
-        this.baseBackupDir = path.join(__dirname, '..', 'data', 'backups');
+        this.baseBackupDir = path.join(__dirname, '..', 'BACKUP');
         
-        // Create subdirectories for each backup type
+        // Create subdirectories for each backup type matching the folder structure
         this.backupDirs = {
+            all: path.join(this.baseBackupDir, 'all'),
             database: path.join(this.baseBackupDir, 'database'),
-            files: path.join(this.baseBackupDir, 'files'),
+            file: path.join(this.baseBackupDir, 'file'),
             config: path.join(this.baseBackupDir, 'config')
         };
         
@@ -234,7 +235,7 @@ class BackupManager {
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `files-backup-${timestamp}.zip`;
-            const localPath = path.join(this.backupDirs.files, backupName);
+            const localPath = path.join(this.backupDirs.file, backupName);
 
             // Create zip archive
             return new Promise(async (resolve, reject) => {
@@ -251,7 +252,7 @@ class BackupManager {
                         console.log(`[BackupManager] [FILES] Uploading to R2...`);
                         try {
                             await this.r2.uploadFile(
-                                `backups/files/${backupName}`,
+                                `backups/file/${backupName}`,
                                 fileContent,
                                 { contentType: 'application/zip' }
                             );
@@ -267,7 +268,7 @@ class BackupManager {
                             type: 'files',
                             name: backupName,
                             size: fileSize,
-                            path: `backups/files/${backupName}`,
+                            path: `backups/file/${backupName}`,
                             timestamp: new Date().toISOString(),
                             status: 'success'
                         });
