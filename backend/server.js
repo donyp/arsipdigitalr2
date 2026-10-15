@@ -1490,6 +1490,9 @@ app.use('/api', backupRouter);
 console.log('[INIT] Backup Management endpoints registered ✅');
 console.log('  ✓ Backup creation, listing, verification');
 
+// Temporarily disabled - start scheduled backups after testing
+// backupManager.startScheduledBackups();
+
 // ============================================================
 // Support Ticketing System Endpoints
 // ============================================================
