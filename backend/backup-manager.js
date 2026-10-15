@@ -140,7 +140,7 @@ class BackupManager {
                         successCount++;
                     }
                 } catch (tableError) {
-                    console.error(`[BackupManager] [DB] Exception exporting table ${tableName}:`, tableError);
+                    console.error(`[BackupManager] [DB] Exception exporting table ${tableName}:`, tableError.message);
                     skipCount++;
                     sqlDump += `\n-- EXCEPTION IN ${tableName}: ${tableError.message}\n`;
                 }
