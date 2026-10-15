@@ -307,7 +307,26 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
 
                 return res.send(content);
             } catch (downloadError) {
-                console.error('[BackupAPI] Download error:', downloadError.message);
+                // Log detailed error info
+                console.error('[BackupAPI] Download error details:', {
+                    message: downloadError.message,
+                    code: downloadError.Code,
+                    name: downloadError.name,
+                    statusCode: downloadError.$metadata?.httpStatusCode,
+                    errorType: downloadError.constructor.name,
+                    fullError: JSON.stringify(downloadError, null, 2)
+                });
+                
+                // Check if it's a 403 Forbidden error
+                if (downloadError.$metadata?.httpStatusCode === 403 || downloadError.message.includes('403')) {
+                    return res.status(403).json({
+                        success: false,
+                        error: 'Access denied - R2 permission issue',
+                        details: downloadError.message,
+                        path: r2Path
+                    });
+                }
+                
                 return res.status(404).json({
                     success: false,
                     error: `Backup not found: ${backupName}`,

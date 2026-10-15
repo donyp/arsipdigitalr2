@@ -7706,14 +7706,14 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
             R2Storage.validateConfig();
             console.log('[Startup] ✅ Cloudflare R2 configuration valid');
         } catch (error) {
-            console.error('[Startup] ❌ R2 configuration error:', error.message);
-            process.exit(1);
+            console.warn('[Startup] ⚠️  R2 configuration incomplete:', error.message);
+            console.warn('[Startup] 📁 Using local filesystem storage as fallback');
         }
         
         const PORT = Number(process.env.PORT) || 5000;
         console.log('\n[Express] Starting Express server on port ' + PORT + '...\n');
         
-        console.log('[Express] ✅ Storage: Cloudflare R2 - S3-compatible API');
+        console.log('[Express] ✅ Storage: Cloudflare R2 with local filesystem fallback');
         
         // ================================================================
         // Register Chunked Upload Endpoints (Feature-Flagged)

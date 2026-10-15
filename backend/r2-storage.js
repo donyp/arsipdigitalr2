@@ -11,6 +11,16 @@ const { createReadStream } = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const StorageErrorLogger = require('./storageErrorLogger');
 
+// Local filesystem backup storage (fallback when R2 is not configured)
+const BACKUP_STORAGE_PATH = process.env.BACKUP_STORAGE_PATH || path.resolve(__dirname, '..', 'backup-storage');
+const ensureBackupDir = async () => {
+    try {
+        await fs.mkdir(BACKUP_STORAGE_PATH, { recursive: true });
+    } catch (err) {
+        console.warn('[BackupStorage] Could not create backup directory:', err.message);
+    }
+};
+
 // R2 Configuration
 const R2Config = {
     accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
@@ -20,6 +30,16 @@ const R2Config = {
     region: 'auto' // R2 uses 'auto' region
 };
 
+// Check if R2 is properly configured
+function isR2Configured() {
+    return process.env.CLOUDFLARE_ACCOUNT_ID &&
+           !process.env.CLOUDFLARE_ACCOUNT_ID.includes('YOUR_ACCOUNT_ID') &&
+           process.env.CLOUDFLARE_ACCESS_KEY_ID &&
+           !process.env.CLOUDFLARE_ACCESS_KEY_ID.includes('YOUR_ACCESS_KEY_ID') &&
+           process.env.CLOUDFLARE_ACCESS_KEY_SECRET &&
+           !process.env.CLOUDFLARE_ACCESS_KEY_SECRET.includes('YOUR_SECRET');
+}
+
 // Validate R2 configuration
 function validateR2Config() {
     const requiredEnvVars = [
@@ -28,9 +48,19 @@ function validateR2Config() {
         'CLOUDFLARE_ACCESS_KEY_SECRET'
     ];
     
-    const missing = requiredEnvVars.filter(v => !process.env[v]);
+    const missing = requiredEnvVars.filter(v => {
+        const val = process.env[v];
+        return !val || val.includes('YOUR_') || val.includes('REPLACE_IN_DEPLOYMENT');
+    });
+    
     if (missing.length > 0) {
-        throw new Error(`Missing required Cloudflare R2 configuration: ${missing.join(', ')}`);
+        throw new Error(`Missing or incomplete Cloudflare R2 configuration: ${missing.join(', ')}\n
+To use R2 backups, configure these environment variables in your .env file:
+  CLOUDFLARE_ACCOUNT_ID=<your-account-id>
+  CLOUDFLARE_ACCESS_KEY_ID=<your-access-key>
+  CLOUDFLARE_ACCESS_KEY_SECRET=<your-secret-key>
+  
+For now, backups will use local filesystem storage as fallback.`);
     }
     
     return true;
@@ -38,6 +68,8 @@ function validateR2Config() {
 
 // Initialize S3 client for R2
 let s3Client = null;
+let R2_ENABLED = false;
+
 try {
     validateR2Config();
     s3Client = new S3Client({
@@ -48,10 +80,12 @@ try {
         },
         endpoint: `https://${R2Config.accountId}.r2.cloudflarestorage.com`
     });
+    R2_ENABLED = true;
     console.log('[R2Storage] ✅ Initialized with Cloudflare R2');
 } catch (error) {
-    console.error('[R2Storage] ❌ Failed to initialize R2 client:', error.message);
-    process.exit(1);
+    console.warn('[R2Storage] ⚠️  R2 not fully configured:', error.message);
+    console.warn('[R2Storage] 📁 Falling back to local filesystem storage for backups');
+    R2_ENABLED = false;
 }
 
 // Initialize error logger
@@ -400,11 +434,31 @@ async function uploadDocumentFile(buffer, filename, year, month, day, folderType
 }
 
 /**
- * Upload generic file to R2
+ * Upload generic file to R2 (or local filesystem if R2 not configured)
  */
 async function uploadFile(buffer, remoteDestination, metadata = {}) {
     try {
         console.log(`[R2] Uploading file: ${remoteDestination}`);
+        
+        // If R2 is not enabled, use local filesystem
+        if (!R2_ENABLED) {
+            console.log(`[R2] R2 not configured, saving to local filesystem`);
+            await ensureBackupDir();
+            
+            // Create nested directories matching the path
+            const localPath = path.join(BACKUP_STORAGE_PATH, remoteDestination);
+            const localDir = path.dirname(localPath);
+            await fs.mkdir(localDir, { recursive: true });
+            await fs.writeFile(localPath, buffer);
+            
+            console.log(`[R2] ✅ Saved locally: ${localPath}`);
+            return {
+                storagePath: remoteDestination,
+                localPath: localPath,
+                size: buffer.length,
+                uploadedAt: new Date().toISOString()
+            };
+        }
         
         // Check for duplicates (use fresh check for uploads - no cache)
         const exists = await checkFileExistsNoCache(remoteDestination);
@@ -472,11 +526,29 @@ async function getStream(storagePath) {
 }
 
 /**
- * Download file from R2 to buffer
+ * Download file from R2 to buffer (or local filesystem if R2 not configured)
  */
 async function downloadFile(storagePath) {
     try {
         console.log(`[R2] Downloading file: ${storagePath}`);
+        
+        // If R2 is not enabled, use local filesystem
+        if (!R2_ENABLED) {
+            console.log(`[R2] R2 not configured, reading from local filesystem`);
+            await ensureBackupDir();
+            
+            const localPath = path.join(BACKUP_STORAGE_PATH, storagePath);
+            try {
+                const buffer = await fs.readFile(localPath);
+                console.log(`[R2] ✅ Read locally: ${localPath} (${buffer.length} bytes)`);
+                return buffer;
+            } catch (fileError) {
+                if (fileError.code === 'ENOENT') {
+                    throw new Error(`File not found: ${storagePath}`);
+                }
+                throw fileError;
+            }
+        }
         
         const command = new GetObjectCommand({
             Bucket: R2Config.bucketName,
@@ -505,11 +577,30 @@ async function downloadFile(storagePath) {
 }
 
 /**
- * Delete file from R2
+ * Delete file from R2 (or local filesystem if R2 not configured)
  */
 async function deleteFile(storagePath) {
     try {
         console.log(`[R2] Deleting file: ${storagePath}`);
+        
+        // If R2 is not enabled, use local filesystem
+        if (!R2_ENABLED) {
+            console.log(`[R2] R2 not configured, deleting from local filesystem`);
+            await ensureBackupDir();
+            
+            const localPath = path.join(BACKUP_STORAGE_PATH, storagePath);
+            try {
+                await fs.unlink(localPath);
+                console.log(`[R2] ✅ Successfully deleted locally: ${localPath}`);
+                return { success: true };
+            } catch (fileError) {
+                if (fileError.code === 'ENOENT') {
+                    console.log(`[R2] File not found (already deleted): ${localPath}`);
+                    return { success: true }; // Treat as success
+                }
+                throw fileError;
+            }
+        }
         
         const command = new DeleteObjectCommand({
             Bucket: R2Config.bucketName,
