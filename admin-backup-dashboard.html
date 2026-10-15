@@ -575,5 +575,25 @@
     <script src="js/auth.js"></script>
     <script src="js/sidebar.js"></script>
     <script src="js/backup-admin.js"></script>
+    
+    <!-- Force sidebar initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('[AdminBackupDash] DOMContentLoaded - checking sidebar');
+            if (window.initSidebar) {
+                console.log('[AdminBackupDash] Calling initSidebar');
+                window.initSidebar();
+            }
+        });
+        
+        // Also try on window load
+        window.addEventListener('load', () => {
+            console.log('[AdminBackupDash] Window load - checking sidebar again');
+            if (window.initSidebar && !document.querySelector('.sidebar-container')) {
+                console.log('[AdminBackupDash] Sidebar not found, calling initSidebar');
+                window.initSidebar();
+            }
+        });
+    </script>
 </body>
 </html>
