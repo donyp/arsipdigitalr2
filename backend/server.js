@@ -610,8 +610,52 @@ app.get('/fakturpajak', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'upload-faktur-pajak.html'));
 });
 
-app.get('/renamefaktur', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
+app.get('/upload/excel', (req, res) => {
+    res.redirect(301, '/excel');
+});
+
+app.get('/upload/invoicepdf', (req, res) => {
+    res.redirect(301, '/invoice');
+});
+
+app.get('/upload/buktibayar', (req, res) => {
+    res.redirect(301, '/buktibayar');
+});
+
+app.get('/upload/fakturpajak', (req, res) => {
+    res.redirect(301, '/fakturpajak');
+});
+
+app.get('/tools/renamefaktur', (req, res) => {
+    res.redirect(301, '/renamefaktur');
+});
+
+app.get('/management/user', (req, res) => {
+    res.redirect(301, '/user');
+});
+
+app.get('/management/toko', (req, res) => {
+    res.redirect(301, '/toko');
+});
+
+app.get('/management/zona', (req, res) => {
+    res.redirect(301, '/zona');
+});
+
+app.get('/management/kendaraan', (req, res) => {
+    res.redirect(301, '/kendaraan');
+});
+
+app.get('/system/monitoring', (req, res) => {
+    res.redirect(301, '/monitoring');
+});
+
+app.get('/system/logs', (req, res) => {
+    res.redirect(301, '/logs');
+});
+
+app.get('/system/penyimpanan', (req, res) => {
+    res.redirect(301, '/penyimpanan');
 });
 
 
