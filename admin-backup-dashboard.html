@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/unified-header.css">
     <link rel="stylesheet" href="css/color-vars.css">
+    <script src="js/dark-mode-init.js"></script>
     <style>
         * {
             margin: 0;
@@ -21,10 +22,14 @@
             color: var(--color-text-primary);
         }
 
+        html[data-dark-mode="true"] body {
+            background: var(--color-bg-primary);
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 30px 30px;
+            padding: 0 30px 30px 30px;
             margin-left: 16rem;
             animation: fadeIn 0.6s ease-out;
         }
@@ -46,6 +51,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 40px;
+            margin-top: 0;
         }
 
         .header h1 {
