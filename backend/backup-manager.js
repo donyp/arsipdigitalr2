@@ -91,6 +91,7 @@ class BackupManager {
      * Database Backup - Export semua tabel ke SQL dump
      */
     async performDatabaseBackup() {
+        let backupName = '';  // Declare at function scope
         try {
             console.log('[BackupManager] [DB] Starting database backup...');
             
@@ -98,7 +99,8 @@ class BackupManager {
             await this.ensureTablesExist();
             
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
-            const backupName = `db-backup-${timestamp}.sql`;
+            backupName = `db-backup-${timestamp}.sql`;
+            console.log('[BackupManager] [DB] Backup name:', backupName);
 
             // List of core tables
             const tables = [
@@ -125,7 +127,13 @@ class BackupManager {
                         .limit(1);
 
                     if (error) {
-                        console.warn(`[BackupManager] [DB] Table ${tableName} error:`, error.code, error.message);
+                        console.error(`[BackupManager] [DB] TABLE ERROR ${tableName}:`, {
+                            code: error.code,
+                            message: error.message,
+                            status: error.status,
+                            hint: error.hint,
+                            details: error.details
+                        });
                         skipCount++;
                         sqlDump += `\n-- SKIPPED TABLE: ${tableName} (Error: ${error.message})\n`;
                         continue;
@@ -213,16 +221,19 @@ class BackupManager {
         } catch (error) {
             console.error('[BackupManager] [DB] Database backup failed:', error.message);
             console.error('[BackupManager] [DB] Stack:', error.stack);
+            console.error('[BackupManager] [DB] Full error object:', error);
             
-            // Try to record the failure
+            // Try to record the failure with original backupName
             try {
-                await this.recordBackup({
+                const failureRecord = {
                     type: 'database',
-                    name: `db-backup-${new Date().toISOString()}`,
+                    name: backupName || `db-backup-${new Date().toISOString()}`,
                     error_message: error.message,
                     timestamp: new Date().toISOString(),
                     status: 'failed'
-                });
+                };
+                console.log('[BackupManager] [DB] Recording failure:', JSON.stringify(failureRecord));
+                await this.recordBackup(failureRecord);
             } catch (recordError) {
                 console.error('[BackupManager] [DB] Failed to record backup failure:', recordError.message);
                 // Don't re-throw - we still want to report the original error to the client
