@@ -109,7 +109,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * 
      * Request body:
      * {
-     *   "type": "database|files|config"  // optional, if empty do all
+     *   "type": "database|files|config|all"  // optional, if empty do all
      * }
      */
     router.post('/backups/manual', authenticateToken, async (req, res) => {
@@ -129,7 +129,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
                     console.error('[BackupAPI] Database backup failed:', results.database.error);
                 }
             }
-            if (!type || type === 'files') {
+            if (!type || type === 'files' || type === 'file') {
                 console.log('[BackupAPI] Starting file backup...');
                 results.files = await backupManager.performFileBackup();
                 if (!results.files.success) {
@@ -143,6 +143,14 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
                 if (!results.config.success) {
                     errors.push(`Config backup failed: ${results.config.error}`);
                     console.error('[BackupAPI] Config backup failed:', results.config.error);
+                }
+            }
+            if (type === 'all') {
+                console.log('[BackupAPI] Starting combined backup (all types)...');
+                results.all = await backupManager.performCombinedBackup();
+                if (!results.all.success) {
+                    errors.push(`Combined backup failed: ${results.all.error}`);
+                    console.error('[BackupAPI] Combined backup failed:', results.all.error);
                 }
             }
 
