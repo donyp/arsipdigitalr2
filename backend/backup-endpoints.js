@@ -282,7 +282,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
                 // Fallback to local file
                 const path = require('path');
                 const fs = require('fs');
-                const localPath = path.join(__dirname, '..', 'data', 'backups', backupName);
+                const localPath = path.join(__dirname, '..', 'data', 'backups', type, backupName);
                 
                 if (fs.existsSync(localPath)) {
                     console.log(`[BackupAPI] Falling back to local file: ${localPath}`);

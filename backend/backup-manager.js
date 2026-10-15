@@ -17,16 +17,27 @@ class BackupManager {
     constructor(supabaseClient, r2Storage) {
         this.supabase = supabaseClient;
         this.r2 = r2Storage;
-        this.backupDir = path.join(__dirname, '..', 'data', 'backups');
+        this.baseBackupDir = path.join(__dirname, '..', 'data', 'backups');
+        
+        // Create subdirectories for each backup type
+        this.backupDirs = {
+            database: path.join(this.baseBackupDir, 'database'),
+            files: path.join(this.baseBackupDir, 'files'),
+            config: path.join(this.baseBackupDir, 'config')
+        };
+        
         this.backupHistory = [];
         this.backupBucket = 'arsip-backups'; // Separate bucket for backups
         
-        // Ensure backup directory exists
-        if (!fs.existsSync(this.backupDir)) {
-            fs.mkdirSync(this.backupDir, { recursive: true });
-        }
+        // Ensure all backup directories exist
+        Object.values(this.backupDirs).forEach(dir => {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+                console.log(`[BackupManager] Created backup directory: ${dir}`);
+            }
+        });
 
-        console.log('[BackupManager] Initialized with backup directory:', this.backupDir);
+        console.log('[BackupManager] Initialized with backup directories:', this.backupDirs);
     }
 
     /**
@@ -65,7 +76,7 @@ class BackupManager {
             
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `db-backup-${timestamp}.sql`;
-            const localPath = path.join(this.backupDir, backupName);
+            const localPath = path.join(this.backupDirs.database, backupName);
 
             // List of core tables
             const tables = [
@@ -223,7 +234,7 @@ class BackupManager {
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `files-backup-${timestamp}.zip`;
-            const localPath = path.join(this.backupDir, backupName);
+            const localPath = path.join(this.backupDirs.files, backupName);
 
             // Create zip archive
             return new Promise(async (resolve, reject) => {
@@ -327,7 +338,7 @@ Actual file contents are backed up separately in R2.
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `config-backup-${timestamp}.json`;
-            const localPath = path.join(this.backupDir, backupName);
+            const localPath = path.join(this.backupDirs.config, backupName);
 
             // Collect config data
             const configBackup = {
