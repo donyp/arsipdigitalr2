@@ -162,7 +162,7 @@
                 { label: 'Monitoring', icon: '<i class="fas fa-tachometer-alt"></i>', href: '/monitoring' },
                 { label: 'Audit Logs', icon: '<i class="fas fa-history"></i>', href: '/logs' },
                 { label: 'Storage Handler', icon: '<i class="fas fa-database"></i>', href: '/penyimpanan' },
-                { label: 'Backup Manager', icon: '<i class="fas fa-backup"></i>', href: '/backup', requiredRole: 'moderator' }
+                { label: 'Backup Manager', icon: '<i class="fas fa-backup"></i>', href: '/backup' }
             ]
         }
     ];
@@ -386,26 +386,9 @@
     // ============================================================
     function renderDropdown(item, colors) {
         const isExpanded = isDropdownExpanded(item.id);
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        
-        console.log('[SIDEBAR] renderDropdown:', {
-            item: item.id,
-            currentUserRole: currentUser.role,
-            childrenCount: item.children.length
-        });
         
         let childrenHTML = '';
         for (const child of item.children) {
-            // Check if child has role requirement
-            if (child.requiredRole && currentUser.role !== child.requiredRole) {
-                console.log('[SIDEBAR] Skipping child due to role mismatch:', {
-                    child: child.label,
-                    requiredRole: child.requiredRole,
-                    userRole: currentUser.role
-                });
-                continue; // Skip this menu item
-            }
-            
             const isActive = isMenuItemActive(child.href);
             childrenHTML += `
                 <a href="${child.href}" 

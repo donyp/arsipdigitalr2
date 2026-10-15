@@ -564,38 +564,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        // Check authentication and role BEFORE loading main scripts
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            const token = localStorage.getItem('jwt_token');
-
-            console.log('[BackupDashboard] Current user:', user);
-
-            // Require authentication
-            if (!token || !user.email) {
-                console.warn('[BackupDashboard] Not authenticated, redirecting to login');
-                window.location.href = 'index.html';
-                return;
-            }
-
-            // Require moderator role
-            if (user.role !== 'moderator' && user.role !== 'super_admin') {
-                console.warn('[BackupDashboard] Insufficient permissions. Required: moderator, Got:', user.role);
-                Swal.fire({
-                    title: '❌ Access Denied',
-                    text: 'Only moderators can access the Backup Dashboard',
-                    icon: 'error',
-                    confirmButtonText: 'Go Back'
-                }).then(() => {
-                    window.location.href = 'dashboard.html';
-                });
-                return;
-            }
-
-            console.log('[BackupDashboard] Access granted for user:', user.email);
-        });
-    </script>
     <script src="js/backup-admin.js"></script>
 </body>
 </html>
