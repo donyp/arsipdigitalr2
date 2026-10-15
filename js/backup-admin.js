@@ -297,6 +297,133 @@ function triggerManualBackup() {
 }
 
 /**
+ * Open selective file backup modal
+ */
+async function triggerSelectiveFileBackup() {
+    try {
+        console.log('[BackupAdmin] Opening selective file backup modal...');
+        const token = localStorage.getItem('jwt_token');
+
+        showAlert('Loading available files...', 'info');
+
+        // Get available files and months
+        const response = await fetch(`${API_BASE}/backups/files/available`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load available files');
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.error);
+
+        const { months, fileTypes } = result.data;
+
+        // Build month options
+        const monthOptions = Object.entries(months)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([key, data]) => {
+                const [year, month] = key.split('-');
+                const monthName = new Date(year, parseInt(month) - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+                return `<option value="${key}" data-month="${month}" data-year="${year}">${monthName} (${data.count} files)</option>`;
+            })
+            .join('');
+
+        // Build file type checkboxes
+        const fileTypeCheckboxes = fileTypes.map(type => `
+            <label style="display: inline-block; margin-right: 20px;">
+                <input type="checkbox" name="fileType" value="${type}" checked> 
+                ${type.replace(/_/g, ' ').toUpperCase()}
+            </label>
+        `).join('');
+
+        // Show modal with form
+        Swal.fire({
+            title: '📁 Selective File Backup',
+            html: `
+                <div style="text-align: left;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Select Month/Year:</label>
+                        <select id="selectiveBackupMonth" style="width: 100%; padding: 8px;">
+                            ${monthOptions}
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">Select File Types:</label>
+                        <div style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                            ${fileTypeCheckboxes}
+                        </div>
+                    </div>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Download Backup',
+            cancelButtonText: 'Cancel',
+            didOpen: () => {
+                // Set first available month as default
+                const select = document.getElementById('selectiveBackupMonth');
+                if (select.options.length > 0) {
+                    select.value = select.options[0].value;
+                }
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const monthKey = document.getElementById('selectiveBackupMonth').value;
+                const [year, month] = monthKey.split('-');
+                const selectedTypes = Array.from(document.querySelectorAll('input[name="fileType"]:checked'))
+                    .map(cb => cb.value);
+
+                if (selectedTypes.length === 0) {
+                    showAlert('Please select at least one file type', 'warning');
+                    return;
+                }
+
+                await downloadSelectiveFileBackup(month, year, selectedTypes);
+            }
+        });
+
+        closeAlert();
+    } catch (error) {
+        console.error('[BackupAdmin] Error opening selective backup:', error);
+        showAlert('Failed to load available files: ' + error.message, 'danger');
+    }
+}
+
+/**
+ * Download selective file backup
+ */
+async function downloadSelectiveFileBackup(month, year, fileTypes) {
+    try {
+        const token = localStorage.getItem('jwt_token');
+        showAlert(`Creating backup for ${month}/${year}...`, 'info');
+
+        const response = await fetch(`${API_BASE}/backups/files/selective`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ month, year, fileTypes })
+        });
+
+        if (!response.ok) throw new Error('Download failed');
+
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `backup_${year}-${month}_${fileTypes.join('_')}_${Date.now()}.zip`;
+        link.click();
+
+        showAlert('✅ Backup downloaded successfully', 'success');
+    } catch (error) {
+        console.error('[BackupAdmin] Download error:', error);
+        showAlert('❌ ' + error.message, 'danger');
+    }
+}
+
+/**
  * Confirm and start backup
  */
 async function confirmBackup() {

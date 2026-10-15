@@ -381,5 +381,75 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
         }
     });
 
+    /**
+     * GET /api/backups/files/available
+     * Get available file types and months for selective backup
+     */
+    router.get('/backups/files/available', authenticateToken, async (req, res) => {
+        try {
+            console.log('[BackupAPI] Getting available files for selective backup...');
+            
+            const available = await backupManager.getAvailableFilesForBackup();
+
+            return res.json({
+                success: true,
+                data: available
+            });
+        } catch (error) {
+            console.error('[BackupAPI] Get available files error:', error);
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to get available files'
+            });
+        }
+    });
+
+    /**
+     * POST /api/backups/files/selective
+     * Create selective file backup with specific types and date
+     * 
+     * Request body:
+     * {
+     *   "month": "01",          // MM format
+     *   "year": "2026",         // YYYY format
+     *   "fileTypes": ["ppn", "non_ppn", "bukti_bayar", "faktur_pajak"]  // array of checked types
+     * }
+     */
+    router.post('/backups/files/selective', authenticateToken, async (req, res) => {
+        try {
+            const { month, year, fileTypes } = req.body;
+
+            if (!month || !year || !fileTypes || fileTypes.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'month, year, and at least one fileType are required'
+                });
+            }
+
+            console.log(`[BackupAPI] Creating selective file backup: ${month}/${year}, types: ${fileTypes.join(',')}`);
+
+            const result = await backupManager.createSelectiveFileBackup(month, year, fileTypes);
+
+            if (!result.success) {
+                return res.status(400).json({
+                    success: false,
+                    error: result.error
+                });
+            }
+
+            res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+            res.setHeader('Content-Type', 'application/zip');
+            res.setHeader('Content-Length', result.buffer.length);
+
+            return res.send(result.buffer);
+        } catch (error) {
+            console.error('[BackupAPI] Selective file backup error:', error);
+            return res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    });
+
     return router;
 };

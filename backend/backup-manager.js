@@ -530,6 +530,147 @@ class BackupManager {
             return { success: false, error: error.message };
         }
     }
+
+    async getAvailableFilesForBackup() {
+        try {
+            console.log('[BackupManager] Scanning available files...');
+            
+            const months = {};
+            const fileTypes = { ppn: true, non_ppn: true, bukti_bayar: true, faktur_pajak: true };
+
+            // Query invoice_files table to find available files
+            const { data: files, error } = await this.supabase
+                .from('invoice_files')
+                .select('file_path, file_category, created_at')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.warn('[BackupManager] Error querying files:', error.message);
+                return { months: {}, fileTypes: Object.keys(fileTypes) };
+            }
+
+            if (!files || files.length === 0) {
+                console.log('[BackupManager] No files found');
+                return { months: {}, fileTypes: Object.keys(fileTypes) };
+            }
+
+            // Organize files by month/year and type
+            files.forEach(file => {
+                try {
+                    const date = new Date(file.created_at);
+                    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    
+                    if (!months[monthKey]) {
+                        months[monthKey] = { count: 0, types: {} };
+                    }
+                    months[monthKey].count++;
+
+                    const category = file.file_category || 'unknown';
+                    months[monthKey].types[category] = (months[monthKey].types[category] || 0) + 1;
+                } catch (e) {
+                    console.warn('[BackupManager] Error processing file:', file.file_path);
+                }
+            });
+
+            console.log(`[BackupManager] Found ${Object.keys(months).length} months with files`);
+            return { months, fileTypes: Object.keys(fileTypes) };
+        } catch (error) {
+            console.error('[BackupManager] getAvailableFilesForBackup error:', error);
+            return { months: {}, fileTypes: ['ppn', 'non_ppn', 'bukti_bayar', 'faktur_pajak'] };
+        }
+    }
+
+    async createSelectiveFileBackup(month, year, fileTypes) {
+        try {
+            console.log(`[BackupManager] Creating selective backup: ${month}/${year}, types: ${fileTypes.join(',')}`);
+
+            // Query invoice_files for specified month/year and types
+            const startDate = new Date(`${year}-${month}-01`);
+            const endDate = new Date(year, parseInt(month), 0); // Last day of month
+
+            const { data: files, error } = await this.supabase
+                .from('invoice_files')
+                .select('*')
+                .gte('created_at', startDate.toISOString())
+                .lte('created_at', endDate.toISOString());
+
+            if (error) {
+                throw new Error(`Failed to query files: ${error.message}`);
+            }
+
+            // Filter files by selected types and normalize category names
+            const filteredFiles = files.filter(f => {
+                const category = (f.file_category || '').toLowerCase().replace(/\s+/g, '_');
+                return fileTypes.map(t => t.toLowerCase().replace(/\s+/g, '_')).includes(category);
+            });
+
+            if (filteredFiles.length === 0) {
+                return { success: false, error: `No files found for ${month}/${year} with selected types` };
+            }
+
+            console.log(`[BackupManager] Found ${filteredFiles.length} files to backup`);
+
+            // Create ZIP with organized folder structure
+            const archiver = require('archiver');
+            const chunks = [];
+            const archive = archiver('zip', { zlib: { level: 6 } });
+
+            archive.on('data', chunk => chunks.push(chunk));
+            archive.on('error', error => {
+                throw error;
+            });
+
+            // Add files to archive with organized structure
+            for (const file of filteredFiles) {
+                try {
+                    const category = (file.file_category || 'unknown').toLowerCase().replace(/\s+/g, '_');
+                    const fileName = file.file_path.split('/').pop();
+                    const archivePath = `Backup_${year}-${month}/${category}/${fileName}`;
+
+                    // Download file from R2
+                    const fileContent = await this.r2.downloadFile(file.file_path);
+                    archive.append(fileContent, { name: archivePath });
+                } catch (fileError) {
+                    console.warn(`[BackupManager] Error adding file ${file.file_path}:`, fileError.message);
+                }
+            }
+
+            // Add metadata file
+            const metadata = {
+                backup_date: new Date().toISOString(),
+                month,
+                year,
+                file_types: fileTypes,
+                file_count: filteredFiles.length,
+                files: filteredFiles.map(f => ({
+                    name: f.file_path.split('/').pop(),
+                    category: f.file_category,
+                    uploaded_at: f.created_at,
+                    size: f.file_size || 'unknown'
+                }))
+            };
+
+            archive.append(JSON.stringify(metadata, null, 2), { name: 'METADATA.json' });
+
+            await archive.finalize();
+            const buffer = Buffer.concat(chunks);
+
+            const filename = `backup_${year}-${month}_${fileTypes.join('_')}_${Date.now()}.zip`;
+
+            console.log(`[BackupManager] ✅ Created selective backup: ${filename} (${buffer.length} bytes)`);
+
+            return {
+                success: true,
+                buffer,
+                filename,
+                size: buffer.length,
+                fileCount: filteredFiles.length
+            };
+        } catch (error) {
+            console.error('[BackupManager] createSelectiveFileBackup error:', error);
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 module.exports = BackupManager;
