@@ -734,6 +734,14 @@ app.get('/monitoring', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'monitoring.html'));
 });
 
+// Backup Manager Dashboard
+app.get('/backup', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.sendFile(path.join(__dirname, '..', 'admin-backup-dashboard.html'));
+});
+
 // Admin Zona Dashboard
 app.get('/zona/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
