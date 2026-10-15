@@ -190,13 +190,19 @@ class BackupManager {
             console.error('[BackupManager] [DB] Database backup failed:', error.message);
             console.error('[BackupManager] [DB] Stack:', error.stack);
             
-            await this.recordBackup({
-                type: 'database',
-                name: `db-backup-${new Date().toISOString()}`,
-                error_message: error.message,
-                timestamp: new Date().toISOString(),
-                status: 'failed'
-            });
+            // Try to record the error, but don't let it mask the original error
+            try {
+                await this.recordBackup({
+                    type: 'database',
+                    name: `db-backup-${new Date().toISOString()}`,
+                    error_message: error.message,
+                    timestamp: new Date().toISOString(),
+                    status: 'failed'
+                });
+            } catch (recordError) {
+                console.error('[BackupManager] [DB] Failed to record backup failure:', recordError.message);
+                // Don't let recording errors mask the original backup error
+            }
 
             return { success: false, error: error.message };
         }
@@ -378,13 +384,30 @@ Actual file contents are backed up separately in R2.
                 .from('backup_history')
                 .insert([backupInfo]);
 
-            if (error) throw error;
+            if (error) {
+                console.error('[BackupManager] [DB] Error details:', {
+                    code: error.code,
+                    message: error.message,
+                    hint: error.hint,
+                    details: error.details
+                });
+                
+                // Check if it's a missing table error (42P01 = undefined table)
+                if (error.message.includes('relation') || error.message.includes('not found') || error.code === '42P01') {
+                    console.error('[BackupManager] ❌ CRITICAL: backup_history table does not exist!');
+                    console.error('[BackupManager] Please run: node backend/init-backup-tables.js');
+                    console.error('[BackupManager] Or execute CREATE_BACKUP_TABLES.sql in Supabase SQL Editor');
+                }
+                
+                throw error;
+            }
             
             this.backupHistory.push(backupInfo);
             console.log(`[BackupManager] Backup recorded:`, backupInfo.name);
             return data;
         } catch (error) {
             console.error('[BackupManager] Failed to record backup:', error.message);
+            throw error; // Re-throw to properly propagate the error
         }
     }
 
