@@ -454,8 +454,14 @@ async function loadLatestHistory() {
             
             // Handle both formats: data.history and data.data
             const historyData = data.history || data.data || [];
+            
+            // Always show history section, even if empty
             if (historyData && historyData.length > 0) {
+                console.log('[Rename Faktur] Displaying', historyData.length, 'history records');
                 displayHistorySection(historyData);
+            } else {
+                console.log('[Rename Faktur] No history records found - showing empty state');
+                displayEmptyHistoryState();
             }
         } else {
             console.warn('[Rename Faktur] History endpoint returned', response.status);
@@ -463,6 +469,24 @@ async function loadLatestHistory() {
     } catch (err) {
         console.error('[Rename Faktur] Error loading history:', err);
     }
+}
+
+function displayEmptyHistoryState() {
+    const section = document.getElementById('historySection');
+    const list = document.getElementById('recentHistoryList');
+    
+    console.log('[Rename Faktur] Displaying empty history state');
+    
+    section.classList.remove('hidden');
+    list.innerHTML = `
+        <div class="py-8 px-4 text-center">
+            <div class="flex justify-center mb-3">
+                <i class="fas fa-inbox text-gray-400 text-3xl"></i>
+            </div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Belum ada riwayat rename</p>
+            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Riwayat akan muncul setelah Anda melakukan rename faktur</p>
+        </div>
+    `;
 }
 
 // ============================================
@@ -594,7 +618,10 @@ function displayHistorySection(histories) {
     const section = document.getElementById('historySection');
     const list = document.getElementById('recentHistoryList');
     
+    console.log('[Rename Faktur] displayHistorySection called with:', histories);
+    
     if (!histories || histories.length === 0) {
+        console.log('[Rename Faktur] No histories to display');
         section.classList.add('hidden');
         return;
     }
@@ -609,6 +636,8 @@ function displayHistorySection(histories) {
             uniqueHistories.push(h);
         }
     });
+    
+    console.log('[Rename Faktur] Displaying', uniqueHistories.length, 'unique histories');
     
     section.classList.remove('hidden');
     list.innerHTML = '';
