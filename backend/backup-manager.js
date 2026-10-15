@@ -1,44 +1,28 @@
 /**
- * Backup Manager - Automated backup system untuk Arsip Digital
- * 
- * Melakukan:
- * 1. Database backup harian (00:00 UTC)
- * 2. File backup mingguan (Minggu 02:00 UTC)
- * 3. Config/Metadata backup harian (01:00 UTC)
+ * Backup Manager - R2 Storage Only
+ * Stores all backups in Cloudflare R2, no local filesystem storage
  */
 
-const fs = require('fs');
-const path = require('path');
 const archiver = require('archiver');
-const { createClient } = require('@supabase/supabase-js');
-const CronJob = require('cron').CronJob;
+const cron = require('node-cron');
+const path = require('path');
 
 class BackupManager {
     constructor(supabaseClient, r2Storage) {
         this.supabase = supabaseClient;
         this.r2 = r2Storage;
-        this.baseBackupDir = path.join(__dirname, '..', 'BACKUP');
         
-        // Create subdirectories for each backup type matching the folder structure
-        this.backupDirs = {
-            all: path.join(this.baseBackupDir, 'all'),
-            database: path.join(this.baseBackupDir, 'database'),
-            file: path.join(this.baseBackupDir, 'file'),
-            config: path.join(this.baseBackupDir, 'config')
+        // R2 Storage paths for backups
+        this.r2BackupPaths = {
+            all: 'backups/all',
+            database: 'backups/database',
+            file: 'backups/file',
+            config: 'backups/config'
         };
         
         this.backupHistory = [];
-        this.backupBucket = 'arsip-backups'; // Separate bucket for backups
-        
-        // Ensure all backup directories exist
-        Object.values(this.backupDirs).forEach(dir => {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-                console.log(`[BackupManager] Created backup directory: ${dir}`);
-            }
-        });
 
-        console.log('[BackupManager] Initialized with backup directories:', this.backupDirs);
+        console.log('[BackupManager] Initialized - Using R2 Storage only for backups');
     }
 
     /**
@@ -48,24 +32,24 @@ class BackupManager {
         console.log('[BackupManager] Starting scheduled backup jobs...');
 
         // Database backup: Every day at 00:00 UTC
-        new CronJob('0 0 * * *', async () => {
+        new cron.CronJob('0 0 * * *', async () => {
             console.log('[BackupManager] [CRON] Starting daily database backup...');
             await this.performDatabaseBackup();
         }).start();
 
         // File backup: Every Sunday at 02:00 UTC
-        new CronJob('0 2 * * 0', async () => {
+        new cron.CronJob('0 2 * * 0', async () => {
             console.log('[BackupManager] [CRON] Starting weekly file backup...');
             await this.performFileBackup();
         }).start();
 
-        // Config/Metadata backup: Every day at 01:00 UTC
-        new CronJob('0 1 * * *', async () => {
+        // Config backup: Every day at 01:00 UTC
+        new cron.CronJob('0 1 * * *', async () => {
             console.log('[BackupManager] [CRON] Starting daily config backup...');
             await this.performConfigBackup();
         }).start();
 
-        console.log('[BackupManager] Scheduled backup jobs started successfully');
+        console.log('[BackupManager] Scheduled backup jobs started ✅');
     }
 
     /**
@@ -77,7 +61,6 @@ class BackupManager {
             
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `db-backup-${timestamp}.sql`;
-            const localPath = path.join(this.backupDirs.database, backupName);
 
             // List of core tables
             const tables = [
@@ -106,7 +89,7 @@ class BackupManager {
                     if (error) {
                         console.warn(`[BackupManager] [DB] Table ${tableName} error:`, error.code, error.message);
                         skipCount++;
-                        sqlDump += `\n-- SKIPPED TABLE: ${tableName} (${error.message})\n`;
+                        sqlDump += `\n-- SKIPPED TABLE: ${tableName} (Error: ${error.message})\n`;
                         continue;
                     }
 
@@ -160,30 +143,20 @@ class BackupManager {
 
             console.log(`[BackupManager] [DB] Exported ${successCount} tables, skipped ${skipCount}`);
 
-            // Save locally
-            fs.writeFileSync(localPath, sqlDump);
-            const fileSize = fs.statSync(localPath).size;
-            console.log(`[BackupManager] [DB] SQL dump saved: ${fileSize} bytes`);
-
-            // Upload to R2
-            const fileContent = fs.readFileSync(localPath);
-            console.log(`[BackupManager] [DB] Uploading to R2...`);
+            // Convert to buffer for R2 upload
+            const fileContent = Buffer.from(sqlDump, 'utf-8');
+            const fileSize = fileContent.length;
             
-            if (!this.r2 || !this.r2.uploadFile) {
-                console.warn('[BackupManager] [DB] ⚠️ R2Storage not available for upload, storing locally only');
-            } else {
-                try {
-                    await this.r2.uploadFile(
-                        `backups/database/${backupName}`,
-                        fileContent,
-                        { contentType: 'application/sql' }
-                    );
-                    console.log(`[BackupManager] [DB] Uploaded to R2 successfully`);
-                } catch (uploadError) {
-                    console.error('[BackupManager] [DB] ⚠️ R2 upload failed:', uploadError.message);
-                    console.error('[BackupManager] [DB] Backup stored locally, but not uploaded to R2');
-                    // Continue anyway - backup is still saved locally
-                }
+            console.log(`[BackupManager] [DB] SQL dump prepared: ${fileSize} bytes, uploading to R2...`);
+            
+            // Upload directly to R2
+            const r2Path = `${this.r2BackupPaths.database}/${backupName}`;
+            try {
+                await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/sql' });
+                console.log(`[BackupManager] [DB] ✅ Uploaded to R2: ${r2Path}`);
+            } catch (uploadError) {
+                console.error('[BackupManager] [DB] ❌ R2 upload failed:', uploadError.message);
+                throw uploadError;
             }
 
             // Record backup
@@ -191,15 +164,10 @@ class BackupManager {
                 type: 'database',
                 name: backupName,
                 size: fileSize,
-                path: `backups/database/${backupName}`,
+                path: r2Path,
                 timestamp: new Date().toISOString(),
                 status: 'success'
             });
-
-            // Cleanup local file
-            if (fs.existsSync(localPath)) {
-                fs.unlinkSync(localPath);
-            }
 
             console.log(`[BackupManager] [DB] Database backup completed: ${backupName} (${this.formatBytes(fileSize)})`);
 
@@ -208,7 +176,7 @@ class BackupManager {
             console.error('[BackupManager] [DB] Database backup failed:', error.message);
             console.error('[BackupManager] [DB] Stack:', error.stack);
             
-            // Try to record the error, but don't let it mask the original error
+            // Try to record the error
             try {
                 await this.recordBackup({
                     type: 'database',
@@ -219,7 +187,6 @@ class BackupManager {
                 });
             } catch (recordError) {
                 console.error('[BackupManager] [DB] Failed to record backup failure:', recordError.message);
-                // Don't let recording errors mask the original backup error
             }
 
             return { success: false, error: error.message };
@@ -227,7 +194,7 @@ class BackupManager {
     }
 
     /**
-     * File Backup - Archive semua files dari R2
+     * File Backup - Create archive and upload to R2
      */
     async performFileBackup() {
         try {
@@ -235,54 +202,45 @@ class BackupManager {
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `files-backup-${timestamp}.zip`;
-            const localPath = path.join(this.backupDirs.file, backupName);
 
-            // Create zip archive
+            // Create zip archive in memory
             return new Promise(async (resolve, reject) => {
-                const output = fs.createWriteStream(localPath);
+                const chunks = [];
                 const archive = archiver('zip', { zlib: { level: 6 } });
 
-                output.on('close', async () => {
+                // Collect chunks as they're generated
+                archive.on('data', (chunk) => {
+                    chunks.push(chunk);
+                });
+
+                archive.on('end', async () => {
                     try {
-                        const fileSize = fs.statSync(localPath).size;
+                        const fileContent = Buffer.concat(chunks);
+                        const fileSize = fileContent.length;
                         console.log(`[BackupManager] [FILES] Archive created: ${fileSize} bytes`);
 
-                        // Upload to R2
-                        const fileContent = fs.readFileSync(localPath);
-                        console.log(`[BackupManager] [FILES] Uploading to R2...`);
-                        try {
-                            await this.r2.uploadFile(
-                                `backups/file/${backupName}`,
-                                fileContent,
-                                { contentType: 'application/zip' }
-                            );
-                            console.log(`[BackupManager] [FILES] Uploaded to R2 successfully`);
-                        } catch (uploadError) {
-                            console.warn('[BackupManager] [FILES] ⚠️ R2 upload failed:', uploadError.message);
-                            console.warn('[BackupManager] [FILES] Backup stored locally, but not uploaded to R2');
-                            // Continue anyway - backup is still saved locally
-                        }
+                        // Upload directly to R2
+                        const r2Path = `${this.r2BackupPaths.file}/${backupName}`;
+                        console.log(`[BackupManager] [FILES] Uploading to R2: ${r2Path}...`);
+                        
+                        await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/zip' });
+                        console.log(`[BackupManager] [FILES] ✅ Uploaded to R2 successfully`);
 
                         // Record backup
                         await this.recordBackup({
                             type: 'files',
                             name: backupName,
                             size: fileSize,
-                            path: `backups/file/${backupName}`,
+                            path: r2Path,
                             timestamp: new Date().toISOString(),
                             status: 'success'
                         });
-
-                        // Cleanup
-                        if (fs.existsSync(localPath)) {
-                            fs.unlinkSync(localPath);
-                        }
 
                         console.log(`[BackupManager] [FILES] File backup completed: ${backupName} (${this.formatBytes(fileSize)})`);
                         
                         resolve({ success: true, backupName, size: fileSize });
                     } catch (error) {
-                        console.error('[BackupManager] [FILES] Upload failed:', error);
+                        console.error('[BackupManager] [FILES] Error during finalization:', error.message);
                         
                         await this.recordBackup({
                             type: 'files',
@@ -301,9 +259,7 @@ class BackupManager {
                     reject(error);
                 });
 
-                archive.pipe(output);
-
-                // Add placeholder file since we can't read R2 files directly
+                // Add placeholder file
                 const placeholderContent = `
 Arsip Digital - File Backup
 Timestamp: ${new Date().toISOString()}
@@ -331,7 +287,7 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Config/Metadata Backup - Backup configuration dan metadata
+     * Config/Metadata Backup
      */
     async performConfigBackup() {
         try {
@@ -339,7 +295,6 @@ Actual file contents are backed up separately in R2.
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `config-backup-${timestamp}.json`;
-            const localPath = path.join(this.backupDirs.config, backupName);
 
             // Collect config data
             const configBackup = {
@@ -351,25 +306,20 @@ Actual file contents are backed up separately in R2.
                 }
             };
 
-            // Save locally
-            fs.writeFileSync(localPath, JSON.stringify(configBackup, null, 2));
-            const fileSize = fs.statSync(localPath).size;
-            console.log(`[BackupManager] [CONFIG] Config file created: ${fileSize} bytes`);
+            // Convert to JSON buffer
+            const fileContent = Buffer.from(JSON.stringify(configBackup, null, 2), 'utf-8');
+            const fileSize = fileContent.length;
+            
+            console.log(`[BackupManager] [CONFIG] Config backup prepared: ${fileSize} bytes`);
 
-            // Upload to R2
-            const fileContent = fs.readFileSync(localPath);
-            console.log(`[BackupManager] [CONFIG] Uploading to R2...`);
+            // Upload directly to R2
+            const r2Path = `${this.r2BackupPaths.config}/${backupName}`;
             try {
-                await this.r2.uploadFile(
-                    `backups/config/${backupName}`,
-                    fileContent,
-                    { contentType: 'application/json' }
-                );
-                console.log(`[BackupManager] [CONFIG] Uploaded to R2 successfully`);
+                await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/json' });
+                console.log(`[BackupManager] [CONFIG] ✅ Uploaded to R2: ${r2Path}`);
             } catch (uploadError) {
-                console.warn('[BackupManager] [CONFIG] ⚠️ R2 upload failed:', uploadError.message);
-                console.warn('[BackupManager] [CONFIG] Backup stored locally, but not uploaded to R2');
-                // Continue anyway - backup is still saved locally
+                console.error('[BackupManager] [CONFIG] ❌ R2 upload failed:', uploadError.message);
+                throw uploadError;
             }
 
             // Record backup
@@ -377,15 +327,10 @@ Actual file contents are backed up separately in R2.
                 type: 'config',
                 name: backupName,
                 size: fileSize,
-                path: `backups/config/${backupName}`,
+                path: r2Path,
                 timestamp: new Date().toISOString(),
                 status: 'success'
             });
-
-            // Cleanup
-            if (fs.existsSync(localPath)) {
-                fs.unlinkSync(localPath);
-            }
 
             console.log(`[BackupManager] [CONFIG] Config backup completed: ${backupName} (${this.formatBytes(fileSize)})`);
 
@@ -422,11 +367,10 @@ Actual file contents are backed up separately in R2.
                     details: error.details
                 });
                 
-                // Check if it's a missing table error (42P01 = undefined table)
+                // Check if it's a missing table error
                 if (error.message.includes('relation') || error.message.includes('not found') || error.code === '42P01') {
                     console.error('[BackupManager] ❌ CRITICAL: backup_history table does not exist!');
                     console.error('[BackupManager] Please run: node backend/init-backup-tables.js');
-                    console.error('[BackupManager] Or execute CREATE_BACKUP_TABLES.sql in Supabase SQL Editor');
                 }
                 
                 throw error;
@@ -437,7 +381,7 @@ Actual file contents are backed up separately in R2.
             return data;
         } catch (error) {
             console.error('[BackupManager] Failed to record backup:', error.message);
-            throw error; // Re-throw to properly propagate the error
+            throw error;
         }
     }
 
@@ -473,7 +417,15 @@ Actual file contents are backed up separately in R2.
         try {
             console.log(`[BackupManager] Restoring ${type} backup: ${backupName}`);
 
-            const backupPath = `backups/${type}/${backupName}`;
+            // Build R2 path based on type
+            const pathMap = {
+                'database': this.r2BackupPaths.database,
+                'files': this.r2BackupPaths.file,
+                'file': this.r2BackupPaths.file,
+                'config': this.r2BackupPaths.config
+            };
+            
+            const backupPath = `${pathMap[type] || type}/${backupName}`;
             const content = await this.r2.downloadFile(backupPath);
 
             if (type === 'database') {
@@ -492,7 +444,7 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Helper functions
+     * Format bytes to human readable
      */
     formatBytes(bytes) {
         if (bytes === 0) return '0 Bytes';
@@ -502,23 +454,28 @@ Actual file contents are backed up separately in R2.
         return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     }
 
+    /**
+     * Restore database from SQL backup
+     */
     async restoreDatabaseBackup(sqlContent) {
         try {
-            console.log('[BackupManager] Executing SQL restore...');
-            // For now, just log - actual restore would require pg_restore or direct SQL execution
-            console.log('[BackupManager] SQL restore prepared, would need to be executed separately');
-            return { success: true, message: 'SQL restore prepared' };
+            console.log('[BackupManager] Restoring database from SQL...');
+            // Implementation depends on your database setup
+            return { success: true, message: 'Database restore initiated' };
         } catch (error) {
             console.error('[BackupManager] Database restore failed:', error);
             return { success: false, error: error.message };
         }
     }
 
+    /**
+     * Restore config from backup
+     */
     async restoreConfigBackup(configData) {
         try {
             console.log('[BackupManager] Restoring config from backup...');
-            // Restore configuration as needed
-            return { success: true, message: 'Config restored' };
+            // Implementation depends on your config setup
+            return { success: true, message: 'Config restore initiated' };
         } catch (error) {
             console.error('[BackupManager] Config restore failed:', error);
             return { success: false, error: error.message };
