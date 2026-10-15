@@ -92,7 +92,7 @@ class BackupManager {
             const fileSize = fileContent.length;
             
             const r2Path = `${this.r2BackupPaths.database}/${backupName}`;
-            await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/sql' });
+            await this.r2.uploadFile(fileContent, r2Path, { contentType: 'application/sql' });
             console.log(`[BackupManager] [DB] ✅ Uploaded to R2`);
 
             await this.recordBackupSimple({
@@ -146,7 +146,7 @@ class BackupManager {
                         const fileSize = fileContent.length;
 
                         const r2Path = `${this.r2BackupPaths.file}/${backupName}`;
-                        await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/zip' });
+                        await this.r2.uploadFile(fileContent, r2Path, { contentType: 'application/zip' });
 
                         await this.recordBackupSimple({
                             type: 'files',
@@ -205,7 +205,7 @@ class BackupManager {
             const fileSize = fileContent.length;
             
             const r2Path = `${this.r2BackupPaths.config}/${backupName}`;
-            await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/json' });
+            await this.r2.uploadFile(fileContent, r2Path, { contentType: 'application/json' });
 
             await this.recordBackupSimple({
                 type: 'config',
@@ -254,7 +254,7 @@ class BackupManager {
                         const fileSize = fileContent.length;
 
                         const r2Path = `${this.r2BackupPaths.all}/${backupName}`;
-                        await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/zip' });
+                        await this.r2.uploadFile(fileContent, r2Path, { contentType: 'application/zip' });
 
                         await this.recordBackupSimple({
                             type: 'all',
