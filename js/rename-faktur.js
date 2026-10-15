@@ -430,26 +430,38 @@ async function loadLatestHistory() {
     try {
         const token = API.getToken();
         if (!token) {
+            console.warn('[Rename Faktur] No token available for history');
             return;
         }
+        
         // Get 10 most recent renames from last 24 hours
-        const response = await fetch(`${CONFIG.API_URL}/api/faktur-pajak/rename-history/recent?limit=10&hours=24&auto_cleanup=true`, {
+        const url = `${CONFIG.API_URL}/api/faktur-pajak/rename-history/recent?limit=10&hours=24&auto_cleanup=true`;
+        console.log('[Rename Faktur] Loading history from:', url);
+        
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             }
         });
+        
+        console.log('[Rename Faktur] History response status:', response.status);
+        
         if (response.ok) {
             const data = await response.json();
+            console.log('[Rename Faktur] History data:', data);
             
             // Handle both formats: data.history and data.data
             const historyData = data.history || data.data || [];
             if (historyData && historyData.length > 0) {
                 displayHistorySection(historyData);
             }
+        } else {
+            console.warn('[Rename Faktur] History endpoint returned', response.status);
         }
     } catch (err) {
+        console.error('[Rename Faktur] Error loading history:', err);
     }
 }
 
@@ -555,7 +567,10 @@ async function loadAndDisplayHistory(faktur) {
             return;
         }
         
-        const response = await fetch(`/api/faktur-pajak/rename-history/${encodeURIComponent(faktur)}?limit=10`, {
+        const url = `${CONFIG.API_URL}/api/faktur-pajak/rename-history/${encodeURIComponent(faktur)}?limit=10`;
+        console.log('[Rename Faktur] Loading history for:', url);
+        
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -568,8 +583,10 @@ async function loadAndDisplayHistory(faktur) {
             // Clear and display fresh history
             displayHistorySection(data.history || []);
         } else {
+            console.warn('[Rename Faktur] Failed to load history:', response.status);
         }
     } catch (err) {
+        console.error('[Rename Faktur] Error loading history:', err);
     }
 }
 
@@ -656,7 +673,11 @@ async function deleteHistoryRecord(historyId) {
             Toast.error('Tidak dapat menghapus - token tidak valid');
             return;
         }
-        const response = await fetch(`/api/faktur-pajak/rename-history/${historyId}`, {
+        
+        const url = `${CONFIG.API_URL}/api/faktur-pajak/rename-history/${historyId}`;
+        console.log('[Rename Faktur] Deleting history:', url);
+        
+        const response = await fetch(url, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
