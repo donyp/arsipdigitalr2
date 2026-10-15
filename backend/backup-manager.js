@@ -158,15 +158,21 @@ class BackupManager {
             console.log(`[BackupManager] [DB] Uploading to R2...`);
             
             if (!this.r2 || !this.r2.uploadFile) {
-                throw new Error('R2Storage not available for upload');
+                console.warn('[BackupManager] [DB] ⚠️ R2Storage not available for upload, storing locally only');
+            } else {
+                try {
+                    await this.r2.uploadFile(
+                        `backups/database/${backupName}`,
+                        fileContent,
+                        { contentType: 'application/sql' }
+                    );
+                    console.log(`[BackupManager] [DB] Uploaded to R2 successfully`);
+                } catch (uploadError) {
+                    console.error('[BackupManager] [DB] ⚠️ R2 upload failed:', uploadError.message);
+                    console.error('[BackupManager] [DB] Backup stored locally, but not uploaded to R2');
+                    // Continue anyway - backup is still saved locally
+                }
             }
-
-            await this.r2.uploadFile(
-                `backups/database/${backupName}`,
-                fileContent,
-                'application/sql'
-            );
-            console.log(`[BackupManager] [DB] Uploaded to R2 successfully`);
 
             // Record backup
             await this.recordBackup({
@@ -232,12 +238,18 @@ class BackupManager {
                         // Upload to R2
                         const fileContent = fs.readFileSync(localPath);
                         console.log(`[BackupManager] [FILES] Uploading to R2...`);
-                        await this.r2.uploadFile(
-                            `backups/files/${backupName}`,
-                            fileContent,
-                            'application/zip'
-                        );
-                        console.log(`[BackupManager] [FILES] Uploaded to R2 successfully`);
+                        try {
+                            await this.r2.uploadFile(
+                                `backups/files/${backupName}`,
+                                fileContent,
+                                { contentType: 'application/zip' }
+                            );
+                            console.log(`[BackupManager] [FILES] Uploaded to R2 successfully`);
+                        } catch (uploadError) {
+                            console.warn('[BackupManager] [FILES] ⚠️ R2 upload failed:', uploadError.message);
+                            console.warn('[BackupManager] [FILES] Backup stored locally, but not uploaded to R2');
+                            // Continue anyway - backup is still saved locally
+                        }
 
                         // Record backup
                         await this.recordBackup({
@@ -335,12 +347,18 @@ Actual file contents are backed up separately in R2.
             // Upload to R2
             const fileContent = fs.readFileSync(localPath);
             console.log(`[BackupManager] [CONFIG] Uploading to R2...`);
-            await this.r2.uploadFile(
-                `backups/config/${backupName}`,
-                fileContent,
-                'application/json'
-            );
-            console.log(`[BackupManager] [CONFIG] Uploaded to R2 successfully`);
+            try {
+                await this.r2.uploadFile(
+                    `backups/config/${backupName}`,
+                    fileContent,
+                    { contentType: 'application/json' }
+                );
+                console.log(`[BackupManager] [CONFIG] Uploaded to R2 successfully`);
+            } catch (uploadError) {
+                console.warn('[BackupManager] [CONFIG] ⚠️ R2 upload failed:', uploadError.message);
+                console.warn('[BackupManager] [CONFIG] Backup stored locally, but not uploaded to R2');
+                // Continue anyway - backup is still saved locally
+            }
 
             // Record backup
             await this.recordBackup({
