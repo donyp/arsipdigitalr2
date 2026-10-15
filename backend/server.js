@@ -103,7 +103,7 @@ const ResumableUpload = require('./resumableUploadHandler');
 const compression = require('./compression');
 const registerFeatureEndpoints = require('./feature-endpoints');
 const registerBackupEndpoints = require('./backup-endpoints');
-// const BackupManager = require('./backup-manager'); // Requires additional dependencies
+const BackupManager = require('./backup-manager');
 const registerLoggingEndpoints = require('./logging-endpoints');
 const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
@@ -1480,16 +1480,15 @@ console.log('  ✓ FAQ Knowledge Base');
 // ============================================================
 // DATABASE BACKUP MANAGEMENT ENDPOINTS
 // ============================================================
-// TODO: Backup Manager needs additional dependencies (archiver, cron)
-// console.log('[INIT] Initializing Backup Manager...');
-// const backupManager = new BackupManager(supabase, R2Storage);
-// console.log('[INIT] Backup Manager initialized ✅');
+console.log('[INIT] Initializing Backup Manager...');
+const backupManager = new BackupManager(supabase, R2Storage);
+console.log('[INIT] Backup Manager initialized ✅');
 
-// console.log('[INIT] Registering Backup Management endpoints...');
-// const backupRouter = registerBackupEndpoints(supabase, backupManager, authenticateToken, authorizeRole);
-// app.use('/api', backupRouter);
-// console.log('[INIT] Backup Management endpoints registered ✅');
-// console.log('  ✓ Backup creation, listing, verification');
+console.log('[INIT] Registering Backup Management endpoints...');
+const backupRouter = registerBackupEndpoints(supabase, backupManager, authenticateToken, authorizeRole);
+app.use('/api', backupRouter);
+console.log('[INIT] Backup Management endpoints registered ✅');
+console.log('  ✓ Backup creation, listing, verification');
 
 // ============================================================
 // Support Ticketing System Endpoints
