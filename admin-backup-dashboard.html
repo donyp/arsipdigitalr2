@@ -24,6 +24,7 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
+            margin-left: 16rem;
         }
 
         .header {
@@ -439,6 +440,9 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar (rendered by js/sidebar.js) -->
+    <aside id="sidebar" class="sidebar"></aside>
+
     <div class="container">
         <!-- Header -->
         <div class="header">
@@ -564,6 +568,9 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/sidebar.js"></script>
     <script src="js/backup-admin.js"></script>
 </body>
 </html>
