@@ -97,7 +97,7 @@ class BackupManager {
             // Ensure backup tables exist before trying to insert
             await this.ensureTablesExist();
             
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
             const backupName = `db-backup-${timestamp}.sql`;
 
             // List of core tables
@@ -242,7 +242,7 @@ class BackupManager {
             // Ensure backup tables exist
             await this.ensureTablesExist();
 
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
             const backupName = `files-backup-${timestamp}.zip`;
 
             return new Promise(async (resolve, reject) => {
@@ -327,7 +327,7 @@ class BackupManager {
             // Ensure backup tables exist
             await this.ensureTablesExist();
 
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
             const backupName = `config-backup-${timestamp}.json`;
 
             const configBackup = {
@@ -390,7 +390,7 @@ class BackupManager {
             // Ensure backup tables exist
             await this.ensureTablesExist();
 
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
             const backupName = `combined-backup-${timestamp}.zip`;
 
             console.log('[BackupManager] [COMBINED] Generating database backup...');
