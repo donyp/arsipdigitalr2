@@ -32,6 +32,12 @@
         ],
 
         init() {
+            // Check if device restriction is disabled (e.g., for backup dashboard)
+            if (window.DISABLE_DEVICE_RESTRICTION === true) {
+                console.log('[Device Restriction] Bypassed - DISABLE_DEVICE_RESTRICTION flag is set');
+                return true;
+            }
+
             // Run all checks
             if (this.isMobileDevice()) {
                 this.blockAccess();
@@ -277,7 +283,7 @@
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimer);
                 resizeTimer = setTimeout(() => {
-                    if (this.isMobileDevice()) {
+                    if (window.DISABLE_DEVICE_RESTRICTION !== true && this.isMobileDevice()) {
                         this.blockAccess();
                     }
                 }, 500);
@@ -285,14 +291,14 @@
 
             // Check orientation change (mobile specific)
             window.addEventListener('orientationchange', () => {
-                if (this.isMobileDevice()) {
+                if (window.DISABLE_DEVICE_RESTRICTION !== true && this.isMobileDevice()) {
                     this.blockAccess();
                 }
             });
 
             // Periodic check every 2 seconds (catch desktop mode switches)
             setInterval(() => {
-                if (this.isMobileDevice()) {
+                if (window.DISABLE_DEVICE_RESTRICTION !== true && this.isMobileDevice()) {
                     console.warn('[Device Check] Periodic check detected mobile');
                     this.blockAccess();
                 }
@@ -300,14 +306,14 @@
 
             // Check on visibility change (when user switches tabs back)
             document.addEventListener('visibilitychange', () => {
-                if (!document.hidden && this.isMobileDevice()) {
+                if (!document.hidden && window.DISABLE_DEVICE_RESTRICTION !== true && this.isMobileDevice()) {
                     this.blockAccess();
                 }
             });
 
             // Check on focus (when window gains focus)
             window.addEventListener('focus', () => {
-                if (this.isMobileDevice()) {
+                if (window.DISABLE_DEVICE_RESTRICTION !== true && this.isMobileDevice()) {
                     this.blockAccess();
                 }
             });
