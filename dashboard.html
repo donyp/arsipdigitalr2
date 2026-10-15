@@ -759,6 +759,12 @@
 
         /* Dark mode styling handled by js/sidebar.js */
         
+        #main-content {
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
         html[data-dark-mode="true"] #main-content {
             background-color: var(--color-bg-primary);
             color: var(--color-text-primary);
@@ -1209,9 +1215,7 @@
         .invoice-container {
             padding: 20px;
             width: 100%;
-            margin: 0;
-            max-height: 550px;
-            overflow-y: auto;
+            margin: 0 0 20px 0;
         }
 
         .invoice-header {
@@ -1946,7 +1950,7 @@
         </header>
 
         <!-- Main Content -->
-        <div class="w-full p-6" style="max-height: none; overflow-y: visible; overflow-x: hidden;">
+        <div class="w-full p-6" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 40px;">
             <div class="w-full space-y-6">
 
                 <!-- Modern Header Section -->
