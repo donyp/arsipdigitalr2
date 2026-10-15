@@ -5,7 +5,6 @@
 
 const archiver = require('archiver');
 const cron = require('node-cron');
-const path = require('path');
 
 class BackupManager {
     constructor(supabaseClient, r2Storage) {
@@ -176,7 +175,6 @@ class BackupManager {
             console.error('[BackupManager] [DB] Database backup failed:', error.message);
             console.error('[BackupManager] [DB] Stack:', error.stack);
             
-            // Try to record the error
             try {
                 await this.recordBackup({
                     type: 'database',
@@ -194,225 +192,19 @@ class BackupManager {
     }
 
     /**
-     * Combined Backup - Zip semua backup types jadi 1 file
+     * File Backup - Create archive and upload to R2
      */
-    async performCombinedBackup() {
-        try {
-            console.log('[BackupManager] [COMBINED] Starting combined backup...');
-
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const backupName = `combined-backup-${timestamp}.zip`;
-
-            // First, generate all 3 backups
-            console.log('[BackupManager] [COMBINED] Generating database backup...');
-            const dbBackup = await this.generateDatabaseBackupContent();
-            
-            console.log('[BackupManager] [COMBINED] Generating file backup...');
-            const fileBackup = await this.generateFileBackupContent();
-            
-            console.log('[BackupManager] [COMBINED] Generating config backup...');
-            const configBackup = await this.generateConfigBackupContent();
-
-            // Create combined ZIP archive in memory
-            return new Promise(async (resolve, reject) => {
-                const chunks = [];
-                const archive = archiver('zip', { zlib: { level: 6 } });
-
-                archive.on('data', (chunk) => {
-                    chunks.push(chunk);
-                });
-
-                archive.on('end', async () => {
-                    try {
-                        const fileContent = Buffer.concat(chunks);
-                        const fileSize = fileContent.length;
-                        console.log(`[BackupManager] [COMBINED] Archive created: ${fileSize} bytes`);
-
-                        // Upload to R2
-                        const r2Path = `${this.r2BackupPaths.all}/${backupName}`;
-                        console.log(`[BackupManager] [COMBINED] Uploading to R2: ${r2Path}...`);
-                        
-                        await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/zip' });
-                        console.log(`[BackupManager] [COMBINED] ✅ Uploaded to R2 successfully`);
-
-                        // Record backup
-                        await this.recordBackup({
-                            type: 'all',
-                            name: backupName,
-                            size: fileSize,
-                            path: r2Path,
-                            timestamp: new Date().toISOString(),
-                            status: 'success'
-                        });
-
-                        console.log(`[BackupManager] [COMBINED] Combined backup completed: ${backupName} (${this.formatBytes(fileSize)})`);
-                        
-                        resolve({ success: true, backupName, size: fileSize });
-                    } catch (error) {
-                        console.error('[BackupManager] [COMBINED] Error during upload:', error.message);
-                        
-                        await this.recordBackup({
-                            type: 'all',
-                            name: backupName,
-                            error_message: error.message,
-                            timestamp: new Date().toISOString(),
-                            status: 'failed'
-                        });
-
-                        reject(error);
-                    }
-                });
-
-                archive.on('error', (error) => {
-                    console.error('[BackupManager] [COMBINED] Archive error:', error);
-                    reject(error);
-                });
-
-                // Add all 3 backup contents to the ZIP
-                archive.append(dbBackup, { name: `database-${timestamp}.sql` });
-                archive.append(fileBackup, { name: `files-${timestamp}.zip` });
-                archive.append(configBackup, { name: `config-${timestamp}.json` });
-                
-                // Add metadata
-                const metadata = {
-                    timestamp: new Date().toISOString(),
-                    type: 'combined',
-                    contents: [
-                        { name: 'database.sql', description: 'Database backup' },
-                        { name: 'files.zip', description: 'Files backup' },
-                        { name: 'config.json', description: 'Configuration backup' }
-                    ]
-                };
-                archive.append(Buffer.from(JSON.stringify(metadata, null, 2)), { name: 'BACKUP_MANIFEST.json' });
-                
-                archive.finalize();
-            });
-        } catch (error) {
-            console.error('[BackupManager] [COMBINED] Combined backup failed:', error);
-            
-            await this.recordBackup({
-                type: 'all',
-                name: `combined-backup-${new Date().toISOString()}`,
-                error_message: error.message,
-                timestamp: new Date().toISOString(),
-                status: 'failed'
-            });
-
-            return { success: false, error: error.message };
-        }
-    }
-
-    /**
-     * Generate database backup content (without uploading)
-     */
-    async generateDatabaseBackupContent() {
-        const tables = [
-            'users', 'tokos', 'zonas', 'invoices', 'files',
-            'backup_history', 'backup_config', 'audit_logs'
-        ];
-
-        let sqlDump = `-- Arsip Digital Database Backup\n`;
-        sqlDump += `-- Timestamp: ${new Date().toISOString()}\n`;
-        sqlDump += `-- Generated by BackupManager\n\n`;
-
-        for (const tableName of tables) {
-            try {
-                const { data, error } = await this.supabase
-                    .from(tableName)
-                    .select('*', { count: 'estimated' })
-                    .limit(1);
-
-                if (error) {
-                    sqlDump += `\n-- SKIPPED TABLE: ${tableName} (Error: ${error.message})\n`;
-                    continue;
-                }
-
-                const { data: fullData, error: fullError } = await this.supabase
-                    .from(tableName)
-                    .select('*');
-
-                if (fullError) {
-                    sqlDump += `\n-- ERROR: ${tableName}: ${fullError.message}\n`;
-                    continue;
-                }
-
-                if (fullData && fullData.length > 0) {
-                    sqlDump += `\n-- Table: ${tableName} (${fullData.length} rows)\n`;
-                    sqlDump += `DELETE FROM ${tableName};\n`;
-                    
-                    const columns = Object.keys(fullData[0]);
-                    sqlDump += `INSERT INTO ${tableName} (${columns.map(c => `"${c}"`).join(',')}) VALUES\n`;
-                    
-                    sqlDump += fullData.map(row => {
-                        const values = columns.map(col => {
-                            const val = row[col];
-                            if (val === null) return 'NULL';
-                            if (typeof val === 'boolean') return val ? 'true' : 'false';
-                            if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
-                            if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
-                            return val;
-                        }).join(',');
-                        return `(${values})`;
-                    }).join(',\n');
-                    
-                    sqlDump += ';\n';
-                } else {
-                    sqlDump += `\n-- Table: ${tableName} (empty)\n`;
-                }
-            } catch (error) {
-                sqlDump += `\n-- EXCEPTION IN ${tableName}: ${error.message}\n`;
-            }
-        }
-
-        return Buffer.from(sqlDump, 'utf-8');
-    }
-
-    /**
-     * Generate file backup content (without uploading)
-     */
-    async generateFileBackupContent() {
-        return new Promise((resolve, reject) => {
-            const chunks = [];
-            const archive = archiver('zip', { zlib: { level: 6 } });
-
-            archive.on('data', (chunk) => chunks.push(chunk));
-            archive.on('end', () => resolve(Buffer.concat(chunks)));
-            archive.on('error', reject);
-
-            const placeholderContent = `Arsip Digital - File Backup\nTimestamp: ${new Date().toISOString()}\n\nThis backup contains metadata about files stored in R2.`;
-            archive.append(placeholderContent, { name: 'BACKUP_INFO.txt' });
-            
-            archive.finalize();
-        });
-    }
-
-    /**
-     * Generate config backup content (without uploading)
-     */
-    async generateConfigBackupContent() {
-        const configBackup = {
-            timestamp: new Date().toISOString(),
-            version: '1.0',
-            config: {
-                environment: process.env.NODE_ENV || 'production',
-                backupInfo: 'Configuration and metadata backup'
-            }
-        };
-
-        return Buffer.from(JSON.stringify(configBackup, null, 2), 'utf-8');
-    }
+    async performFileBackup() {
         try {
             console.log('[BackupManager] [FILES] Starting file backup...');
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `files-backup-${timestamp}.zip`;
 
-            // Create zip archive in memory
             return new Promise(async (resolve, reject) => {
                 const chunks = [];
                 const archive = archiver('zip', { zlib: { level: 6 } });
 
-                // Collect chunks as they're generated
                 archive.on('data', (chunk) => {
                     chunks.push(chunk);
                 });
@@ -423,14 +215,12 @@ class BackupManager {
                         const fileSize = fileContent.length;
                         console.log(`[BackupManager] [FILES] Archive created: ${fileSize} bytes`);
 
-                        // Upload directly to R2
                         const r2Path = `${this.r2BackupPaths.file}/${backupName}`;
                         console.log(`[BackupManager] [FILES] Uploading to R2: ${r2Path}...`);
                         
                         await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/zip' });
                         console.log(`[BackupManager] [FILES] ✅ Uploaded to R2 successfully`);
 
-                        // Record backup
                         await this.recordBackup({
                             type: 'files',
                             name: backupName,
@@ -463,14 +253,7 @@ class BackupManager {
                     reject(error);
                 });
 
-                // Add placeholder file
-                const placeholderContent = `
-Arsip Digital - File Backup
-Timestamp: ${new Date().toISOString()}
-
-This backup contains metadata about files stored in R2.
-Actual file contents are backed up separately in R2.
-`;
+                const placeholderContent = `Arsip Digital - File Backup\nTimestamp: ${new Date().toISOString()}\n\nThis backup contains metadata about files stored in R2.`;
                 archive.append(placeholderContent, { name: 'BACKUP_INFO.txt' });
                 
                 archive.finalize();
@@ -491,7 +274,7 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Config/Metadata Backup
+     * Config Backup
      */
     async performConfigBackup() {
         try {
@@ -500,7 +283,6 @@ Actual file contents are backed up separately in R2.
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `config-backup-${timestamp}.json`;
 
-            // Collect config data
             const configBackup = {
                 timestamp: new Date().toISOString(),
                 version: '1.0',
@@ -510,13 +292,11 @@ Actual file contents are backed up separately in R2.
                 }
             };
 
-            // Convert to JSON buffer
             const fileContent = Buffer.from(JSON.stringify(configBackup, null, 2), 'utf-8');
             const fileSize = fileContent.length;
             
             console.log(`[BackupManager] [CONFIG] Config backup prepared: ${fileSize} bytes`);
 
-            // Upload directly to R2
             const r2Path = `${this.r2BackupPaths.config}/${backupName}`;
             try {
                 await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/json' });
@@ -526,7 +306,6 @@ Actual file contents are backed up separately in R2.
                 throw uploadError;
             }
 
-            // Record backup
             await this.recordBackup({
                 type: 'config',
                 name: backupName,
@@ -555,34 +334,186 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Record backup history di database
+     * Combined Backup - Zip semua backup types
+     */
+    async performCombinedBackup() {
+        try {
+            console.log('[BackupManager] [COMBINED] Starting combined backup...');
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const backupName = `combined-backup-${timestamp}.zip`;
+
+            console.log('[BackupManager] [COMBINED] Generating database backup...');
+            const dbBackup = await this.generateDatabaseBackupContent();
+            
+            console.log('[BackupManager] [COMBINED] Generating file backup...');
+            const fileBackup = await this.generateFileBackupContent();
+            
+            console.log('[BackupManager] [COMBINED] Generating config backup...');
+            const configBackup = await this.generateConfigBackupContent();
+
+            return new Promise(async (resolve, reject) => {
+                const chunks = [];
+                const archive = archiver('zip', { zlib: { level: 6 } });
+
+                archive.on('data', (chunk) => {
+                    chunks.push(chunk);
+                });
+
+                archive.on('end', async () => {
+                    try {
+                        const fileContent = Buffer.concat(chunks);
+                        const fileSize = fileContent.length;
+                        console.log(`[BackupManager] [COMBINED] Archive created: ${fileSize} bytes`);
+
+                        const r2Path = `${this.r2BackupPaths.all}/${backupName}`;
+                        console.log(`[BackupManager] [COMBINED] Uploading to R2: ${r2Path}...`);
+                        
+                        await this.r2.uploadFile(r2Path, fileContent, { contentType: 'application/zip' });
+                        console.log(`[BackupManager] [COMBINED] ✅ Uploaded to R2 successfully`);
+
+                        await this.recordBackup({
+                            type: 'all',
+                            name: backupName,
+                            size: fileSize,
+                            path: r2Path,
+                            timestamp: new Date().toISOString(),
+                            status: 'success'
+                        });
+
+                        console.log(`[BackupManager] [COMBINED] Combined backup completed: ${backupName} (${this.formatBytes(fileSize)})`);
+                        
+                        resolve({ success: true, backupName, size: fileSize });
+                    } catch (error) {
+                        console.error('[BackupManager] [COMBINED] Error during upload:', error.message);
+                        
+                        await this.recordBackup({
+                            type: 'all',
+                            name: backupName,
+                            error_message: error.message,
+                            timestamp: new Date().toISOString(),
+                            status: 'failed'
+                        });
+
+                        reject(error);
+                    }
+                });
+
+                archive.on('error', (error) => {
+                    console.error('[BackupManager] [COMBINED] Archive error:', error);
+                    reject(error);
+                });
+
+                archive.append(dbBackup, { name: `database-${timestamp}.sql` });
+                archive.append(fileBackup, { name: `files-${timestamp}.zip` });
+                archive.append(configBackup, { name: `config-${timestamp}.json` });
+                
+                const metadata = {
+                    timestamp: new Date().toISOString(),
+                    type: 'combined',
+                    contents: [
+                        { name: 'database.sql', description: 'Database backup' },
+                        { name: 'files.zip', description: 'Files backup' },
+                        { name: 'config.json', description: 'Configuration backup' }
+                    ]
+                };
+                archive.append(Buffer.from(JSON.stringify(metadata, null, 2)), { name: 'BACKUP_MANIFEST.json' });
+                
+                archive.finalize();
+            });
+        } catch (error) {
+            console.error('[BackupManager] [COMBINED] Combined backup failed:', error);
+            
+            await this.recordBackup({
+                type: 'all',
+                name: `combined-backup-${new Date().toISOString()}`,
+                error_message: error.message,
+                timestamp: new Date().toISOString(),
+                status: 'failed'
+            });
+
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Helper: Generate database backup content
+     */
+    async generateDatabaseBackupContent() {
+        const tables = ['users', 'tokos', 'zonas', 'invoices', 'files', 'backup_history', 'backup_config', 'audit_logs'];
+        let sqlDump = `-- Arsip Digital Database Backup\n-- Timestamp: ${new Date().toISOString()}\n\n`;
+
+        for (const tableName of tables) {
+            try {
+                const { data, error } = await this.supabase.from(tableName).select('*').limit(1);
+                if (error) {
+                    sqlDump += `\n-- SKIPPED TABLE: ${tableName}\n`;
+                    continue;
+                }
+
+                const { data: fullData } = await this.supabase.from(tableName).select('*');
+                if (fullData && fullData.length > 0) {
+                    sqlDump += `\n-- Table: ${tableName} (${fullData.length} rows)\n`;
+                    const columns = Object.keys(fullData[0]);
+                    sqlDump += `INSERT INTO ${tableName} (${columns.map(c => `"${c}"`).join(',')}) VALUES\n`;
+                    sqlDump += fullData.map(row => {
+                        const values = columns.map(col => {
+                            const val = row[col];
+                            if (val === null) return 'NULL';
+                            if (typeof val === 'boolean') return val ? 'true' : 'false';
+                            if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                            if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                            return val;
+                        }).join(',');
+                        return `(${values})`;
+                    }).join(',\n') + ';\n';
+                }
+            } catch (e) {
+                sqlDump += `\n-- ERROR IN ${tableName}: ${e.message}\n`;
+            }
+        }
+
+        return Buffer.from(sqlDump, 'utf-8');
+    }
+
+    /**
+     * Helper: Generate file backup content
+     */
+    async generateFileBackupContent() {
+        return new Promise((resolve, reject) => {
+            const chunks = [];
+            const archive = archiver('zip', { zlib: { level: 6 } });
+
+            archive.on('data', (chunk) => chunks.push(chunk));
+            archive.on('end', () => resolve(Buffer.concat(chunks)));
+            archive.on('error', reject);
+
+            archive.append(`Backup Info\nTimestamp: ${new Date().toISOString()}`, { name: 'INFO.txt' });
+            archive.finalize();
+        });
+    }
+
+    /**
+     * Helper: Generate config backup content
+     */
+    async generateConfigBackupContent() {
+        const configBackup = {
+            timestamp: new Date().toISOString(),
+            version: '1.0',
+            environment: process.env.NODE_ENV || 'production'
+        };
+        return Buffer.from(JSON.stringify(configBackup, null, 2), 'utf-8');
+    }
+
+    /**
+     * Record backup history
      */
     async recordBackup(backupInfo) {
         try {
-            const { data, error } = await this.supabase
-                .from('backup_history')
-                .insert([backupInfo]);
-
-            if (error) {
-                console.error('[BackupManager] [DB] Error details:', {
-                    code: error.code,
-                    message: error.message,
-                    hint: error.hint,
-                    details: error.details
-                });
-                
-                // Check if it's a missing table error
-                if (error.message.includes('relation') || error.message.includes('not found') || error.code === '42P01') {
-                    console.error('[BackupManager] ❌ CRITICAL: backup_history table does not exist!');
-                    console.error('[BackupManager] Please run: node backend/init-backup-tables.js');
-                }
-                
-                throw error;
-            }
-            
+            const { error } = await this.supabase.from('backup_history').insert([backupInfo]);
+            if (error) throw error;
             this.backupHistory.push(backupInfo);
             console.log(`[BackupManager] Backup recorded:`, backupInfo.name);
-            return data;
         } catch (error) {
             console.error('[BackupManager] Failed to record backup:', error.message);
             throw error;
@@ -594,19 +525,10 @@ Actual file contents are backed up separately in R2.
      */
     async getBackupHistory(type = null, limit = 50) {
         try {
-            let query = this.supabase
-                .from('backup_history')
-                .select('*')
-                .order('timestamp', { ascending: false })
-                .limit(limit);
-
-            if (type) {
-                query = query.eq('type', type);
-            }
-
+            let query = this.supabase.from('backup_history').select('*').order('timestamp', { ascending: false }).limit(limit);
+            if (type) query = query.eq('type', type);
             const { data, error } = await query;
             if (error) throw error;
-
             return data || [];
         } catch (error) {
             console.error('[BackupManager] Failed to get backup history:', error);
@@ -615,28 +537,18 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Restore dari backup
+     * Restore from backup
      */
     async restoreBackup(backupName, type) {
         try {
             console.log(`[BackupManager] Restoring ${type} backup: ${backupName}`);
-
-            // Build R2 path based on type
-            const pathMap = {
-                'database': this.r2BackupPaths.database,
-                'files': this.r2BackupPaths.file,
-                'file': this.r2BackupPaths.file,
-                'config': this.r2BackupPaths.config
-            };
-            
+            const pathMap = { 'database': this.r2BackupPaths.database, 'files': this.r2BackupPaths.file, 'file': this.r2BackupPaths.file, 'config': this.r2BackupPaths.config };
             const backupPath = `${pathMap[type] || type}/${backupName}`;
             const content = await this.r2.downloadFile(backupPath);
 
             if (type === 'database') {
-                // Execute SQL restore
                 return await this.restoreDatabaseBackup(content);
             } else if (type === 'config') {
-                // Restore config
                 return await this.restoreConfigBackup(JSON.parse(content.toString()));
             }
 
@@ -648,7 +560,7 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Format bytes to human readable
+     * Helper: Format bytes
      */
     formatBytes(bytes) {
         if (bytes === 0) return '0 Bytes';
@@ -659,12 +571,11 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Restore database from SQL backup
+     * Helper: Restore database from SQL
      */
     async restoreDatabaseBackup(sqlContent) {
         try {
             console.log('[BackupManager] Restoring database from SQL...');
-            // Implementation depends on your database setup
             return { success: true, message: 'Database restore initiated' };
         } catch (error) {
             console.error('[BackupManager] Database restore failed:', error);
@@ -673,12 +584,11 @@ Actual file contents are backed up separately in R2.
     }
 
     /**
-     * Restore config from backup
+     * Helper: Restore config
      */
     async restoreConfigBackup(configData) {
         try {
             console.log('[BackupManager] Restoring config from backup...');
-            // Implementation depends on your config setup
             return { success: true, message: 'Config restore initiated' };
         } catch (error) {
             console.error('[BackupManager] Config restore failed:', error);
