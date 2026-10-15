@@ -17,14 +17,14 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--color-bg-primary) 0%, #f8fafb 100%);
+            background: var(--color-bg-primary);
             color: var(--color-text-primary);
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 40px 30px;
+            padding: 30px 30px;
             margin-left: 16rem;
             animation: fadeIn 0.6s ease-out;
         }
@@ -148,6 +148,11 @@
             overflow: hidden;
         }
 
+        html[data-dark-mode="true"] .stat-card {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-border);
+        }
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -206,6 +211,10 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
+        html[data-dark-mode="true"] .tabs {
+            background: var(--color-bg-secondary);
+        }
+
         .tab {
             padding: 12px 24px;
             background: none;
@@ -239,6 +248,11 @@
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
             border: 1px solid rgba(0, 0, 0, 0.06);
             animation: slideUp 0.5s ease-out;
+        }
+
+        html[data-dark-mode="true"] .table-container {
+            background: var(--color-bg-secondary);
+            border-color: var(--color-border);
         }
 
         @keyframes slideUp {
@@ -390,6 +404,10 @@
             animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        html[data-dark-mode="true"] .modal-content {
+            background: var(--color-bg-secondary);
+        }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -397,6 +415,10 @@
             margin-bottom: 24px;
             padding-bottom: 20px;
             border-bottom: 2px solid rgba(0, 0, 0, 0.06);
+        }
+
+        html[data-dark-mode="true"] .modal-header {
+            border-bottom-color: var(--color-border);
         }
 
         .modal-header h2 {
@@ -450,6 +472,12 @@
             font-size: 14px;
             transition: all 0.3s;
             font-weight: 500;
+        }
+
+        html[data-dark-mode="true"] .form-control {
+            background: var(--color-bg-primary);
+            border-color: var(--color-border);
+            color: var(--color-text-primary);
         }
 
         .form-control:focus {
