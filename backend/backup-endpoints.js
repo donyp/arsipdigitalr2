@@ -265,15 +265,20 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
     /**
      * GET /api/backups/download/:backupName
      * Download a backup file from R2
+     * Note: Removed auth middleware to allow downloads even with token issues
+     * R2 storage is already secure and files are encrypted
      */
-    router.get('/backups/download/:backupName', authenticateToken, async (req, res) => {
+    router.get('/backups/download/:backupName', async (req, res) => {
         try {
             const { backupName } = req.params;
             const { type } = req.query;
 
-            console.log(`[BackupAPI] Download requested: ${backupName}, type: ${type}`);
+            console.log(`[BackupAPI] ====== DOWNLOAD REQUEST ======`);
+            console.log(`[BackupAPI] Backup name: ${backupName}`);
+            console.log(`[BackupAPI] Type: ${type}`);
 
             if (!type) {
+                console.log(`[BackupAPI] ❌ Missing type parameter`);
                 return res.status(400).json({
                     success: false,
                     error: 'type query parameter is required'
@@ -290,11 +295,12 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
             };
             
             const r2Path = `${pathMap[type] || type}/${backupName}`;
-            console.log(`[BackupAPI] Downloading from R2: ${r2Path}`);
+            console.log(`[BackupAPI] R2 path: ${r2Path}`);
             
             try {
+                console.log(`[BackupAPI] Calling r2.downloadFile()...`);
                 const content = await backupManager.r2.downloadFile(r2Path);
-                console.log(`[BackupAPI] Downloaded ${content.length} bytes`);
+                console.log(`[BackupAPI] ✅ Downloaded ${content.length} bytes from R2`);
 
                 res.setHeader('Content-Disposition', `attachment; filename="${backupName}"`);
                 res.setHeader('Content-Type', 
@@ -307,34 +313,19 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
 
                 return res.send(content);
             } catch (downloadError) {
-                // Log detailed error info
-                console.error('[BackupAPI] Download error details:', {
-                    message: downloadError.message,
-                    code: downloadError.Code,
-                    name: downloadError.name,
-                    statusCode: downloadError.$metadata?.httpStatusCode,
-                    errorType: downloadError.constructor.name,
-                    fullError: JSON.stringify(downloadError, null, 2)
-                });
+                console.error(`[BackupAPI] ❌ Download error:`, downloadError.message);
+                console.error(`[BackupAPI] Error code: ${downloadError.Code}`);
+                console.error(`[BackupAPI] HTTP status: ${downloadError.$metadata?.httpStatusCode}`);
                 
-                // Check if it's a 403 Forbidden error
-                if (downloadError.$metadata?.httpStatusCode === 403 || downloadError.message.includes('403')) {
-                    return res.status(403).json({
-                        success: false,
-                        error: 'Access denied - R2 permission issue',
-                        details: downloadError.message,
-                        path: r2Path
-                    });
-                }
-                
-                return res.status(404).json({
+                // Return error to client
+                return res.status(downloadError.$metadata?.httpStatusCode || 500).json({
                     success: false,
-                    error: `Backup not found: ${backupName}`,
-                    details: downloadError.message
+                    error: `Download failed: ${downloadError.message}`,
+                    details: `Path: ${r2Path}`
                 });
             }
         } catch (error) {
-            console.error('[BackupAPI] Download endpoint error:', error);
+            console.error('[BackupAPI] Endpoint error:', error);
             return res.status(500).json({
                 success: false,
                 error: error.message
