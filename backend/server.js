@@ -602,10 +602,11 @@ app.get('/fakturpajak', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'upload-faktur-pajak.html'));
 });
 
-// Tools
 app.get('/renamefaktur', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
 });
+
+
 
 
 
