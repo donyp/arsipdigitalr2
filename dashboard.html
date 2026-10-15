@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -551,7 +551,7 @@
 
         /* Explicitly fix the invoice header h2 */
         html[data-dark-mode="true"] #invoice-embed h2,
-        html[data-dark-mode="true"] [style*="📄 Daftar File Invoice"] {
+        html[data-dark-mode="true"] [style*="?? Daftar File Invoice"] {
             color: var(--color-text-primary) !important;
         }
 
@@ -1933,7 +1933,7 @@
                         class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap"
                         style="background: #f3f4f6; color: #6b7280; border: none; cursor: pointer;"
                         title="Toggle dark/light mode">
-                        <span id="dark-mode-icon">🌙</span>
+                        <span id="dark-mode-icon">??</span>
                         <span id="dark-mode-label" class="hidden sm:inline">Dark Mode</span>
                     </button>
                     
@@ -1985,7 +1985,7 @@
                                     <!-- Greeting text -->
                                     <h1 style="font-size:clamp(28px,4vw,42px);font-weight:800;line-height:1.2;margin:0 0 14px 0;color:var(--color-text-primary,#f1f5f9);">
                                         Selamat <span id="time-greeting" style="color:inherit;-webkit-text-fill-color:inherit;">Siang</span>,
-                                        <span data-user-name style="background:linear-gradient(135deg,#667eea,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Doni</span><span style="color:var(--color-text-primary,#f1f5f9);-webkit-text-fill-color:var(--color-text-primary,#f1f5f9);">👋</span>
+                                        <span data-user-name style="background:linear-gradient(135deg,#667eea,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Doni</span><span style="color:var(--color-text-primary,#f1f5f9);-webkit-text-fill-color:var(--color-text-primary,#f1f5f9);">??</span>
                                     </h1>
 
                                     <!-- Date & time -->
@@ -2017,7 +2017,7 @@
                                         font-size:32px;
                                         box-shadow:0 4px 20px rgba(102,126,234,0.2);
                                         backdrop-filter:blur(8px);
-                                    ">📊</div>
+                                    ">??</div>
                                     <span style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--color-text-secondary,#64748b);">Dashboard</span>
                                 </div>
                             </div>
@@ -2061,7 +2061,7 @@
                         <!-- Invoice Header -->
                         <div style="padding: 15px 10px; border-bottom: 1px solid var(--color-border);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                                <h2 style="font-size: 24px; font-weight: 700; color: white; margin: 0;" id="invoice-title-heading" class="invoice-title-heading">📄 Daftar File Invoice</h2>
+                                <h2 style="font-size: 24px; font-weight: 700; color: white; margin: 0;" id="invoice-title-heading" class="invoice-title-heading">?? Daftar File Invoice</h2>
                             </div>
 
                             <!-- Modern Stats Cards with Glassmorphism & Animations -->
@@ -2448,7 +2448,7 @@
                                     <tr>
                                         <td colspan="10" style="text-align: center; padding: 60px 40px;">
                                             <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
-                                                <div style="font-size: 48px; opacity: 0.3;">⏳</div>
+                                                <div style="font-size: 48px; opacity: 0.3;">?</div>
                                                 <div style="font-size: 15px; font-weight: 600; color: var(--color-text-secondary);">Memuat data invoice...</div>
                                                 <div style="width: 120px; height: 3px; background: linear-gradient(90deg, transparent, #667eea, transparent); border-radius: 2px; animation: shimmer 1.5s infinite;"></div>
                                             </div>
@@ -2655,7 +2655,7 @@
     <script src="js/auto-logout.js?t=1790610773"></script>
     <script src="js/utils.js?t=1790610773"></script>
     <script src="js/unified-header.js"></script>
-    <script src="js/sidebar.js?t=1791564800"></script>
+    <script src="js/sidebar.js?t=1792067064.55694"></script>
     <script src="js/spa-router.js?t=1791564515"></script>
     <script src="js/dashboard.js?v=1009&t=1790611000"></script>
     
@@ -2685,7 +2685,7 @@
                 const msg = document.createElement('div');
                 msg.className = 'broadcast-message';
                 msg.innerHTML = `
-                    <span class="broadcast-icon">📢</span>
+                    <span class="broadcast-icon">??</span>
                     <span>${broadcast.content}</span>
                 `;
                 
@@ -2997,7 +2997,7 @@
                     opt.classList.add('selected');
                     const checkmark = opt.querySelector('.checkmark');
                     if (checkmark) {
-                        checkmark.textContent = '✓';
+                        checkmark.textContent = '?';
                     }
                     foundOption = true;
                 }
@@ -3051,7 +3051,7 @@
                                     opt.classList.add('selected');
                                     const checkmark = opt.querySelector('.checkmark');
                                     if (checkmark) {
-                                        checkmark.textContent = '✓';
+                                        checkmark.textContent = '?';
                                     }
                                 }
                             });
@@ -3104,9 +3104,9 @@
                     const checkmark = option.querySelector('.checkmark');
                     if (!checkmark) return;
                     
-                    // Set checkmark to '✓' only for selected items, empty for others
+                    // Set checkmark to '?' only for selected items, empty for others
                     if (option.classList.contains('selected')) {
-                        checkmark.textContent = '✓';
+                        checkmark.textContent = '?';
                     } else {
                         checkmark.textContent = '';
                     }
@@ -3153,7 +3153,7 @@
                 const label = typeof option === 'object' ? option.label : optionFormatter ? optionFormatter(option) : option;
                 
                 optionEl.innerHTML = `
-                    <span class="checkmark">✓</span>
+                    <span class="checkmark">?</span>
                     <span>${label}</span>
                 `;
                 
