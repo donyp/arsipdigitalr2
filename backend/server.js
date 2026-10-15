@@ -551,10 +551,18 @@ const sensitiveOpsLimiter = rateLimit({
 });
 
 // ============================================================
+// ============================================================
 // URL Rewriting: Remove .html extension
 // Allow /index instead of /index.html
 // Must be BEFORE express.static() to intercept requests
 // ============================================================
+
+// Serve Static Frontend from root (BEFORE generic page router)
+app.use(express.static(path.join(__dirname, '..')));
+
+// Explicitly serve JS files (ensure they're accessible)
+app.use('/js', express.static(path.join(__dirname, '..', 'js')));
+app.use('/css', express.static(path.join(__dirname, '..', 'css')));
 
 // URL Aliases for cleaner routes
 app.get('/login', (req, res) => {
@@ -783,12 +791,7 @@ app.get('/shared/:token', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'shared.html'));
 });
 
-// Serve Static Frontend from root (AFTER URL rewriting)
-app.use(express.static(path.join(__dirname, '..')));
 
-// Explicitly serve JS files (ensure they're accessible)
-app.use('/js', express.static(path.join(__dirname, '..', 'js')));
-app.use('/css', express.static(path.join(__dirname, '..', 'css')));
 
 // Version Header
 app.use((req, res, next) => {
