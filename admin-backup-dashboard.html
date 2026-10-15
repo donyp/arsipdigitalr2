@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Backup Dashboard | Arsip Digital ANKA</title>
+    
+    <!-- DISABLE device restriction for backup dashboard (mobile allowed) -->
+    <script>
+        window.DISABLE_DEVICE_RESTRICTION = true;
+    </script>
+    
+    <!-- DEVICE RESTRICTION - Load FIRST before anything else (but respects DISABLE flag) -->
+    <script src="js/device-restriction.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/unified-header.css">
     <link rel="stylesheet" href="css/color-vars.css">
@@ -440,6 +449,8 @@
     </style>
 </head>
 <body>
+    <!-- NOTE: Backup dashboard allows mobile access - no device restriction -->
+    
     <!-- Sidebar (rendered by js/sidebar.js) -->
     <aside id="sidebar" class="sidebar"></aside>
 
