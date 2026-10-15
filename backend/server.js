@@ -1481,7 +1481,7 @@ console.log('  ✓ FAQ Knowledge Base');
 // DATABASE BACKUP MANAGEMENT ENDPOINTS
 // ============================================================
 console.log('[INIT] Initializing Backup Manager...');
-const backupManager = new BackupManager(supabase, r2);
+const backupManager = new BackupManager(supabase, R2Storage);
 console.log('[INIT] Backup Manager initialized ✅');
 
 console.log('[INIT] Registering Backup Management endpoints...');
