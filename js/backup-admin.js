@@ -318,10 +318,12 @@ async function confirmBackup() {
             })
         });
 
-        if (!response.ok) throw new Error('Failed to start backup');
-
         const result = await response.json();
-        if (!result.success) throw new Error(result.error || 'Backup failed');
+        
+        if (!response.ok || !result.success) {
+            const errorMsg = result.error || result.message || 'Backup failed';
+            throw new Error(errorMsg);
+        }
 
         showAlert('✅ ' + result.message, 'success');
         
@@ -329,6 +331,7 @@ async function confirmBackup() {
         setTimeout(refreshData, 2000);
     } catch (error) {
         console.error('[BackupAdmin] Backup failed:', error);
+        console.error('[BackupAdmin] Full error:', error);
         showAlert('❌ ' + error.message, 'danger');
     }
 }
