@@ -1484,6 +1484,17 @@ console.log('[INIT] Initializing Backup Manager...');
 const backupManager = new BackupManager(supabase, R2Storage);
 console.log('[INIT] Backup Manager initialized ✅');
 
+// Initialize backup tables on startup
+(async () => {
+    try {
+        await backupManager.ensureTablesExist();
+        console.log('[INIT] Backup tables verified ✅');
+    } catch (error) {
+        console.error('[INIT] ⚠️  Backup tables check failed:', error.message);
+        console.error('[INIT] Please run: node backend/init-backup-tables.js to create tables');
+    }
+})();
+
 console.log('[INIT] Registering Backup Management endpoints...');
 const backupRouter = registerBackupEndpoints(supabase, backupManager, authenticateToken, authorizeRole);
 app.use('/api', backupRouter);
