@@ -4237,17 +4237,10 @@ function resetInvoiceFilters() {
     invoiceCurrentPage = 1;
     invoiceTotalCount = 0;
     
-    // Reset pagination buttons to disabled
-    const prevPageBtn = document.getElementById('prevPageBtn');
-    const nextPageBtn = document.getElementById('nextPageBtn');
-    if (prevPageBtn) {
-        prevPageBtn.disabled = true;
-    }
-    if (nextPageBtn) {
-        nextPageBtn.disabled = true;
-    }
+    // Update pagination info display
+    updatePaginationInfo();
     
-    // Reset pagination info to 0
+    // Also manually ensure it shows 0
     const paginationInfo = document.getElementById('paginationInfo');
     if (paginationInfo) {
         paginationInfo.textContent = 'Menampilkan 0 - 0 dari 0 invoice';
