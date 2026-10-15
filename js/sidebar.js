@@ -20,6 +20,14 @@
             logoLink.href = '/css/logo-data.css';
             document.head.appendChild(logoLink);
         }
+
+        // Inject Cinzel font for sidebar brand text
+        if (!document.querySelector('link[href*="Cinzel"]')) {
+            const fontLink = document.createElement('link');
+            fontLink.rel = 'stylesheet';
+            fontLink.href = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&display=swap';
+            document.head.appendChild(fontLink);
+        }
         
         const css = `
             /* Pulsing Heartbeat Animation - GLOBAL */
@@ -247,7 +255,7 @@
                 ">
                     <div class="logo-anka-light" style="width:140px;height:44px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div>
                     <div class="logo-anka-dark" style="width:140px;height:44px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>
-                    <div style="font-size:10px;font-weight:600;color:${colors.textMutedColor};letter-spacing:0.05em;text-transform:uppercase;text-align:center;line-height:1;">Sistem Arsip Digital</div>
+                    <div style="font-size:9px;font-weight:400;color:${colors.textMutedColor};letter-spacing:0.25em;text-transform:uppercase;text-align:center;line-height:1;font-family:'Cinzel','Cormorant Garamond','Playfair Display','Georgia',serif;">Sistem Arsip Digital</div>
                 </div>
 
                 <!-- Navigation Menu -->
