@@ -81,7 +81,7 @@ class BackupManager {
             
             await this.ensureTablesExist();
             
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
+            const timestamp = Date.now();
             backupName = `db-backup-${timestamp}.sql`;
 
             let sqlDump = `-- Arsip Digital Database Backup\n`;
@@ -129,7 +129,7 @@ class BackupManager {
             
             await this.ensureTablesExist();
 
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
+            const timestamp = Date.now();
             const backupName = `files-backup-${timestamp}.zip`;
 
             return new Promise(async (resolve, reject) => {
@@ -192,7 +192,7 @@ class BackupManager {
             
             await this.ensureTablesExist();
 
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
+            const timestamp = Date.now();
             const backupName = `config-backup-${timestamp}.json`;
 
             const configBackup = {
@@ -237,7 +237,7 @@ class BackupManager {
             
             await this.ensureTablesExist();
 
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace(/Z$/, '');
+            const timestamp = Date.now();
             const backupName = `combined-backup-${timestamp}.zip`;
 
             return new Promise(async (resolve, reject) => {
