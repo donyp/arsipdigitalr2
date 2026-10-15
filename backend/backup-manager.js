@@ -214,6 +214,7 @@ class BackupManager {
             console.error('[BackupManager] [DB] Database backup failed:', error.message);
             console.error('[BackupManager] [DB] Stack:', error.stack);
             
+            // Try to record the failure
             try {
                 await this.recordBackup({
                     type: 'database',
@@ -224,6 +225,7 @@ class BackupManager {
                 });
             } catch (recordError) {
                 console.error('[BackupManager] [DB] Failed to record backup failure:', recordError.message);
+                // Don't re-throw - we still want to report the original error to the client
             }
 
             return { success: false, error: error.message };
@@ -559,14 +561,29 @@ class BackupManager {
     async recordBackup(backupInfo) {
         try {
             console.log('[BackupManager] Recording backup:', JSON.stringify(backupInfo));
-            const { data, error } = await this.supabase.from('backup_history').insert([backupInfo]);
+            
+            // First verify the table exists
+            const { data: checkData, error: checkError } = await this.supabase
+                .from('backup_history')
+                .select('id')
+                .limit(1);
+
+            if (checkError && checkError.code === '42P01') {
+                throw new Error('backup_history table does not exist. Please run: node backend/init-backup-tables.js');
+            }
+
+            // Now try to insert
+            const { data, error } = await this.supabase
+                .from('backup_history')
+                .insert([backupInfo]);
             
             if (error) {
                 console.error('[BackupManager] [DB] Insert error details:', {
                     code: error.code,
                     message: error.message,
                     hint: error.hint,
-                    details: error.details
+                    details: error.details,
+                    status: error.status
                 });
                 throw error;
             }
@@ -576,7 +593,7 @@ class BackupManager {
             return data;
         } catch (error) {
             console.error('[BackupManager] Failed to record backup:', error.message);
-            console.error('[BackupManager] Full error:', error);
+            console.error('[BackupManager] Full error object:', error);
             throw error;
         }
     }
