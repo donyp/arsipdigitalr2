@@ -12,6 +12,14 @@
     // ============================================================
     (function injectGlobalSidebarCSS() {
         if (document.getElementById('sidebar-css-global')) return;
+
+        // Inject logo-data.css if not already loaded
+        if (!document.querySelector('link[href*="logo-data.css"]')) {
+            const logoLink = document.createElement('link');
+            logoLink.rel = 'stylesheet';
+            logoLink.href = '/css/logo-data.css';
+            document.head.appendChild(logoLink);
+        }
         
         const css = `
             /* Pulsing Heartbeat Animation - GLOBAL */
@@ -47,6 +55,12 @@
                 display: block !important;
                 visibility: visible !important;
             }
+
+            /* ANKA sidebar logo dark mode toggle */
+            html[data-dark-mode="true"] .logo-anka-light { display: none !important; }
+            html[data-dark-mode="true"] .logo-anka-dark  { display: block !important; }
+            html:not([data-dark-mode="true"]) .logo-anka-light { display: block !important; }
+            html:not([data-dark-mode="true"]) .logo-anka-dark  { display: none !important; }
 
             /* ANKA Logo styling for sidebar */
             .logo-anka-sidebar {
@@ -229,13 +243,8 @@
                     align-items: center;
                     justify-content: center;
                 ">
-                    <div class="logo-anka-sidebar" style="
-                        width: 50px;
-                        height: 50px;
-                        background-size: contain;
-                        background-repeat: no-repeat;
-                        background-position: center;
-                    "></div>
+                    <div class="logo-anka-light" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center left;display:block;"></div>
+                    <div class="logo-anka-dark" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center left;display:none;"></div>
                 </div>
 
                 <!-- Navigation Menu -->
