@@ -2435,14 +2435,14 @@
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
-                                        <th id="th-status" onclick="window.sortTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
-                                        <th id="th-tanggal" onclick="window.sortTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
+                                        <th id="th-status" onclick="if(document.getElementById('invoiceTableBody')?.innerText?.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0) { Swal.fire({icon:'info', title:'Terapkan Filter Dulu', text:'Klik Terapkan sebelum sort'}); return false; } window.sortTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
+                                        <th id="th-tanggal" onclick="if(document.getElementById('invoiceTableBody')?.innerText?.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0) { Swal.fire({icon:'info', title:'Terapkan Filter Dulu', text:'Klik Terapkan sebelum sort'}); return false; } window.sortTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 6%;">Tipe</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
-                                        <th id="th-total" onclick="window.sortTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
+                                        <th id="th-total" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { Swal.fire({ icon: 'info', title: 'Klik Terapkan Dulu', text: 'Silakan pilih filter dan klik \"Terapkan\" sebelum mengurutkan data', confirmButtonText: 'Mengerti' }); return false; } window.sortTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Keterangan</th>
                                         <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Aksi</th>
                                     </tr>
@@ -3295,6 +3295,31 @@
             window.sortTable = async function sortTable(field) {
             const invoiceTableBody = document.getElementById('invoiceTableBody');
             if (!invoiceTableBody) {
+                return;
+            }
+            
+            // CHECK: Ensure filters are applied before allowing sort
+            // Check if "Terapkan" button has been clicked (data is actually displayed)
+            const emptyStateMessage = invoiceTableBody.querySelector('td[style*="text-align: center"]');
+            if (emptyStateMessage && emptyStateMessage.textContent.includes('Silahkan pilih')) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Klik Terapkan Dulu',
+                    text: 'Silakan pilih filter dan klik "Terapkan" sebelum mengurutkan data',
+                    confirmButtonText: 'Mengerti'
+                });
+                return;
+            }
+            
+            // Additional check: if no rows in table, prevent sort
+            const dataRows = invoiceTableBody.querySelectorAll('tr:not(:has(td[colspan]))');
+            if (dataRows.length === 0 || invoiceTableBody.innerText.includes('Silahkan pilih')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Terapkan Filter Terlebih Dahulu',
+                    text: 'Tidak ada data. Klik "Terapkan" untuk menampilkan invoice terlebih dahulu',
+                    confirmButtonText: 'OK'
+                });
                 return;
             }
             
