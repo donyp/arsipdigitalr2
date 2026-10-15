@@ -241,6 +241,28 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // ============================================================
+// DEVICE RESTRICTION: Block mobile devices (phones & tablets)
+// ============================================================
+const { deviceCheckMiddleware, logBlockedAccess } = require('./device-check-middleware');
+
+// Apply device check to all HTML pages (exclude API endpoints & static assets)
+app.use((req, res, next) => {
+    const isHtmlPage = !req.path.startsWith('/api/') && 
+                       !req.path.startsWith('/js/') && 
+                       !req.path.startsWith('/css/') && 
+                       !req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/i);
+    
+    if (isHtmlPage) {
+        return deviceCheckMiddleware(req, res, next);
+    }
+    next();
+});
+
+// API endpoint for client-side logging
+app.post('/api/log-blocked-access', logBlockedAccess);
+
+
+// ============================================================
 // Request Timeout Middleware - Prevent hanging requests
 // from monopolizing connections during batch processing
 // ============================================================
