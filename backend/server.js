@@ -103,6 +103,7 @@ const ResumableUpload = require('./resumableUploadHandler');
 const compression = require('./compression');
 const registerFeatureEndpoints = require('./feature-endpoints');
 const registerBackupEndpoints = require('./backup-endpoints');
+const BackupManager = require('./backup-manager');
 const registerLoggingEndpoints = require('./logging-endpoints');
 const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
@@ -1479,8 +1480,13 @@ console.log('  ✓ FAQ Knowledge Base');
 // ============================================================
 // DATABASE BACKUP MANAGEMENT ENDPOINTS
 // ============================================================
+console.log('[INIT] Initializing Backup Manager...');
+const backupManager = new BackupManager(supabase, r2);
+console.log('[INIT] Backup Manager initialized ✅');
+
 console.log('[INIT] Registering Backup Management endpoints...');
-registerBackupEndpoints(app, supabase, authenticateToken, authorizeRole);
+const backupRouter = registerBackupEndpoints(supabase, backupManager, authenticateToken, authorizeRole);
+app.use('/api', backupRouter);
 console.log('[INIT] Backup Management endpoints registered ✅');
 console.log('  ✓ Backup creation, listing, verification');
 
