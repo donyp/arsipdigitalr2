@@ -14,12 +14,20 @@ let currentBackupData = null;
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[BackupAdmin] Initializing backup dashboard...');
+    console.log('[BackupAdmin] Sidebar element exists:', !!document.getElementById('sidebar'));
+    console.log('[BackupAdmin] Container exists:', !!document.getElementById('alertContainer'));
     
     // Load initial data
     refreshData();
 
     // Setup refresh interval (every 5 minutes)
     setInterval(refreshData, 5 * 60 * 1000);
+});
+
+// Also check on window load for safety
+window.addEventListener('load', () => {
+    console.log('[BackupAdmin] Window load event');
+    console.log('[BackupAdmin] Sidebar rendered:', !!document.querySelector('.sidebar-container'));
 });
 
 /**
