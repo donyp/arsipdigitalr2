@@ -82,6 +82,9 @@ try {
     });
     R2_ENABLED = true;
     console.log('[R2Storage] ✅ Initialized with Cloudflare R2');
+    console.log(`[R2Storage] Account: ${R2Config.accountId}`);
+    console.log(`[R2Storage] Bucket: ${R2Config.bucketName}`);
+    console.log(`[R2Storage] R2_ENABLED: true`);
 } catch (error) {
     console.warn('[R2Storage] ⚠️  R2 not fully configured:', error.message);
     console.warn('[R2Storage] 📁 Falling back to local filesystem storage for backups');
@@ -555,6 +558,9 @@ async function downloadFile(storagePath) {
             Key: storagePath
         });
         
+        console.log(`[R2] Sending GetObjectCommand for: ${storagePath}`);
+        console.log(`[R2] Using bucket: ${R2Config.bucketName}`);
+        
         const response = await s3Client.send(command);
         const chunks = [];
         
@@ -567,10 +573,22 @@ async function downloadFile(storagePath) {
         console.log(`[R2] ✅ Downloaded file: ${storagePath} (${buffer.length} bytes)`);
         return buffer;
     } catch (error) {
+        // Log detailed error information
+        console.error(`[R2] ❌ Download error for ${storagePath}:`, {
+            message: error.message,
+            code: error.Code,
+            name: error.name,
+            statusCode: error.$metadata?.httpStatusCode,
+            region: error.region,
+            requestId: error.$metadata?.requestId
+        });
+        
         errorLogger.logError({
             operation: 'downloadFile',
             error: error.message,
-            storagePath
+            storagePath,
+            errorCode: error.Code,
+            statusCode: error.$metadata?.httpStatusCode
         });
         throw error;
     }
