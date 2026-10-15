@@ -16,7 +16,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * GET /api/backups/history
      * Get backup history with optional filtering
      */
-    router.get('/backups/history', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.get('/backups/history', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             const { type, limit = 50, offset = 0 } = req.query;
 
@@ -40,7 +40,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * GET /api/backups/stats
      * Get backup statistics and status
      */
-    router.get('/backups/stats', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.get('/backups/stats', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             const history = await backupManager.getBackupHistory(null, 100);
 
@@ -82,7 +82,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * GET /api/backups/config
      * Get backup configuration
      */
-    router.get('/backups/config', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.get('/backups/config', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             const { data, error } = await supabaseClient
                 .from('backup_config')
@@ -112,7 +112,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      *   "type": "database|files|config"  // optional, if empty do all
      * }
      */
-    router.post('/backups/manual', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.post('/backups/manual', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             const { type } = req.body;
             const results = {};
@@ -155,7 +155,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      *   "type": "database|files|config"
      * }
      */
-    router.post('/backups/restore', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.post('/backups/restore', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             const { backupName, type } = req.body;
 
@@ -199,7 +199,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * DELETE /api/backups/:backupName
      * Delete a backup from R2
      */
-    router.delete('/backups/:backupName', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.delete('/backups/:backupName', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             const { backupName } = req.params;
             const { type } = req.query;
@@ -239,7 +239,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * GET /api/backups/download/:backupName
      * Download a backup file
      */
-    router.get('/backups/download/:backupName', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.get('/backups/download/:backupName', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             const { backupName } = req.params;
             const { type } = req.query;
@@ -274,7 +274,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * POST /api/backups/cleanup
      * Cleanup old backups based on retention policy
      */
-    router.post('/backups/cleanup', authenticateToken, authorizeRole(['super_admin']), async (req, res) => {
+    router.post('/backups/cleanup', authenticateToken, authorizeRole(['moderator', 'super_admin']), async (req, res) => {
         try {
             console.log('[BackupAPI] Starting backup cleanup...');
 

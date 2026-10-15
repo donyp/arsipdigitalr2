@@ -15,13 +15,6 @@ let currentBackupData = null;
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[BackupAdmin] Initializing backup dashboard...');
     
-    // Check authentication
-    const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    if (user.role !== 'super_admin') {
-        window.location.href = 'index.html';
-        return;
-    }
-
     // Load initial data
     refreshData();
 

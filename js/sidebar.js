@@ -161,7 +161,8 @@
             children: [
                 { label: 'Monitoring', icon: '<i class="fas fa-tachometer-alt"></i>', href: '/monitoring' },
                 { label: 'Audit Logs', icon: '<i class="fas fa-history"></i>', href: '/logs' },
-                { label: 'Storage Handler', icon: '<i class="fas fa-database"></i>', href: '/penyimpanan' }
+                { label: 'Storage Handler', icon: '<i class="fas fa-database"></i>', href: '/penyimpanan' },
+                { label: 'Backup Manager', icon: '<i class="fas fa-backup"></i>', href: '/backup', requiredRole: 'moderator' }
             ]
         }
     ];
@@ -385,9 +386,15 @@
     // ============================================================
     function renderDropdown(item, colors) {
         const isExpanded = isDropdownExpanded(item.id);
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
         
         let childrenHTML = '';
         for (const child of item.children) {
+            // Check if child has role requirement
+            if (child.requiredRole && currentUser.role !== child.requiredRole) {
+                continue; // Skip this menu item
+            }
+            
             const isActive = isMenuItemActive(child.href);
             childrenHTML += `
                 <a href="${child.href}" 
