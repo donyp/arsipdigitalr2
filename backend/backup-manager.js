@@ -299,27 +299,40 @@ class BackupManager {
      */
     async recordBackupSimple(backupInfo) {
         try {
-            console.log('[BackupManager] Recording:', backupInfo.name);
+            console.log('[BackupManager] Recording:', JSON.stringify(backupInfo));
+            console.log('[BackupManager] Inserting to backup_history...');
             
-            const { error } = await this.supabase
+            const insertData = {
+                type: backupInfo.type,
+                name: backupInfo.name,
+                size: backupInfo.size || null,
+                path: backupInfo.path || null,
+                status: backupInfo.status,
+                error_message: backupInfo.error_message || null
+            };
+            
+            console.log('[BackupManager] Data to insert:', JSON.stringify(insertData));
+            
+            const { data, error, status, statusText } = await this.supabase
                 .from('backup_history')
-                .insert([{
-                    type: backupInfo.type,
-                    name: backupInfo.name,
-                    size: backupInfo.size || null,
-                    path: backupInfo.path || null,
-                    status: backupInfo.status,
-                    error_message: backupInfo.error_message || null
-                }]);
+                .insert([insertData]);
+            
+            console.log('[BackupManager] Insert response - Status:', status, 'StatusText:', statusText);
             
             if (error) {
-                console.error('[BackupManager] Insert error:', error.code, error.message);
-                throw error;
+                console.error('[BackupManager] INSERT FAILED:');
+                console.error('  Code:', error.code);
+                console.error('  Message:', error.message);
+                console.error('  Status:', error.status);
+                console.error('  Full error:', JSON.stringify(error));
+                throw new Error(`INSERT FAILED: ${error.code} - ${error.message}`);
             }
             
-            console.log(`[BackupManager] ✅ Recorded`);
+            console.log(`[BackupManager] ✅ Recorded successfully`);
+            return data;
         } catch (error) {
             console.error('[BackupManager] Record failed:', error.message);
+            console.error('[BackupManager] Full stack:', error.stack);
             throw error;
         }
     }
