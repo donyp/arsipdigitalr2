@@ -77,23 +77,62 @@ class BackupManager {
     async performDatabaseBackup() {
         let backupName = '';
         try {
-            console.log('[BackupManager] [DB] Starting database backup...');
+            console.log('[BackupManager] [DB] Starting full database backup...');
             
             await this.ensureTablesExist();
             
             const timestamp = Date.now();
             backupName = `db-backup-${timestamp}.sql`;
 
+            // Export ALL tables from database
             let sqlDump = `-- Arsip Digital Database Backup\n`;
             sqlDump += `-- Timestamp: ${new Date().toISOString()}\n`;
-            sqlDump += `-- Simplified backup - use Supabase export for full data\n\n`;
+            sqlDump += `-- Full database export\n\n`;
+            sqlDump += `SET statement_timeout = 0;\n`;
+            sqlDump += `SET lock_timeout = 0;\n`;
+            sqlDump += `SET idle_in_transaction_session_timeout = 0;\n`;
+            sqlDump += `SET client_encoding = 'UTF8';\n`;
+            sqlDump += `SET standard_conforming_strings = on;\n`;
+            sqlDump += `SET check_function_bodies = false;\n`;
+            sqlDump += `SET client_min_messages = warning;\n\n`;
+
+            // Get list of all tables
+            const { data: tables, error: tablesError } = await this.supabase.rpc('get_table_names', {});
+            
+            if (tablesError) {
+                console.warn('[BackupManager] [DB] Could not get table list via RPC, using fallback...');
+                // Fallback: dump using raw SQL
+                const { data: allData, error: allError } = await this.supabase
+                    .from('information_schema')
+                    .select('table_name')
+                    .eq('table_schema', 'public');
+                
+                if (!allError && allData) {
+                    for (const table of allData) {
+                        await this._dumpTable(table.table_name, sqlDump);
+                    }
+                }
+            } else if (tables && Array.isArray(tables)) {
+                console.log(`[BackupManager] [DB] Found ${tables.length} tables to backup`);
+                for (const tableName of tables) {
+                    await this._dumpTable(tableName, sqlDump);
+                }
+            }
+
+            // If no tables dumped, try direct approach
+            if (sqlDump.split('\n').length < 15) {
+                console.log('[BackupManager] [DB] Using direct table dump...');
+                sqlDump += await this._dumpAllTables();
+            }
 
             const fileContent = Buffer.from(sqlDump, 'utf-8');
             const fileSize = fileContent.length;
             
+            console.log(`[BackupManager] [DB] Backup size: ${fileSize} bytes`);
+            
             const r2Path = `${this.r2BackupPaths.database}/${backupName}`;
             await this.r2.uploadFile(fileContent, r2Path, { contentType: 'application/sql' });
-            console.log(`[BackupManager] [DB] ✅ Uploaded to R2`);
+            console.log(`[BackupManager] [DB] ✅ Uploaded to R2 (${fileSize} bytes)`);
 
             await this.recordBackupSimple({
                 type: 'database',
@@ -121,6 +160,96 @@ class BackupManager {
 
             return { success: false, error: error.message };
         }
+    }
+
+    async _dumpTable(tableName, sqlDump) {
+        try {
+            const { data, error } = await this.supabase
+                .from(tableName)
+                .select('*');
+
+            if (error) {
+                console.warn(`[BackupManager] Could not export ${tableName}:`, error.message);
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                console.log(`[BackupManager] [DB] Table ${tableName} is empty`);
+                return;
+            }
+
+            console.log(`[BackupManager] [DB] Exporting ${tableName} (${data.length} rows)...`);
+
+            // Create table schema
+            const columns = Object.keys(data[0]);
+            sqlDump += `\n-- Table: ${tableName}\n`;
+            sqlDump += `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES\n`;
+
+            // Insert data rows
+            const values = data.map(row => {
+                const vals = columns.map(col => {
+                    const val = row[col];
+                    if (val === null) return 'NULL';
+                    if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                    if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+                    if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                    return val;
+                });
+                return `(${vals.join(', ')})`;
+            });
+
+            sqlDump += values.join(',\n') + ';\n';
+        } catch (error) {
+            console.error(`[BackupManager] Error dumping ${tableName}:`, error.message);
+        }
+    }
+
+    async _dumpAllTables() {
+        let dump = '';
+        try {
+            // List of known tables to backup
+            const knownTables = [
+                'users', 'roles', 'user_roles', 'zonas', 'tokos',
+                'invoice_files', 'invoices', 'backup_history', 'backup_config',
+                'support_tickets', 'ticket_messages', 'ticket_attachments',
+                'audit_logs', 'maintenance_mode', 'sistema_notificacoes'
+            ];
+
+            for (const tableName of knownTables) {
+                try {
+                    const { data, error } = await this.supabase
+                        .from(tableName)
+                        .select('*')
+                        .limit(10000);
+
+                    if (!error && data && data.length > 0) {
+                        console.log(`[BackupManager] [DB] Dumping ${tableName} (${data.length} rows)`);
+                        const columns = Object.keys(data[0]);
+                        dump += `\n-- Table: ${tableName}\n`;
+                        dump += `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES\n`;
+
+                        const values = data.map(row => {
+                            const vals = columns.map(col => {
+                                const val = row[col];
+                                if (val === null) return 'NULL';
+                                if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                                if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+                                if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                                return val;
+                            });
+                            return `(${vals.join(', ')})`;
+                        });
+
+                        dump += values.join(',\n') + ';\n';
+                    }
+                } catch (tableError) {
+                    console.warn(`[BackupManager] Could not dump ${tableName}:`, tableError.message);
+                }
+            }
+        } catch (error) {
+            console.error('[BackupManager] Error in _dumpAllTables:', error.message);
+        }
+        return dump;
     }
 
     async performFileBackup() {
