@@ -65,13 +65,26 @@ class BackupManager {
             const backupName = `db-backup-${timestamp}.sql`;
             const localPath = path.join(this.backupDir, backupName);
 
-            // Get all tables
-            const { data: tables, error: tableError } = await this.supabase
-                .from('information_schema.tables')
-                .select('table_name')
-                .eq('table_schema', 'public');
-
-            if (tableError) throw tableError;
+            // Get all tables - use RPC call to get list of tables
+            const { data: tablesResult, error: tableError } = await this.supabase.rpc('get_all_tables');
+            
+            let tables = [];
+            if (tableError) {
+                console.warn('[BackupManager] [DB] Could not get tables via RPC, using fallback...');
+                // Fallback: try to query known core tables
+                tables = [
+                    { table_name: 'users' },
+                    { table_name: 'tokos' },
+                    { table_name: 'zonas' },
+                    { table_name: 'invoices' },
+                    { table_name: 'files' },
+                    { table_name: 'backup_history' },
+                    { table_name: 'backup_config' },
+                    { table_name: 'audit_logs' }
+                ];
+            } else {
+                tables = tablesResult || [];
+            }
 
             let sqlDump = `-- Arsip Digital Database Backup\n`;
             sqlDump += `-- Timestamp: ${new Date().toISOString()}\n`;
@@ -81,35 +94,44 @@ class BackupManager {
             for (const table of tables || []) {
                 const tableName = table.table_name;
                 
-                const { data, error } = await this.supabase
-                    .from(tableName)
-                    .select('*');
+                try {
+                    const { data, error } = await this.supabase
+                        .from(tableName)
+                        .select('*');
 
-                if (error) {
-                    console.warn(`[BackupManager] [DB] Skipped table ${tableName}:`, error.message);
+                    if (error) {
+                        console.warn(`[BackupManager] [DB] Skipped table ${tableName}:`, error.message);
+                        continue;
+                    }
+
+                    // Generate INSERT statements
+                    sqlDump += `\n-- Table: ${tableName}\n`;
+                    sqlDump += `DELETE FROM ${tableName};\n`;
+                    
+                    if (data && data.length > 0) {
+                        const columns = Object.keys(data[0]);
+                        sqlDump += `INSERT INTO ${tableName} (${columns.join(',')}) VALUES\n`;
+                    
+                    if (data && data.length > 0) {
+                        const columns = Object.keys(data[0]);
+                        sqlDump += `INSERT INTO ${tableName} (${columns.join(',')}) VALUES\n`;
+                        
+                        sqlDump += data.map(row => {
+                            const values = columns.map(col => {
+                                const val = row[col];
+                                if (val === null) return 'NULL';
+                                if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+                                if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                                return val;
+                            }).join(',');
+                            return `(${values})`;
+                        }).join(',\n');
+                        
+                        sqlDump += ';\n';
+                    }
+                } catch (tableError) {
+                    console.warn(`[BackupManager] [DB] Error exporting table ${tableName}:`, tableError.message);
                     continue;
-                }
-
-                // Generate INSERT statements
-                sqlDump += `\n-- Table: ${tableName}\n`;
-                sqlDump += `DELETE FROM ${tableName};\n`;
-                
-                if (data && data.length > 0) {
-                    const columns = Object.keys(data[0]);
-                    sqlDump += `INSERT INTO ${tableName} (${columns.join(',')}) VALUES\n`;
-                    
-                    sqlDump += data.map(row => {
-                        const values = columns.map(col => {
-                            const val = row[col];
-                            if (val === null) return 'NULL';
-                            if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
-                            if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
-                            return val;
-                        }).join(',');
-                        return `(${values})`;
-                    }).join(',\n');
-                    
-                    sqlDump += ';\n';
                 }
             }
 
