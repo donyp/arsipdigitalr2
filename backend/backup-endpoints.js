@@ -264,7 +264,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
 
     /**
      * GET /api/backups/download/:backupName
-     * Download a backup file
+     * Download a backup file from R2
      */
     router.get('/backups/download/:backupName', authenticateToken, async (req, res) => {
         try {
@@ -280,66 +280,45 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
                 });
             }
 
-            let content;
-            let sourceUsed = 'unknown';
+            // Build R2 path based on type
+            const pathMap = {
+                'database': 'backups/database',
+                'files': 'backups/file',
+                'file': 'backups/file',
+                'config': 'backups/config',
+                'all': 'backups/all'
+            };
             
-            // Try R2 first, fallback to local storage
+            const r2Path = `${pathMap[type] || type}/${backupName}`;
+            console.log(`[BackupAPI] Downloading from R2: ${r2Path}`);
+            
             try {
-                console.log(`[BackupAPI] Attempting to download from R2: backups/${type}/${backupName}`);
-                content = await backupManager.r2.downloadFile(`backups/${type}/${backupName}`);
-                sourceUsed = 'R2';
-                console.log(`[BackupAPI] Successfully downloaded from R2`);
-            } catch (r2Error) {
-                console.warn(`[BackupAPI] R2 download failed:`, r2Error.message);
-                
-                // Fallback to local file - map type to correct folder name
-                const path = require('path');
-                const fs = require('fs');
-                const folderMap = {
-                    'database': 'database',
-                    'files': 'file',
-                    'file': 'file',
-                    'config': 'config'
-                };
-                const folderName = folderMap[type] || type;
-                const localPath = path.join(__dirname, '..', 'BACKUP', folderName, backupName);
-                
-                console.log(`[BackupAPI] Checking local path: ${localPath}`);
-                
-                if (fs.existsSync(localPath)) {
-                    console.log(`[BackupAPI] ✅ Found backup locally, reading file`);
-                    content = fs.readFileSync(localPath);
-                    sourceUsed = 'local';
-                } else {
-                    console.error(`[BackupAPI] ❌ Backup file not found at: ${localPath}`);
-                    return res.status(404).json({
-                        success: false,
-                        error: `Backup not found: ${backupName}`,
-                        details: {
-                            lookupPath: localPath,
-                            folderName: folderName,
-                            type: type
-                        }
-                    });
-                }
+                const content = await backupManager.r2.downloadFile(r2Path);
+                console.log(`[BackupAPI] Downloaded ${content.length} bytes`);
+
+                res.setHeader('Content-Disposition', `attachment; filename="${backupName}"`);
+                res.setHeader('Content-Type', 
+                    type === 'database' ? 'application/sql' :
+                    type === 'files' || type === 'file' ? 'application/zip' :
+                    type === 'config' ? 'application/json' :
+                    'application/octet-stream'
+                );
+                res.setHeader('Content-Length', content.length);
+
+                return res.send(content);
+            } catch (downloadError) {
+                console.error('[BackupAPI] Download error:', downloadError.message);
+                return res.status(404).json({
+                    success: false,
+                    error: `Backup not found: ${backupName}`,
+                    details: downloadError.message
+                });
             }
-
-            console.log(`[BackupAPI] Sending backup from ${sourceUsed}, size: ${content.length} bytes`);
-
-            res.setHeader('Content-Disposition', `attachment; filename="${backupName}"`);
-            res.setHeader('Content-Type', 
-                type === 'database' ? 'application/sql' :
-                type === 'files' || type === 'file' ? 'application/zip' :
-                'application/json'
-            );
-
-            return res.send(content);
         } catch (error) {
-            console.error('[BackupAPI] Download error:', error);
+            console.error('[BackupAPI] Download endpoint error:', error);
             return res.status(500).json({
                 success: false,
-                error: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                error: error.message
             });
         }
     });
