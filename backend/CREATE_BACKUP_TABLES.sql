@@ -42,8 +42,10 @@ INSERT INTO backup_config (backup_type, schedule_cron, retention_days) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Grant permissions for service role (server-side backups)
-GRANT SELECT, INSERT, UPDATE ON backup_history TO authenticated;
-GRANT SELECT, UPDATE ON backup_config TO authenticated;
+GRANT ALL PRIVILEGES ON backup_history TO authenticated;
+GRANT ALL PRIVILEGES ON backup_config TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE backup_history_id_seq TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE backup_config_id_seq TO authenticated;
 
 -- Add RLS policies if you want backup history visible only to admins
 -- Disabled by default to avoid issues with server-side backups
