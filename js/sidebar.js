@@ -243,19 +243,16 @@
             ">
                 <!-- Brand with ANKA Logo -->
                 <div style="
-                    padding: 0.6rem 0.8rem;
+                    padding: 1rem 0.8rem;
                     border-bottom: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
                     height: 80px;
                     display: flex;
-                    flex-direction: column;
                     align-items: center;
                     justify-content: center;
-                    gap: 2px;
                 ">
-                    <div class="logo-anka-light" style="width:140px;height:44px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div>
-                    <div class="logo-anka-dark" style="width:140px;height:44px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>
-                    <div style="font-size:9px;font-weight:400;color:${colors.textMutedColor};letter-spacing:0.25em;text-transform:uppercase;text-align:center;line-height:1;font-family:'Cinzel','Cormorant Garamond','Playfair Display','Georgia',serif;">Sistem Arsip Digital</div>
+                    <div class="logo-anka-light" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div>
+                    <div class="logo-anka-dark" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>
                 </div>
 
                 <!-- Navigation Menu -->
