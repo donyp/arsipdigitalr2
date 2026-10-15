@@ -350,9 +350,7 @@ async function downloadBackup(backupName, type) {
         const token = localStorage.getItem('jwt_token');
         const url = `${API_BASE}/backups/download/${backupName}?type=${type}`;
 
-        const response = await fetch(url, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const response = await fetch(url);
 
         if (!response.ok) throw new Error('Failed to download backup');
 
