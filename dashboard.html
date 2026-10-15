@@ -759,12 +759,6 @@
 
         /* Dark mode styling handled by js/sidebar.js */
         
-        #main-content {
-            max-height: calc(100vh - 60px);
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-
         html[data-dark-mode="true"] #main-content {
             background-color: var(--color-bg-primary);
             color: var(--color-text-primary);
@@ -1950,7 +1944,7 @@
         </header>
 
         <!-- Main Content -->
-        <div class="w-full p-6">
+        <div class="w-full p-6" style="max-height: calc(100vh - 60px); overflow-y: auto; overflow-x: hidden;">
             <div class="w-full space-y-6">
 
                 <!-- Modern Header Section -->
