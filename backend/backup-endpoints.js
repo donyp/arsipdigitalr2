@@ -116,16 +116,34 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
         try {
             const { type } = req.body;
             const results = {};
+            const errors = [];
+
+            console.log('[BackupAPI] Manual backup requested, type:', type);
 
             // Trigger backup(s)
             if (!type || type === 'database') {
+                console.log('[BackupAPI] Starting database backup...');
                 results.database = await backupManager.performDatabaseBackup();
+                if (!results.database.success) {
+                    errors.push(`Database backup failed: ${results.database.error}`);
+                    console.error('[BackupAPI] Database backup failed:', results.database.error);
+                }
             }
             if (!type || type === 'files') {
+                console.log('[BackupAPI] Starting file backup...');
                 results.files = await backupManager.performFileBackup();
+                if (!results.files.success) {
+                    errors.push(`Files backup failed: ${results.files.error}`);
+                    console.error('[BackupAPI] Files backup failed:', results.files.error);
+                }
             }
             if (!type || type === 'config') {
+                console.log('[BackupAPI] Starting config backup...');
                 results.config = await backupManager.performConfigBackup();
+                if (!results.config.success) {
+                    errors.push(`Config backup failed: ${results.config.error}`);
+                    console.error('[BackupAPI] Config backup failed:', results.config.error);
+                }
             }
 
             // Check if any failed
@@ -134,7 +152,8 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
             return res.json({
                 success: !failed,
                 results,
-                message: failed ? 'Some backups failed' : 'Backup(s) completed successfully'
+                errors: errors.length > 0 ? errors : undefined,
+                message: failed ? `${errors.length} backup(s) failed: ${errors.join('; ')}` : 'Backup(s) completed successfully'
             });
         } catch (error) {
             console.error('[BackupAPI] Manual backup error:', error);

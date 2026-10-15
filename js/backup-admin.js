@@ -320,8 +320,14 @@ async function confirmBackup() {
 
         const result = await response.json();
         
+        console.log('[BackupAdmin] Backup response:', result);
+        
         if (!response.ok || !result.success) {
-            const errorMsg = result.error || result.message || 'Backup failed';
+            // Show detailed error messages
+            let errorMsg = result.error || result.message || 'Backup failed';
+            if (result.errors && result.errors.length > 0) {
+                errorMsg = result.errors.join('\n');
+            }
             throw new Error(errorMsg);
         }
 
