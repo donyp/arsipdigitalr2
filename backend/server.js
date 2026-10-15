@@ -610,6 +610,22 @@ app.get('/fakturpajak', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'upload-faktur-pajak.html'));
 });
 
+app.get('/renamefaktur', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'rename-faktur.html'));
+});
+
+app.get('/invoice', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-invoice-pdf.html'));
+});
+
+app.get('/buktibayar', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-bukti-bayar.html'));
+});
+
+app.get('/fakturpajak', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'upload-faktur-pajak.html'));
+});
+
 app.get('/upload/excel', (req, res) => {
     res.redirect(301, '/excel');
 });
