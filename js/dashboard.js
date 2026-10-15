@@ -4233,6 +4233,10 @@ function resetInvoiceFilters() {
     // Reset stats to 0
     resetInvoiceStatsToZero();
     
+    // Reset pagination state variables
+    invoiceCurrentPage = 1;
+    invoiceTotalCount = 0;
+    
     // Reset pagination buttons to disabled
     const prevPageBtn = document.getElementById('prevPageBtn');
     const nextPageBtn = document.getElementById('nextPageBtn');
