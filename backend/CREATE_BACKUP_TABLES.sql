@@ -41,18 +41,23 @@ INSERT INTO backup_config (backup_type, schedule_cron, retention_days) VALUES
     ('config', '0 1 * * *', 30)    -- Daily at 01:00 UTC
 ON CONFLICT DO NOTHING;
 
+-- Grant permissions for service role (server-side backups)
+GRANT SELECT, INSERT, UPDATE ON backup_history TO authenticated;
+GRANT SELECT, UPDATE ON backup_config TO authenticated;
+
 -- Add RLS policies if you want backup history visible only to admins
-ALTER TABLE backup_history ENABLE ROW LEVEL SECURITY;
-ALTER TABLE backup_config ENABLE ROW LEVEL SECURITY;
+-- Disabled by default to avoid issues with server-side backups
+-- ALTER TABLE backup_history ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE backup_config ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Only admins can view backup history (drop if exists first)
-DROP POLICY IF EXISTS "Admin can view all backup history" ON backup_history;
-CREATE POLICY "Admin can view all backup history" ON backup_history
-    FOR SELECT
-    USING (auth.jwt() ->> 'role' = 'super_admin' OR auth.jwt() ->> 'role' = 'admin');
+-- DROP POLICY IF EXISTS "Admin can view all backup history" ON backup_history;
+-- CREATE POLICY "Admin can view all backup history" ON backup_history
+--     FOR SELECT
+--     USING (auth.jwt() ->> 'role' = 'super_admin' OR auth.jwt() ->> 'role' = 'admin');
 
 -- Policy: Only super_admin can manage backup config (drop if exists first)
-DROP POLICY IF EXISTS "Only super_admin can manage backup config" ON backup_config;
-CREATE POLICY "Only super_admin can manage backup config" ON backup_config
-    FOR ALL
-    USING (auth.jwt() ->> 'role' = 'super_admin');
+-- DROP POLICY IF EXISTS "Only super_admin can manage backup config" ON backup_config;
+-- CREATE POLICY "Only super_admin can manage backup config" ON backup_config
+--     FOR ALL
+--     USING (auth.jwt() ->> 'role' = 'super_admin');

@@ -10,6 +10,7 @@ class BackupManager {
     constructor(supabaseClient, r2Storage) {
         this.supabase = supabaseClient;
         this.r2 = r2Storage;
+        this.tablesInitialized = false;
         
         // R2 Storage paths for backups
         this.r2BackupPaths = {
@@ -22,6 +23,41 @@ class BackupManager {
         this.backupHistory = [];
 
         console.log('[BackupManager] Initialized - Using R2 Storage only for backups');
+    }
+
+    /**
+     * Ensure backup tables exist (idempotent initialization)
+     */
+    async ensureTablesExist() {
+        if (this.tablesInitialized) return true;
+
+        try {
+            console.log('[BackupManager] Checking if backup tables exist...');
+            
+            // Try to select from the table - if it fails, create it
+            const { data, error } = await this.supabase
+                .from('backup_history')
+                .select('id')
+                .limit(1);
+
+            if (error && error.code === '42P01') {
+                // Table doesn't exist, need to create it
+                console.log('[BackupManager] ⚠️  backup_history table not found, attempting to create...');
+                throw new Error('Table backup_history does not exist. Please run: node backend/init-backup-tables.js');
+            }
+
+            if (error) {
+                console.error('[BackupManager] Error checking table:', error.message);
+                throw error;
+            }
+
+            console.log('[BackupManager] ✅ Backup tables verified');
+            this.tablesInitialized = true;
+            return true;
+        } catch (error) {
+            console.error('[BackupManager] Failed to verify backup tables:', error.message);
+            throw error;
+        }
     }
 
     /**
@@ -57,6 +93,9 @@ class BackupManager {
     async performDatabaseBackup() {
         try {
             console.log('[BackupManager] [DB] Starting database backup...');
+            
+            // Ensure backup tables exist before trying to insert
+            await this.ensureTablesExist();
             
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `db-backup-${timestamp}.sql`;
@@ -197,6 +236,9 @@ class BackupManager {
     async performFileBackup() {
         try {
             console.log('[BackupManager] [FILES] Starting file backup...');
+            
+            // Ensure backup tables exist
+            await this.ensureTablesExist();
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `files-backup-${timestamp}.zip`;
@@ -279,6 +321,9 @@ class BackupManager {
     async performConfigBackup() {
         try {
             console.log('[BackupManager] [CONFIG] Starting config backup...');
+            
+            // Ensure backup tables exist
+            await this.ensureTablesExist();
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `config-backup-${timestamp}.json`;
@@ -339,6 +384,9 @@ class BackupManager {
     async performCombinedBackup() {
         try {
             console.log('[BackupManager] [COMBINED] Starting combined backup...');
+            
+            // Ensure backup tables exist
+            await this.ensureTablesExist();
 
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
             const backupName = `combined-backup-${timestamp}.zip`;
@@ -510,12 +558,25 @@ class BackupManager {
      */
     async recordBackup(backupInfo) {
         try {
-            const { error } = await this.supabase.from('backup_history').insert([backupInfo]);
-            if (error) throw error;
+            console.log('[BackupManager] Recording backup:', JSON.stringify(backupInfo));
+            const { data, error } = await this.supabase.from('backup_history').insert([backupInfo]);
+            
+            if (error) {
+                console.error('[BackupManager] [DB] Insert error details:', {
+                    code: error.code,
+                    message: error.message,
+                    hint: error.hint,
+                    details: error.details
+                });
+                throw error;
+            }
+            
             this.backupHistory.push(backupInfo);
             console.log(`[BackupManager] Backup recorded:`, backupInfo.name);
+            return data;
         } catch (error) {
             console.error('[BackupManager] Failed to record backup:', error.message);
+            console.error('[BackupManager] Full error:', error);
             throw error;
         }
     }
