@@ -67,11 +67,10 @@ class BackupManager {
             const backupName = `db-backup-${timestamp}.sql`;
             const localPath = path.join(this.backupDir, backupName);
 
-            // List of core tables yang ingin di-backup
+            // List of core tables
             const tables = [
                 'users', 'tokos', 'zonas', 'invoices', 'files',
-                'backup_history', 'backup_config', 'audit_logs',
-                'maintenance_notices', 'support_tickets', 'support_messages'
+                'backup_history', 'backup_config', 'audit_logs'
             ];
 
             let sqlDump = `-- Arsip Digital Database Backup\n`;
@@ -84,28 +83,44 @@ class BackupManager {
             // Export each table
             for (const tableName of tables) {
                 try {
-                    console.log(`[BackupManager] [DB] Exporting table: ${tableName}`);
+                    console.log(`[BackupManager] [DB] Querying table: ${tableName}`);
                     
+                    // Try to select from table
                     const { data, error } = await this.supabase
                         .from(tableName)
-                        .select('*')
-                        .limit(10000);  // Limit untuk safety
+                        .select('*', { count: 'estimated' })
+                        .limit(1);
 
                     if (error) {
-                        console.warn(`[BackupManager] [DB] Table ${tableName} error:`, error.message);
+                        console.warn(`[BackupManager] [DB] Table ${tableName} error:`, error.code, error.message);
                         skipCount++;
+                        sqlDump += `\n-- SKIPPED TABLE: ${tableName} (${error.message})\n`;
+                        continue;
+                    }
+
+                    console.log(`[BackupManager] [DB] Successfully queried ${tableName}`);
+
+                    // Get full data
+                    const { data: fullData, error: fullError } = await this.supabase
+                        .from(tableName)
+                        .select('*');
+
+                    if (fullError) {
+                        console.warn(`[BackupManager] [DB] Full query error for ${tableName}:`, fullError.message);
+                        skipCount++;
+                        sqlDump += `\n-- ERROR GETTING DATA FROM ${tableName}: ${fullError.message}\n`;
                         continue;
                     }
 
                     // Generate INSERT statements
-                    if (data && data.length > 0) {
-                        sqlDump += `\n-- Table: ${tableName} (${data.length} rows)\n`;
+                    if (fullData && fullData.length > 0) {
+                        sqlDump += `\n-- Table: ${tableName} (${fullData.length} rows)\n`;
                         sqlDump += `DELETE FROM ${tableName};\n`;
                         
-                        const columns = Object.keys(data[0]);
+                        const columns = Object.keys(fullData[0]);
                         sqlDump += `INSERT INTO ${tableName} (${columns.map(c => `"${c}"`).join(',')}) VALUES\n`;
                         
-                        sqlDump += data.map(row => {
+                        sqlDump += fullData.map(row => {
                             const values = columns.map(col => {
                                 const val = row[col];
                                 if (val === null) return 'NULL';
@@ -125,8 +140,9 @@ class BackupManager {
                         successCount++;
                     }
                 } catch (tableError) {
-                    console.warn(`[BackupManager] [DB] Error exporting table ${tableName}:`, tableError.message);
+                    console.error(`[BackupManager] [DB] Exception exporting table ${tableName}:`, tableError);
                     skipCount++;
+                    sqlDump += `\n-- EXCEPTION IN ${tableName}: ${tableError.message}\n`;
                 }
             }
 
@@ -140,6 +156,11 @@ class BackupManager {
             // Upload to R2
             const fileContent = fs.readFileSync(localPath);
             console.log(`[BackupManager] [DB] Uploading to R2...`);
+            
+            if (!this.r2 || !this.r2.uploadFile) {
+                throw new Error('R2Storage not available for upload');
+            }
+
             await this.r2.uploadFile(
                 `backups/database/${backupName}`,
                 fileContent,
@@ -166,7 +187,8 @@ class BackupManager {
 
             return { success: true, backupName, size: fileSize };
         } catch (error) {
-            console.error('[BackupManager] [DB] Database backup failed:', error);
+            console.error('[BackupManager] [DB] Database backup failed:', error.message);
+            console.error('[BackupManager] [DB] Stack:', error.stack);
             
             await this.recordBackup({
                 type: 'database',
