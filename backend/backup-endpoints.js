@@ -263,6 +263,8 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
             const { backupName } = req.params;
             const { type } = req.query;
 
+            console.log(`[BackupAPI] Download requested: ${backupName}, type: ${type}`);
+
             if (!type) {
                 return res.status(400).json({
                     success: false,
@@ -271,11 +273,14 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
             }
 
             let content;
+            let sourceUsed = 'unknown';
             
             // Try R2 first, fallback to local storage
             try {
                 console.log(`[BackupAPI] Attempting to download from R2: backups/${type}/${backupName}`);
                 content = await backupManager.r2.downloadFile(`backups/${type}/${backupName}`);
+                sourceUsed = 'R2';
+                console.log(`[BackupAPI] Successfully downloaded from R2`);
             } catch (r2Error) {
                 console.warn(`[BackupAPI] R2 download failed:`, r2Error.message);
                 
@@ -291,18 +296,32 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
                 const folderName = folderMap[type] || type;
                 const localPath = path.join(__dirname, '..', 'BACKUP', folderName, backupName);
                 
+                console.log(`[BackupAPI] Checking local path: ${localPath}`);
+                
                 if (fs.existsSync(localPath)) {
-                    console.log(`[BackupAPI] Falling back to local file: ${localPath}`);
+                    console.log(`[BackupAPI] ✅ Found backup locally, reading file`);
                     content = fs.readFileSync(localPath);
+                    sourceUsed = 'local';
                 } else {
-                    throw new Error(`Backup not found in R2 or local storage: ${backupName}`);
+                    console.error(`[BackupAPI] ❌ Backup file not found at: ${localPath}`);
+                    return res.status(404).json({
+                        success: false,
+                        error: `Backup not found: ${backupName}`,
+                        details: {
+                            lookupPath: localPath,
+                            folderName: folderName,
+                            type: type
+                        }
+                    });
                 }
             }
+
+            console.log(`[BackupAPI] Sending backup from ${sourceUsed}, size: ${content.length} bytes`);
 
             res.setHeader('Content-Disposition', `attachment; filename="${backupName}"`);
             res.setHeader('Content-Type', 
                 type === 'database' ? 'application/sql' :
-                type === 'files' ? 'application/zip' :
+                type === 'files' || type === 'file' ? 'application/zip' :
                 'application/json'
             );
 
@@ -311,7 +330,8 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
             console.error('[BackupAPI] Download error:', error);
             return res.status(500).json({
                 success: false,
-                error: error.message
+                error: error.message,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     });
