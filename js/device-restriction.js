@@ -46,7 +46,7 @@
         isMobileDevice() {
             const ua = navigator.userAgent || navigator.vendor || window.opera;
             
-            // Check 1: User agent patterns
+            // Check 1: User agent patterns (even in "Desktop mode")
             for (let pattern of this.mobilePatterns) {
                 if (pattern.test(ua)) {
                     console.warn('[Device Check] Mobile pattern detected:', pattern);
@@ -54,32 +54,37 @@
                 }
             }
 
-            // Check 2: Touch capability + small screen (likely mobile)
+            // Check 2: Touch-primary device detection (CRITICAL for desktop mode bypass)
             const hasTouch = ('ontouchstart' in window) || 
                             (navigator.maxTouchPoints > 0) || 
                             (navigator.msMaxTouchPoints > 0);
             
-            const smallScreen = window.innerWidth < 768 || window.screen.width < 768;
+            // Even if screen reports "desktop size", if touch points exist = mobile device
+            // Desktop touchscreens have maxTouchPoints but also have large actual screens
+            const actualScreenWidth = window.screen.width;
+            const actualScreenHeight = window.screen.height;
+            const smallActualScreen = actualScreenWidth < 1024 && actualScreenHeight < 1024;
             
-            if (hasTouch && smallScreen) {
-                console.warn('[Device Check] Touch + small screen detected');
+            // Mobile in desktop mode: has touch + actual screen is small
+            if (hasTouch && smallActualScreen) {
+                console.warn('[Device Check] Touch + actual small screen (desktop mode bypass detected)');
                 return true;
             }
 
-            // Check 3: Screen orientation API (mobile specific)
+            // Check 3: Screen orientation API (mobile specific - even in desktop mode)
             if (typeof window.orientation !== 'undefined') {
                 console.warn('[Device Check] Orientation API detected (mobile)');
                 return true;
             }
 
-            // Check 4: Device pixel ratio (high DPR + small screen = mobile)
-            const highDPR = window.devicePixelRatio > 2;
-            if (highDPR && smallScreen) {
-                console.warn('[Device Check] High DPR + small screen');
+            // Check 4: High pixel density + not truly large screen
+            const highDPR = window.devicePixelRatio > 2.5;
+            if (highDPR && (actualScreenWidth < 1200 || actualScreenHeight < 1200)) {
+                console.warn('[Device Check] High DPR + not large screen');
                 return true;
             }
 
-            // Check 5: Platform check
+            // Check 5: Platform check (works even in desktop mode)
             const platform = navigator.platform || '';
             const mobilePlatforms = ['iPhone', 'iPad', 'iPod', 'Android', 'Linux armv'];
             for (let mp of mobilePlatforms) {
@@ -89,18 +94,64 @@
                 }
             }
 
-            // Check 6: maxTouchPoints (tablets usually have 5+)
-            if (navigator.maxTouchPoints > 1 && smallScreen) {
-                console.warn('[Device Check] Multi-touch capability detected');
-                return true;
+            // Check 6: maxTouchPoints with actual screen size
+            // Real desktop touchscreens: large screen + touch
+            // Mobile in desktop mode: small actual screen + touch
+            if (navigator.maxTouchPoints > 0) {
+                // If actual screen is phone/tablet size, block regardless
+                if (actualScreenWidth < 1024 || actualScreenHeight < 600) {
+                    console.warn('[Device Check] Touch points + mobile screen dimensions');
+                    return true;
+                }
             }
 
             // Check 7: Standalone mode (PWA on mobile)
             if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
-                if (smallScreen) {
+                if (smallActualScreen) {
                     console.warn('[Device Check] PWA standalone mode on small screen');
                     return true;
                 }
+            }
+
+            // Check 8: Connection type (mobile networks)
+            if ('connection' in navigator) {
+                const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                if (connection) {
+                    const mobileTypes = ['cellular', '2g', '3g', '4g'];
+                    if (mobileTypes.includes(connection.effectiveType) || connection.type === 'cellular') {
+                        console.warn('[Device Check] Mobile network connection detected');
+                        // This alone isn't enough, but combined with other factors...
+                        if (hasTouch) return true;
+                    }
+                }
+            }
+
+            // Check 9: Battery API (mostly available on mobile)
+            if ('getBattery' in navigator) {
+                // Desktop usually doesn't expose battery API
+                // If battery + touch + not large screen = mobile
+                if (hasTouch && smallActualScreen) {
+                    console.warn('[Device Check] Battery API + touch + small screen');
+                    return true;
+                }
+            }
+
+            // Check 10: Screen aspect ratio (phones are tall)
+            const aspectRatio = Math.max(actualScreenWidth, actualScreenHeight) / 
+                              Math.min(actualScreenWidth, actualScreenHeight);
+            
+            // Phone screens are typically taller (aspect > 1.7)
+            // Desktop screens are wider (aspect < 1.7)
+            if (aspectRatio > 1.8 && hasTouch && smallActualScreen) {
+                console.warn('[Device Check] Mobile aspect ratio detected');
+                return true;
+            }
+
+            // Check 11: Pointer coarseness (touch vs mouse)
+            const isTouchPrimary = window.matchMedia('(pointer: coarse)').matches;
+            if (isTouchPrimary && smallActualScreen) {
+                console.warn('[Device Check] Coarse pointer (touch) + small screen');
+                return true;
             }
 
             return false;
@@ -234,6 +285,28 @@
 
             // Check orientation change (mobile specific)
             window.addEventListener('orientationchange', () => {
+                if (this.isMobileDevice()) {
+                    this.blockAccess();
+                }
+            });
+
+            // Periodic check every 2 seconds (catch desktop mode switches)
+            setInterval(() => {
+                if (this.isMobileDevice()) {
+                    console.warn('[Device Check] Periodic check detected mobile');
+                    this.blockAccess();
+                }
+            }, 2000);
+
+            // Check on visibility change (when user switches tabs back)
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && this.isMobileDevice()) {
+                    this.blockAccess();
+                }
+            });
+
+            // Check on focus (when window gains focus)
+            window.addEventListener('focus', () => {
                 if (this.isMobileDevice()) {
                     this.blockAccess();
                 }

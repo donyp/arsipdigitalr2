@@ -6,7 +6,7 @@
 const deviceCheckMiddleware = (req, res, next) => {
     const userAgent = req.headers['user-agent'] || '';
     
-    // Mobile patterns
+    // Mobile patterns (even in desktop mode, UA still contains hints)
     const mobilePatterns = [
         /Android/i,
         /webOS/i,
@@ -27,13 +27,23 @@ const deviceCheckMiddleware = (req, res, next) => {
     // Check if mobile
     const isMobile = mobilePatterns.some(pattern => pattern.test(userAgent));
 
-    if (isMobile) {
-        // Log blocked attempt
+    // Additional check: Look for desktop mode indicators in combination with mobile UA
+    // Example: "Mobile Safari" + "Version" might indicate desktop mode
+    // But core mobile identifiers (iPhone, Android) still remain in UA
+    const hasDesktopHint = /Desktop|X11|Win64|WOW64|Macintosh/i.test(userAgent);
+    const hasMobileCore = /iPhone|iPad|Android|Mobile/i.test(userAgent);
+    
+    // If mobile core exists, regardless of desktop hints = block
+    const isDefinitelyMobile = hasMobileCore;
+
+    if (isMobile || isDefinitelyMobile) {
+        // Log blocked attempt with more details
         console.warn('[Device Block] Mobile access attempt:', {
             ip: req.ip,
             userAgent: userAgent,
             path: req.path,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            desktopMode: hasDesktopHint && hasMobileCore // Desktop mode flag
         });
 
         // Return blocked page
