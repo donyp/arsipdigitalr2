@@ -193,7 +193,7 @@ class BackupManager {
             await this.recordBackup({
                 type: 'database',
                 name: `db-backup-${new Date().toISOString()}`,
-                error: error.message,
+                error_message: error.message,
                 timestamp: new Date().toISOString(),
                 status: 'failed'
             });
@@ -257,7 +257,7 @@ class BackupManager {
                         await this.recordBackup({
                             type: 'files',
                             name: backupName,
-                            error: error.message,
+                            error_message: error.message,
                             timestamp: new Date().toISOString(),
                             status: 'failed'
                         });
@@ -291,7 +291,7 @@ Actual file contents are backed up separately in R2.
             await this.recordBackup({
                 type: 'files',
                 name: `files-backup-${new Date().toISOString()}`,
-                error: error.message,
+                error_message: error.message,
                 timestamp: new Date().toISOString(),
                 status: 'failed'
             });
@@ -360,7 +360,7 @@ Actual file contents are backed up separately in R2.
             await this.recordBackup({
                 type: 'config',
                 name: `config-backup-${new Date().toISOString()}`,
-                error: error.message,
+                error_message: error.message,
                 timestamp: new Date().toISOString(),
                 status: 'failed'
             });
