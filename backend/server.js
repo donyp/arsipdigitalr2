@@ -247,6 +247,11 @@ const { deviceCheckMiddleware, logBlockedAccess } = require('./device-check-midd
 
 // Apply device check to all HTML pages (exclude API endpoints & static assets)
 app.use((req, res, next) => {
+    // Skip device check for backup dashboard and API endpoints
+    if (req.path === '/backup' || req.path.startsWith('/api/backups')) {
+        return next();
+    }
+    
     const isHtmlPage = !req.path.startsWith('/api/') && 
                        !req.path.startsWith('/js/') && 
                        !req.path.startsWith('/css/') && 
