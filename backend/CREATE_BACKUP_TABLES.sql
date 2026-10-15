@@ -45,12 +45,14 @@ ON CONFLICT DO NOTHING;
 ALTER TABLE backup_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE backup_config ENABLE ROW LEVEL SECURITY;
 
--- Policy: Only admins can view backup history
+-- Policy: Only admins can view backup history (drop if exists first)
+DROP POLICY IF EXISTS "Admin can view all backup history" ON backup_history;
 CREATE POLICY "Admin can view all backup history" ON backup_history
     FOR SELECT
     USING (auth.jwt() ->> 'role' = 'super_admin' OR auth.jwt() ->> 'role' = 'admin');
 
--- Policy: Only super_admin can manage backup config
+-- Policy: Only super_admin can manage backup config (drop if exists first)
+DROP POLICY IF EXISTS "Only super_admin can manage backup config" ON backup_config;
 CREATE POLICY "Only super_admin can manage backup config" ON backup_config
     FOR ALL
     USING (auth.jwt() ->> 'role' = 'super_admin');
