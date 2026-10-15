@@ -270,7 +270,27 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
                 });
             }
 
-            const content = await backupManager.r2.downloadFile(`backups/${type}/${backupName}`);
+            let content;
+            
+            // Try R2 first, fallback to local storage
+            try {
+                console.log(`[BackupAPI] Attempting to download from R2: backups/${type}/${backupName}`);
+                content = await backupManager.r2.downloadFile(`backups/${type}/${backupName}`);
+            } catch (r2Error) {
+                console.warn(`[BackupAPI] R2 download failed:`, r2Error.message);
+                
+                // Fallback to local file
+                const path = require('path');
+                const fs = require('fs');
+                const localPath = path.join(__dirname, '..', 'data', 'backups', backupName);
+                
+                if (fs.existsSync(localPath)) {
+                    console.log(`[BackupAPI] Falling back to local file: ${localPath}`);
+                    content = fs.readFileSync(localPath);
+                } else {
+                    throw new Error(`Backup not found in R2 or local storage: ${backupName}`);
+                }
+            }
 
             res.setHeader('Content-Disposition', `attachment; filename="${backupName}"`);
             res.setHeader('Content-Type', 
