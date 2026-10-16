@@ -2811,32 +2811,24 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // FAKTUR PAJAK FLOW
                     console.log(`[Invoice Document] Handling as FAKTUR PAJAK`);
                     
-                    // Validate filename format: must start with "tax-" and end with ".pdf"
                     // Handle double .pdf extension
                     let cleanFilename = filename.replace(/\.pdf\.pdf$/i, '.pdf');
                     
-                    const filenamePattern = /^tax-(.+)\.pdf$/i;
-                    const match = cleanFilename.match(filenamePattern);
-
-                    if (!match) {
-                        console.log(`[Invoice Document] Invalid faktur pajak format: ${filename}`);
-                        return res.status(400).json({
-                            success: false,
-                            error: 'ERROR : Format Nama File Tidak Sesuai'
-                        });
+                    // Extract faktur number from filename (look for 10+ digit sequences, or any numeric part)
+                    const numberMatches = cleanFilename.match(/\d{10,}/g);
+                    let fakturNumber = numberMatches ? numberMatches[0] : null;
+                    
+                    // If no 10+ digit match found, try shorter numbers
+                    if (!fakturNumber) {
+                        const shortMatch = cleanFilename.match(/(\d+)/);
+                        fakturNumber = shortMatch ? shortMatch[1] : null;
                     }
 
-                    const filenameParts = match[1]; // Everything between "tax-" and ".pdf"
-                    
-                    // Extract faktur number (first numeric part)
-                    const fakturMatch = filenameParts.match(/^(\d+)/);
-                    const fakturNumber = fakturMatch ? fakturMatch[1] : null;
-
                     if (!fakturNumber) {
-                        console.log(`[Invoice Document] Could not extract faktur number`);
+                        console.log(`[Invoice Document] Could not extract faktur number from: ${cleanFilename}`);
                         return res.status(400).json({
                             success: false,
-                            error: 'ERROR : Format Nama File Tidak Sesuai'
+                            error: 'ERROR : Format Nama File Tidak Sesuai - Tidak dapat menemukan nomor faktur'
                         });
                     }
 
