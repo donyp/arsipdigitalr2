@@ -4899,23 +4899,17 @@ function updatePaginationInfo() {
         nextBtn.disabled = invoiceCurrentPage >= totalPages;
     }
     
-    // UPDATE SORT HEADERS: Disable on pages > 1
+    // UPDATE SORT HEADERS: Disable clicking on pages > 1 (no visual change)
     const sortHeaders = ['th-status', 'th-tanggal', 'th-total'];
     sortHeaders.forEach(headerId => {
         const header = document.getElementById(headerId);
         if (header) {
             if (invoiceCurrentPage > 1) {
                 // Disable sort on non-first pages
-                header.style.opacity = '0.5';
-                header.style.cursor = 'not-allowed';
                 header.style.pointerEvents = 'none';
-                header.title = 'Sorting hanya tersedia di halaman pertama';
             } else {
                 // Enable sort on first page
-                header.style.opacity = '1';
-                header.style.cursor = 'pointer';
                 header.style.pointerEvents = 'auto';
-                header.title = '';
             }
         }
     });
