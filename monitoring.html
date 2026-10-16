@@ -368,6 +368,35 @@
                 height: 200px;
             }
         }
+
+        /* HACKER TERMINAL STYLE FOR LOGS */
+        #logsContainer {
+            background: #000000 !important;
+            color: #00ff00 !important;
+            border: 2px solid #00ff00 !important;
+            border-radius: 0 !important;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 255, 0, 0.1) !important;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.5) !important;
+            font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        #logsContainer::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #logsContainer::-webkit-scrollbar-track {
+            background: #000000;
+        }
+
+        #logsContainer::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+        }
+
+        #logsContainer::-webkit-scrollbar-thumb:hover {
+            background: #00dd00;
+        }
     </style>
 </head>
 <body>
@@ -681,7 +710,7 @@
                     new Date(log.timestamp).toLocaleTimeString() : 
                     new Date().toLocaleTimeString();
                 const levelColor = getLogLevelColor(log.level);
-                return `<div style="color: ${levelColor}; margin-bottom: 4px;">[${timestamp}] ${log.level} - ${log.message}</div>`;
+                return `<div style="color: ${levelColor}; text-shadow: 0 0 5px ${levelColor};">[${timestamp}] [${log.level}] ${log.message}</div>`;
             }).join('');
             
             container.innerHTML = logsHTML;
@@ -690,13 +719,13 @@
 
         function getLogLevelColor(level) {
             const colors = {
-                'ERROR': '#ef4444',
-                'WARN': '#f59e0b',
-                'INFO': '#3b82f6',
-                'DEBUG': '#94a3b8',
-                'SUCCESS': '#10b981'
+                'ERROR': '#ff0000',
+                'WARN': '#ffff00',
+                'INFO': '#00ff00',
+                'DEBUG': '#00ffff',
+                'SUCCESS': '#00ff00'
             };
-            return colors[level] || '#94a3b8';
+            return colors[level] || '#00ff00';
         }
 
         // Logs button handlers
