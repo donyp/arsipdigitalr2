@@ -3818,28 +3818,23 @@ document.addEventListener('click', () => {
 });
 
 async function deleteInvoice(faktur, invoiceId) {
-    // Show compact confirmation modal with tight vertical spacing
+    // Show ultra-compact confirmation modal - sleek modern design
     Swal.fire({
-        title: '🗑️ Hapus Invoice?',
+        title: '🗑️ Hapus?',
         html: `
-            <div style="text-align: left; margin: 6px 0; font-size: 13px;">
-                <p style="color: #2c3e50; margin: 0 0 6px 0; font-size: 12px;">
-                    Hapus invoice <strong style="color: #e74c3c;">${faktur}</strong>?
+            <div style="text-align: left; margin: 0; font-size: 12px;">
+                <p style="color: #2c3e50; margin: 0 0 4px 0; font-size: 11px; font-weight: 500;">
+                    Invoice <strong style="color: #e74c3c;">${faktur}</strong>
                 </p>
-                <div style="background: #fff3cd; border-left: 2px solid #ff9800; padding: 6px 8px; border-radius: 2px; margin-bottom: 6px;">
-                    <p style="font-size: 11px; color: #856404; margin: 0 0 3px 0; line-height: 1.3;">
-                        <i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i><strong>Akan dihapus:</strong>
-                    </p>
-                    <ul style="font-size: 10px; color: #856404; margin: 0; padding-left: 18px; line-height: 1.4;">
-                        <li style="margin: 1px 0;">Data faktur</li>
-                        <li style="margin: 1px 0;">File PDF (jika ada)</li>
-                        <li style="margin: 1px 0;">Bukti Bayar (jika ada)</li>
-                        <li style="margin: 1px 0;">Faktur Pajak (jika ada)</li>
+                <div style="background: linear-gradient(to right, #fff8e1, #fffbf0); border-left: 3px solid #ffc107; padding: 4px 8px; border-radius: 3px; margin-bottom: 4px;">
+                    <ul style="font-size: 9px; color: #7d6608; margin: 0; padding-left: 16px; line-height: 1.2;">
+                        <li style="margin: 0;">Data faktur</li>
+                        <li style="margin: 0;">File PDF, Bukti, Pajak</li>
                     </ul>
                 </div>
-                <div style="background: #f8d7da; border-left: 2px solid #e74c3c; padding: 5px 8px; border-radius: 2px;">
-                    <p style="font-size: 10px; color: #721c24; margin: 0; line-height: 1.3;">
-                        <i class="fas fa-ban" style="margin-right: 4px;"></i><strong>TIDAK DAPAT DIBATALKAN</strong>
+                <div style="background: linear-gradient(to right, #ffe5e5, #fff0f0); border-left: 3px solid #e74c3c; padding: 4px 8px; border-radius: 3px;">
+                    <p style="font-size: 9px; color: #c23b22; margin: 0; font-weight: 500;">
+                        ⚠️ Tidak dapat dibatalkan
                     </p>
                 </div>
             </div>
@@ -3847,31 +3842,44 @@ async function deleteInvoice(faktur, invoiceId) {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#e74c3c',
-        cancelButtonColor: '#95a5a6',
-        confirmButtonText: '❌ Hapus',
+        cancelButtonColor: '#bbb',
+        confirmButtonText: 'Hapus',
         cancelButtonText: 'Batal',
         reverseButtons: true,
         allowOutsideClick: false,
-        width: '320px',
-        padding: '16px',
+        width: '300px',
+        padding: '12px',
         didOpen: async () => {
+            // Style buttons
             const confirmBtn = Swal.getConfirmButton();
-            confirmBtn.style.minWidth = '90px';
-            confirmBtn.style.padding = '6px 12px';
-            confirmBtn.style.fontSize = '12px';
-            confirmBtn.style.borderRadius = '4px';
+            confirmBtn.style.padding = '5px 14px';
+            confirmBtn.style.fontSize = '11px';
+            confirmBtn.style.borderRadius = '3px';
             confirmBtn.style.fontWeight = '600';
-            const cancelBtn = Swal.getCancelButton();
-            cancelBtn.style.padding = '6px 12px';
-            cancelBtn.style.fontSize = '12px';
-            cancelBtn.style.borderRadius = '4px';
-            cancelBtn.style.fontWeight = '600';
+            confirmBtn.style.border = 'none';
+            confirmBtn.style.minWidth = '75px';
             
-            // Improve modal appearance
+            const cancelBtn = Swal.getCancelButton();
+            cancelBtn.style.padding = '5px 14px';
+            cancelBtn.style.fontSize = '11px';
+            cancelBtn.style.borderRadius = '3px';
+            cancelBtn.style.fontWeight = '600';
+            cancelBtn.style.border = '1px solid #ddd';
+            cancelBtn.style.minWidth = '75px';
+            
+            // Style modal
             const popup = Swal.getPopup();
             if (popup) {
-                popup.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
-                popup.style.borderRadius = '8px';
+                popup.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
+                popup.style.borderRadius = '6px';
+                popup.style.border = '1px solid #f0f0f0';
+            }
+            
+            // Style title
+            const title = Swal.getTitle();
+            if (title) {
+                title.style.fontSize = '14px';
+                title.style.marginBottom = '4px';
             }
         }
     }).then(async (result) => {
