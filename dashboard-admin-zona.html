@@ -1598,7 +1598,7 @@
                             <div class="profile-info-content">
                                 <div class="profile-info-label">Password</div>
                                 <div class="profile-password-display-wrapper">
-                                    <div class="profile-info-value" id="profilePassword">••••••••</div>
+                                    <div class="profile-info-value" id="profilePassword">ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½</div>
                                 </div>
                                 <div class="profile-password-input-wrapper profile-info-editable">
                                     <input type="password" id="profilePasswordEdit" class="profile-edit-input" placeholder="Biarkan kosong jika tidak ingin ubah">
@@ -3359,9 +3359,23 @@
                 // Detect dark mode early
                 const isDarkMode = document.body.classList.contains('dark-mode');
                 
-                // Find invoice in invoices data
-                const invoices = window.allAdminZonaInvoices || [];
-                const invoice = invoices.find(inv => inv.faktur === faktur);
+                // Fetch fresh invoice data from server (don't use stale cached data)
+                let invoice = null;
+                try {
+                    const token = localStorage.getItem('jwt_token');
+                    const response = await fetch(`/api/invoice/${faktur}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        invoice = data.data || data;
+                    }
+                } catch (err) {
+                    console.warn('[Download Modal] Could not fetch fresh data, using cache:', err.message);
+                    // Fallback to cached data
+                    const invoices = window.allAdminZonaInvoices || [];
+                    invoice = invoices.find(inv => inv.faktur === faktur);
+                }
                 
                 if (!invoice) {
                     Swal.fire({
