@@ -162,7 +162,8 @@
                 { label: 'Monitoring', icon: '<i class="fas fa-tachometer-alt"></i>', href: '/monitoring' },
                 { label: 'Audit Logs', icon: '<i class="fas fa-history"></i>', href: '/logs' },
                 { label: 'Storage Handler', icon: '<i class="fas fa-database"></i>', href: '/penyimpanan' },
-                { label: 'Backup Manager', icon: '<i class="fas fa-backup"></i>', href: '/backup' }
+                { label: 'Backup Manager', icon: '<i class="fas fa-backup"></i>', href: '/backup' },
+                { label: 'WhatsApp Setup', icon: '<i class="fab fa-whatsapp"></i>', href: '/whatsapp-setup' }
             ]
         }
     ];
