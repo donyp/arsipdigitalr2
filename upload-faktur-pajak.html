@@ -702,7 +702,13 @@
             console.log(`[Upload Click] Valid files in DOM: ${validFiles.length}`);
 
             if (validFiles.length === 0) {
-                Notify.error('Tidak ada file valid untuk diupload');
+                if (typeof Toast !== 'undefined') {
+                    Toast.error('Tidak ada file valid untuk diupload');
+                } else if (typeof Notify !== 'undefined') {
+                    Notify.error('Tidak ada file valid untuk diupload');
+                } else {
+                    alert('Tidak ada file valid untuk diupload');
+                }
                 return;
             }
 
@@ -742,11 +748,23 @@
 
             // Show results
             if (successCount > 0) {
-                Notify.success(`? ${successCount} file berhasil diupload!`);
+                if (typeof Toast !== 'undefined') {
+                    Toast.success(`✓ ${successCount} file berhasil diupload!`);
+                } else if (typeof Notify !== 'undefined') {
+                    Notify.success(`✓ ${successCount} file berhasil diupload!`);
+                } else {
+                    alert(`✓ ${successCount} file berhasil diupload!`);
+                }
             }
             
             if (failedFiles.length > 0) {
-                Notify.error(`? ${failedFiles.length} file gagal: ${failedFiles.join(', ')}`);
+                if (typeof Toast !== 'undefined') {
+                    Toast.error(`✗ ${failedFiles.length} file gagal: ${failedFiles.join(', ')}`);
+                } else if (typeof Notify !== 'undefined') {
+                    Notify.error(`✗ ${failedFiles.length} file gagal: ${failedFiles.join(', ')}`);
+                } else {
+                    alert(`✗ ${failedFiles.length} file gagal: ${failedFiles.join(', ')}`);
+                }
             }
 
             // Reset UI only if all uploads successful
