@@ -196,39 +196,56 @@
                     <div class="flex items-center gap-3 mb-8">
                         <span class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-primary text-white font-bold text-lg">1</span>
                         <div>
-                            <h3 class="text-2xl font-bold text-gray-900">Get Pairing Code</h3>
-                            <p class="text-sm text-gray-600 mt-1">Generate 8-digit code to link your phone</p>
+                            <h3 class="text-2xl font-bold text-gray-900">Enter Phone Number</h3>
+                            <p class="text-sm text-gray-600 mt-1">Phone yang ingin dijadikan bot WhatsApp</p>
                         </div>
                     </div>
 
                     <div class="info-box mb-6">
                         <div class="flex gap-3">
-                            <i class="fas fa-lightbulb text-blue-600 flex-shrink-0 mt-0.5"></i>
+                            <i class="fas fa-info-circle text-blue-600 flex-shrink-0 mt-0.5"></i>
                             <div class="text-sm">
-                                <p class="font-semibold text-gray-900 mb-1">How it works:</p>
+                                <p class="font-semibold text-gray-900 mb-1">Petunjuk:</p>
                                 <ol class="text-gray-700 space-y-1 ml-5 list-decimal">
-                                    <li>Buka WhatsApp di ponsel Anda</li>
-                                    <li>Settings → Linked Devices → Link a Device</li>
-                                    <li>Pilih "Use a phone number instead"</li>
-                                    <li>Masukkan kode 8 digit yang ditampilkan di bawah</li>
-                                    <li>Tunggu sampai status berubah menjadi "Connected ✓"</li>
+                                    <li>Masukkan nomor telepon yang ingin dijadikan bot (format: 628123456789)</li>
+                                    <li>Klik "Generate Pairing Code"</li>
+                                    <li>Kode 8 digit akan muncul di bawah</li>
+                                    <li>Buka WhatsApp di ponsel dengan nomor tersebut</li>
+                                    <li>Settings → Linked Devices → Link a Device → "Use a phone number instead"</li>
+                                    <li>Masukkan kode yang ditampilkan</li>
+                                    <li>Tunggu sampai status berubah menjadi "Connected & Verified ✓"</li>
                                 </ol>
                             </div>
                         </div>
                     </div>
 
-                    <div class="qr-container rounded-2xl mb-6" id="qr-display">
+                    <div class="space-y-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-900 mb-2">Nomor Telepon</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="pairing-phone" placeholder="628123456789" value="" 
+                                    class="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white text-gray-900">
+                                <button onclick="startPairing()" class="bg-gradient-primary text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                                    <i class="fas fa-play"></i>
+                                    <span>Generate Code</span>
+                                </button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">Format: 62 + nomor (contoh: 628123456789)</p>
+                        </div>
+                    </div>
+
+                    <div class="qr-container rounded-2xl" id="qr-display">
                         <div class="text-center">
                             <i class="fas fa-mobile-alt text-6xl text-green-500 mb-3"></i>
                             <p class="text-gray-600 font-semibold text-lg">Pairing Code akan muncul di sini</p>
-                            <p class="text-sm text-gray-500 mt-2">Tunggu server meload...</p>
+                            <p class="text-sm text-gray-500 mt-2">Masukkan nomor dan klik "Generate Code"</p>
                         </div>
                     </div>
 
                     <div class="flex gap-3">
-                        <button onclick="refreshQR()" class="flex-1 bg-gradient-primary text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                        <button onclick="refreshQR()" class="flex-1 bg-gray-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
                             <i class="fas fa-sync-alt"></i>
-                            <span>Get Pairing Code</span>
+                            <span>Refresh Code</span>
                         </button>
                         <button onclick="checkConnectionStatus()" class="flex-1 bg-gradient-success text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
                             <i class="fas fa-check-circle"></i>
@@ -243,7 +260,7 @@
                         <span class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-success text-white font-bold text-lg">2</span>
                         <div>
                             <h3 class="text-2xl font-bold text-gray-900">Connection Status</h3>
-                            <p class="text-sm text-gray-600 mt-1">Real-time monitoring</p>
+                            <p class="text-sm text-gray-600 mt-1">Real-time monitoring & verification</p>
                         </div>
                     </div>
 
@@ -272,6 +289,24 @@
                             <div class="flex justify-between p-3 bg-white rounded-lg border border-gray-200">
                                 <span class="text-sm text-gray-600">Circuit Breaker</span>
                                 <span id="circuit-status" class="font-bold text-gray-900">-</span>
+                            </div>
+                        </div>
+
+                        <div class="border-t pt-4">
+                            <p class="text-sm font-semibold text-gray-900 mb-3">Phone Number Verification</p>
+                            <div id="verification-info" class="grid grid-cols-2 gap-3">
+                                <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                    <span class="text-xs text-gray-600">Expected Phone</span>
+                                    <p class="font-bold text-gray-900">-</p>
+                                </div>
+                                <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                    <span class="text-xs text-gray-600">Connected Phone</span>
+                                    <p class="font-bold text-gray-900">-</p>
+                                </div>
+                                <div class="col-span-2 p-3 bg-white rounded-lg border border-gray-200">
+                                    <span class="text-xs text-gray-600">Status</span>
+                                    <p class="font-bold text-gray-900">-</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -495,6 +530,61 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
             }
             
             // Make functions global so onclick attributes can find them
+            window.startPairing = window.startPairing || (async function startPairing() {
+                const phone = document.getElementById('pairing-phone').value.trim();
+                
+                if (!phone) {
+                    alert('Nomor telepon harus diisi');
+                    return;
+                }
+
+                try {
+                    document.getElementById('qr-display').innerHTML = `
+                        <div class="text-center">
+                            <div class="inline-block">
+                                <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">Generating Pairing Code...</p>
+                                <p class="text-sm text-gray-500 mt-2">Phone: ${phone}</p>
+                            </div>
+                        </div>
+                    `;
+
+                    // Send phone number to backend to start pairing
+                    const response = await fetch('/api/whatsapp/start-pairing', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phoneNumber: phone })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        document.getElementById('qr-display').innerHTML = `
+                            <div class="text-center">
+                                <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">Error</p>
+                                <p class="text-sm text-red-500 mt-2">${data.error || 'Failed to start pairing'}</p>
+                                <p class="text-xs text-gray-400 mt-2">${data.hint || ''}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    // Wait a moment then fetch the pairing code
+                    await new Promise(r => setTimeout(r, 2000));
+                    await refreshQR();
+                } catch (err) {
+                    console.error('Start pairing error:', err);
+                    document.getElementById('qr-display').innerHTML = `
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
+                            <p class="text-gray-600 font-semibold">Error</p>
+                            <p class="text-sm text-red-500 mt-2">${err.message}</p>
+                        </div>
+                    `;
+                }
+            });
+
             window.refreshQR = window.refreshQR || (async function refreshQR() {
                 try {
                     document.getElementById('qr-display').innerHTML = `
@@ -506,74 +596,56 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                         </div>
                     `;
 
-                    // First, try to reconnect to get new pairing code
-                    try {
-                        await fetch('/api/whatsapp/refresh-qr', { method: 'POST' });
-                        await new Promise(r => setTimeout(r, 2000));
-                    } catch (e) {
-                        console.warn('Refresh endpoint error:', e);
-                    }
-
                     // Fetch pairing code from API
-                    try {
-                        const response = await fetch('/api/whatsapp/pairing-code');
+                    const response = await fetch('/api/whatsapp/pairing-code');
 
-                        if (response.ok) {
-                            const data = await response.json();
-                            
-                            if (data.pairingCode) {
-                                // Display pairing code in large, easy-to-read format
-                                const code = data.pairingCode;
-                                document.getElementById('qr-display').innerHTML = `
-                                    <div class="text-center p-8">
-                                        <div class="mb-4">
-                                            <i class="fas fa-mobile-alt text-6xl text-green-500 mb-4"></i>
-                                            <p class="text-gray-600 font-semibold text-lg">Pairing Code</p>
-                                        </div>
-                                        <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 border-2 border-green-300 mb-4">
-                                            <p class="text-5xl font-bold text-gray-900 tracking-widest font-mono">${code}</p>
-                                        </div>
-                                        <p class="text-sm text-gray-600 mb-2">Valid for 60 seconds</p>
-                                        <p class="text-xs text-gray-500">Enter this code in WhatsApp on your phone</p>
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.pairingCode) {
+                            // Display pairing code in large, easy-to-read format
+                            const code = data.pairingCode;
+                            document.getElementById('qr-display').innerHTML = `
+                                <div class="text-center p-8">
+                                    <div class="mb-4">
+                                        <i class="fas fa-mobile-alt text-6xl text-green-500 mb-4"></i>
+                                        <p class="text-gray-600 font-semibold text-lg">Pairing Code</p>
+                                        ${data.expectedPhone ? `<p class="text-sm text-gray-500">Phone: ${data.expectedPhone}</p>` : ''}
                                     </div>
-                                `;
-                            } else {
-                                document.getElementById('qr-display').innerHTML = `
-                                    <div class="text-center">
-                                        <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
-                                        <p class="text-gray-600 font-semibold">Pairing Code akan muncul di sini</p>
-                                        <p class="text-sm text-gray-500 mt-2">Tunggu koneksi WhatsApp Baileys siap</p>
+                                    <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 border-2 border-green-300 mb-4">
+                                        <p class="text-5xl font-bold text-gray-900 tracking-widest font-mono">${code}</p>
                                     </div>
-                                `;
-                            }
+                                    <p class="text-sm text-gray-600 mb-2">Valid for 60 seconds</p>
+                                    <p class="text-xs text-gray-500">Masukkan kode ini di WhatsApp ponsel Anda</p>
+                                </div>
+                            `;
                         } else {
-                            const error = await response.json();
                             document.getElementById('qr-display').innerHTML = `
                                 <div class="text-center">
-                                    <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+                                    <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
                                     <p class="text-gray-600 font-semibold">Pairing Code belum siap</p>
-                                    <p class="text-sm text-gray-500 mt-2">${error.error || 'Server WhatsApp belum connecting'}</p>
-                                    <p class="text-xs text-gray-400 mt-3">${error.hint || 'Coba lagi...'}</p>
+                                    <p class="text-sm text-gray-500 mt-2">Tunggu koneksi WhatsApp Baileys siap</p>
                                 </div>
                             `;
                         }
-                    } catch (fetchErr) {
-                        console.error('Fetch pairing code error:', fetchErr);
+                    } else {
+                        const error = await response.json();
                         document.getElementById('qr-display').innerHTML = `
                             <div class="text-center">
-                                <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Error connecting to server</p>
-                                <p class="text-sm text-red-500 mt-2">${fetchErr.message || 'Network error'}</p>
+                                <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">Pairing Code belum siap</p>
+                                <p class="text-sm text-gray-500 mt-2">${error.error || 'Server WhatsApp belum connecting'}</p>
+                                <p class="text-xs text-gray-400 mt-3">${error.hint || 'Coba lagi...'}</p>
                             </div>
                         `;
                     }
-                } catch (err) {
-                    console.error('Refresh error:', err);
+                } catch (fetchErr) {
+                    console.error('Fetch pairing code error:', fetchErr);
                     document.getElementById('qr-display').innerHTML = `
                         <div class="text-center">
                             <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
-                            <p class="text-gray-600 font-semibold">Error</p>
-                            <p class="text-sm text-red-500 mt-2">${err.message || 'Unknown error'}</p>
+                            <p class="text-gray-600 font-semibold">Error connecting to server</p>
+                            <p class="text-sm text-red-500 mt-2">${fetchErr.message || 'Network error'}</p>
                         </div>
                     `;
                 }
@@ -624,19 +696,34 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                 }
 
                 const isConnected = data.connected && data.ready;
+                const isVerified = data.pairing?.verified;
                 const statusEl = document.getElementById('connection-status');
                 
-                statusEl.className = isConnected ? 'status-indicator connected' : 'status-indicator disconnected';
+                let statusText = 'Disconnected';
+                let statusClass = 'disconnected';
+                
+                if (isConnected && isVerified) {
+                    statusText = 'Connected & Verified ✓';
+                    statusClass = 'connected';
+                } else if (isConnected && isVerified === false) {
+                    statusText = 'Connected but Phone Mismatch ⚠️';
+                    statusClass = 'loading'; // Yellow/warning color
+                } else if (isConnected) {
+                    statusText = 'Connected (Verifying...)';
+                    statusClass = 'loading';
+                }
+                
+                statusEl.className = `status-indicator ${statusClass}`;
                 statusEl.innerHTML = `
                     <i class="fas fa-circle ${isConnected ? 'pulse' : ''}"></i>
-                    <span>${isConnected ? 'Connected ✓' : 'Disconnected'}</span>
+                    <span>${statusText}</span>
                 `;
 
                 // Update detailed status
-                document.getElementById('wa-status').className = isConnected ? 'status-indicator connected' : 'status-indicator disconnected';
+                document.getElementById('wa-status').className = `status-indicator ${statusClass}`;
                 document.getElementById('wa-status').innerHTML = `
                     <i class="fas fa-circle ${isConnected ? 'pulse' : ''}"></i>
-                    <span>${isConnected ? 'Connected ✓' : 'Disconnected'}</span>
+                    <span>${statusText}</span>
                 `;
 
                 if (data.queue) {
@@ -647,6 +734,31 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                     const cbStatus = data.queue.circuitBreaker;
                     document.getElementById('circuit-status').textContent = cbStatus?.isOpen ? '⚠️ Open' : '✓ Closed';
                     document.getElementById('circuit-status').className = cbStatus?.isOpen ? 'font-bold text-red-600' : 'font-bold text-green-600';
+                }
+
+                // Show pairing verification info
+                if (data.pairing) {
+                    const verificationInfo = document.getElementById('verification-info');
+                    if (verificationInfo) {
+                        verificationInfo.innerHTML = `
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                    <span class="text-xs text-gray-600">Expected Phone</span>
+                                    <p class="font-bold text-gray-900">${data.pairing.expectedPhone || '-'}</p>
+                                </div>
+                                <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                    <span class="text-xs text-gray-600">Connected Phone</span>
+                                    <p class="font-bold text-gray-900">${data.pairing.connectedPhone || '-'}</p>
+                                </div>
+                                <div class="col-span-2 p-3 bg-white rounded-lg border border-gray-200">
+                                    <span class="text-xs text-gray-600">Status</span>
+                                    <p class="font-bold ${data.pairing.verified ? 'text-green-600' : data.pairing.verified === false ? 'text-red-600' : 'text-yellow-600'}">
+                                        ${data.pairing.verified === true ? '✓ Verified' : data.pairing.verified === false ? '✗ Mismatch' : '⟳ Pending'}
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                    }
                 }
             }
 

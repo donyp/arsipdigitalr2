@@ -28,6 +28,62 @@ async function initializeWhatsApp() {
  * Register endpoints
  */
 function registerWhatsAppEndpoints(app, createAuth) {
+    // Start Pairing: User provides phone number, system generates pairing code (NO AUTH - for setup page)
+    app.post('/api/whatsapp/start-pairing', async (req, res) => {
+        try {
+            if (!waService) {
+                return res.status(503).json({
+                    error: 'WhatsApp service not initialized',
+                    pairingCode: null
+                });
+            }
+
+            const { phoneNumber } = req.body;
+
+            // Validate phone number input
+            if (!phoneNumber) {
+                return res.status(400).json({
+                    error: 'Phone number is required',
+                    hint: 'Enter phone number in format: 628123456789 or 62812345678'
+                });
+            }
+
+            // Basic phone validation (should be 10-15 digits)
+            const phoneDigits = phoneNumber.replace(/\D/g, '');
+            if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+                return res.status(400).json({
+                    error: 'Invalid phone number format',
+                    hint: 'Phone should have 10-15 digits (example: 628123456789)'
+                });
+            }
+
+            // Set expected phone for verification
+            waService.setExpectedPhoneNumber(phoneNumber);
+
+            // Trigger reconnection to generate new pairing code
+            await waService.disconnect();
+            
+            // Wait a bit then reconnect
+            setTimeout(async () => {
+                try {
+                    await waService.initialize();
+                } catch (err) {
+                    console.error('[WhatsApp] Reconnect error:', err.message);
+                }
+            }, 500);
+
+            res.json({
+                success: true,
+                message: 'Pairing started - waiting for code',
+                expectedPhone: waService.expectedPhoneNumber,
+                hint: 'Pairing code should appear in 3-5 seconds'
+            });
+        } catch (error) {
+            console.error('[WhatsApp Start Pairing] Error:', error.message);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
     // Pairing Code: Get current pairing code (NO AUTH - for setup page)
     app.get('/api/whatsapp/pairing-code', async (req, res) => {
         try {
@@ -38,18 +94,20 @@ function registerWhatsAppEndpoints(app, createAuth) {
                 });
             }
 
-            const code = waService.lastPairingCode;
-            if (!code) {
+            const pairingInfo = waService.getPairingInfo();
+            
+            if (!pairingInfo.pairingCode) {
                 return res.status(404).json({
                     error: 'No pairing code available - try refreshing',
                     pairingCode: null,
-                    hint: 'Click Refresh button to trigger new pairing code'
+                    hint: 'Click Refresh button or enter phone number to trigger pairing code generation'
                 });
             }
 
             res.json({
                 success: true,
-                pairingCode: code,
+                pairingCode: pairingInfo.pairingCode,
+                expectedPhone: pairingInfo.expectedPhone,
                 timestamp: new Date(),
                 hint: 'Enter this code in WhatsApp → Settings → Linked Devices → Link a Device'
             });
@@ -153,10 +211,18 @@ function registerWhatsAppEndpoints(app, createAuth) {
                 });
             }
 
+            const pairingInfo = waService.getPairingInfo();
+
             res.json({
                 connected: waService.isConnected,
                 ready: waService.isReady(),
-                queue: waQueue ? waQueue.getStats() : null
+                queue: waQueue ? waQueue.getStats() : null,
+                pairing: {
+                    expectedPhone: pairingInfo.expectedPhone,
+                    connectedPhone: pairingInfo.connectedPhone,
+                    verified: pairingInfo.verified,
+                    status: pairingInfo.verified === null ? 'pending' : (pairingInfo.verified ? 'verified' : 'mismatch')
+                }
             });
         } catch (error) {
             res.status(500).json({ error: error.message });
