@@ -4164,27 +4164,30 @@ async function applyInvoiceFilters() {
         if (search) params.append('search', search);
         
         // Handle Year and Month filtering
+        let dateFromValue = '';
+        let dateToValue = '';
+        
         if (year && month) {
             // Both year and month selected
-            const dateFromValue = `${year}-${String(month).padStart(2, '0')}-01`;
+            dateFromValue = `${year}-${String(month).padStart(2, '0')}-01`;
             const dateToObj = new Date(parseInt(year), parseInt(month), 0);
-            const dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
+            dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
             params.append('date_from', dateFromValue);
             params.append('date_to', dateToValue);
             
         } else if (year) {
             // Only year selected
-            const dateFromValue = `${year}-01-01`;
-            const dateToValue = `${year}-12-31`;
+            dateFromValue = `${year}-01-01`;
+            dateToValue = `${year}-12-31`;
             params.append('date_from', dateFromValue);
             params.append('date_to', dateToValue);
             
         } else if (month) {
             // Only month (use current year)
             const currentYear = new Date().getFullYear();
-            const dateFromValue = `${currentYear}-${String(month).padStart(2, '0')}-01`;
+            dateFromValue = `${currentYear}-${String(month).padStart(2, '0')}-01`;
             const dateToObj = new Date(currentYear, parseInt(month), 0);
-            const dateToValue = `${currentYear}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
+            dateToValue = `${currentYear}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
             params.append('date_from', dateFromValue);
             params.append('date_to', dateToValue);
             
