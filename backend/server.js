@@ -109,6 +109,7 @@ const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
 const AuditLogger = require('./audit-logger');
 const { initializeWhatsApp, registerWhatsAppEndpoints } = require('./whatsapp-endpoints');
+const { registerZonaEndpoints } = require('./whatsapp-zona-endpoints');
 const {
     sanitizeString,
     validateZonaId,
@@ -7817,6 +7818,7 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         try {
             await initializeWhatsApp();
             registerWhatsAppEndpoints(app, createAuth);
+            registerZonaEndpoints(app, supabase, createAuth);
             console.log('[INIT] WhatsApp service initialized ✅');
         } catch (err) {
             console.error('[INIT] WhatsApp initialization failed:', err.message);
