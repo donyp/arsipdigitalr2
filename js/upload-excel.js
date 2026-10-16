@@ -248,7 +248,7 @@ async function uploadData() {
     btnUpload.disabled = true;
     
     // Show loading spinner with animated text
-    btnUpload.innerHTML = '<span class="loading-spinner"></span><span class="loading-text">Uploading...</span>';
+    btnUpload.innerHTML = '<span style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px;"></span>Mengupload...';
 
     try {
         const token = API.getToken() || localStorage.getItem('jwt_token');
@@ -277,7 +277,7 @@ async function uploadData() {
             document.getElementById('uploadedCount').textContent = processed;
             
             if (skippedReturs > 0) {
-                document.getElementById('skippedReturCount').textContent = skippedReturs + ' transaksi diabaikan';
+                document.getElementById('skippedReturCountBadge').textContent = skippedReturs;
                 document.getElementById('skippedReturInfo').style.display = 'block';
             }
             
