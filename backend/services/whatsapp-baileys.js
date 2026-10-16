@@ -11,11 +11,13 @@ const { DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/bai
 const fs = require('fs');
 const path = require('path');
 const P = require('pino');
+const qrcode = require('qrcode-terminal');
 
 class WhatsAppService {
     constructor() {
         this.socket = null;
         this.isConnected = false;
+        this.lastQR = null;
         this.sessionPath = path.join(__dirname, '../../data/wa-auth');
         this.logger = P({ level: 'silent' }); // Silent logger by default
     }
@@ -31,7 +33,6 @@ class WhatsAppService {
 
             this.socket = makeWASocket({
                 auth: state,
-                printQRInTerminal: true,
                 syncFullHistory: false,
                 logger: this.logger,
                 defaultQueryTimeoutMs: 30000,
@@ -40,32 +41,38 @@ class WhatsAppService {
                 browser: ['Linux', 'Chrome', '121.0.6167.160']
             });
 
-            // Handle connection updates
+            // Handle connection updates - NEW: Generate QR from event
             this.socket.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
 
                 if (qr) {
-                    console.log('[WhatsApp] QR Code received - scan with your phone');
+                    this.lastQR = qr;
+                    console.log('[WhatsApp] ⏳ QR Code generated - Please scan below:');
+                    console.log('');
+                    qrcode.generate(qr, { small: true });
+                    console.log('');
+                    console.log('[WhatsApp] Scan above QR code with WhatsApp on your phone');
                 }
 
                 if (connection === 'connecting') {
-                    console.log('[WhatsApp] Connecting...');
+                    console.log('[WhatsApp] 🔄 Connecting...');
                     this.isConnected = false;
                 }
 
                 if (connection === 'open') {
-                    console.log('[WhatsApp] Connected to WhatsApp ✓');
+                    console.log('[WhatsApp] ✅ Connected to WhatsApp');
                     this.isConnected = true;
+                    this.lastQR = null; // Clear QR once connected
                 }
 
                 if (connection === 'close') {
                     // Reconnect if not intentional disconnect
                     if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
-                        console.log('[WhatsApp] Unexpected disconnect - reconnecting in 5s...');
+                        console.log('[WhatsApp] ⚠️ Disconnected - reconnecting in 5s...');
                         this.isConnected = false;
                         setTimeout(() => this.initialize(), 5000);
                     } else {
-                        console.log('[WhatsApp] Logged out');
+                        console.log('[WhatsApp] 🚪 Logged out');
                         this.isConnected = false;
                     }
                 }
@@ -74,7 +81,7 @@ class WhatsAppService {
             // Save credentials on update
             this.socket.ev.on('creds.update', saveCreds);
 
-            console.log('[WhatsApp] Service initialized');
+            console.log('[WhatsApp] ✅ Service initialized');
         } catch (error) {
             console.error('[WhatsApp] Initialization failed:', error.message);
             throw error;
