@@ -698,7 +698,7 @@ app.get('/kendaraan', (req, res) => {
 
 // System
 app.get('/logs', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'audit-logs.html'));
+    res.sendFile(path.join(__dirname, '..', 'audit-logs-dashboard.html'));
 });
 
 app.get('/penyimpanan', (req, res) => {
