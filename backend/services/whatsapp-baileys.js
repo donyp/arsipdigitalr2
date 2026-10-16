@@ -54,7 +54,8 @@ class WhatsAppService {
                 markOnlineOnConnect: true,
                 browser: ['Linux', 'Chrome', '121.0.6167.160'],
                 pairingCodeTimeoutMs: 60000, // Pairing code valid for 60 seconds
-                generateHighQualityLinkPreview: true
+                generateHighQualityLinkPreview: true,
+                printQRInTerminal: false // Disable QR - force pairing code only
             });
 
             // Handle connection updates - Generate QR or Pairing Code
@@ -63,17 +64,8 @@ class WhatsAppService {
 
                 if (qr) {
                     this.lastQR = qr;
-                    console.log('[WhatsApp] ⏳ QR Code generated - Please scan below:');
-                    console.log('');
-                    
-                    if (qrcode) {
-                        qrcode.generate(qr, { small: true });
-                    } else {
-                        console.log('QR String: ' + qr);
-                    }
-                    
-                    console.log('');
-                    console.log('[WhatsApp] Scan QR code with WhatsApp on your phone');
+                    // Don't log QR here - pairing code only
+                    console.log('[WhatsApp] QR received (ignored - using pairing code method)');
                 }
 
                 if (connection === 'connecting') {
