@@ -432,7 +432,8 @@
                                 <ol class="text-sm text-gray-700 space-y-1 ml-5 list-decimal">
                                     <li>Buka WhatsApp di ponsel Anda</li>
                                     <li>Buka menu <strong>Settings → Linked Devices → Link a Device</strong></li>
-                                    <li>Arahkan kamera ke QR code di bawah</li>
+                                    <li>Pilih <strong>"Use a phone number instead"</strong></li>
+                                    <li>Masukkan kode 8 digit yang ditampilkan di bawah</li>
                                     <li>Tunggu sampai status berubah menjadi "Connected ✓"</li>
                                 </ol>
                             </div>
@@ -442,8 +443,8 @@
                     <div class="qr-container" id="qr-display">
                         <div class="text-center">
                             <div class="inline-block">
-                                <i class="fas fa-qrcode text-6xl text-gray-400 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">QR Code akan muncul di sini</p>
+                                <i class="fas fa-mobile-alt text-6xl text-green-500 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">Pairing Code akan muncul di sini</p>
                                 <p class="text-sm text-gray-500 mt-2">Tunggu server meload...</p>
                             </div>
                         </div>
@@ -452,7 +453,7 @@
                     <div class="mt-6 flex gap-3">
                         <button onclick="refreshQR()" class="flex-1 bg-gradient-primary text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
                             <i class="fas fa-sync-alt"></i>
-                            <span>Refresh QR Code</span>
+                            <span>Get Pairing Code</span>
                         </button>
                         <button onclick="checkConnectionStatus()" class="flex-1 bg-gradient-success text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
                             <i class="fas fa-check-circle"></i>
@@ -703,37 +704,47 @@ circuitBreakerWindow: 300000ms (5 menit)
                         <div class="text-center">
                             <div class="inline-block">
                                 <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Loading QR Code...</p>
+                                <p class="text-gray-600 font-semibold">Getting Pairing Code...</p>
                             </div>
                         </div>
                     `;
 
-                    // First, try to reconnect if no QR available
+                    // First, try to reconnect to get new pairing code
                     try {
                         await fetch('/api/whatsapp/refresh-qr', { method: 'POST' });
-                        // Wait 2 seconds for reconnection
                         await new Promise(r => setTimeout(r, 2000));
                     } catch (e) {
-                        console.warn('Refresh QR endpoint error:', e);
+                        console.warn('Refresh endpoint error:', e);
                     }
 
-                    // Fetch QR code from API
+                    // Fetch pairing code from API
                     try {
-                        const response = await fetch('/api/whatsapp/qr');
+                        const response = await fetch('/api/whatsapp/pairing-code');
 
                         if (response.ok) {
                             const data = await response.json();
                             
-                            if (data.qr) {
-                                // Display QR code
+                            if (data.pairingCode) {
+                                // Display pairing code in large, easy-to-read format
+                                const code = data.pairingCode;
                                 document.getElementById('qr-display').innerHTML = `
-                                    <img src="${data.qr}" style="max-width: 280px; border-radius: 12px;">
+                                    <div class="text-center p-8">
+                                        <div class="mb-4">
+                                            <i class="fas fa-mobile-alt text-6xl text-green-500 mb-4"></i>
+                                            <p class="text-gray-600 font-semibold text-lg">Pairing Code</p>
+                                        </div>
+                                        <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 border-2 border-green-300 mb-4">
+                                            <p class="text-5xl font-bold text-gray-900 tracking-widest font-mono">${code}</p>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mb-2">Valid for 60 seconds</p>
+                                        <p class="text-xs text-gray-500">Enter this code in WhatsApp on your phone</p>
+                                    </div>
                                 `;
                             } else {
                                 document.getElementById('qr-display').innerHTML = `
                                     <div class="text-center">
                                         <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
-                                        <p class="text-gray-600 font-semibold">QR Code akan muncul di sini</p>
+                                        <p class="text-gray-600 font-semibold">Pairing Code akan muncul di sini</p>
                                         <p class="text-sm text-gray-500 mt-2">Tunggu koneksi WhatsApp Baileys siap</p>
                                     </div>
                                 `;
@@ -743,14 +754,14 @@ circuitBreakerWindow: 300000ms (5 menit)
                             document.getElementById('qr-display').innerHTML = `
                                 <div class="text-center">
                                     <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
-                                    <p class="text-gray-600 font-semibold">QR Code belum siap</p>
+                                    <p class="text-gray-600 font-semibold">Pairing Code belum siap</p>
                                     <p class="text-sm text-gray-500 mt-2">${error.error || 'Server WhatsApp belum connecting'}</p>
-                                    <p class="text-xs text-gray-400 mt-3">${error.hint || 'Coba: delete data/wa-auth folder, restart server'}</p>
+                                    <p class="text-xs text-gray-400 mt-3">${error.hint || 'Coba lagi...'}</p>
                                 </div>
                             `;
                         }
                     } catch (fetchErr) {
-                        console.error('Fetch QR error:', fetchErr);
+                        console.error('Fetch pairing code error:', fetchErr);
                         document.getElementById('qr-display').innerHTML = `
                             <div class="text-center">
                                 <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
@@ -760,11 +771,11 @@ circuitBreakerWindow: 300000ms (5 menit)
                         `;
                     }
                 } catch (err) {
-                    console.error('Refresh QR error:', err);
+                    console.error('Refresh error:', err);
                     document.getElementById('qr-display').innerHTML = `
                         <div class="text-center">
                             <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
-                            <p class="text-gray-600 font-semibold">Error loading QR</p>
+                            <p class="text-gray-600 font-semibold">Error</p>
                             <p class="text-sm text-red-500 mt-2">${err.message || 'Unknown error'}</p>
                         </div>
                     `;

@@ -28,6 +28,37 @@ async function initializeWhatsApp() {
  * Register endpoints
  */
 function registerWhatsAppEndpoints(app, createAuth) {
+    // Pairing Code: Get current pairing code (NO AUTH - for setup page)
+    app.get('/api/whatsapp/pairing-code', async (req, res) => {
+        try {
+            if (!waService) {
+                return res.status(503).json({
+                    error: 'WhatsApp service not initialized',
+                    pairingCode: null
+                });
+            }
+
+            const code = waService.lastPairingCode;
+            if (!code) {
+                return res.status(404).json({
+                    error: 'No pairing code available - try refreshing',
+                    pairingCode: null,
+                    hint: 'Click Refresh button to trigger new pairing code'
+                });
+            }
+
+            res.json({
+                success: true,
+                pairingCode: code,
+                timestamp: new Date(),
+                hint: 'Enter this code in WhatsApp → Settings → Linked Devices → Link a Device'
+            });
+        } catch (error) {
+            console.error('[WhatsApp Pairing] Error:', error.message);
+            res.status(500).json({ error: error.message });
+        }
+    });
+
     // QR Code: Get current QR as data URL (NO AUTH - for setup page)
     app.get('/api/whatsapp/qr', async (req, res) => {
         try {

@@ -25,6 +25,7 @@ class WhatsAppService {
         this.socket = null;
         this.isConnected = false;
         this.lastQR = null;
+        this.lastPairingCode = null; // Add pairing code
         this.qrHistory = []; // Store QR history
         this.sessionPath = path.join(__dirname, '../../data/wa-auth');
         this.logger = P({ level: 'silent' }); // Silent logger by default
@@ -46,33 +47,24 @@ class WhatsAppService {
                 defaultQueryTimeoutMs: 30000,
                 shouldSyncHistoryMessage: () => false,
                 markOnlineOnConnect: true,
-                browser: ['Linux', 'Chrome', '121.0.6167.160']
+                browser: ['Linux', 'Chrome', '121.0.6167.160'],
+                pairingCodeTimeoutMs: 60000, // Pairing code valid for 60 seconds
+                generateHighQualityLinkPreview: true
             });
 
-            // Handle connection updates - Generate QR from event
+            // Handle connection updates - Generate QR or Pairing Code
             this.socket.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
 
                 if (qr) {
                     this.lastQR = qr;
-                    this.qrHistory.push({
-                        qr: qr,
-                        timestamp: new Date(),
-                        status: 'pending'
-                    });
-                    
                     console.log('[WhatsApp] ⏳ QR Code generated - Please scan below:');
                     console.log('');
                     
                     if (qrcode) {
-                        // If qrcode-terminal installed, display as ASCII art
                         qrcode.generate(qr, { small: true });
                     } else {
-                        // Fallback: show as text
                         console.log('QR String: ' + qr);
-                        console.log('');
-                        console.log('(Install qrcode-terminal to see ASCII art QR code)');
-                        console.log('npm install qrcode-terminal');
                     }
                     
                     console.log('');
@@ -87,18 +79,10 @@ class WhatsAppService {
                 if (connection === 'open') {
                     console.log('[WhatsApp] ✅ Connected to WhatsApp');
                     this.isConnected = true;
-                    
-                    // Mark current QR as successful
-                    if (this.qrHistory.length > 0) {
-                        this.qrHistory[this.qrHistory.length - 1].status = 'success';
-                    }
-                    
-                    // Clear QR after successful connection
                     this.lastQR = null;
                 }
 
                 if (connection === 'close') {
-                    // Reconnect if not intentional disconnect
                     if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
                         console.log('[WhatsApp] ⚠️ Disconnected - reconnecting in 5s...');
                         this.isConnected = false;
@@ -108,6 +92,17 @@ class WhatsAppService {
                         this.isConnected = false;
                     }
                 }
+            });
+
+            // Handle Pairing Code (alternative to QR)
+            this.socket.ev.on('pair-code', async (pairingCode) => {
+                console.log('[WhatsApp] 📱 Pairing Code: ' + pairingCode);
+                this.lastPairingCode = pairingCode;
+                console.log('[WhatsApp] Enter this code in your WhatsApp phone:');
+                console.log('');
+                console.log('  📲 ' + pairingCode);
+                console.log('');
+                console.log('[WhatsApp] Settings → Linked Devices → Link a Device (use code, not camera)');
             });
 
             // Save credentials on update
