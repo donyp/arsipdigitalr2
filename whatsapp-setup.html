@@ -708,29 +708,73 @@ circuitBreakerWindow: 300000ms (5 menit)
                         </div>
                     `;
 
-                    // Try to get QR code from the Baileys service
+                    // Fetch QR code from new API endpoint
                     try {
-                        const response = await API.get('/api/whatsapp/status');
-                        if (response && response.qrCode) {
-                            // If backend provides QR code in response
-                            document.getElementById('qr-display').innerHTML = `<img src="${response.qrCode}" style="max-width: 100%; border-radius: 12px;">`;
+                        const token = localStorage.getItem('auth_token');
+                        const response = await fetch('/api/whatsapp/qr', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (data.qr) {
+                                // Display QR code
+                                if (data.qr.startsWith('data:')) {
+                                    // It's already a data URL (from qrcode library)
+                                    document.getElementById('qr-display').innerHTML = `
+                                        <img src="${data.qr}" style="max-width: 100%; border-radius: 12px;">
+                                    `;
+                                } else {
+                                    // It's raw text, encode to data URL on client side
+                                    const QRLibrary = window.QR;
+                                    if (QRLibrary) {
+                                        try {
+                                            const dataUrl = await QRLibrary.toDataURL(data.qr);
+                                            document.getElementById('qr-display').innerHTML = `
+                                                <img src="${dataUrl}" style="max-width: 100%; border-radius: 12px;">
+                                            `;
+                                        } catch (e) {
+                                            // Fallback to text display
+                                            document.getElementById('qr-display').innerHTML = `
+                                                <div class="text-center p-4 bg-gray-100 rounded-lg">
+                                                    <p class="text-xs font-mono break-all text-gray-600">${data.qr}</p>
+                                                    <p class="text-sm text-gray-500 mt-2">QR String (scan dengan camera)</p>
+                                                </div>
+                                            `;
+                                        }
+                                    }
+                                }
+                            } else {
+                                // No QR available
+                                document.getElementById('qr-display').innerHTML = `
+                                    <div class="text-center">
+                                        <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
+                                        <p class="text-gray-600 font-semibold">QR Code akan muncul di sini</p>
+                                        <p class="text-sm text-gray-500 mt-2">Tunggu koneksi WhatsApp Baileys siap</p>
+                                    </div>
+                                `;
+                            }
                         } else {
-                            // Show fallback message if no QR available
+                            // API returned error
+                            const error = await response.json();
                             document.getElementById('qr-display').innerHTML = `
                                 <div class="text-center">
-                                    <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
-                                    <p class="text-gray-600 font-semibold">QR Code akan muncul di sini</p>
-                                    <p class="text-sm text-gray-500 mt-2">Tunggu koneksi WhatsApp Baileys siap</p>
+                                    <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+                                    <p class="text-gray-600 font-semibold">QR Code belum siap</p>
+                                    <p class="text-sm text-gray-500 mt-2">${error.error || 'Tunggu server initialize WhatsApp service'}</p>
                                 </div>
                             `;
                         }
-                    } catch (apiErr) {
-                        // API call failed, show helpful message
+                    } catch (fetchErr) {
+                        console.error('Fetch QR error:', fetchErr);
                         document.getElementById('qr-display').innerHTML = `
                             <div class="text-center">
-                                <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Menunggu Backend WhatsApp</p>
-                                <p class="text-sm text-gray-500 mt-2">Periksa apakah WhatsApp Baileys service sudah running</p>
+                                <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">Error connecting to server</p>
+                                <p class="text-sm text-red-500 mt-2">${fetchErr.message || 'Network error'}</p>
                             </div>
                         `;
                     }

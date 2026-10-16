@@ -28,6 +28,47 @@ async function initializeWhatsApp() {
  * Register endpoints
  */
 function registerWhatsAppEndpoints(app, createAuth) {
+    // QR Code: Get current QR as data URL
+    app.get('/api/whatsapp/qr', createAuth(), async (req, res) => {
+        try {
+            if (!waService) {
+                return res.status(503).json({
+                    error: 'WhatsApp service not initialized',
+                    qr: null
+                });
+            }
+
+            const qr = waService.lastQR;
+            if (!qr) {
+                return res.status(404).json({
+                    error: 'No QR code available - try refreshing',
+                    qr: null
+                });
+            }
+
+            // Convert QR string to data URL using qrcode library
+            try {
+                const QRCode = require('qrcode');
+                const dataUrl = await QRCode.toDataURL(qr);
+                res.json({
+                    success: true,
+                    qr: dataUrl,
+                    timestamp: new Date()
+                });
+            } catch (err) {
+                // Fallback: return raw QR string
+                res.json({
+                    success: true,
+                    qr: qr,
+                    timestamp: new Date(),
+                    format: 'text'
+                });
+            }
+        } catch (error) {
+            res.status(500).json({ error: error.message, qr: null });
+        }
+    });
+
     // Status: Check WhatsApp connection & queue
     app.get('/api/whatsapp/status', createAuth(), async (req, res) => {
         try {

@@ -189,6 +189,10 @@ class WhatsAppService {
         };
     }
 
+    getLastQR() {
+        return this.lastQR;
+    }
+
     async disconnect() {
         if (this.socket) {
             try {
