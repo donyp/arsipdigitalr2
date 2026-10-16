@@ -2661,10 +2661,16 @@
     <script src="js/spa-router.js?t=1791564515"></script>
     <script src="js/dashboard.js?v=1009&t=1790611000"></script>
     
-    <!-- Broadcast Banner Loader -->
+    <!-- Broadcast Banner Loader (Lazy-Load Option B) -->
     <script>
+        window.broadcastLoaded = false;
+        
         window.loadGlobalBroadcast = async function() {
             try {
+                // Prevent duplicate loads
+                if (window.broadcastLoaded) return;
+                window.broadcastLoaded = true;
+                
                 const container = document.getElementById('broadcast-banner-container');
                 if (!container) return;
                 
@@ -2696,14 +2702,17 @@
             }
         };
         
-        // Load on page ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                setTimeout(() => window.loadGlobalBroadcast(), 500);
-            });
-        } else {
-            setTimeout(() => window.loadGlobalBroadcast(), 500);
-        }
+        // Option B: Lazy-load on user interaction (notification click)
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add click listener for notification bell
+            const notificationBell = document.querySelector('[data-notification-trigger], .notification-bell, #notification-bell');
+            if (notificationBell) {
+                notificationBell.addEventListener('click', window.loadGlobalBroadcast);
+            }
+            
+            // Fallback: Load after 3s if user hasn't clicked (non-blocking)
+            setTimeout(() => window.loadGlobalBroadcast(), 3000);
+        });
     </script>
     
     <script>
