@@ -3378,9 +3378,12 @@
                     params.append('date_to', dateToValue);
                 }
                 
-                // Fetch ALL matching invoices (use high limit to get all)
-                params.append('limit', 10000);
+                // Fetch invoices with same pagination as normal (20 per page)
+                // Backend will handle sorting via sort_by and sort_order parameters
+                params.append('limit', 20);  // Keep pagination at 20 per page
                 params.append('offset', 0);
+                params.append('sort_by', field);  // Pass sort field to backend
+                params.append('sort_order', window.sortTableState.sortDirection[field] || 'asc');  // Pass sort direction
                 
                 const response = await fetch(`${window.location.origin}/api/invoice/list?${params.toString()}`, {
                     method: 'GET',

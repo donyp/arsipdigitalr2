@@ -1101,6 +1101,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 date_from,
                 date_to,
                 search,
+                sort_by = 'tanggal',
+                sort_order = 'desc',
                 limit = 100,
                 offset = 0
             } = req.query;
@@ -1152,10 +1154,15 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 }
             }
             
-            // Order by date desc
+            // Order by specified field and direction
+            // Validate sort_by to prevent injection (only allow specific fields)
+            const allowedSortFields = ['tanggal', 'status', 'total_jumlah_jual', 'created_at', 'konsumen', 'toko'];
+            const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'tanggal';
+            const sortAsc = sort_order === 'asc';
+            
             query = query
-                .order('tanggal', { ascending: false })
-                .order('created_at', { ascending: false })
+                .order(sortField, { ascending: sortAsc })
+                .order('created_at', { ascending: sortAsc })
                 .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
             
             const { data, error, count } = await query;
