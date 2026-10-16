@@ -3822,24 +3822,24 @@ async function deleteInvoice(faktur, invoiceId) {
     Swal.fire({
         title: '🗑️ Hapus Invoice?',
         html: `
-            <div style="text-align: left; margin: 20px 0;">
-                <p style="font-size: 15px; color: #2c3e50; margin-bottom: 15px;">
+            <div style="text-align: left; margin: 12px 0;">
+                <p style="font-size: 13px; color: #2c3e50; margin-bottom: 10px;">
                     Apakah Anda yakin ingin menghapus invoice <strong style="color: #e74c3c;">${faktur}</strong>?
                 </p>
-                <div style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 12px 15px; border-radius: 3px; margin-bottom: 15px;">
-                    <p style="font-size: 13px; color: #856404; margin: 0;">
-                        <i class="fas fa-exclamation-triangle"></i> <strong>Tindakan ini akan menghapus:</strong>
+                <div style="background: #fff3cd; border-left: 3px solid #ff9800; padding: 10px 12px; border-radius: 3px; margin-bottom: 10px;">
+                    <p style="font-size: 12px; color: #856404; margin: 0;">
+                        <i class="fas fa-exclamation-triangle"></i> <strong>Akan dihapus:</strong>
                     </p>
-                    <ul style="font-size: 12px; color: #856404; margin: 8px 0 0 0; padding-left: 25px;">
-                        <li>Data faktur dari daftar</li>
+                    <ul style="font-size: 11px; color: #856404; margin: 6px 0 0 0; padding-left: 20px;">
+                        <li>Data faktur</li>
                         <li>File Invoice PDF (jika ada)</li>
                         <li>File Bukti Bayar (jika ada)</li>
                         <li>File Faktur Pajak (jika ada)</li>
                     </ul>
                 </div>
-                <div style="background: #f8d7da; border-left: 4px solid #e74c3c; padding: 12px 15px; border-radius: 3px;">
-                    <p style="font-size: 12px; color: #721c24; margin: 0;">
-                        <i class="fas fa-ban"></i> <strong>Tindakan ini TIDAK DAPAT DIBATALKAN</strong>
+                <div style="background: #f8d7da; border-left: 3px solid #e74c3c; padding: 10px 12px; border-radius: 3px;">
+                    <p style="font-size: 11px; color: #721c24; margin: 0;">
+                        <i class="fas fa-ban"></i> <strong>TIDAK DAPAT DIBATALKAN</strong>
                     </p>
                 </div>
             </div>
@@ -3848,13 +3848,20 @@ async function deleteInvoice(faktur, invoiceId) {
         showCancelButton: true,
         confirmButtonColor: '#e74c3c',
         cancelButtonColor: '#95a5a6',
-        confirmButtonText: '❌ Ya, Hapus Sekarang',
+        confirmButtonText: '❌ Hapus',
         cancelButtonText: 'Batal',
         reverseButtons: true,
         allowOutsideClick: false,
+        width: '340px',
+        padding: '20px',
         didOpen: async () => {
             const confirmBtn = Swal.getConfirmButton();
-            confirmBtn.style.minWidth = '140px';
+            confirmBtn.style.minWidth = '100px';
+            confirmBtn.style.padding = '8px 14px';
+            confirmBtn.style.fontSize = '13px';
+            const cancelBtn = Swal.getCancelButton();
+            cancelBtn.style.padding = '8px 14px';
+            cancelBtn.style.fontSize = '13px';
         }
     }).then(async (result) => {
         if (result.isConfirmed) {
