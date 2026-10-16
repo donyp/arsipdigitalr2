@@ -3767,38 +3767,45 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
         // Get current user role
         const isModerator = currentUser && (currentUser.role === 'moderator' || currentUser.role === 'super_admin');
         
-        // Fetch fresh invoice data from server to get accurate file status
+        // Get file status from cached data attribute first (fastest)
+        const row = document.querySelector(`tr[data-faktur="${faktur}"]`);
         let fileStatus = null;
-        try {
-            const token = localStorage.getItem('jwt_token');
-            const response = await fetch(`/api/invoice/${faktur}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                const invoice = data.data || data;
-                const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
-                fileStatus = {
-                    hasInvoice: !!(invoice.invoice_pdf_path || invoice.uploaded_file_path),
-                    hasBuktiBayar: !!invoice.bukti_bayar_path,
-                    hasFakturPajak: isPPN && !!invoice.faktur_pajak_path,
-                    isPPN: isPPN
-                };
-            }
-        } catch (err) {
-            console.warn('[Action Menu] Could not fetch fresh data, using cache:', err.message);
-            // Fallback to cached data attribute
-            const row = document.querySelector(`tr[data-faktur="${faktur}"]`);
-            if (row && row.getAttribute('data-file-status')) {
-                try {
-                    fileStatus = JSON.parse(row.getAttribute('data-file-status'));
-                } catch (e) {
-                    // If parse fails, fileStatus remains null
-                }
+        
+        if (row && row.getAttribute('data-file-status')) {
+            try {
+                fileStatus = JSON.parse(row.getAttribute('data-file-status'));
+                console.log('[Action Menu] Using cached file status:', fileStatus);
+            } catch (e) {
+                console.warn('[Action Menu] Failed to parse cached status:', e.message);
             }
         }
         
-        // If cached file status not available, assume no files (safer)
+        // If no cached data, try to fetch fresh data
+        if (!fileStatus) {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch(`/api/invoice/check-faktur/${faktur}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    const invoice = result.data;
+                    if (invoice) {
+                        fileStatus = {
+                            hasInvoice: !!(invoice.invoice_pdf_path || invoice.uploaded_file_path),
+                            hasBuktiBayar: !!invoice.bukti_bayar_path,
+                            hasFakturPajak: !!invoice.faktur_pajak_path,
+                            isPPN: invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN'
+                        };
+                        console.log('[Action Menu] Fetched fresh file status:', fileStatus);
+                    }
+                }
+            } catch (err) {
+                console.warn('[Action Menu] Could not fetch fresh data:', err.message);
+            }
+        }
+        
+        // Final fallback: assume no files (safer than showing wrong buttons)
         if (!fileStatus) {
             fileStatus = {
                 hasInvoice: false,
@@ -3806,6 +3813,7 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
                 hasFakturPajak: false,
                 isPPN: false
             };
+            console.log('[Action Menu] Using fallback empty status');
         }
         
         // Build menu HTML using cached file status (NO API CALLS - instant render)

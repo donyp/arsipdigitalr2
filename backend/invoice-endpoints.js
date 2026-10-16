@@ -1961,7 +1961,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 const { data, error } = await supabase
                     .from('invoice_file_list')
-                    .select('faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path')
+                    .select('faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
                     .eq('faktur', faktur)
                     .single();
                 

@@ -3359,20 +3359,23 @@
                 // Detect dark mode early
                 const isDarkMode = document.body.classList.contains('dark-mode');
                 
-                // Fetch fresh invoice data from server (don't use stale cached data)
+                // Try to fetch fresh invoice data, fallback to local cache
                 let invoice = null;
                 try {
                     const token = localStorage.getItem('jwt_token');
-                    const response = await fetch(`/api/invoice/${faktur}`, {
+                    const response = await fetch(`/api/invoice/check-faktur/${faktur}`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (response.ok) {
-                        const data = await response.json();
-                        invoice = data.data || data;
+                        const result = await response.json();
+                        invoice = result.data;
                     }
                 } catch (err) {
-                    console.warn('[Download Modal] Could not fetch fresh data, using cache:', err.message);
-                    // Fallback to cached data
+                    console.warn('[Download Modal] Could not fetch fresh data:', err.message);
+                }
+                
+                // Fallback: use cached table data if API fails
+                if (!invoice) {
                     const invoices = window.allAdminZonaInvoices || [];
                     invoice = invoices.find(inv => inv.faktur === faktur);
                 }
