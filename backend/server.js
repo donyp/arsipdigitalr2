@@ -108,6 +108,7 @@ const registerLoggingEndpoints = require('./logging-endpoints');
 const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
 const AuditLogger = require('./audit-logger');
+const { initializeWhatsApp, registerWhatsAppEndpoints } = require('./whatsapp-endpoints');
 const {
     sanitizeString,
     validateZonaId,
@@ -7808,6 +7809,19 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         const fleetRoutes = require('./fleet-management-endpoints');
         fleetRoutes.initializeSupabase(supabase, JWT_SECRET);
         app.use('/api/fleet', fleetRoutes.router);
+
+        // ============================================================
+        // WhatsApp Service & Endpoints
+        // ============================================================
+        console.log('[INIT] Initializing WhatsApp Baileys service...');
+        try {
+            await initializeWhatsApp();
+            registerWhatsAppEndpoints(app, createAuth);
+            console.log('[INIT] WhatsApp service initialized ✅');
+        } catch (err) {
+            console.error('[INIT] WhatsApp initialization failed:', err.message);
+            console.log('[INIT] Continuing without WhatsApp (will attempt connection on next startup)');
+        }
 
         const server = app.listen(PORT, HOST, () => {
             // Task 3.4: Log successful port binding
