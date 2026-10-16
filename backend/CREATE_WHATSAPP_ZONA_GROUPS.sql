@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS whatsapp_zona_messages (
     message_type VARCHAR(50) DEFAULT 'notification',
     trigger_source VARCHAR(100),
     sent_at TIMESTAMP WITH TIME ZONE,
-    sent_by_user_id BIGINT REFERENCES users(id),
+    sent_by_user_id UUID REFERENCES users(id),
     queue_status VARCHAR(50) DEFAULT 'pending',
     error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
