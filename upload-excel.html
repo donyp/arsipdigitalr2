@@ -387,31 +387,6 @@
             to { transform: rotate(360deg); }
         }
 
-        /* Upload button loading animation */
-        .upload-btn-loading {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .upload-spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin-fast 0.8s linear infinite;
-        }
-
-        @keyframes spin-fast {
-            to { transform: rotate(360deg); }
-        }
-
-        .upload-btn-text {
-            white-space: nowrap;
-        }
-
         .step-number {
             width: 40px;
             height: 40px;
@@ -548,23 +523,23 @@
 
                     <div id="validationResult" style="display: none;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
-                            <div style="background: var(--color-bg-secondary); padding: 12px; border-radius: 6px; border: 1px solid var(--color-border);">
-                                <div style="font-size: 10px; color: var(--color-text-secondary); text-transform: uppercase; margin-bottom: 3px;">Total Baris</div>
+                            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">
+                                <div style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 3px;">Total Baris</div>
                                 <div style="font-size: 24px; font-weight: 700; color: #3498db;" id="totalRows">0</div>
                             </div>
-                            <div style="background: var(--color-bg-secondary); padding: 12px; border-radius: 6px; border: 1px solid var(--color-border);">
-                                <div style="font-size: 10px; color: var(--color-text-secondary); text-transform: uppercase; margin-bottom: 3px;">Faktur Unik</div>
+                            <div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">
+                                <div style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 3px;">Faktur Unik</div>
                                 <div style="font-size: 24px; font-weight: 700; color: #3498db;" id="uniqueFakturs">0</div>
                             </div>
                         </div>
                         
-                        <div id="skippedReturValidation" style="background: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: none; border: 1px solid rgba(255, 193, 7, 0.3);">
-                            <p style="margin: 0; color: var(--color-text-primary); font-size: 12px; font-weight: 600;">
-                                <i class="fas fa-info-circle" style="color: #ffc107; margin-right: 6px;"></i> Transaksi RETUR diabaikan: <span id="skippedReturCountBadge" style="background: #ffc107; color: #333; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 6px;">0</span>
+                        <div id="skippedReturValidation" style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: none;">
+                            <p style="margin: 0; color: #856404; font-size: 12px; font-weight: 600;">
+                                <i class="fas fa-info-circle"></i> Transaksi RETUR diabaikan
                             </p>
                         </div>
                         
-                        <div style="background: var(--color-bg-secondary); padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60; border: 1px solid var(--color-border);">
+                        <div style="background: white; padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60;">
                             <p style="margin: 0; color: #27ae60; font-size: 12px;">
                                 ✓ File valid dan siap untuk preview
                             </p>
