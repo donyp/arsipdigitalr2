@@ -708,7 +708,16 @@ circuitBreakerWindow: 300000ms (5 menit)
                         </div>
                     `;
 
-                    // Fetch QR code from API (server generates data URL)
+                    // First, try to reconnect if no QR available
+                    try {
+                        await fetch('/api/whatsapp/refresh-qr', { method: 'POST' });
+                        // Wait 2 seconds for reconnection
+                        await new Promise(r => setTimeout(r, 2000));
+                    } catch (e) {
+                        console.warn('Refresh QR endpoint error:', e);
+                    }
+
+                    // Fetch QR code from API
                     try {
                         const response = await fetch('/api/whatsapp/qr');
 
@@ -716,12 +725,11 @@ circuitBreakerWindow: 300000ms (5 menit)
                             const data = await response.json();
                             
                             if (data.qr) {
-                                // Display QR code (always data URL from server)
+                                // Display QR code
                                 document.getElementById('qr-display').innerHTML = `
                                     <img src="${data.qr}" style="max-width: 280px; border-radius: 12px;">
                                 `;
                             } else {
-                                // No QR available
                                 document.getElementById('qr-display').innerHTML = `
                                     <div class="text-center">
                                         <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
@@ -731,14 +739,13 @@ circuitBreakerWindow: 300000ms (5 menit)
                                 `;
                             }
                         } else {
-                            // API returned error
                             const error = await response.json();
                             document.getElementById('qr-display').innerHTML = `
                                 <div class="text-center">
                                     <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
                                     <p class="text-gray-600 font-semibold">QR Code belum siap</p>
                                     <p class="text-sm text-gray-500 mt-2">${error.error || 'Server WhatsApp belum connecting'}</p>
-                                    <p class="text-xs text-gray-400 mt-3">Hint: ${error.hint || 'Tunggu server initialize'}</p>
+                                    <p class="text-xs text-gray-400 mt-3">${error.hint || 'Coba: delete data/wa-auth folder, restart server'}</p>
                                 </div>
                             `;
                         }

@@ -41,9 +41,9 @@ function registerWhatsAppEndpoints(app, createAuth) {
             const qr = waService.lastQR;
             if (!qr) {
                 return res.status(404).json({
-                    error: 'No QR code available - try refreshing or restarting server',
+                    error: 'No QR code available - session may already be authenticated',
                     qr: null,
-                    hint: 'QR is only valid when first connecting. Try: click Refresh, or restart npm start'
+                    hint: 'Try: 1) Refresh page, 2) Delete data/wa-auth folder and restart server, 3) Check "Check Status" button to see connection state'
                 });
             }
 
@@ -64,7 +64,7 @@ function registerWhatsAppEndpoints(app, createAuth) {
                 });
             } catch (err) {
                 console.error('[WhatsApp QR] Conversion error:', err.message);
-                // Fallback: return raw QR string
+                // Fallback: return raw QR string for client-side conversion
                 res.json({
                     success: true,
                     qr: qr,
@@ -75,6 +75,39 @@ function registerWhatsAppEndpoints(app, createAuth) {
         } catch (error) {
             console.error('[WhatsApp QR] Error:', error.message);
             res.status(500).json({ error: error.message, qr: null });
+        }
+    });
+
+    // Refresh QR: Force reconnect to generate new QR
+    app.post('/api/whatsapp/refresh-qr', async (req, res) => {
+        try {
+            if (!waService) {
+                return res.status(503).json({
+                    error: 'WhatsApp service not initialized'
+                });
+            }
+
+            // Disconnect current session
+            await waService.disconnect();
+            
+            // Re-initialize to generate new QR
+            setTimeout(async () => {
+                try {
+                    await waService.initialize();
+                    res.json({
+                        success: true,
+                        message: 'WhatsApp service reconnected - QR should appear shortly'
+                    });
+                } catch (err) {
+                    res.status(500).json({
+                        error: 'Failed to reconnect',
+                        details: err.message
+                    });
+                }
+            }, 500);
+        } catch (error) {
+            console.error('[WhatsApp Refresh] Error:', error.message);
+            res.status(500).json({ error: error.message });
         }
     });
 
