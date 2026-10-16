@@ -28,97 +28,7 @@ async function initializeWhatsApp() {
  * Register endpoints
  */
 function registerWhatsAppEndpoints(app, createAuth) {
-    // Start Pairing: User provides phone number, system generates pairing code (NO AUTH - for setup page)
-    app.post('/api/whatsapp/start-pairing', async (req, res) => {
-        try {
-            if (!waService) {
-                return res.status(503).json({
-                    error: 'WhatsApp service not initialized',
-                    pairingCode: null
-                });
-            }
-
-            const { phoneNumber } = req.body;
-
-            // Validate phone number input
-            if (!phoneNumber) {
-                return res.status(400).json({
-                    error: 'Phone number is required',
-                    hint: 'Enter phone number in format: 628123456789 or 62812345678'
-                });
-            }
-
-            // Basic phone validation (should be 10-15 digits)
-            const phoneDigits = phoneNumber.replace(/\D/g, '');
-            if (phoneDigits.length < 10 || phoneDigits.length > 15) {
-                return res.status(400).json({
-                    error: 'Invalid phone number format',
-                    hint: 'Phone should have 10-15 digits (example: 628123456789)'
-                });
-            }
-
-            // Set expected phone for verification
-            waService.setExpectedPhoneNumber(phoneNumber);
-
-            // If already connected, just wait for pairing code
-            // If not connected, initialize to trigger pairing code
-            if (!waService.isConnected) {
-                console.log('[WhatsApp] Not connected - initializing...');
-                try {
-                    await waService.initialize();
-                } catch (err) {
-                    console.error('[WhatsApp] Initialize error:', err.message);
-                }
-            } else {
-                console.log('[WhatsApp] Already connected - pairing code will be generated on next attempt');
-            }
-
-            res.json({
-                success: true,
-                message: 'Pairing started - waiting for code',
-                expectedPhone: waService.expectedPhoneNumber,
-                hint: 'Pairing code should appear in 3-5 seconds'
-            });
-        } catch (error) {
-            console.error('[WhatsApp Start Pairing] Error:', error.message);
-            res.status(500).json({ error: error.message });
-        }
-    });
-
-    // Pairing Code: Get current pairing code (NO AUTH - for setup page)
-    app.get('/api/whatsapp/pairing-code', async (req, res) => {
-        try {
-            if (!waService) {
-                return res.status(503).json({
-                    error: 'WhatsApp service not initialized',
-                    pairingCode: null
-                });
-            }
-
-            const pairingInfo = waService.getPairingInfo();
-            
-            if (!pairingInfo.pairingCode) {
-                return res.status(404).json({
-                    error: 'No pairing code available - try refreshing',
-                    pairingCode: null,
-                    hint: 'Click Refresh button or enter phone number to trigger pairing code generation'
-                });
-            }
-
-            res.json({
-                success: true,
-                pairingCode: pairingInfo.pairingCode,
-                expectedPhone: pairingInfo.expectedPhone,
-                timestamp: new Date(),
-                hint: 'Enter this code in WhatsApp → Settings → Linked Devices → Link a Device'
-            });
-        } catch (error) {
-            console.error('[WhatsApp Pairing] Error:', error.message);
-            res.status(500).json({ error: error.message });
-        }
-    });
-
-    // QR Code: Get current QR as data URL (NO AUTH - for setup page)
+    // QR Code: Get current QR for scanning (NO AUTH - for setup page)
     app.get('/api/whatsapp/qr', async (req, res) => {
         try {
             if (!waService) {
@@ -131,9 +41,9 @@ function registerWhatsAppEndpoints(app, createAuth) {
             const qr = waService.lastQR;
             if (!qr) {
                 return res.status(404).json({
-                    error: 'No QR code available - session may already be authenticated',
+                    error: 'No QR code available',
                     qr: null,
-                    hint: 'Try: 1) Refresh page, 2) Delete data/wa-auth folder and restart server, 3) Check "Check Status" button to see connection state'
+                    hint: 'Session already authenticated, or WhatsApp service not ready yet'
                 });
             }
 
@@ -186,7 +96,7 @@ function registerWhatsAppEndpoints(app, createAuth) {
                     await waService.initialize();
                     res.json({
                         success: true,
-                        message: 'WhatsApp service reconnected - QR should appear shortly'
+                        message: 'WhatsApp service reconnected - new QR should appear'
                     });
                 } catch (err) {
                     res.status(500).json({
@@ -217,13 +127,8 @@ function registerWhatsAppEndpoints(app, createAuth) {
             res.json({
                 connected: waService.isConnected,
                 ready: waService.isReady(),
-                queue: waQueue ? waQueue.getStats() : null,
-                pairing: {
-                    expectedPhone: pairingInfo.expectedPhone,
-                    connectedPhone: pairingInfo.connectedPhone,
-                    verified: pairingInfo.verified,
-                    status: pairingInfo.verified === null ? 'pending' : (pairingInfo.verified ? 'verified' : 'mismatch')
-                }
+                connectedPhone: pairingInfo.connectedPhone,
+                queue: waQueue ? waQueue.getStats() : null
             });
         } catch (error) {
             res.status(500).json({ error: error.message });

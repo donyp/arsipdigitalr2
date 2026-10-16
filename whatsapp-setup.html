@@ -260,7 +260,7 @@
                         <span class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-success text-white font-bold text-lg">2</span>
                         <div>
                             <h3 class="text-2xl font-bold text-gray-900">Connection Status</h3>
-                            <p class="text-sm text-gray-600 mt-1">Real-time monitoring & verification</p>
+                            <p class="text-sm text-gray-600 mt-1">Real-time monitoring</p>
                         </div>
                     </div>
 
@@ -271,6 +271,13 @@
                                 <i class="fas fa-circle"></i>
                                 <span>Disconnected</span>
                             </span>
+                        </div>
+
+                        <div id="connected-phone-info" class="grid grid-cols-1 gap-4">
+                            <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                <span class="text-xs text-gray-600">Connected Phone</span>
+                                <p class="font-bold text-gray-900">-</p>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -289,24 +296,6 @@
                             <div class="flex justify-between p-3 bg-white rounded-lg border border-gray-200">
                                 <span class="text-sm text-gray-600">Circuit Breaker</span>
                                 <span id="circuit-status" class="font-bold text-gray-900">-</span>
-                            </div>
-                        </div>
-
-                        <div class="border-t pt-4">
-                            <p class="text-sm font-semibold text-gray-900 mb-3">Phone Number Verification</p>
-                            <div id="verification-info" class="grid grid-cols-2 gap-3">
-                                <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                    <span class="text-xs text-gray-600">Expected Phone</span>
-                                    <p class="font-bold text-gray-900">-</p>
-                                </div>
-                                <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                    <span class="text-xs text-gray-600">Connected Phone</span>
-                                    <p class="font-bold text-gray-900">-</p>
-                                </div>
-                                <div class="col-span-2 p-3 bg-white rounded-lg border border-gray-200">
-                                    <span class="text-xs text-gray-600">Status</span>
-                                    <p class="font-bold text-gray-900">-</p>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -529,74 +518,8 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                 }
             }
             
-            // Make functions global so onclick attributes can find them
             window.startPairing = window.startPairing || (async function startPairing() {
-                const phone = document.getElementById('pairing-phone').value.trim();
-                
-                if (!phone) {
-                    alert('Nomor telepon harus diisi');
-                    return;
-                }
-
-                try {
-                    document.getElementById('qr-display').innerHTML = `
-                        <div class="text-center">
-                            <div class="inline-block">
-                                <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Generating Pairing Code...</p>
-                                <p class="text-sm text-gray-500 mt-2">Phone: ${phone}</p>
-                                <p class="text-xs text-gray-400 mt-3">Tunggu 5-10 detik...</p>
-                            </div>
-                        </div>
-                    `;
-
-                    // Send phone number to backend to start pairing
-                    const response = await fetch('/api/whatsapp/start-pairing', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ phoneNumber: phone })
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        document.getElementById('qr-display').innerHTML = `
-                            <div class="text-center">
-                                <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Error</p>
-                                <p class="text-sm text-red-500 mt-2">${data.error || 'Failed to start pairing'}</p>
-                                <p class="text-xs text-gray-400 mt-2">${data.hint || ''}</p>
-                            </div>
-                        `;
-                        return;
-                    }
-
-                    // Wait longer for pairing code (5-10 seconds)
-                    for (let i = 5; i > 0; i--) {
-                        document.getElementById('qr-display').innerHTML = `
-                            <div class="text-center">
-                                <div class="inline-block">
-                                    <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
-                                    <p class="text-gray-600 font-semibold">Generating Pairing Code...</p>
-                                    <p class="text-sm text-gray-500 mt-2">Phone: ${phone}</p>
-                                    <p class="text-xs text-gray-400 mt-3">Tunggu ${i} detik...</p>
-                                </div>
-                            </div>
-                        `;
-                        await new Promise(r => setTimeout(r, 1000));
-                    }
-                    
-                    await refreshQR();
-                } catch (err) {
-                    console.error('Start pairing error:', err);
-                    document.getElementById('qr-display').innerHTML = `
-                        <div class="text-center">
-                            <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
-                            <p class="text-gray-600 font-semibold">Error</p>
-                            <p class="text-sm text-red-500 mt-2">${err.message}</p>
-                        </div>
-                    `;
-                }
+                // Not used anymore - QR only
             });
 
             window.refreshQR = window.refreshQR || (async function refreshQR() {
@@ -710,22 +633,10 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                 }
 
                 const isConnected = data.connected && data.ready;
-                const isVerified = data.pairing?.verified;
                 const statusEl = document.getElementById('connection-status');
                 
-                let statusText = 'Disconnected';
-                let statusClass = 'disconnected';
-                
-                if (isConnected && isVerified) {
-                    statusText = 'Connected & Verified ✓';
-                    statusClass = 'connected';
-                } else if (isConnected && isVerified === false) {
-                    statusText = 'Connected but Phone Mismatch ⚠️';
-                    statusClass = 'loading'; // Yellow/warning color
-                } else if (isConnected) {
-                    statusText = 'Connected (Verifying...)';
-                    statusClass = 'loading';
-                }
+                let statusText = isConnected ? 'Connected ✓' : 'Disconnected';
+                let statusClass = isConnected ? 'connected' : 'disconnected';
                 
                 statusEl.className = `status-indicator ${statusClass}`;
                 statusEl.innerHTML = `
@@ -750,26 +661,14 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                     document.getElementById('circuit-status').className = cbStatus?.isOpen ? 'font-bold text-red-600' : 'font-bold text-green-600';
                 }
 
-                // Show pairing verification info
-                if (data.pairing) {
-                    const verificationInfo = document.getElementById('verification-info');
-                    if (verificationInfo) {
-                        verificationInfo.innerHTML = `
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                    <span class="text-xs text-gray-600">Expected Phone</span>
-                                    <p class="font-bold text-gray-900">${data.pairing.expectedPhone || '-'}</p>
-                                </div>
-                                <div class="p-3 bg-white rounded-lg border border-gray-200">
-                                    <span class="text-xs text-gray-600">Connected Phone</span>
-                                    <p class="font-bold text-gray-900">${data.pairing.connectedPhone || '-'}</p>
-                                </div>
-                                <div class="col-span-2 p-3 bg-white rounded-lg border border-gray-200">
-                                    <span class="text-xs text-gray-600">Status</span>
-                                    <p class="font-bold ${data.pairing.verified ? 'text-green-600' : data.pairing.verified === false ? 'text-red-600' : 'text-yellow-600'}">
-                                        ${data.pairing.verified === true ? '✓ Verified' : data.pairing.verified === false ? '✗ Mismatch' : '⟳ Pending'}
-                                    </p>
-                                </div>
+                // Show connected phone if available
+                if (data.connectedPhone) {
+                    const phoneInfo = document.getElementById('connected-phone-info');
+                    if (phoneInfo) {
+                        phoneInfo.innerHTML = `
+                            <div class="p-3 bg-white rounded-lg border border-gray-200">
+                                <span class="text-xs text-gray-600">Connected Phone</span>
+                                <p class="font-bold text-gray-900">${data.connectedPhone}</p>
                             </div>
                         `;
                     }
