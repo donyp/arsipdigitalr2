@@ -24,9 +24,9 @@ SELECT
     metode_bayar,
     total_jumlah_jual as total,
     status,
-    invoice_pdf_uploaded,
-    bukti_bayar_uploaded,
-    faktur_pajak_uploaded
+    keterangan,
+    files_uploaded_count,
+    files_required_count
 FROM invoice_file_list
 WHERE EXTRACT(MONTH FROM tanggal) = 3
 AND EXTRACT(YEAR FROM tanggal) = 2026
