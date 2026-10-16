@@ -54,31 +54,44 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+            padding: 24px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
 
         .stat-card.warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: var(--color-bg-secondary);
+            border-color: var(--color-warning);
         }
 
         .stat-card.critical {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            background: var(--color-bg-secondary);
+            border-color: var(--color-error);
         }
 
         .stat-label {
             font-size: 12px;
             text-transform: uppercase;
-            opacity: 0.9;
-            margin-bottom: 8px;
+            opacity: 0.65;
+            margin-bottom: 12px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--color-text-secondary);
         }
 
         .stat-value {
-            font-size: 32px;
-            font-weight: bold;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--color-text-primary);
         }
 
         .filters-section {
@@ -125,39 +138,52 @@
 
         .btn {
             padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background-color: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #5568d3;
-        }
-
-        .btn-secondary {
-            background-color: #e0e0e0;
+            transition: all 0.2s ease;
+            background: var(--color-bg-primary);
             color: var(--color-text-primary);
         }
 
+        .btn:hover {
+            border-color: var(--color-primary);
+            background: var(--color-bg-secondary);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border-color: var(--color-border);
+        }
+
         .btn-secondary:hover {
-            background-color: #d0d0d0;
+            background: var(--color-bg-tertiary);
+            border-color: var(--color-text-secondary);
         }
 
         .btn-export {
-            background-color: #28a745;
+            background: var(--color-success);
             color: white;
+            border-color: var(--color-success);
         }
 
         .btn-export:hover {
-            background-color: #218838;
+            opacity: 0.9;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
         .logs-table-container {
@@ -193,32 +219,49 @@
             color: var(--color-text-primary);
         }
 
+        .logs-table tbody tr {
+            transition: background-color 0.15s ease;
+        }
+
+        .logs-table tbody tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        html[data-dark-mode="true"] .logs-table tbody tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
         .logs-table tbody tr:hover {
             background-color: var(--color-bg-secondary);
         }
 
         .severity-badge {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
+            padding: 6px 12px;
+            border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid;
         }
 
         .severity-info {
-            background-color: #d1ecf1;
-            color: #0c5460;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-info);
+            border-color: var(--color-info);
         }
 
         .severity-warning {
-            background-color: #fff3cd;
-            color: #856404;
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--color-warning);
+            border-color: var(--color-warning);
         }
 
         .severity-error {
-            background-color: #f8d7da;
-            color: #721c24;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--color-error);
+            border-color: var(--color-error);
         }
 
         .suspicious-badge {
