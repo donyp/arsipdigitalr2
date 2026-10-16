@@ -133,6 +133,7 @@ async function checkData() {
         }
 
         // Transform and aggregate
+        let skippedReturs = 0;
         let invoices = parsed.map(row => {
             // Normalize toko values
             let tokoRaw = (row['TOKO'] || row['toko'] || '').trim();
@@ -159,7 +160,16 @@ async function checkData() {
                 total_jumlah_jual: parseFloat(row['JUMLAH JUAL'] || row['jumlah_jual'] || 0),
                 keterangan: row['KET 2'] || row['ket_2'] || 'NON PPN'
             };
-        }).filter(inv => inv.faktur);
+        }).filter(inv => {
+            // Filter: Only accept JUAL transactions, skip RETUR
+            if (!inv.faktur) return false;
+            const transType = String(inv.jenis_transaksi || 'jual').toLowerCase().trim();
+            if (transType === 'retur' || transType === 'return') {
+                skippedReturs++;
+                return false;
+            }
+            return true;
+        });
 
         // Aggregate by faktur
         const aggregated = {};
@@ -173,44 +183,24 @@ async function checkData() {
         });
 
         parsedData = Object.values(aggregated);
-        // ============================================
-        // NEW: Check for duplicates BEFORE showing validation
-        // ============================================
-        const fakturs = parsedData.map(item => item.faktur).filter(Boolean);
         
-        const token = API.getToken() || localStorage.getItem('jwt_token');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const checkDupResponse = await fetch(`${CONFIG.API_URL}/api/invoice/check-duplicate-fakturs`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({ fakturs: fakturs })
-        });
-
-        const dupResult = await checkDupResponse.json();
-        if (!checkDupResponse.ok) {
-            throw new Error(dupResult.details || 'Gagal memeriksa duplikat');
-        }
-
-        if (checkDupResponse.ok && dupResult.hasDuplicates) {
-            // Found duplicates - show error and reject
-            const dupCount = dupResult.duplicateCount;
-            const dupList = dupResult.duplicates.slice(0, 10).join(', ');
-            const message = dupCount > 10 
-                ? `${dupCount} fakturs sudah ada di database:\n${dupList}... dan ${dupCount - 10} lainnya`
-                : `${dupCount} fakturs sudah ada di database:\n${dupList}`;
-            
-            Toast.error(message, `G�� File Excel Sudah Pernah Diupload`);
-            // Reset to step 1
-            resetUpload();
-            return;
-        }
-        // Show validation results
+        // Show validation results - display skipped returs
         document.getElementById('totalRows').textContent = parsed.length;
         document.getElementById('uniqueFakturs').textContent = parsedData.length;
+        
+        // Show skipped returs in validation if any
+        const skippedReturValidation = document.getElementById('skippedReturValidation');
+        if (skippedReturs > 0) {
+            if (skippedReturValidation) {
+                skippedReturValidation.textContent = 'Transaksi RETUR diabaikan: ' + skippedReturs;
+                skippedReturValidation.style.display = 'block';
+            }
+        } else {
+            if (skippedReturValidation) {
+                skippedReturValidation.style.display = 'none';
+            }
+        }
+        
         document.getElementById('loadingValidation').style.display = 'none';
         document.getElementById('validationResult').style.display = 'block';
 
