@@ -4,8 +4,8 @@
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS whatsapp_zona_groups (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    zona_id UUID NOT NULL UNIQUE REFERENCES zonas(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    zona_id BIGINT NOT NULL UNIQUE REFERENCES zonas(id) ON DELETE CASCADE,
     group_id VARCHAR(255) NOT NULL UNIQUE,
     group_name VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT true,
@@ -18,14 +18,14 @@ CREATE TABLE IF NOT EXISTS whatsapp_zona_groups (
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS whatsapp_zona_messages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    zona_id UUID NOT NULL REFERENCES zonas(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    zona_id BIGINT NOT NULL REFERENCES zonas(id) ON DELETE CASCADE,
     group_id VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     message_type VARCHAR(50) DEFAULT 'notification',
     trigger_source VARCHAR(100),
     sent_at TIMESTAMP WITH TIME ZONE,
-    sent_by_user_id UUID REFERENCES users(id),
+    sent_by_user_id BIGINT REFERENCES users(id),
     queue_status VARCHAR(50) DEFAULT 'pending',
     error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
