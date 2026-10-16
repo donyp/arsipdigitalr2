@@ -3408,8 +3408,8 @@
                     return;
                 }
                 
-                // Render invoices WITHOUT file checking (skip "Memeriksa ketersediaan file" loading)
-                // Build simple table HTML without expensive file status checks
+                // Render invoices directly (backend already sorted them!)
+                // NO CLIENT-SIDE SORTING - trust backend sort
                 const tbody = document.getElementById('invoiceTableBody');
                 let tableHTML = '';
                 
@@ -3431,7 +3431,6 @@
                     let actualUploadedCount = 0;
                     
                     // Invoice PDF (required for all) - count only ONE invoice file
-                    // Check both paths but only increment once (not both)
                     if (inv.invoice_pdf_path || inv.uploaded_file_path) {
                         actualUploadedCount++;
                     }
@@ -3446,16 +3445,10 @@
                         actualUploadedCount++;
                     }
                     
-                    // Debug: log file status untuk faktur specific
-                    if (window.location.hostname.includes('localhost') || window.location.hostname === '127.0.0.1') {
-                        // Optional: uncomment untuk debug - shows file path status
-                        // console.log(`Faktur: ${inv.faktur}, Type: ${inv.keterangan}, Count: ${actualUploadedCount}/${requiredCount}, Paths: invoice_pdf=${!!inv.invoice_pdf_path}, uploaded=${!!inv.uploaded_file_path}, bukti=${!!inv.bukti_bayar_path}, pajak=${!!inv.faktur_pajak_path}`);
-                    }
-                    
                     const statusText = `${actualUploadedCount}/${requiredCount}`;
                     const isDarkMode = document.documentElement.getAttribute('data-dark-mode') === 'true';
                     
-                    // Color based on actual file count (no file checking needed)
+                    // Color based on actual file count
                     let statusStyle;
                     if (isDarkMode) {
                         statusStyle = 'background: #7c5a0a; color: #fef08a;'; // Yellow
@@ -3511,79 +3504,16 @@
                 
                 tbody.innerHTML = tableHTML;
                 
-                // Now get rows from newly rendered table
-                const rows = Array.from(invoiceTableBody.querySelectorAll('tr')).filter(row => row.getAttribute('data-faktur'));
-                
-                if (rows.length === 0) {
-                    sortHeaders.forEach(header => {
-                        header.style.opacity = '1';
-                        header.style.cursor = 'pointer';
-                        header.style.pointerEvents = 'auto';
-                    });
-                    updateSortIndicators(field);
-                    return;
+                // Save sort state for pagination
+                if (typeof activeInvoiceFilters !== 'undefined') {
+                    activeInvoiceFilters.sort_by = field;
+                    activeInvoiceFilters.sort_order = window.sortTableState.sortDirection[field] || 'asc';
+                    console.log('[sortTable] Saved sort state:', activeInvoiceFilters.sort_by, activeInvoiceFilters.sort_order);
                 }
                 
-                // Extract and parse values for each row
-                const rowData = rows.map(row => ({
-                    row,
-                    statusValue: (() => {
-                        const text = row.cells[0].textContent.trim();
-                        const match = text.match(/(\d+)\/(\d+)/);
-                        const count = match ? parseInt(match[1]) : 0;
-                        const total = match ? parseInt(match[2]) : 0;
-                        return total > 0 ? (count / total) * 1000 + count : 0;
-                    })(),
-                    tanggalValue: (() => {
-                        const text = row.cells[1].textContent.trim();
-                        // Parse date from DD/MM/YY format
-                        const parts = text.split('/');
-                        if (parts.length === 3) {
-                            const day = parts[0];
-                            const month = parts[1];
-                            const year = '20' + parts[2]; // Convert YY to YYYY
-                            return new Date(`${year}-${month}-${day}`);
-                        }
-                        return new Date(0); // Fallback for invalid dates
-                    })(),
-                    totalValue: (() => {
-                        const text = row.cells[7].textContent.trim();
-                        const numStr = text.replace(/[^\d.,]/g, '');
-                        return parseFloat(numStr.replace(/\./g, '').replace(',', '.')) || 0;
-                    })()
-                }));
-                
-                // Sort data
-                rowData.sort((a, b) => {
-                    let aVal, bVal;
-                    if (field === 'status') {
-                        aVal = a.statusValue;
-                        bVal = b.statusValue;
-                    } else if (field === 'tanggal') {
-                        aVal = a.tanggalValue;
-                        bVal = b.tanggalValue;
-                    } else if (field === 'total') {
-                        aVal = a.totalValue;
-                        bVal = b.totalValue;
-                    }
-                    
-                    if (window.sortTableState.sortDirection[field] === 'asc') {
-                        return aVal > bVal ? 1 : -1;
-                    } else {
-                        return aVal < bVal ? 1 : -1;
-                    }
-                });
-                
-                // Reorder rows by appending in sorted order
-                rowData.forEach(item => {
-                    invoiceTableBody.appendChild(item.row);
-                });
-                
-                // Update sort indicators
-                window.updateSortIndicators(field);
-                
-                // Update pagination info to show all sorted data
-                window.invoiceTotalCount = allInvoices.length;
+                // Update pagination info to show first page
+                window.invoiceTotalCount = result.count || allInvoices.length;
+                window.invoiceCurrentPage = 1;
                 if (typeof updatePaginationInfo === 'function') {
                     updatePaginationInfo();
                 }

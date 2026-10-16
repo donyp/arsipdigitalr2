@@ -2831,6 +2831,9 @@ async function loadInvoicesInDashboard(page = 1) {
         
         const url = `${CONFIG.API_URL}/api/invoice/list?${params.toString()}`;
         
+        // DEBUG: Log what we're requesting
+        console.log('[loadInvoicesInDashboard] Page:', page, 'Offset:', offset, 'Sort:', activeInvoiceFilters.sort_by, activeInvoiceFilters.sort_order, 'Filters:', activeInvoiceFilters);
+        
         // Check if we have cached stats (prevents repeated calculations)
         const cachedStats = window.invoiceStatsCache?.getStats({
             status: activeInvoiceFilters.status,
