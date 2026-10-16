@@ -545,6 +545,7 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                                 <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
                                 <p class="text-gray-600 font-semibold">Generating Pairing Code...</p>
                                 <p class="text-sm text-gray-500 mt-2">Phone: ${phone}</p>
+                                <p class="text-xs text-gray-400 mt-3">Tunggu 5-10 detik...</p>
                             </div>
                         </div>
                     `;
@@ -570,8 +571,21 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                         return;
                     }
 
-                    // Wait a moment then fetch the pairing code
-                    await new Promise(r => setTimeout(r, 2000));
+                    // Wait longer for pairing code (5-10 seconds)
+                    for (let i = 5; i > 0; i--) {
+                        document.getElementById('qr-display').innerHTML = `
+                            <div class="text-center">
+                                <div class="inline-block">
+                                    <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
+                                    <p class="text-gray-600 font-semibold">Generating Pairing Code...</p>
+                                    <p class="text-sm text-gray-500 mt-2">Phone: ${phone}</p>
+                                    <p class="text-xs text-gray-400 mt-3">Tunggu ${i} detik...</p>
+                                </div>
+                            </div>
+                        `;
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                    
                     await refreshQR();
                 } catch (err) {
                     console.error('Start pairing error:', err);

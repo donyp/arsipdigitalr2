@@ -60,17 +60,18 @@ function registerWhatsAppEndpoints(app, createAuth) {
             // Set expected phone for verification
             waService.setExpectedPhoneNumber(phoneNumber);
 
-            // Trigger reconnection to generate new pairing code
-            await waService.disconnect();
-            
-            // Wait a bit then reconnect
-            setTimeout(async () => {
+            // If already connected, just wait for pairing code
+            // If not connected, initialize to trigger pairing code
+            if (!waService.isConnected) {
+                console.log('[WhatsApp] Not connected - initializing...');
                 try {
                     await waService.initialize();
                 } catch (err) {
-                    console.error('[WhatsApp] Reconnect error:', err.message);
+                    console.error('[WhatsApp] Initialize error:', err.message);
                 }
-            }, 500);
+            } else {
+                console.log('[WhatsApp] Already connected - pairing code will be generated on next attempt');
+            }
 
             res.json({
                 success: true,
