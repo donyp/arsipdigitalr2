@@ -53,19 +53,18 @@ class WhatsAppService {
                 shouldSyncHistoryMessage: () => false,
                 markOnlineOnConnect: true,
                 browser: ['Linux', 'Chrome', '121.0.6167.160'],
-                pairingCodeTimeoutMs: 60000, // Pairing code valid for 60 seconds
-                generateHighQualityLinkPreview: true,
-                printQRInTerminal: false // Disable QR - force pairing code only
+                generateHighQualityLinkPreview: true
             });
 
             // Handle connection updates - Generate QR or Pairing Code
             this.socket.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
+                
+                console.log('[WhatsApp] connection.update received:', { connection, qr: qr ? 'QR_PRESENT' : 'NO_QR' });
 
                 if (qr) {
                     this.lastQR = qr;
-                    // Don't log QR here - pairing code only
-                    console.log('[WhatsApp] QR received (ignored - using pairing code method)');
+                    console.log('[WhatsApp] ⏳ QR Code generated (stored for API)');
                 }
 
                 if (connection === 'connecting') {
@@ -92,7 +91,6 @@ class WhatsAppService {
                                     console.log(`[WhatsApp] ✅ Phone number verified: ${phoneNumber}`);
                                 } else {
                                     console.log(`[WhatsApp] ⚠️ Phone mismatch! Expected: ${this.expectedPhoneNumber}, Got: ${phoneNumber}`);
-                                    // In production, you might want to disconnect if mismatch
                                 }
                             }
                         }
@@ -115,13 +113,20 @@ class WhatsAppService {
 
             // Handle Pairing Code (alternative to QR)
             this.socket.ev.on('pair-code', async (pairingCode) => {
-                console.log('[WhatsApp] 📱 Pairing Code: ' + pairingCode);
+                console.log('[WhatsApp] 📱 Pairing Code Received: ' + pairingCode);
                 this.lastPairingCode = pairingCode;
-                console.log('[WhatsApp] Enter this code in your WhatsApp phone:');
-                console.log('');
-                console.log('  📲 ' + pairingCode);
-                console.log('');
-                console.log('[WhatsApp] Settings → Linked Devices → Link a Device (use code, not camera)');
+                console.log('[WhatsApp] ======================================');
+                console.log('[WhatsApp] Pairing Code for phone: ' + (this.expectedPhoneNumber || 'N/A'));
+                console.log('[WhatsApp] Code: ' + pairingCode);
+                console.log('[WhatsApp] Valid for 60 seconds');
+                console.log('[WhatsApp] ======================================');
+            });
+
+            // Listen to ALL socket events for debugging
+            this.socket.ev.on('*', (event, data) => {
+                if (event !== 'creds.update' && !event.includes('presence.update') && event !== 'connection.update') {
+                    console.log(`[WhatsApp EVENT] ${event}`);
+                }
             });
 
             // Save credentials on update
