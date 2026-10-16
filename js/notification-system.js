@@ -203,10 +203,10 @@ class NotificationSystem {
 
             .notification-modal {
                 background: #ffffff;
-                border-radius: 16px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 1px rgba(0, 0, 0, 0.1);
-                padding: 32px;
-                max-width: 420px;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2), 0 0 1px rgba(0, 0, 0, 0.1);
+                padding: 24px;
+                max-width: 340px;
                 width: 100%;
                 animation: modalSlideIn 0.3s ease-out;
                 border: 1px solid rgba(255, 255, 255, 0.8);
@@ -224,41 +224,44 @@ class NotificationSystem {
             }
 
             .notification-modal-header {
-                margin-bottom: 20px;
+                margin-bottom: 16px;
             }
 
             .notification-modal-title {
-                font-size: 20px;
+                font-size: 16px;
                 font-weight: 700;
                 color: #1f2937;
                 margin: 0;
                 letter-spacing: -0.5px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
 
             .notification-modal-message {
-                font-size: 14px;
+                font-size: 13px;
                 color: #6b7280;
-                margin: 12px 0 0 0;
-                line-height: 1.6;
+                margin: 10px 0 0 0;
+                line-height: 1.5;
             }
 
             .notification-modal-actions {
                 display: flex;
                 gap: 10px;
-                margin-top: 28px;
+                margin-top: 20px;
+                justify-content: flex-end;
             }
 
             .notification-modal-btn {
-                flex: 1;
-                padding: 12px 20px;
+                padding: 10px 16px;
                 border: none;
-                border-radius: 8px;
-                font-size: 14px;
+                border-radius: 6px;
+                font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-                text-transform: uppercase;
-                letter-spacing: 0.6px;
+                min-width: 90px;
+                text-align: center;
             }
 
             .notification-modal-btn-primary {
