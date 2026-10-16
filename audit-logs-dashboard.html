@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="css/color-vars.css">
+    <script src="js/dark-mode-init.js"></script>
     <style>
         .audit-container {
             max-width: 1400px;
@@ -436,6 +437,14 @@
 
     <script src="js/auth.js"></script>
     <script src="js/sidebar.js"></script>
+    <script>
+        // Force sidebar initialization if not already done
+        console.log('[AuditLogs] Sidebar element exists:', !!document.getElementById('sidebar'));
+        console.log('[AuditLogs] initSidebar function available:', typeof window.initSidebar);
+        if (typeof window.initSidebar === 'function') {
+            window.initSidebar();
+        }
+    </script>
     <script src="js/session-keepalive.js"></script>
     <script src="js/session-status-checker.js"></script>
     <script>
