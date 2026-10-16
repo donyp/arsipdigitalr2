@@ -3978,22 +3978,29 @@ async function deleteInvoice(faktur, invoiceId) {
                     }
                 });
                 
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
                 const response = await fetch(`/api/invoice/${faktur}`, {
                     method: 'DELETE',
-                    headers: headers
+                    headers: headers,
+                    signal: controller.signal
                 });
                 
+                clearTimeout(timeoutId);
+                
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Gagal menghapus invoice');
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Error: ${response.status} ${response.statusText}`);
                 }
                 
-                const result = await response.json();
+                const result = await response.json().catch(() => ({}));
                 
-                
+                // Close loading modal first
+                Swal.close();
                 
                 // Show success with details
-                Swal.fire({
+                await Swal.fire({
                     icon: 'success',
                     title: '✅ Berhasil Dihapus!',
                     html: `
@@ -4003,27 +4010,31 @@ async function deleteInvoice(faktur, invoiceId) {
                             </p>
                             <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 12px; border-radius: 3px;">
                                 <p style="font-size: 12px; color: #155724; margin: 0;">
-                                    <i class="fas fa-check-circle"></i> ${result.filesDeleted} file dihapus dari Google Drive
+                                    <i class="fas fa-check-circle"></i> Invoice dan file telah dihapus
                                 </p>
                             </div>
                         </div>
                     `,
                     confirmButtonColor: '#27ae60',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false
                 });
                 
                 // Reload the data
-                await loadInvoicesInDashboard(1);
-                await loadFilterOptions();
+                Swal.close();
+                location.reload();
                 
             } catch (error) {
-                Swal.fire({
+                console.error('[Dashboard] Delete error:', error);
+                Swal.close();
+                
+                await Swal.fire({
                     icon: 'error',
                     title: '❌ Gagal Menghapus',
                     html: `
                         <div style="text-align: left; margin: 15px 0;">
                             <p style="font-size: 13px; color: #721c24;">
-                                ${error.message}
+                                ${error.name === 'AbortError' ? 'Request timeout - server tidak merespons' : error.message}
                             </p>
                             <p style="font-size: 11px; color: #7f8c8d; margin-top: 10px;">
                                 Invoice: <strong>${faktur}</strong>
