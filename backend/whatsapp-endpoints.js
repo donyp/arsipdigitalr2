@@ -28,8 +28,8 @@ async function initializeWhatsApp() {
  * Register endpoints
  */
 function registerWhatsAppEndpoints(app, createAuth) {
-    // QR Code: Get current QR as data URL
-    app.get('/api/whatsapp/qr', createAuth(), async (req, res) => {
+    // QR Code: Get current QR as data URL (NO AUTH - for setup page)
+    app.get('/api/whatsapp/qr', async (req, res) => {
         try {
             if (!waService) {
                 return res.status(503).json({

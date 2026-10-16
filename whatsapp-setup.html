@@ -708,14 +708,9 @@ circuitBreakerWindow: 300000ms (5 menit)
                         </div>
                     `;
 
-                    // Fetch QR code from new API endpoint
+                    // Fetch QR code from API (NO AUTH needed)
                     try {
-                        const token = localStorage.getItem('auth_token');
-                        const response = await fetch('/api/whatsapp/qr', {
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
+                        const response = await fetch('/api/whatsapp/qr');
 
                         if (response.ok) {
                             const data = await response.json();
@@ -728,24 +723,13 @@ circuitBreakerWindow: 300000ms (5 menit)
                                         <img src="${data.qr}" style="max-width: 100%; border-radius: 12px;">
                                     `;
                                 } else {
-                                    // It's raw text, encode to data URL on client side
-                                    const QRLibrary = window.QR;
-                                    if (QRLibrary) {
-                                        try {
-                                            const dataUrl = await QRLibrary.toDataURL(data.qr);
-                                            document.getElementById('qr-display').innerHTML = `
-                                                <img src="${dataUrl}" style="max-width: 100%; border-radius: 12px;">
-                                            `;
-                                        } catch (e) {
-                                            // Fallback to text display
-                                            document.getElementById('qr-display').innerHTML = `
-                                                <div class="text-center p-4 bg-gray-100 rounded-lg">
-                                                    <p class="text-xs font-mono break-all text-gray-600">${data.qr}</p>
-                                                    <p class="text-sm text-gray-500 mt-2">QR String (scan dengan camera)</p>
-                                                </div>
-                                            `;
-                                        }
-                                    }
+                                    // It's raw text, display as fallback
+                                    document.getElementById('qr-display').innerHTML = `
+                                        <div class="text-center p-4 bg-gray-100 rounded-lg">
+                                            <p class="text-xs font-mono break-all text-gray-600">${data.qr}</p>
+                                            <p class="text-sm text-gray-500 mt-2">QR String (scan dengan camera)</p>
+                                        </div>
+                                    `;
                                 }
                             } else {
                                 // No QR available
