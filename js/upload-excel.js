@@ -56,21 +56,21 @@ function handleFileSelected(file) {
     // Strict validation: Extension check
     const ext = file.name.toLowerCase().split('.').pop();
     if (ext !== 'xlsx') {
-        Toast.error('G¥î Format file tidak valid', 'Hanya file Microsoft Excel Worksheet (.xlsx) yang diizinkan.\n\nFile lain seperti .xls, .csv, atau format lain tidak didukung.');
+        Toast.error('Gï¿½ï¿½ Format file tidak valid', 'Hanya file Microsoft Excel Worksheet (.xlsx) yang diizinkan.\n\nFile lain seperti .xls, .csv, atau format lain tidak didukung.');
         return;
     }
 
     // MIME type check
     const validMimeTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
     if (!validMimeTypes.includes(file.type)) {
-        Toast.warning('GÜán+Å MIME type tidak standard', `File type: ${file.type || 'unknown'}\n\nSistem masih akan mencoba memproses file ini.`);
+        Toast.warning('Gï¿½ï¿½n+ï¿½ MIME type tidak standard', `File type: ${file.type || 'unknown'}\n\nSistem masih akan mencoba memproses file ini.`);
         // Continue anyway - MIME type might not be set correctly on some systems
     }
 
     // Size check
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-        Toast.error('G¥î File terlalu besar', `Ukuran file: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\nMaksimal ukuran file: 10MB`);
+        Toast.error('Gï¿½ï¿½ File terlalu besar', `Ukuran file: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\nMaksimal ukuran file: 10MB`);
         return;
     }
 
@@ -203,7 +203,7 @@ async function checkData() {
                 ? `${dupCount} fakturs sudah ada di database:\n${dupList}... dan ${dupCount - 10} lainnya`
                 : `${dupCount} fakturs sudah ada di database:\n${dupList}`;
             
-            Toast.error(message, `G¥î File Excel Sudah Pernah Diupload`);
+            Toast.error(message, `Gï¿½ï¿½ File Excel Sudah Pernah Diupload`);
             // Reset to step 1
             resetUpload();
             return;
@@ -215,7 +215,7 @@ async function checkData() {
         document.getElementById('validationResult').style.display = 'block';
 
     } catch (error) {
-        Toast.error(error.message, 'G¥î Upload Error');
+        Toast.error(error.message, 'Gï¿½ï¿½ Upload Error');
         resetUpload();
     }
 }
@@ -282,22 +282,32 @@ async function uploadData() {
         const result = await response.json();
         if (response.ok && result.success) {
             const processed = result.summary?.processed || 0;
+            const skippedReturs = result.summary?.skippedReturs || 0;
+            
             document.getElementById('uploadedCount').textContent = processed;
+            
+            if (skippedReturs > 0) {
+                document.getElementById('skippedReturCount').textContent = skippedReturs + ' transaksi diabaikan';
+                document.getElementById('skippedReturInfo').style.display = 'block';
+            }
             
             document.getElementById('card3').style.display = 'none';
             document.getElementById('card4').style.display = 'block';
             updateStep(4);
 
             if (typeof Toast !== 'undefined') {
-                Toast.success(`G£à ${processed} file Excel berhasil diupload!`);
+                const msg = skippedReturs > 0 
+                    ? processed + ' invoice diupload! (' + skippedReturs + ' retur diabaikan)'
+                    : processed + ' file Excel berhasil diupload!';
+                Toast.success(msg);
             }
         } else {
-            Toast.error(result.error || 'Upload failed', 'G¥î Upload Error');
+            Toast.error(result.error || 'Upload failed', 'Upload Error');
             btnUpload.disabled = false;
             btnUpload.textContent = originalText;
         }
     } catch (error) {
-        Toast.error(error.message, 'G¥î Upload Error');
+        Toast.error(error.message, 'Gï¿½ï¿½ Upload Error');
         btnUpload.disabled = false;
         btnUpload.textContent = originalText;
     }
@@ -425,7 +435,7 @@ function displayWhatsappNotifications() {
             margin-bottom: 8px;
             font-size: 13px;
         `;
-        zonaLabel.textContent = `=ƒôì ${notif.zona_name} (${notif.invoice_count} invoice)`;
+        zonaLabel.textContent = `=ï¿½ï¿½ï¿½ ${notif.zona_name} (${notif.invoice_count} invoice)`;
 
         const messageText = document.createElement('div');
         messageText.style.cssText = `
@@ -457,7 +467,7 @@ function displayWhatsappNotifications() {
             font-size: 12px;
             transition: all 0.2s;
         `;
-        copyButton.textContent = '=ƒôï Salin Pesan';
+        copyButton.textContent = '=ï¿½ï¿½ï¿½ Salin Pesan';
         copyButton.onmouseover = () => copyButton.style.background = '#1fa857';
         copyButton.onmouseout = () => copyButton.style.background = '#25d366';
         copyButton.onclick = () => copyToClipboard(notif.message, notif.zona_name, copyButton);
@@ -480,7 +490,7 @@ async function copyToClipboard(message, zonaName, buttonElement) {
         
         // Show feedback
         const originalText = buttonElement.textContent;
-        buttonElement.textContent = 'G£à Sudah Disalin!';
+        buttonElement.textContent = 'Gï¿½ï¿½ Sudah Disalin!';
         buttonElement.style.background = '#27ae60';
         
         setTimeout(() => {
@@ -523,7 +533,7 @@ async function markAllWhatsappAsSent() {
             document.getElementById('whatsappPanel').style.display = 'none';
             
             if (typeof Toast !== 'undefined') {
-                Toast.success('Semua pesan sudah ditandai sebagai terkirim!', 'G£à Sukses');
+                Toast.success('Semua pesan sudah ditandai sebagai terkirim!', 'Gï¿½ï¿½ Sukses');
             }
         } else {
             if (typeof Toast !== 'undefined') {

@@ -144,6 +144,7 @@ function parseExcel(fileBuffer) {
         
         // Group by FAKTUR and aggregate
         const faktursMap = new Map();
+        let skippedRetur = 0;
         
         rawData.forEach((row, index) => {
             try {
@@ -160,6 +161,14 @@ function parseExcel(fileBuffer) {
                 // Skip if no faktur
                 if (!faktur) {
                     console.warn(`[Excel Parser] Row ${index + 1}: Missing faktur, skipping`);
+                    return;
+                }
+                
+                // FILTER: Only accept 'jual' transactions, skip 'retur'
+                const transactionType = String(jenisTransaksi || 'jual').toLowerCase().trim();
+                if (transactionType === 'retur' || transactionType === 'return') {
+                    console.warn(`[Excel Parser] Row ${index + 1}: Skipping RETUR transaction (faktur: ${faktur})`);
+                    skippedRetur++;
                     return;
                 }
                 
@@ -203,7 +212,7 @@ function parseExcel(fileBuffer) {
         // Convert map to array
         const aggregatedData = Array.from(faktursMap.values());
         
-        console.log(`[Excel Parser] Aggregated ${rawData.length} rows into ${aggregatedData.length} unique fakturs`);
+        console.log(`[Excel Parser] Aggregated ${rawData.length} rows into ${aggregatedData.length} unique fakturs (skipped ${skippedRetur} retur transactions)`);
         
         return {
             success: true,
@@ -211,7 +220,8 @@ function parseExcel(fileBuffer) {
             summary: {
                 totalRows: rawData.length,
                 uniqueFakturs: aggregatedData.length,
-                aggregatedCount: rawData.length - aggregatedData.length
+                aggregatedCount: rawData.length - aggregatedData.length,
+                skippedReturs: skippedRetur
             }
         };
         

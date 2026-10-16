@@ -590,12 +590,20 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
                         <div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">
                             <div style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 3px;">Status</div>
-                            <div style="font-size: 16px; font-weight: 700; color: #27ae60;">? Berhasil</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #27ae60;">✓ Berhasil</div>
                         </div>
                         <div style="background: #f8f9fa; padding: 12px; border-radius: 6px;">
                             <div style="font-size: 10px; color: #7f8c8d; text-transform: uppercase; margin-bottom: 3px;">Invoice Ditambahkan</div>
                             <div style="font-size: 24px; font-weight: 700; color: #3498db;" id="uploadedCount">0</div>
                         </div>
+                    </div>
+
+                    <div id="skippedReturInfo" style="background: #fff3cd; border-left: 4px solid #ff9800; padding: 12px; border-radius: 6px; margin-bottom: 12px; display: none;">
+                        <div style="font-size: 10px; color: #856404; text-transform: uppercase; margin-bottom: 3px; font-weight: 600;">
+                            <i class="fas fa-info-circle"></i> Transaksi Retur Diabaikan
+                        </div>
+                        <div style="font-size: 14px; font-weight: 700; color: #856404;" id="skippedReturCount">0</div>
+                        <p style="margin: 6px 0 0 0; font-size: 11px; color: #7d6608;">Sistem hanya menerima transaksi jual. Transaksi retur tidak dimasukkan ke dalam data.</p>
                     </div>
 
                     <div style="display: flex; gap: 10px; justify-content: flex-end;">
