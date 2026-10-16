@@ -122,6 +122,13 @@
             margin-bottom: 24px;
         }
 
+        .grid-full {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
         .stat-card {
             background: #1e293b;
             border: 1px solid #334155;
@@ -563,7 +570,7 @@
 
         <!-- TAB: SERVICES -->
         <div id="services" class="tab-content" style="display: none;">
-            <div class="stats-grid">
+            <div class="grid-full">
                 <div class="stat-card">
                     <div class="stat-card-title">🚀 Backend</div>
                     <div id="backendStatus" style="color: #10b981; font-weight: 600; margin: 12px 0;">RUNNING</div>
