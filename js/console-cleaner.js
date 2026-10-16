@@ -42,9 +42,26 @@
         original.error.apply(console, ['🔴 ERROR', ...args]);
     };
 
-    // Override console.warn - SELALU tampilkan warning
+    // Override console.warn - Filter out library warnings
     console.warn = function(...args) {
-        original.warn.apply(console, ['🟡 WARN', ...args]);
+        const message = args[0]?.toString() || '';
+        
+        // Filter: Hide library warnings (Tailwind, Notify, etc)
+        const libraryWarnings = [
+            'cdn.tailwindcss.com',
+            'should not be used in production',
+            'document.body not ready',
+            '[Notify]',
+            'PostCSS plugin',
+            'Tailwind CLI'
+        ];
+        
+        const isLibraryWarning = libraryWarnings.some(keyword => message.includes(keyword));
+        
+        // Only show if NOT a library warning
+        if (!isLibraryWarning) {
+            original.warn.apply(console, ['🟡 WARN', ...args]);
+        }
     };
 
     // Override console.info - hanya jika ada prefix penting
