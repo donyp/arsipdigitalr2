@@ -662,6 +662,7 @@
 
             filesList.style.display = 'block';
             btnUpload.disabled = validCount === 0;
+            console.log(`[Upload] Valid files: ${validCount}, Button disabled: ${btnUpload.disabled}`);
         }
 
         function deleteFile(index) {
@@ -684,13 +685,21 @@
             btnUpload.disabled = true;
         }
 
-        btnUpload.addEventListener('click', async () => {
+        btnUpload.addEventListener('click', async (e) => {
+            // Force prevent default
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log(`[Upload Click] Valid files in array: ${filesToUpload.length}`);
+            
             // Get validated files (those marked as valid from validation scan)
             const validFiles = filesToUpload.filter((file, idx) => {
                 // Find this file in the validated list by checking if it's in DOM as valid
                 const validItem = document.querySelector(`[data-file-index="${idx}"].file-item.valid`);
                 return !!validItem;
             });
+
+            console.log(`[Upload Click] Valid files in DOM: ${validFiles.length}`);
 
             if (validFiles.length === 0) {
                 Notify.error('Tidak ada file valid untuk diupload');
