@@ -2695,7 +2695,9 @@ let activeInvoiceFilters = {
     keterangan: '',
     date_from: '',
     date_to: '',
-    search: ''
+    search: '',
+    sort_by: 'tanggal',        // NEW: Track sort field
+    sort_order: 'desc'          // NEW: Track sort direction
 };
 
 // ============================================
@@ -2815,13 +2817,15 @@ async function loadInvoicesInDashboard(page = 1) {
         
         const offset = (page - 1) * INVOICE_PAGE_SIZE;
         
-        // BUILD URL WITH ACTIVE FILTERS
+        // BUILD URL WITH ACTIVE FILTERS AND SORT
         const params = new URLSearchParams();
         if (activeInvoiceFilters.toko) params.append('toko', activeInvoiceFilters.toko);
         if (activeInvoiceFilters.keterangan) params.append('keterangan', activeInvoiceFilters.keterangan);
         if (activeInvoiceFilters.search) params.append('search', activeInvoiceFilters.search);
         if (activeInvoiceFilters.date_from) params.append('date_from', activeInvoiceFilters.date_from);
         if (activeInvoiceFilters.date_to) params.append('date_to', activeInvoiceFilters.date_to);
+        params.append('sort_by', activeInvoiceFilters.sort_by || 'tanggal');
+        params.append('sort_order', activeInvoiceFilters.sort_order || 'desc');
         params.append('limit', INVOICE_PAGE_SIZE);
         params.append('offset', offset);
         
@@ -4200,7 +4204,9 @@ async function applyInvoiceFilters() {
             keterangan: keterangan,
             date_from: dateFromValue,
             date_to: dateToValue,
-            search: search
+            search: search,
+            sort_by: 'tanggal',      // Reset to default sort when applying new filters
+            sort_order: 'desc'
         };
         
         params.append('limit', INVOICE_PAGE_SIZE);

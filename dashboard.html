@@ -3614,6 +3614,12 @@
                 }
             });
             
+            // SAVE SORT STATE to activeInvoiceFilters (for pagination)
+            if (typeof activeInvoiceFilters !== 'undefined') {
+                activeInvoiceFilters.sort_by = field;
+                activeInvoiceFilters.sort_order = window.sortTableState.sortDirection[field] || 'asc';
+            }
+            
             // Update active indicator
             if (sortedField === 'status' && statusHeader) {
                 statusHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
