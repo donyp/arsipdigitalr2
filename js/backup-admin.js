@@ -11,6 +11,21 @@
 const API_BASE = '/api';
 let currentBackupData = null;
 
+// Utility function for fetch with timeout
+async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+        const response = await fetchWithTimeout(url, { ...options, signal: controller.signal });
+        clearTimeout(timeout);
+        return response;
+    } catch (error) {
+        clearTimeout(timeout);
+        throw error;
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[BackupAdmin] Initializing backup dashboard...');
@@ -49,7 +64,7 @@ async function refreshData() {
 async function loadBackupStats() {
     try {
         const token = localStorage.getItem('jwt_token');
-        const response = await fetch(`${API_BASE}/backups/stats`, {
+        const response = await fetchWithTimeout(`${API_BASE}/backups/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -96,7 +111,7 @@ async function loadBackupStats() {
 async function loadBackupHistory() {
     try {
         const token = localStorage.getItem('jwt_token');
-        const response = await fetch(`${API_BASE}/backups/history?limit=100`, {
+        const response = await fetchWithTimeout(`${API_BASE}/backups/history?limit=100`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -204,7 +219,7 @@ function renderHistoryTable(backups) {
 async function loadBackupConfig() {
     try {
         const token = localStorage.getItem('jwt_token');
-        const response = await fetch(`${API_BASE}/backups/config`, {
+        const response = await fetchWithTimeout(`${API_BASE}/backups/config`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -307,7 +322,7 @@ async function triggerSelectiveFileBackup() {
         showAlert('Loading available files...', 'info');
 
         // Get available files and months
-        const response = await fetch(`${API_BASE}/backups/files/available`, {
+        const response = await fetchWithTimeout(`${API_BASE}/backups/files/available`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -398,7 +413,7 @@ async function downloadSelectiveFileBackup(month, year, fileTypes) {
         const token = localStorage.getItem('jwt_token');
         showAlert(`Creating backup for ${month}/${year}...`, 'info');
 
-        const response = await fetch(`${API_BASE}/backups/files/selective`, {
+        const response = await fetchWithTimeout(`${API_BASE}/backups/files/selective`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -434,7 +449,7 @@ async function confirmBackup() {
         closeModal('backupModal');
         showAlert('Starting backup...', 'info');
 
-        const response = await fetch(`${API_BASE}/backups/manual`, {
+        const response = await fetchWithTimeout(`${API_BASE}/backups/manual`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -477,7 +492,7 @@ async function downloadBackup(backupName, type) {
         const token = localStorage.getItem('jwt_token');
         const url = `${API_BASE}/backups/download/${backupName}?type=${type}`;
 
-        const response = await fetch(url);
+        const response = await fetchWithTimeout(url);
 
         if (!response.ok) throw new Error('Failed to download backup');
 
@@ -534,7 +549,7 @@ async function performRestore(backupName, type) {
 
         showAlert('Restoring backup...', 'info');
 
-        const response = await fetch(`${API_BASE}/backups/restore`, {
+        const response = await fetchWithTimeout(`${API_BASE}/backups/restore`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -588,7 +603,7 @@ async function performDelete(backupName, type) {
     try {
         const token = localStorage.getItem('jwt_token');
 
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             `${API_BASE}/backups/${backupName}?type=${type}`,
             {
                 method: 'DELETE',
