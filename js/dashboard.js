@@ -3818,68 +3818,107 @@ document.addEventListener('click', () => {
 });
 
 async function deleteInvoice(faktur, invoiceId) {
-    // Show ultra-compact confirmation modal - sleek modern design
+    // Show sleek dark-mode optimized delete modal with modern card design
     Swal.fire({
         title: '🗑️ Hapus?',
         html: `
-            <div style="text-align: left; margin: 0; font-size: 12px;">
-                <p style="color: #2c3e50; margin: 0 0 4px 0; font-size: 11px; font-weight: 500;">
-                    Invoice <strong style="color: #e74c3c;">${faktur}</strong>
+            <div style="text-align: left; margin: 0;">
+                <p style="color: #e74c3c; margin: 0 0 8px 0; font-size: 13px; font-weight: 700;">
+                    ${faktur}
                 </p>
-                <div style="background: linear-gradient(to right, #fff8e1, #fffbf0); border-left: 3px solid #ffc107; padding: 4px 8px; border-radius: 3px; margin-bottom: 4px;">
-                    <ul style="font-size: 9px; color: #7d6608; margin: 0; padding-left: 16px; line-height: 1.2;">
-                        <li style="margin: 0;">Data faktur</li>
-                        <li style="margin: 0;">File PDF, Bukti, Pajak</li>
+                <div style="background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.3); padding: 6px 10px; border-radius: 5px; margin-bottom: 6px; backdrop-filter: blur(10px);">
+                    <p style="font-size: 9px; color: #ff9800; margin: 0; font-weight: 600; letter-spacing: 0.3px;">AKAN DIHAPUS</p>
+                    <ul style="font-size: 10px; color: #ccc; margin: 4px 0 0 0; padding-left: 16px; line-height: 1.3;">
+                        <li style="margin: 2px 0;">Data & file PDF</li>
+                        <li style="margin: 2px 0;">Bukti bayar & pajak</li>
                     </ul>
                 </div>
-                <div style="background: linear-gradient(to right, #ffe5e5, #fff0f0); border-left: 3px solid #e74c3c; padding: 4px 8px; border-radius: 3px;">
-                    <p style="font-size: 9px; color: #c23b22; margin: 0; font-weight: 500;">
-                        ⚠️ Tidak dapat dibatalkan
-                    </p>
+                <div style="background: rgba(244, 67, 54, 0.08); border: 1px solid rgba(244, 67, 54, 0.3); padding: 6px 10px; border-radius: 5px; backdrop-filter: blur(10px);">
+                    <p style="font-size: 9px; color: #ef5350; margin: 0; font-weight: 600; letter-spacing: 0.3px;">⚡ PERMANENT</p>
                 </div>
             </div>
         `,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#e74c3c',
-        cancelButtonColor: '#bbb',
-        confirmButtonText: 'Hapus',
-        cancelButtonText: 'Batal',
+        confirmButtonColor: '#ef5350',
+        cancelButtonColor: '#555',
+        confirmButtonText: 'HAPUS',
+        cancelButtonText: 'BATAL',
         reverseButtons: true,
         allowOutsideClick: false,
-        width: '300px',
-        padding: '12px',
+        width: '290px',
+        padding: '14px',
+        background: 'rgba(30, 40, 55, 0.95)',
         didOpen: async () => {
             // Style buttons
             const confirmBtn = Swal.getConfirmButton();
-            confirmBtn.style.padding = '5px 14px';
+            confirmBtn.style.padding = '7px 16px';
             confirmBtn.style.fontSize = '11px';
-            confirmBtn.style.borderRadius = '3px';
-            confirmBtn.style.fontWeight = '600';
+            confirmBtn.style.borderRadius = '4px';
+            confirmBtn.style.fontWeight = '700';
             confirmBtn.style.border = 'none';
             confirmBtn.style.minWidth = '75px';
+            confirmBtn.style.letterSpacing = '0.5px';
+            confirmBtn.style.textTransform = 'uppercase';
+            confirmBtn.style.background = 'linear-gradient(135deg, #ef5350 0%, #e53935 100%)';
+            confirmBtn.style.boxShadow = '0 4px 12px rgba(239, 83, 80, 0.3)';
+            confirmBtn.style.transition = 'all 0.2s ease';
             
             const cancelBtn = Swal.getCancelButton();
-            cancelBtn.style.padding = '5px 14px';
+            cancelBtn.style.padding = '7px 16px';
             cancelBtn.style.fontSize = '11px';
-            cancelBtn.style.borderRadius = '3px';
-            cancelBtn.style.fontWeight = '600';
-            cancelBtn.style.border = '1px solid #ddd';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.fontWeight = '700';
+            cancelBtn.style.border = '1px solid #666';
             cancelBtn.style.minWidth = '75px';
+            cancelBtn.style.letterSpacing = '0.5px';
+            cancelBtn.style.textTransform = 'uppercase';
+            cancelBtn.style.background = 'transparent';
+            cancelBtn.style.color = '#aaa';
+            cancelBtn.style.transition = 'all 0.2s ease';
+            
+            // Hover effects
+            confirmBtn.addEventListener('mouseenter', () => {
+                confirmBtn.style.transform = 'translateY(-2px)';
+                confirmBtn.style.boxShadow = '0 6px 16px rgba(239, 83, 80, 0.4)';
+            });
+            confirmBtn.addEventListener('mouseleave', () => {
+                confirmBtn.style.transform = 'translateY(0)';
+                confirmBtn.style.boxShadow = '0 4px 12px rgba(239, 83, 80, 0.3)';
+            });
+            
+            cancelBtn.addEventListener('mouseenter', () => {
+                cancelBtn.style.background = 'rgba(100, 100, 100, 0.2)';
+                cancelBtn.style.color = '#ddd';
+            });
+            cancelBtn.addEventListener('mouseleave', () => {
+                cancelBtn.style.background = 'transparent';
+                cancelBtn.style.color = '#aaa';
+            });
             
             // Style modal
             const popup = Swal.getPopup();
             if (popup) {
-                popup.style.boxShadow = '0 2px 8px rgba(0,0,0,0.12)';
-                popup.style.borderRadius = '6px';
-                popup.style.border = '1px solid #f0f0f0';
+                popup.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.5)';
+                popup.style.borderRadius = '8px';
+                popup.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                popup.style.backdropFilter = 'blur(10px)';
             }
             
             // Style title
             const title = Swal.getTitle();
             if (title) {
-                title.style.fontSize = '14px';
-                title.style.marginBottom = '4px';
+                title.style.fontSize = '16px';
+                title.style.marginBottom = '8px';
+                title.style.color = '#fff';
+                title.style.fontWeight = '600';
+            }
+            
+            // Style icon
+            const icon = Swal.getIcon();
+            if (icon) {
+                icon.style.borderColor = '#ff9800';
+                icon.style.color = '#ff9800';
             }
         }
     }).then(async (result) => {
