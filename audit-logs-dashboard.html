@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Audit Logs Dashboard - ANKA</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/style.css">
     <link rel="stylesheet" href="/css/color-vars.css">
     <script src="/js/dark-mode-init.js"></script>
     <style>
@@ -485,7 +484,7 @@
 
         async function loadStats() {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('jwt_token');
                 const response = await fetch('/api/audit-logs/stats', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -517,7 +516,7 @@
 
         async function loadLogs(page = 1) {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('jwt_token');
                 
                 const filters = new URLSearchParams({
                     resourceType: document.getElementById('resourceTypeFilter').value,
@@ -607,7 +606,7 @@
 
         async function showDetail(logId) {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('jwt_token');
                 const response = await fetch(`/api/audit-logs/${logId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -703,7 +702,7 @@
                 isSuspicious: document.getElementById('suspiciousFilter').value
             });
             
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('jwt_token');
             window.location.href = `/api/audit-logs/export/csv?${filters}&Authorization=${token}`;
         });
 
