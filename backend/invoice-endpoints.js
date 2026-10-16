@@ -3031,19 +3031,20 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
                             console.error(`[Invoice Document BG] Error stack:`, uploadErr.stack);
+                            throw uploadErr;
                         }
                     };
                     
-                    // Start background upload but DON'T wait for it
-                    setImmediate(() => performUpload());
+                    // Wait for upload to complete before responding
+                    await performUpload();
                     
-                    // Return response immediately to client
+                    // Return response after upload completes
                     res.json({
                         success: true,
-                        message: 'Faktur pajak upload started (processing in background)',
+                        message: 'Faktur pajak uploaded successfully',
                         type: 'faktur_pajak',
                         originalName: filename,
-                        status: 'processing',
+                        status: 'completed',
                         faktur: fakturNumber
                     });
 
@@ -3259,19 +3260,20 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         } catch (uploadErr) {
                             console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
                             console.error(`[Invoice Document BG] Error stack:`, uploadErr.stack);
+                            throw uploadErr;
                         }
                     };
                     
-                    // Start background upload but DON'T wait for it
-                    setImmediate(() => performUpload());
+                    // Wait for upload to complete before responding
+                    await performUpload();
                     
-                    // Return response immediately to client
+                    // Return response after upload completes
                     res.json({
                         success: true,
-                        message: 'Bukti bayar upload started (processing in background)',
+                        message: 'Bukti bayar uploaded successfully',
                         type: 'bukti_bayar',
                         originalName: filename,
-                        status: 'processing',
+                        status: 'completed',
                         faktur: nomorFaktur
                     });
                 }
