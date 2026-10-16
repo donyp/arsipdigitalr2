@@ -11,6 +11,7 @@
         .audit-container {
             max-width: 1400px;
             margin: 0 auto;
+            margin-left: 16rem;
             padding: 20px;
         }
 
@@ -319,6 +320,9 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar (rendered by js/sidebar.js) -->
+    <aside id="sidebar" class="sidebar"></aside>
+
     <div class="audit-container">
         <div class="audit-header">
             <h1>🔐 Audit Logs Dashboard</h1>
@@ -431,6 +435,7 @@
     </div>
 
     <script src="js/auth.js"></script>
+    <script src="js/sidebar.js"></script>
     <script src="js/session-keepalive.js"></script>
     <script src="js/session-status-checker.js"></script>
     <script>
