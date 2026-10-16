@@ -202,6 +202,13 @@
             return;
         }
 
+        // Check if sidebar already rendered - if so, just update active states
+        if (sidebar.getAttribute('data-rendered') === 'true') {
+            console.log('[SIDEBAR] Sidebar already rendered, updating active states only');
+            updateActiveMenuItem();
+            return;
+        }
+
         // Get dark mode state
         const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
         const colors = isDarkMode ? {
@@ -309,6 +316,10 @@
             </div>
         `;
 
+        // Fade out, update, fade in for smooth transition
+        sidebar.style.opacity = '0.9';
+        sidebar.style.transition = 'opacity 0.15s ease';
+        
         sidebar.innerHTML = sidebarHTML;
         sidebar.setAttribute('data-rendered', 'true');
 
@@ -321,8 +332,28 @@
             });
         }
 
+        // Fade back in
+        setTimeout(() => {
+            sidebar.style.opacity = '1';
+        }, 50);
+
         // Adjust main content margin
         adjustMainContent();
+    }
+
+    // Update active menu item without full re-render
+    function updateActiveMenuItem() {
+        const allItems = document.querySelectorAll('.sidebar-item, .sidebar-child-item');
+        const currentPath = window.location.pathname;
+
+        allItems.forEach(item => {
+            const href = item.getAttribute('data-href');
+            if (href && isMenuItemActive(href)) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
     }
 
     // ============================================================
@@ -333,7 +364,8 @@
         
         return `
             <a href="${item.href}" 
-                class="sidebar-item ${isActive ? 'active' : ''}" 
+                class="sidebar-item ${isActive ? 'active' : ''}"
+                data-href="${item.href}"
                 style="
                     display: flex;
                     align-items: center;
@@ -392,7 +424,8 @@
             const isActive = isMenuItemActive(child.href);
             childrenHTML += `
                 <a href="${child.href}" 
-                    class="sidebar-child-item ${isActive ? 'active' : ''}" 
+                    class="sidebar-child-item ${isActive ? 'active' : ''}"
+                    data-href="${child.href}"
                     style="
                         display: flex;
                         align-items: center;
