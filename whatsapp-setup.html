@@ -703,20 +703,34 @@ circuitBreakerWindow: 300000ms (5 menit)
                         <div class="text-center">
                             <div class="inline-block">
                                 <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Generating QR Code...</p>
+                                <p class="text-gray-600 font-semibold">Loading QR Code...</p>
                             </div>
                         </div>
                     `;
 
-                    const response = await API.get('/api/whatsapp/qr');
-                    if (response && response.qrCode) {
-                        document.getElementById('qr-display').innerHTML = `<img src="${response.qrCode}" style="max-width: 100%; border-radius: 12px;">`;
-                    } else {
+                    // Try to get QR code from the Baileys service
+                    try {
+                        const response = await API.get('/api/whatsapp/status');
+                        if (response && response.qrCode) {
+                            // If backend provides QR code in response
+                            document.getElementById('qr-display').innerHTML = `<img src="${response.qrCode}" style="max-width: 100%; border-radius: 12px;">`;
+                        } else {
+                            // Show fallback message if no QR available
+                            document.getElementById('qr-display').innerHTML = `
+                                <div class="text-center">
+                                    <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
+                                    <p class="text-gray-600 font-semibold">QR Code akan muncul di sini</p>
+                                    <p class="text-sm text-gray-500 mt-2">Tunggu koneksi WhatsApp Baileys siap</p>
+                                </div>
+                            `;
+                        }
+                    } catch (apiErr) {
+                        // API call failed, show helpful message
                         document.getElementById('qr-display').innerHTML = `
                             <div class="text-center">
-                                <i class="fas fa-exclamation-circle text-6xl text-yellow-500 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">QR Code tidak tersedia</p>
-                                <p class="text-sm text-gray-500 mt-2">Backend WhatsApp mungkin belum siap</p>
+                                <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">Menunggu Backend WhatsApp</p>
+                                <p class="text-sm text-gray-500 mt-2">Periksa apakah WhatsApp Baileys service sudah running</p>
                             </div>
                         `;
                     }
@@ -724,9 +738,9 @@ circuitBreakerWindow: 300000ms (5 menit)
                     console.error('Refresh QR error:', err);
                     document.getElementById('qr-display').innerHTML = `
                         <div class="text-center">
-                            <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
-                            <p class="text-gray-600 font-semibold">Gagal refresh QR</p>
-                            <p class="text-sm text-red-500 mt-2">${err.message}</p>
+                            <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
+                            <p class="text-gray-600 font-semibold">Error loading QR</p>
+                            <p class="text-sm text-red-500 mt-2">${err.message || 'Unknown error'}</p>
                         </div>
                     `;
                 }
@@ -744,15 +758,18 @@ circuitBreakerWindow: 300000ms (5 menit)
                 }
                 
                 try {
-                    const response = await API.post('/api/whatsapp/send', { phone, message });
+                    const response = await API.post('/api/whatsapp/send', { 
+                        to: phone,
+                        message: message 
+                    });
                     const resultEl = document.getElementById('test-result');
                     
-                    if (response.success) {
+                    if (response.success || response.queued) {
                         resultEl.className = 'p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm';
-                        resultEl.innerHTML = `<i class="fas fa-check-circle mr-2"></i> Pesan berhasil dikirim!`;
+                        resultEl.innerHTML = `<i class="fas fa-check-circle mr-2"></i> Pesan berhasil dikirim/queued!`;
                     } else {
                         resultEl.className = 'p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm';
-                        resultEl.innerHTML = `<i class="fas fa-times-circle mr-2"></i> Error: ${response.error}`;
+                        resultEl.innerHTML = `<i class="fas fa-times-circle mr-2"></i> Error: ${response.error || 'Unknown error'}`;
                     }
                     resultEl.classList.remove('hidden');
                 } catch (err) {
