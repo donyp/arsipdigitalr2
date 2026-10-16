@@ -723,13 +723,19 @@ circuitBreakerWindow: 300000ms (5 menit)
                                         <img src="${data.qr}" style="max-width: 100%; border-radius: 12px;">
                                     `;
                                 } else {
-                                    // It's raw text, display as fallback
-                                    document.getElementById('qr-display').innerHTML = `
-                                        <div class="text-center p-4 bg-gray-100 rounded-lg">
-                                            <p class="text-xs font-mono break-all text-gray-600">${data.qr}</p>
-                                            <p class="text-sm text-gray-500 mt-2">QR String (scan dengan camera)</p>
-                                        </div>
-                                    `;
+                                    // It's raw text, convert to image using client-side qrcode.js
+                                    // Load qrcode.js library if not already loaded
+                                    if (!window.QRCode) {
+                                        const script = document.createElement('script');
+                                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+                                        document.head.appendChild(script);
+                                        
+                                        script.onload = () => {
+                                            setTimeout(() => displayQRImage(data.qr), 100);
+                                        };
+                                    } else {
+                                        displayQRImage(data.qr);
+                                    }
                                 }
                             } else {
                                 // No QR available
@@ -773,6 +779,35 @@ circuitBreakerWindow: 300000ms (5 menit)
                     `;
                 }
             });
+
+            // Helper function to display QR image from text string
+            window.displayQRImage = function(qrString) {
+                try {
+                    const container = document.getElementById('qr-display');
+                    container.innerHTML = '';
+                    
+                    if (window.QRCode) {
+                        new QRCode(container, {
+                            text: qrString,
+                            width: 256,
+                            height: 256,
+                            colorDark: '#000000',
+                            colorLight: '#ffffff',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    } else {
+                        throw new Error('QRCode library not loaded');
+                    }
+                } catch (err) {
+                    console.error('Display QR error:', err);
+                    document.getElementById('qr-display').innerHTML = `
+                        <div class="text-center p-4 bg-gray-100 rounded-lg">
+                            <p class="text-xs font-mono break-all text-gray-600">${qrString}</p>
+                            <p class="text-sm text-gray-500 mt-2">QR String (scan dengan camera)</p>
+                        </div>
+                    `;
+                }
+            };
             
             window.checkConnectionStatus = checkConnectionStatus;
             
