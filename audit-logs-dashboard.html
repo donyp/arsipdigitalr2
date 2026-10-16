@@ -9,6 +9,23 @@
     <link rel="stylesheet" href="/css/color-vars.css">
     <script src="/js/dark-mode-init.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            font-family: 'Segoe UI', 'Inter', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            font-family: 'Segoe UI', 'Inter', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
         .audit-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -25,7 +42,8 @@
 
         .audit-header h1 {
             font-size: 28px;
-            color: #333;
+            font-weight: 700;
+            color: var(--color-text-primary);
             margin: 0;
         }
 
@@ -65,10 +83,11 @@
         }
 
         .filters-section {
-            background: #f8f9fa;
+            background: var(--color-bg-secondary);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 30px;
+            border: 1px solid var(--color-border);
         }
 
         .filters-grid {
@@ -87,15 +106,17 @@
             font-size: 12px;
             font-weight: 600;
             margin-bottom: 5px;
-            color: #666;
+            color: var(--color-text-secondary);
         }
 
         .filter-group input,
         .filter-group select {
             padding: 8px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--color-border);
             border-radius: 4px;
             font-size: 14px;
+            background-color: var(--color-bg-primary);
+            color: var(--color-text-primary);
         }
 
         .filter-buttons {
@@ -124,7 +145,7 @@
 
         .btn-secondary {
             background-color: #e0e0e0;
-            color: #333;
+            color: var(--color-text-primary);
         }
 
         .btn-secondary:hover {
@@ -141,7 +162,8 @@
         }
 
         .logs-table-container {
-            background: white;
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -153,26 +175,27 @@
         }
 
         .logs-table thead {
-            background-color: #f8f9fa;
-            border-bottom: 2px solid #dee2e6;
+            background-color: var(--color-bg-secondary);
+            border-bottom: 2px solid var(--color-border-dark);
         }
 
         .logs-table th {
             padding: 12px;
             text-align: left;
             font-weight: 600;
-            color: #666;
+            color: var(--color-text-primary);
             font-size: 12px;
             text-transform: uppercase;
         }
 
         .logs-table td {
             padding: 12px;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text-primary);
         }
 
         .logs-table tbody tr:hover {
-            background-color: #f8f9fa;
+            background-color: var(--color-bg-secondary);
         }
 
         .severity-badge {
@@ -229,8 +252,8 @@
 
         .pagination button {
             padding: 6px 10px;
-            border: 1px solid #ddd;
-            background: white;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-primary);
             cursor: pointer;
             border-radius: 4px;
             font-size: 12px;
@@ -249,13 +272,13 @@
         .no-logs {
             text-align: center;
             padding: 40px;
-            color: #999;
+            color: var(--color-text-tertiary);
         }
 
         .loading {
             text-align: center;
             padding: 40px;
-            color: #999;
+            color: var(--color-text-tertiary);
         }
 
         .log-detail-modal {
@@ -276,7 +299,7 @@
         }
 
         .modal-content {
-            background: white;
+            background: var(--color-bg-primary);
             border-radius: 8px;
             padding: 30px;
             max-width: 600px;
@@ -297,26 +320,26 @@
             border: none;
             font-size: 24px;
             cursor: pointer;
-            color: #999;
+            color: var(--color-text-tertiary);
         }
 
         .detail-row {
             display: flex;
             margin-bottom: 15px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--color-border)eee;
             padding-bottom: 10px;
         }
 
         .detail-label {
             font-weight: 600;
-            color: #666;
+            color: var(--color-text-secondary);
             min-width: 150px;
         }
 
         .detail-value {
             flex: 1;
             word-break: break-word;
-            color: #333;
+            color: var(--color-text-primary);
         }
     </style>
 </head>
@@ -414,7 +437,7 @@
                 </thead>
                 <tbody id="logsTableBody">
                     <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                        <td colspan="7" style="text-align: center; padding: 40px; color: var(--color-text-tertiary);">
                             Loading audit logs...
                         </td>
                     </tr>
