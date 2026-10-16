@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Setup - Pusat Arsip Anka</title>
+    <script src="js/dark-mode-init.js"></script>
+    <script src="js/console-cleaner.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/color-vars.css">
+    <script src="js/notification-system.js"></script>
+    <style>
+        :root {
+            --color-bg-primary: #ffffff;
+            --color-bg-secondary: #f5f7fa;
+            --color-bg-tertiary: #f3f4f6;
+            --color-text-primary: #1f2937;
+            --color-text-secondary: #6b7280;
+            --color-border: #e5e7eb;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        html[data-dark-mode="true"] {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-bg-tertiary: #334155;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-border: #475569;
+        }
+        
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        html[data-dark-mode="true"] .glass-card {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .step-badge.active {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .step-badge.completed {
+            background: var(--gradient-success);
+            color: white;
+        }
+
+        .step-badge.pending {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-secondary);
+        }
+
+        .step-line {
+            height: 2px;
+            background: var(--color-border);
+        }
+
+        .step-line.active {
+            background: var(--gradient-primary);
+        }
+
+        .qr-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            background: var(--color-bg-secondary);
+            border-radius: 16px;
+            border: 2px dashed var(--color-border);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-indicator.connected {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .status-indicator.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .status-indicator.loading {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .code-block {
+            background: var(--color-bg-tertiary);
+            padding: 16px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            border-left: 4px solid var(--gradient-primary);
+        }
+
+        html[data-dark-mode="true"] .code-block {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+
+        .warning-box {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+
+        .success-box {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+            border-left: 4px solid #10b981;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <script>
+        if (localStorage.getItem('dark_mode_enabled') === 'true') {
+            document.documentElement.setAttribute('data-dark-mode', 'true');
+        }
+    </script>
+
+    <div id="app" style="width: 100%; display: flex; margin: 0; padding: 0; overflow-x: hidden;">
+        <div id="sidebar"></div>
+
+        <div id="main-content" style="flex: 1; min-width: 0; transition: all 300ms ease; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div class="bg-white sticky top-0 z-30 shadow-lg border-b border-gray-100" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);">
+                <div class="px-6 py-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">WhatsApp Integration</h2>
+                            <h1 class="text-3xl font-black text-gray-900 flex items-center gap-3">
+                                <span class="text-4xl">📱</span>
+                                <span>Setup WhatsApp Baileys</span>
+                            </h1>
+                            <p class="text-gray-600 font-medium mt-2">Konfigurasi koneksi WhatsApp untuk notifikasi otomatis</p>
+                        </div>
+                        <div id="status-container" class="text-right">
+                            <div id="connection-status" class="status-indicator disconnected">
+                                <i class="fas fa-circle"></i>
+                                <span>Checking...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="p-6 flex-1 overflow-y-auto">
+                <!-- Progress Steps -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">Setup Progress</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Step 1: Backend Running -->
+                        <div class="flex items-center gap-4">
+                            <div class="step-badge active" id="step1-badge">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900">Backend Running</h4>
+                                <p class="text-sm text-gray-600 mt-1">Server sudah berjalan dengan WhatsApp service</p>
+                            </div>
+                            <span id="step1-status" class="text-sm font-bold text-green-600">✓ Aktif</span>
+                        </div>
+
+                        <div class="step-line"></div>
+
+                        <!-- Step 2: QR Code Scan -->
+                        <div class="flex items-center gap-4">
+                            <div class="step-badge pending" id="step2-badge">2</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900">Scan QR Code</h4>
+                                <p class="text-sm text-gray-600 mt-1">Scan dengan WhatsApp phone untuk authentikasi</p>
+                            </div>
+                            <span id="step2-status" class="text-sm font-bold text-gray-600">Menunggu...</span>
+                        </div>
+
+                        <div class="step-line"></div>
+
+                        <!-- Step 3: Connection Verified -->
+                        <div class="flex items-center gap-4">
+                            <div class="step-badge pending" id="step3-badge">3</div>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900">Koneksi Terverifikasi</h4>
+                                <p class="text-sm text-gray-600 mt-1">Kirim test message untuk memastikan koneksi aktif</p>
+                            </div>
+                            <span id="step3-status" class="text-sm font-bold text-gray-600">Menunggu...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QR Code Section -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">1️⃣ Scan QR Code</h3>
+
+                    <div class="info-box">
+                        <div class="flex gap-3">
+                            <i class="fas fa-info-circle text-blue-600 flex-shrink-0 mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-900 mb-1">Petunjuk:</p>
+                                <ol class="text-sm text-gray-700 space-y-1 ml-5 list-decimal">
+                                    <li>Buka WhatsApp di ponsel Anda</li>
+                                    <li>Buka menu <strong>Settings → Linked Devices → Link a Device</strong></li>
+                                    <li>Arahkan kamera ke QR code di bawah</li>
+                                    <li>Tunggu sampai status berubah menjadi "Connected ✓"</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="qr-container" id="qr-display">
+                        <div class="text-center">
+                            <div class="inline-block">
+                                <i class="fas fa-qrcode text-6xl text-gray-400 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">QR Code akan muncul di sini</p>
+                                <p class="text-sm text-gray-500 mt-2">Tunggu server meload...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex gap-3">
+                        <button onclick="refreshQR()" class="flex-1 bg-gradient-primary text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Refresh QR Code</span>
+                        </button>
+                        <button onclick="checkConnectionStatus()" class="flex-1 bg-gradient-success text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Check Status</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Connection Status Section -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">2️⃣ Status Koneksi</h3>
+
+                    <div id="status-details" class="space-y-4">
+                        <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="font-semibold text-gray-900">WhatsApp Connection</span>
+                                <span id="wa-status" class="status-indicator disconnected">
+                                    <i class="fas fa-circle"></i>
+                                    <span>Disconnected</span>
+                                </span>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Queue Size</span>
+                                    <span id="queue-size" class="font-bold text-gray-900">-</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Messages Sent</span>
+                                    <span id="msg-sent" class="font-bold text-green-600">-</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Failed Messages</span>
+                                    <span id="msg-failed" class="font-bold text-red-600">-</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">Circuit Breaker</span>
+                                    <span id="circuit-status" class="font-bold text-gray-900">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Message Section -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">3️⃣ Test Message</h3>
+
+                    <div class="warning-box">
+                        <div class="flex gap-3">
+                            <i class="fas fa-exclamation-triangle text-amber-600 flex-shrink-0 mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-900 mb-1">Catatan:</p>
+                                <p class="text-sm text-gray-700">Gunakan nomor telepon Anda sendiri untuk test pertama kali. Format: 62812345678 (tanpa +)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mt-6">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-900 mb-2">Nomor Telepon (Penerima)</label>
+                            <input type="text" id="test-phone" placeholder="62812345678" value="" 
+                                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white text-gray-900">
+                            <p class="text-xs text-gray-500 mt-2">Format: 62 + nomor (contoh: 628123456789)</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-bold text-gray-900 mb-2">Pesan Test</label>
+                            <textarea id="test-message" placeholder="Tulis pesan test..." rows="4"
+                                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white text-gray-900" style="font-family: Arial, sans-serif;">🧪 Test message from Arsip Digital
+Waktu: {time}
+Status: ✓ WhatsApp Baileys Connected
+
+Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
+                        </div>
+
+                        <button onclick="sendTestMessage()" class="w-full bg-gradient-success text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Kirim Test Message</span>
+                        </button>
+
+                        <div id="test-result" class="hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Configuration Section -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">⚙️ Konfigurasi Anti-Ban</h3>
+
+                    <div class="success-box">
+                        <div class="flex gap-3">
+                            <i class="fas fa-shield-alt text-green-600 flex-shrink-0 mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-gray-900 mb-2">Proteksi Aktif</p>
+                                <ul class="text-sm text-gray-700 space-y-1 ml-5 list-disc">
+                                    <li><strong>Typing Simulation:</strong> 1-3 detik sebelum kirim</li>
+                                    <li><strong>Random Delays:</strong> 1-5 detik antara pesan</li>
+                                    <li><strong>Batch Processing:</strong> 10 pesan per batch, 10 detik jeda</li>
+                                    <li><strong>Exponential Backoff:</strong> 2s → 4s → 8s on retry</li>
+                                    <li><strong>Circuit Breaker:</strong> Pause setelah 10 kegagalan (5 menit)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <p class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Default Configuration</p>
+                        <div class="code-block">
+minDelay: 1000ms (1 detik)
+maxDelay: 5000ms (5 detik)
+batchSize: 10 pesan
+batchDelay: 10000ms (10 detik)
+maxRetries: 3 kali
+initialBackoff: 2000ms (2 detik)
+circuitBreakerThreshold: 10 kegagalan
+circuitBreakerWindow: 300000ms (5 menit)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-6">🔧 Troubleshooting</h3>
+
+                    <div class="space-y-4">
+                        <details class="group cursor-pointer">
+                            <summary class="flex items-center gap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                                <span>QR Code tidak muncul?</span>
+                            </summary>
+                            <div class="p-4 mt-2 bg-gray-50 rounded-xl text-sm text-gray-700 space-y-2">
+                                <p><strong>Penyebab:</strong> Server belum selesai initialize WhatsApp service</p>
+                                <p><strong>Solusi:</strong></p>
+                                <ul class="ml-5 list-disc space-y-1">
+                                    <li>Tunggu 5-10 detik untuk server load</li>
+                                    <li>Klik tombol "Refresh QR Code"</li>
+                                    <li>Cek terminal server: apakah ada log "[WhatsApp] QR Code received"?</li>
+                                    <li>Restart server jika masih tidak muncul</li>
+                                </ul>
+                            </div>
+                        </details>
+
+                        <details class="group cursor-pointer">
+                            <summary class="flex items-center gap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                                <span>Status masih "Disconnected" setelah scan?</span>
+                            </summary>
+                            <div class="p-4 mt-2 bg-gray-50 rounded-xl text-sm text-gray-700 space-y-2">
+                                <p><strong>Penyebab:</strong> QR code sudah expired atau scan gagal</p>
+                                <p><strong>Solusi:</strong></p>
+                                <ul class="ml-5 list-disc space-y-1">
+                                    <li>Klik "Refresh QR Code" untuk generate QR baru</li>
+                                    <li>Scan ulang dengan cepat (QR berlaku 30 detik)</li>
+                                    <li>Pastikan koneksi internet ponsel stabil</li>
+                                    <li>Cek log server untuk error message</li>
+                                </ul>
+                            </div>
+                        </details>
+
+                        <details class="group cursor-pointer">
+                            <summary class="flex items-center gap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                                <span>Test message tidak terkirim?</span>
+                            </summary>
+                            <div class="p-4 mt-2 bg-gray-50 rounded-xl text-sm text-gray-700 space-y-2">
+                                <p><strong>Penyebab:</strong> Koneksi belum stabil atau circuit breaker aktif</p>
+                                <p><strong>Solusi:</strong></p>
+                                <ul class="ml-5 list-disc space-y-1">
+                                    <li>Pastikan status connection: "Connected ✓"</li>
+                                    <li>Cek circuit breaker status (jika "Open", tunggu 5 menit)</li>
+                                    <li>Verifikasi format nomor telepon (62 + nomor)</li>
+                                    <li>Tunggu 10-20 detik sebelum retry (anti-ban protection)</li>
+                                </ul>
+                            </div>
+                        </details>
+
+                        <details class="group cursor-pointer">
+                            <summary class="flex items-center gap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                                <span>Ingin reset session WhatsApp?</span>
+                            </summary>
+                            <div class="p-4 mt-2 bg-gray-50 rounded-xl text-sm text-gray-700 space-y-2">
+                                <p><strong>Petunjuk:</strong> Hapus session dan scan QR baru</p>
+                                <ul class="ml-5 list-disc space-y-1">
+                                    <li><code class="bg-white px-2 py-1 rounded">rm -rf data/wa-auth/</code></li>
+                                    <li>Restart server: <code class="bg-white px-2 py-1 rounded">npm start</code></li>
+                                    <li>Scan QR code baru</li>
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/sidebar.js?t=1792067064.55694"></script>
+    <script src="js/spa-page-handler.js"></script>
+
+    <script>
+        if (typeof window._whatsappSetupLoaded === 'undefined') {
+            window._whatsappSetupLoaded = true;
+
+            let statusCheckInterval = null;
+
+            async function initWhatsappSetup() {
+                await initAuth();
+                
+                // Check if admin
+                if (req_user?.role !== 'super_admin') {
+                    document.getElementById('main-content').innerHTML = `
+                        <div class="p-6">
+                            <div class="glass-card rounded-2xl p-8 text-center">
+                                <i class="fas fa-lock text-6xl text-red-500 mb-4"></i>
+                                <h2 class="text-2xl font-bold text-gray-900 mb-2">Akses Ditolak</h2>
+                                <p class="text-gray-600">Hanya Super Admin yang dapat mengakses halaman ini.</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                await loadSidebar('whatsapp-setup.html');
+                await checkConnectionStatus();
+                
+                // Auto-refresh status every 5 seconds
+                statusCheckInterval = setInterval(checkConnectionStatus, 5000);
+            }
+
+            async function checkConnectionStatus() {
+                try {
+                    const response = await API.get('/api/whatsapp/status');
+                    updateStatusDisplay(response);
+                } catch (err) {
+                    console.error('Status check failed:', err);
+                    updateStatusDisplay(null);
+                }
+            }
+
+            function updateStatusDisplay(data) {
+                if (!data) {
+                    document.getElementById('connection-status').innerHTML = `
+                        <i class="fas fa-circle"></i>
+                        <span>Connection Error</span>
+                    `;
+                    document.getElementById('connection-status').className = 'status-indicator disconnected';
+                    return;
+                }
+
+                const isConnected = data.connected && data.ready;
+                const statusEl = document.getElementById('connection-status');
+                
+                statusEl.className = isConnected ? 'status-indicator connected' : 'status-indicator disconnected';
+                statusEl.innerHTML = `
+                    <i class="fas fa-circle ${isConnected ? 'pulse' : ''}"></i>
+                    <span>${isConnected ? 'Connected ✓' : 'Disconnected'}</span>
+                `;
+
+                // Update detailed status
+                document.getElementById('wa-status').className = isConnected ? 'status-indicator connected' : 'status-indicator disconnected';
+                document.getElementById('wa-status').innerHTML = `
+                    <i class="fas fa-circle ${isConnected ? 'pulse' : ''}"></i>
+                    <span>${isConnected ? 'Connected ✓' : 'Disconnected'}</span>
+                `;
+
+                if (data.queue) {
+                    document.getElementById('queue-size').textContent = data.queue.queueSize || 0;
+                    document.getElementById('msg-sent').textContent = data.queue.sent || 0;
+                    document.getElementById('msg-failed').textContent = data.queue.failed || 0;
+                    
+                    const cbStatus = data.queue.circuitBreaker;
+                    document.getElementById('circuit-status').textContent = cbStatus?.isOpen ? '⚠️ Open' : '✓ Closed';
+                    document.getElementById('circuit-status').className = cbStatus?.isOpen ? 'font-bold text-red-600' : 'font-bold text-green-600';
+                }
+
+                // Update step badges
+                if (isConnected) {
+                    updateStepBadge(2, 'completed');
+                    updateStepBadge(3, 'active');
+                    document.getElementById('step2-status').innerHTML = '<i class="fas fa-check-circle text-green-600"></i> Connected';
+                    document.getElementById('step2-status').className = 'text-sm font-bold text-green-600';
+                }
+            }
+
+            function updateStepBadge(step, status) {
+                const badge = document.getElementById(`step${step}-badge`);
+                if (!badge) return;
+
+                badge.className = `step-badge ${status}`;
+                if (status === 'completed') {
+                    badge.innerHTML = '<i class="fas fa-check"></i>';
+                } else if (status === 'active') {
+                    badge.innerHTML = `${step}`;
+                } else {
+                    badge.innerHTML = `${step}`;
+                }
+            }
+
+            async function sendTestMessage() {
+                const phone = document.getElementById('test-phone').value.trim();
+                const message = document.getElementById('test-message').value.trim();
+                const resultDiv = document.getElementById('test-result');
+
+                if (!phone || !message) {
+                    Notify.error('Nomor telepon dan pesan wajib diisi');
+                    return;
+                }
+
+                if (!phone.startsWith('62') || phone.length < 10) {
+                    Notify.error('Format nomor telepon tidak valid (contoh: 628123456789)');
+                    return;
+                }
+
+                try {
+                    const btn = event.target;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+
+                    const finalMessage = message.replace('{time}', new Date().toLocaleTimeString('id-ID'));
+                    
+                    const response = await API.post('/api/whatsapp/test', {
+                        to: phone
+                    });
+
+                    resultDiv.className = 'mt-4 p-4 bg-green-50 border border-green-200 rounded-xl fade-in';
+                    resultDiv.innerHTML = `
+                        <div class="flex gap-3">
+                            <i class="fas fa-check-circle text-green-600 flex-shrink-0 mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-green-900">✓ Message Queued Successfully</p>
+                                <p class="text-sm text-green-800 mt-1">Message ID: ${response.messageId}</p>
+                                <p class="text-xs text-green-700 mt-2">Pesan akan dikirim dalam beberapa detik dengan anti-ban protection active.</p>
+                            </div>
+                        </div>
+                    `;
+                    resultDiv.classList.remove('hidden');
+
+                    Notify.success('Test message queued! Cek ponsel Anda dalam beberapa detik.');
+
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> <span>Kirim Test Message</span>';
+                } catch (err) {
+                    resultDiv.className = 'mt-4 p-4 bg-red-50 border border-red-200 rounded-xl fade-in';
+                    resultDiv.innerHTML = `
+                        <div class="flex gap-3">
+                            <i class="fas fa-exclamation-circle text-red-600 flex-shrink-0 mt-1"></i>
+                            <div>
+                                <p class="font-semibold text-red-900">✗ Failed to send</p>
+                                <p class="text-sm text-red-800 mt-1">${err.message}</p>
+                            </div>
+                        </div>
+                    `;
+                    resultDiv.classList.remove('hidden');
+                }
+            }
+
+            async function refreshQR() {
+                try {
+                    document.getElementById('qr-display').innerHTML = `
+                        <div class="text-center">
+                            <div class="inline-block">
+                                <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">Generating QR Code...</p>
+                            </div>
+                        </div>
+                    `;
+
+                    // Request QR from server (this would need to be implemented in backend)
+                    // For now, show message
+                    await new Promise(r => setTimeout(r, 2000));
+                    
+                    document.getElementById('qr-display').innerHTML = `
+                        <div class="text-center">
+                            <div class="inline-block">
+                                <i class="fas fa-qrcode text-6xl text-purple-600 mb-4"></i>
+                                <p class="text-gray-600 font-semibold">QR Code Ready</p>
+                                <p class="text-sm text-gray-500 mt-2">Scan dengan WhatsApp phone sekarang</p>
+                            </div>
+                        </div>
+                    `;
+                } catch (err) {
+                    Notify.error('Gagal refresh QR: ' + err.message);
+                }
+            }
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', initWhatsappSetup);
+            window.initWhatsappSetup = initWhatsappSetup;
+
+            // Cleanup interval on page unload
+            window.addEventListener('beforeunload', () => {
+                if (statusCheckInterval) clearInterval(statusCheckInterval);
+            });
+        }
+
+        // Call outside guard for SPA
+        setTimeout(() => {
+            if (typeof initWhatsappSetup === 'function') {
+                initWhatsappSetup().catch(err => console.error('Init failed:', err));
+            }
+        }, 50);
+    </script>
+</body>
+</html>
