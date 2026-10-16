@@ -2804,13 +2804,20 @@ async function loadInvoicesInDashboard(page = 1) {
         const offset = (page - 1) * INVOICE_PAGE_SIZE;
         const url = `${CONFIG.API_URL}/api/invoice/list?limit=${INVOICE_PAGE_SIZE}&offset=${offset}`;
         
+        // Check if we have cached stats (prevents repeated calculations)
+        const cachedStats = window.invoiceStatsCache?.getStats({
+            status: activeInvoiceFilters.status,
+            toko: activeInvoiceFilters.toko,
+            keterangan: activeInvoiceFilters.keterangan,
+            date_from: activeInvoiceFilters.date_from,
+            date_to: activeInvoiceFilters.date_to,
+            search: activeInvoiceFilters.search
+        });
         
         const response = await fetch(url, {
             method: 'GET',
             headers: headers
         });
-        
-        
         
         if (!response.ok) {
             const errText = await response.text();
@@ -2818,9 +2825,6 @@ async function loadInvoicesInDashboard(page = 1) {
         }
         
         const result = await response.json();
-        
-        
-        
         
         await renderInvoiceTable(result.data || []);
         invoiceCurrentPage = page;
@@ -2831,9 +2835,23 @@ async function loadInvoicesInDashboard(page = 1) {
             
             updatePaginationInfo();
             
-            // Use aggregatedStats from backend if available
+            // Use aggregatedStats from backend + cache for next time
             if (result.aggregatedStats) {
+                // Store stats in cache (60s TTL)
+                if (window.invoiceStatsCache) {
+                    window.invoiceStatsCache.setStats(result.aggregatedStats, {
+                        status: activeInvoiceFilters.status,
+                        toko: activeInvoiceFilters.toko,
+                        keterangan: activeInvoiceFilters.keterangan,
+                        date_from: activeInvoiceFilters.date_from,
+                        date_to: activeInvoiceFilters.date_to,
+                        search: activeInvoiceFilters.search
+                    });
+                }
                 updateInvoiceStatsFromAggregated(result.aggregatedStats);
+            } else if (cachedStats) {
+                // Use cached stats if available
+                updateInvoiceStatsFromAggregated(cachedStats);
             } else {
                 // Fallback to old method
                 updateInvoiceStatsFromData(result.data || [], result.count);

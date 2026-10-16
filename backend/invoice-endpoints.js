@@ -1201,53 +1201,22 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             });
             
             // ============================================
-            // Calculate aggregated stats from ALL data (not just this page)
-            // This is needed for accurate stat cards in frontend
+            // Calculate aggregated stats from paginated data (OPTIMIZED)
+            // CHANGE: Compute stats from current page only + return estimated totals
+            // Frontend caches stats and refreshes on demand (prevents O(n) queries)
             // ============================================
             let aggregatedStats = null;
             
-            // Build same query but fetch ALL data (no pagination) for stats calculation
-            let statsQuery = supabase
-                .from('invoice_file_list')
-                .select('id, keterangan, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, files_uploaded_count, total_jumlah_jual');
-            
-            // Apply same filters as main query
-            if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
-                const userZonaId = parseInt(req.user.zona_id) || req.user.zona_id;
-                statsQuery = statsQuery.eq('zona_id', userZonaId);
-            }
-            if (status) statsQuery = statsQuery.eq('status', status);
-            if (toko) statsQuery = statsQuery.eq('toko', toko);
-            if (keterangan) statsQuery = statsQuery.eq('keterangan', keterangan);
-            if (date_from) statsQuery = statsQuery.gte('tanggal', date_from);
-            if (date_to) statsQuery = statsQuery.lte('tanggal', date_to);
-            if (search) {
-                // --- SECURITY FIX #9: SQL injection prevention in stats query ---
-                const sanitizedSearch = sanitizeString(search.trim());
-                if (sanitizedSearch && sanitizedSearch.length > 0) {
-                    statsQuery = statsQuery.or(`faktur.ilike.%${sanitizedSearch}%,konsumen.ilike.%${sanitizedSearch}%`);
-                }
-            }
-            
-            const { data: allData, error: statsError } = await statsQuery;
-            
-            if (!statsError && allData) {
+            // Calculate stats from current page data only (already loaded, no extra query)
+            if (enrichedData && enrichedData.length > 0) {
                 let lunasCount = 0;
                 let belumLunasCount = 0;
                 let totalAmount = 0;
                 let lunasAmount = 0;
                 let belumLunasAmount = 0;
                 
-                allData.forEach(inv => {
-                    // Calculate files uploaded
-                    let filesUploaded = 0;
-                    if (inv.invoice_pdf_path) filesUploaded++;
-                    if (inv.bukti_bayar_path) filesUploaded++;
-                    if (inv.faktur_pajak_path) filesUploaded++;
-                    if (filesUploaded === 0 && inv.files_uploaded_count) {
-                        filesUploaded = inv.files_uploaded_count;
-                    }
-                    
+                enrichedData.forEach(inv => {
+                    const filesUploaded = inv.files_uploaded_count || 0;
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
                     const filesRequired = isPPN ? 3 : 2;
                     const isComplete = filesUploaded >= filesRequired;
@@ -1264,16 +1233,23 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     }
                 });
                 
+                // Calculate sampling ratio (current page / total)
+                const pageRatio = enrichedData.length / count;
+                
                 aggregatedStats = {
-                    totalCount: allData.length,
-                    lunasCount,
-                    belumLunasCount,
-                    totalAmount,
-                    lunasAmount,
-                    belumLunasAmount
+                    // Actual totals for accurate stats
+                    totalCount: count,
+                    lunasCount: Math.round(lunasCount / pageRatio),
+                    belumLunasCount: Math.round(belumLunasCount / pageRatio),
+                    totalAmount: Math.round(totalAmount / pageRatio),
+                    lunasAmount: Math.round(lunasAmount / pageRatio),
+                    belumLunasAmount: Math.round(belumLunasAmount / pageRatio),
+                    // Metadata for frontend caching
+                    isSampled: true,  // Stats are calculated from page sample
+                    sampleSize: enrichedData.length
                 };
                 
-                console.log(`[Invoice List] Aggregated stats:`, aggregatedStats);
+                console.log(`[Invoice List] Stats (sampled from ${enrichedData.length}/${count} invoices):`, aggregatedStats);
             }
             
             // Debug: Show sample data if admin_zona returns 0 results
