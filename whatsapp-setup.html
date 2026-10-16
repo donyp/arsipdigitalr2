@@ -191,8 +191,8 @@
             </div>
 
             <!-- Main Content -->
-            <div class="p-6 flex-1 overflow-y-auto">
-                <!-- Quick Status Card -->
+            <div class="p-8 flex-1 overflow-y-auto">
+                <!-- Status Card -->
                 <div class="glass-card rounded-2xl p-6 mb-8 bg-gradient-to-r from-purple-50 to-blue-50" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);">
                     <div class="flex items-center justify-between">
                         <div>
@@ -219,38 +219,36 @@
                 </div>
 
                 <!-- Two Column Layout -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <!-- Left: QR Code Section -->
-                    <div class="space-y-6">
-                        <div class="glass-card rounded-2xl p-8">
-                            <div class="flex items-center gap-2 mb-6">
-                                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-primary text-white text-sm font-bold">1</span>
-                                <h3 class="text-lg font-bold text-gray-900">Scan QR Code</h3>
-                            </div>
+                    <div class="glass-card rounded-2xl p-8">
+                        <div class="flex items-center gap-2 mb-6">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-primary text-white text-sm font-bold">1</span>
+                            <h3 class="text-lg font-bold text-gray-900">Scan QR Code</h3>
+                        </div>
 
-                            <div class="qr-container rounded-xl mb-6" id="qr-display">
-                                <div class="text-center">
-                                    <i class="fas fa-qrcode text-6xl text-gray-400 mb-3"></i>
-                                    <p class="text-gray-600 font-semibold">QR Code siap di-scan</p>
-                                    <p class="text-xs text-gray-500 mt-1">Arahkan kamera ponsel ke sini</p>
-                                </div>
-                            </div>
+                        <div class="info-box text-sm mb-6">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                            Buka WhatsApp → Settings → Linked Devices → Link a Device, kemudian scan QR code.
+                        </div>
 
-                            <div class="flex gap-2">
-                                <button onclick="refreshQR()" class="flex-1 bg-gradient-primary text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2">
-                                    <i class="fas fa-sync-alt"></i>
-                                    <span>Refresh QR</span>
-                                </button>
-                                <button onclick="checkConnectionStatus()" class="flex-1 bg-gradient-success text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2">
-                                    <i class="fas fa-check-circle"></i>
-                                    <span>Check</span>
-                                </button>
+                        <div class="qr-container rounded-xl mb-6" id="qr-display">
+                            <div class="text-center">
+                                <i class="fas fa-qrcode text-6xl text-gray-400 mb-3"></i>
+                                <p class="text-gray-600 font-semibold">QR Code siap di-scan</p>
+                                <p class="text-xs text-gray-500 mt-1">Tunggu server meload...</p>
                             </div>
+                        </div>
 
-                            <div class="mt-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-800">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                <strong>Petunjuk:</strong> Buka WhatsApp → Settings → Linked Devices → Link a Device, kemudian scan QR code di atas.
-                            </div>
+                        <div class="flex gap-2">
+                            <button onclick="refreshQR()" class="flex-1 bg-gradient-primary text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh</span>
+                            </button>
+                            <button onclick="checkConnectionStatus()" class="flex-1 bg-gradient-success text-white font-bold py-2 px-4 rounded-lg hover:shadow-lg transition-all text-sm flex items-center justify-center gap-2">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Check</span>
+                            </button>
                         </div>
                     </div>
 
@@ -293,15 +291,15 @@
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-green-600 mt-0.5">✓</span>
-                                    <span><strong>Delays:</strong> 1-5s between messages</span>
+                                    <span><strong>Delays:</strong> 1-5s between</span>
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-green-600 mt-0.5">✓</span>
-                                    <span><strong>Batching:</strong> 10 msg per batch</span>
+                                    <span><strong>Batching:</strong> 10 msg/batch</span>
                                 </div>
                                 <div class="flex items-start gap-2">
                                     <span class="text-green-600 mt-0.5">✓</span>
-                                    <span><strong>Circuit Breaker:</strong> Auto-pause on errors</span>
+                                    <span><strong>Circuit Breaker:</strong> Auto-pause</span>
                                 </div>
                             </div>
                         </div>
@@ -309,7 +307,7 @@
                 </div>
 
                 <!-- FAQ Section -->
-                <div class="glass-card rounded-2xl p-8 mt-8">
+                <div class="glass-card rounded-2xl p-8">
                     <h3 class="text-lg font-bold text-gray-900 mb-4">❓ Frequently Asked</h3>
 
                     <div class="space-y-2">
@@ -331,7 +329,7 @@
                         <details class="group cursor-pointer">
                             <summary class="flex items-center gap-2 font-semibold text-gray-900 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
-                                <span class="text-sm">Status masih "Disconnected" setelah scan?</span>
+                                <span class="text-sm">Status "Disconnected" setelah scan?</span>
                             </summary>
                             <div class="p-3 text-xs text-gray-700 bg-gray-50 rounded-lg mt-1">
                                 <p class="font-semibold mb-1">Solusi:</p>
@@ -346,12 +344,12 @@
                         <details class="group cursor-pointer">
                             <summary class="flex items-center gap-2 font-semibold text-gray-900 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                                 <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
-                                <span class="text-sm">Ingin reset session?</span>
+                                <span class="text-sm">Reset session?</span>
                             </summary>
                             <div class="p-3 text-xs text-gray-700 bg-gray-50 rounded-lg mt-1">
                                 <p class="font-semibold mb-1">Petunjuk:</p>
                                 <ul class="ml-4 space-y-1 list-disc">
-                                    <li>SSH ke server: <code class="bg-white px-1 py-0.5 rounded">rm -rf data/wa-auth/</code></li>
+                                    <li>SSH: <code class="bg-white px-1 py-0.5 rounded text-xs">rm -rf data/wa-auth/</code></li>
                                     <li>Restart server</li>
                                     <li>Scan QR code baru</li>
                                 </ul>
@@ -359,207 +357,7 @@
                         </details>
                     </div>
                 </div>
-            </div>
-                    
-                    <div class="space-y-4">
-                        <!-- Step 1: Backend Running -->
-                        <div class="flex items-center gap-4">
-                            <div class="step-badge active" id="step1-badge">
-                                <i class="fas fa-server"></i>
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="font-bold text-gray-900">Backend Running</h4>
-                                <p class="text-sm text-gray-600 mt-1">Server sudah berjalan dengan WhatsApp service</p>
-                            </div>
-                            <span id="step1-status" class="text-sm font-bold text-green-600">✓ Aktif</span>
-                        </div>
-
-                        <div class="step-line"></div>
-
-                        <!-- Step 2: QR Code Scan -->
-                        <div class="flex items-center gap-4">
-                            <div class="step-badge pending" id="step2-badge">2</div>
-                            <div class="flex-1">
-                                <h4 class="font-bold text-gray-900">Scan QR Code</h4>
-                                <p class="text-sm text-gray-600 mt-1">Scan dengan WhatsApp phone untuk authentikasi</p>
-                            </div>
-                            <span id="step2-status" class="text-sm font-bold text-gray-600">Menunggu...</span>
-                        </div>
-
-                        <div class="step-line"></div>
-
-                        <!-- Step 3: Connection Verified -->
-                        <div class="flex items-center gap-4">
-                            <div class="step-badge pending" id="step3-badge">3</div>
-                            <div class="flex-1">
-                                <h4 class="font-bold text-gray-900">Koneksi Terverifikasi</h4>
-                                <p class="text-sm text-gray-600 mt-1">Kirim test message untuk memastikan koneksi aktif</p>
-                            </div>
-                            <span id="step3-status" class="text-sm font-bold text-gray-600">Menunggu...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- QR Code Section -->
-                <div class="glass-card rounded-2xl p-8 mb-8">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">1️⃣ Scan QR Code</h3>
-
-                    <div class="info-box">
-                        <div class="flex gap-3">
-                            <i class="fas fa-info-circle text-blue-600 flex-shrink-0 mt-1"></i>
-                            <div>
-                                <p class="font-semibold text-gray-900 mb-1">Petunjuk:</p>
-                                <ol class="text-sm text-gray-700 space-y-1 ml-5 list-decimal">
-                                    <li>Buka WhatsApp di ponsel Anda</li>
-                                    <li>Buka menu <strong>Settings → Linked Devices → Link a Device</strong></li>
-                                    <li>Arahkan kamera ke QR code di bawah</li>
-                                    <li>Tunggu sampai status berubah menjadi "Connected ✓"</li>
-                                </ol>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="qr-container" id="qr-display">
-                        <div class="text-center">
-                            <div class="inline-block">
-                                <i class="fas fa-qrcode text-6xl text-gray-400 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">QR Code akan muncul di sini</p>
-                                <p class="text-sm text-gray-500 mt-2">Tunggu server meload...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 flex gap-3">
-                        <button onclick="refreshQR()" class="flex-1 bg-gradient-primary text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
-                            <i class="fas fa-sync-alt"></i>
-                            <span>Refresh QR Code</span>
-                        </button>
-                        <button onclick="checkConnectionStatus()" class="flex-1 bg-gradient-success text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Check Status</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Connection Status Section -->
-                <div class="glass-card rounded-2xl p-8 mb-8">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">2️⃣ Status Koneksi</h3>
-
-                    <div id="status-details" class="space-y-4">
-                        <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                            <div class="flex items-center justify-between mb-4">
-                                <span class="font-semibold text-gray-900">WhatsApp Connection</span>
-                                <span id="wa-status" class="status-indicator disconnected">
-                                    <i class="fas fa-circle"></i>
-                                    <span>Disconnected</span>
-                                </span>
-                            </div>
-
-                            <div class="space-y-3">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Queue Size</span>
-                                    <span id="queue-size" class="font-bold text-gray-900">-</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Messages Sent</span>
-                                    <span id="msg-sent" class="font-bold text-green-600">-</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Failed Messages</span>
-                                    <span id="msg-failed" class="font-bold text-red-600">-</span>
-                                </div>
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Circuit Breaker</span>
-                                    <span id="circuit-status" class="font-bold text-gray-900">-</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Test Message Section -->
-                <div class="glass-card rounded-2xl p-8 mb-8">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">3️⃣ Test Message</h3>
-
-                    <div class="warning-box">
-                        <div class="flex gap-3">
-                            <i class="fas fa-exclamation-triangle text-amber-600 flex-shrink-0 mt-1"></i>
-                            <div>
-                                <p class="font-semibold text-gray-900 mb-1">Catatan:</p>
-                                <p class="text-sm text-gray-700">Gunakan nomor telepon Anda sendiri untuk test pertama kali. Format: 62812345678 (tanpa +)</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4 mt-6">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-900 mb-2">Nomor Telepon (Penerima)</label>
-                            <input type="text" id="test-phone" placeholder="62812345678" value="" 
-                                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white text-gray-900">
-                            <p class="text-xs text-gray-500 mt-2">Format: 62 + nomor (contoh: 628123456789)</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-bold text-gray-900 mb-2">Pesan Test</label>
-                            <textarea id="test-message" placeholder="Tulis pesan test..." rows="4"
-                                class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white text-gray-900" style="font-family: Arial, sans-serif;">🧪 Test message from Arsip Digital
-Waktu: {time}
-Status: ✓ WhatsApp Baileys Connected
-
-Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
-                        </div>
-
-                        <button onclick="sendTestMessage()" class="w-full bg-gradient-success text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
-                            <i class="fas fa-paper-plane"></i>
-                            <span>Kirim Test Message</span>
-                        </button>
-
-                        <div id="test-result" class="hidden"></div>
-                    </div>
-                </div>
-
-                <!-- Configuration Section -->
-                <div class="glass-card rounded-2xl p-8 mb-8">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">⚙️ Konfigurasi Anti-Ban</h3>
-
-                    <div class="success-box">
-                        <div class="flex gap-3">
-                            <i class="fas fa-shield-alt text-green-600 flex-shrink-0 mt-1"></i>
-                            <div>
-                                <p class="font-semibold text-gray-900 mb-2">Proteksi Aktif</p>
-                                <ul class="text-sm text-gray-700 space-y-1 ml-5 list-disc">
-                                    <li><strong>Typing Simulation:</strong> 1-3 detik sebelum kirim</li>
-                                    <li><strong>Random Delays:</strong> 1-5 detik antara pesan</li>
-                                    <li><strong>Batch Processing:</strong> 10 pesan per batch, 10 detik jeda</li>
-                                    <li><strong>Exponential Backoff:</strong> 2s → 4s → 8s on retry</li>
-                                    <li><strong>Circuit Breaker:</strong> Pause setelah 10 kegagalan (5 menit)</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <p class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3">Default Configuration</p>
-                        <div class="code-block">
-minDelay: 1000ms (1 detik)
-maxDelay: 5000ms (5 detik)
-batchSize: 10 pesan
-batchDelay: 10000ms (10 detik)
-maxRetries: 3 kali
-initialBackoff: 2000ms (2 detik)
-circuitBreakerThreshold: 10 kegagalan
-circuitBreakerWindow: 300000ms (5 menit)
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Troubleshooting -->
-                <div class="glass-card rounded-2xl p-8 mb-8">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">🔧 Troubleshooting</h3>
-
-                    <div class="space-y-4">
-                        <details class="group cursor-pointer">
-                            <summary class="flex items-center gap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+            </div>ap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
                                 <i class="fas fa-chevron-down group-open:rotate-180 transition-transform"></i>
                                 <span>QR Code tidak muncul?</span>
                             </summary>
