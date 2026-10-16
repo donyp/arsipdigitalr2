@@ -707,9 +707,10 @@ app.get('/penyimpanan', (req, res) => {
 
 // Monitoring Dashboard
 app.get('/monitoring', (req, res) => {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('ETag', 'W/"' + Date.now() + '"');
     res.sendFile(path.join(__dirname, '..', 'monitoring.html'));
 });
 
