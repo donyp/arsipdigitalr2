@@ -214,7 +214,8 @@
         }
 
         .grid-4 {
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
         }
 
         .grid-full {
@@ -225,13 +226,13 @@
         .card {
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 18px;
-            padding: 28px;
-            backdrop-filter: blur(15px);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
         }
 
         .card::before {
@@ -264,7 +265,7 @@
         }
 
         .card-value {
-            font-size: 42px;
+            font-size: 36px;
             font-weight: 800;
             margin-bottom: 12px;
             background: linear-gradient(135deg, #00d4ff, #00f0ff);
@@ -698,7 +699,7 @@
 
                 <div class="card">
                     <div class="card-title">⏱️ Uptime</div>
-                    <div class="card-value" id="uptime" style="font-family: 'Courier New', monospace; font-size: 36px;">00:00:00:00</div>
+                    <div class="card-value" id="uptime" style="font-family: 'Courier New', monospace; font-size: 32px;">00:00:00:00</div>
                     <div class="card-subtitle">DD:HH:MM:SS</div>
                 </div>
             </div>
