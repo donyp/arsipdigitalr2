@@ -25,6 +25,7 @@ class WhatsAppService {
         this.socket = null;
         this.isConnected = false;
         this.lastQR = null;
+        this.qrHistory = []; // Store QR history
         this.sessionPath = path.join(__dirname, '../../data/wa-auth');
         this.logger = P({ level: 'silent' }); // Silent logger by default
     }
@@ -54,6 +55,12 @@ class WhatsAppService {
 
                 if (qr) {
                     this.lastQR = qr;
+                    this.qrHistory.push({
+                        qr: qr,
+                        timestamp: new Date(),
+                        status: 'pending'
+                    });
+                    
                     console.log('[WhatsApp] ⏳ QR Code generated - Please scan below:');
                     console.log('');
                     
@@ -80,7 +87,14 @@ class WhatsAppService {
                 if (connection === 'open') {
                     console.log('[WhatsApp] ✅ Connected to WhatsApp');
                     this.isConnected = true;
-                    this.lastQR = null; // Clear QR once connected
+                    
+                    // Mark current QR as successful
+                    if (this.qrHistory.length > 0) {
+                        this.qrHistory[this.qrHistory.length - 1].status = 'success';
+                    }
+                    
+                    // Clear QR after successful connection
+                    this.lastQR = null;
                 }
 
                 if (connection === 'close') {

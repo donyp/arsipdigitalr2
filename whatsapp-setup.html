@@ -708,7 +708,7 @@ circuitBreakerWindow: 300000ms (5 menit)
                         </div>
                     `;
 
-                    // Fetch QR code from API (NO AUTH needed)
+                    // Fetch QR code from API (server generates data URL)
                     try {
                         const response = await fetch('/api/whatsapp/qr');
 
@@ -716,27 +716,10 @@ circuitBreakerWindow: 300000ms (5 menit)
                             const data = await response.json();
                             
                             if (data.qr) {
-                                // Display QR code
-                                if (data.qr.startsWith('data:')) {
-                                    // It's already a data URL (from qrcode library)
-                                    document.getElementById('qr-display').innerHTML = `
-                                        <img src="${data.qr}" style="max-width: 100%; border-radius: 12px;">
-                                    `;
-                                } else {
-                                    // It's raw text, convert to image using client-side qrcode.js
-                                    // Load qrcode.js library if not already loaded
-                                    if (!window.QRCode) {
-                                        const script = document.createElement('script');
-                                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-                                        document.head.appendChild(script);
-                                        
-                                        script.onload = () => {
-                                            setTimeout(() => displayQRImage(data.qr), 100);
-                                        };
-                                    } else {
-                                        displayQRImage(data.qr);
-                                    }
-                                }
+                                // Display QR code (always data URL from server)
+                                document.getElementById('qr-display').innerHTML = `
+                                    <img src="${data.qr}" style="max-width: 280px; border-radius: 12px;">
+                                `;
                             } else {
                                 // No QR available
                                 document.getElementById('qr-display').innerHTML = `
@@ -754,7 +737,8 @@ circuitBreakerWindow: 300000ms (5 menit)
                                 <div class="text-center">
                                     <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
                                     <p class="text-gray-600 font-semibold">QR Code belum siap</p>
-                                    <p class="text-sm text-gray-500 mt-2">${error.error || 'Tunggu server initialize WhatsApp service'}</p>
+                                    <p class="text-sm text-gray-500 mt-2">${error.error || 'Server WhatsApp belum connecting'}</p>
+                                    <p class="text-xs text-gray-400 mt-3">Hint: ${error.hint || 'Tunggu server initialize'}</p>
                                 </div>
                             `;
                         }
@@ -779,35 +763,6 @@ circuitBreakerWindow: 300000ms (5 menit)
                     `;
                 }
             });
-
-            // Helper function to display QR image from text string
-            window.displayQRImage = function(qrString) {
-                try {
-                    const container = document.getElementById('qr-display');
-                    container.innerHTML = '';
-                    
-                    if (window.QRCode) {
-                        new QRCode(container, {
-                            text: qrString,
-                            width: 256,
-                            height: 256,
-                            colorDark: '#000000',
-                            colorLight: '#ffffff',
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
-                    } else {
-                        throw new Error('QRCode library not loaded');
-                    }
-                } catch (err) {
-                    console.error('Display QR error:', err);
-                    document.getElementById('qr-display').innerHTML = `
-                        <div class="text-center p-4 bg-gray-100 rounded-lg">
-                            <p class="text-xs font-mono break-all text-gray-600">${qrString}</p>
-                            <p class="text-sm text-gray-500 mt-2">QR String (scan dengan camera)</p>
-                        </div>
-                    `;
-                }
-            };
             
             window.checkConnectionStatus = checkConnectionStatus;
             

@@ -41,30 +41,39 @@ function registerWhatsAppEndpoints(app, createAuth) {
             const qr = waService.lastQR;
             if (!qr) {
                 return res.status(404).json({
-                    error: 'No QR code available - try refreshing',
-                    qr: null
+                    error: 'No QR code available - try refreshing or restarting server',
+                    qr: null,
+                    hint: 'QR is only valid when first connecting. Try: click Refresh, or restart npm start'
                 });
             }
 
-            // Convert QR string to data URL using qrcode library
+            // Convert QR string to data URL using qrcode library on SERVER
             try {
                 const QRCode = require('qrcode');
-                const dataUrl = await QRCode.toDataURL(qr);
+                const dataUrl = await QRCode.toDataURL(qr, {
+                    width: 300,
+                    margin: 2,
+                    errorCorrectionLevel: 'H'
+                });
+                
                 res.json({
                     success: true,
                     qr: dataUrl,
+                    format: 'data-url',
                     timestamp: new Date()
                 });
             } catch (err) {
+                console.error('[WhatsApp QR] Conversion error:', err.message);
                 // Fallback: return raw QR string
                 res.json({
                     success: true,
                     qr: qr,
-                    timestamp: new Date(),
-                    format: 'text'
+                    format: 'text',
+                    timestamp: new Date()
                 });
             }
         } catch (error) {
+            console.error('[WhatsApp QR] Error:', error.message);
             res.status(500).json({ error: error.message, qr: null });
         }
     });
