@@ -3818,28 +3818,28 @@ document.addEventListener('click', () => {
 });
 
 async function deleteInvoice(faktur, invoiceId) {
-    // Show cleaner confirmation modal
+    // Show compact confirmation modal with tight vertical spacing
     Swal.fire({
         title: '🗑️ Hapus Invoice?',
         html: `
-            <div style="text-align: left; margin: 12px 0;">
-                <p style="font-size: 13px; color: #2c3e50; margin-bottom: 10px;">
-                    Apakah Anda yakin ingin menghapus invoice <strong style="color: #e74c3c;">${faktur}</strong>?
+            <div style="text-align: left; margin: 6px 0; font-size: 13px;">
+                <p style="color: #2c3e50; margin: 0 0 6px 0; font-size: 12px;">
+                    Hapus invoice <strong style="color: #e74c3c;">${faktur}</strong>?
                 </p>
-                <div style="background: #fff3cd; border-left: 3px solid #ff9800; padding: 10px 12px; border-radius: 3px; margin-bottom: 10px;">
-                    <p style="font-size: 12px; color: #856404; margin: 0;">
-                        <i class="fas fa-exclamation-triangle"></i> <strong>Akan dihapus:</strong>
+                <div style="background: #fff3cd; border-left: 2px solid #ff9800; padding: 6px 8px; border-radius: 2px; margin-bottom: 6px;">
+                    <p style="font-size: 11px; color: #856404; margin: 0 0 3px 0; line-height: 1.3;">
+                        <i class="fas fa-exclamation-triangle" style="margin-right: 4px;"></i><strong>Akan dihapus:</strong>
                     </p>
-                    <ul style="font-size: 11px; color: #856404; margin: 6px 0 0 0; padding-left: 20px;">
-                        <li>Data faktur</li>
-                        <li>File Invoice PDF (jika ada)</li>
-                        <li>File Bukti Bayar (jika ada)</li>
-                        <li>File Faktur Pajak (jika ada)</li>
+                    <ul style="font-size: 10px; color: #856404; margin: 0; padding-left: 18px; line-height: 1.4;">
+                        <li style="margin: 1px 0;">Data faktur</li>
+                        <li style="margin: 1px 0;">File PDF (jika ada)</li>
+                        <li style="margin: 1px 0;">Bukti Bayar (jika ada)</li>
+                        <li style="margin: 1px 0;">Faktur Pajak (jika ada)</li>
                     </ul>
                 </div>
-                <div style="background: #f8d7da; border-left: 3px solid #e74c3c; padding: 10px 12px; border-radius: 3px;">
-                    <p style="font-size: 11px; color: #721c24; margin: 0;">
-                        <i class="fas fa-ban"></i> <strong>TIDAK DAPAT DIBATALKAN</strong>
+                <div style="background: #f8d7da; border-left: 2px solid #e74c3c; padding: 5px 8px; border-radius: 2px;">
+                    <p style="font-size: 10px; color: #721c24; margin: 0; line-height: 1.3;">
+                        <i class="fas fa-ban" style="margin-right: 4px;"></i><strong>TIDAK DAPAT DIBATALKAN</strong>
                     </p>
                 </div>
             </div>
@@ -3852,16 +3852,27 @@ async function deleteInvoice(faktur, invoiceId) {
         cancelButtonText: 'Batal',
         reverseButtons: true,
         allowOutsideClick: false,
-        width: '340px',
-        padding: '20px',
+        width: '320px',
+        padding: '16px',
         didOpen: async () => {
             const confirmBtn = Swal.getConfirmButton();
-            confirmBtn.style.minWidth = '100px';
-            confirmBtn.style.padding = '8px 14px';
-            confirmBtn.style.fontSize = '13px';
+            confirmBtn.style.minWidth = '90px';
+            confirmBtn.style.padding = '6px 12px';
+            confirmBtn.style.fontSize = '12px';
+            confirmBtn.style.borderRadius = '4px';
+            confirmBtn.style.fontWeight = '600';
             const cancelBtn = Swal.getCancelButton();
-            cancelBtn.style.padding = '8px 14px';
-            cancelBtn.style.fontSize = '13px';
+            cancelBtn.style.padding = '6px 12px';
+            cancelBtn.style.fontSize = '12px';
+            cancelBtn.style.borderRadius = '4px';
+            cancelBtn.style.fontWeight = '600';
+            
+            // Improve modal appearance
+            const popup = Swal.getPopup();
+            if (popup) {
+                popup.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                popup.style.borderRadius = '8px';
+            }
         }
     }).then(async (result) => {
         if (result.isConfirmed) {
