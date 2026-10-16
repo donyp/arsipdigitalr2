@@ -623,6 +623,7 @@
         let uptimeInterval = null;
         let logsData = [];
         let isLogsPaused = false;
+        let logsPollingInterval = null;
 
         async function fetchLogs() {
             try {
@@ -643,9 +644,25 @@
             } catch (error) {
                 console.error('Error fetching logs:', error);
                 const container = document.getElementById('logsContainer');
-                if (container) {
+                if (container && logsData.length === 0) {
                     container.innerHTML = '<div style="color: #ef4444;">❌ Failed to load logs: ' + error.message + '</div>';
                 }
+            }
+        }
+
+        function startLogsPolling() {
+            if (logsPollingInterval) return; // Already polling
+            
+            fetchLogs(); // Fetch immediately
+            logsPollingInterval = setInterval(fetchLogs, 1000); // Poll every 1 second
+            console.log('[Logs] Started real-time polling');
+        }
+
+        function stopLogsPolling() {
+            if (logsPollingInterval) {
+                clearInterval(logsPollingInterval);
+                logsPollingInterval = null;
+                console.log('[Logs] Stopped real-time polling');
             }
         }
 
@@ -689,6 +706,7 @@
 
         document.getElementById('logsPauseBtn')?.addEventListener('click', () => {
             isLogsPaused = true;
+            stopLogsPolling();
             document.getElementById('logsPauseBtn').style.display = 'none';
             document.getElementById('logsResumeBtn').style.display = 'inline-block';
         });
@@ -697,7 +715,7 @@
             isLogsPaused = false;
             document.getElementById('logsPauseBtn').style.display = 'inline-block';
             document.getElementById('logsResumeBtn').style.display = 'none';
-            fetchLogs();
+            startLogsPolling();
         });
 
         document.getElementById('logsCopyBtn')?.addEventListener('click', () => {
@@ -727,9 +745,9 @@
                 btn.classList.add('active');
                 document.getElementById(tabName).style.display = 'block';
                 
-                // Fetch logs when logs tab is clicked
+                // Start logs polling when logs tab is clicked
                 if (tabName === 'logs') {
-                    fetchLogs();
+                    startLogsPolling();
                 }
             });
         });
