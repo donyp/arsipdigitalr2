@@ -191,13 +191,13 @@
 
             <!-- Main Content -->
             <div class="p-8 flex-1 overflow-y-auto">
-                <!-- Step 1: Get Pairing Code -->
+                <!-- Step 1: Get QR Code -->
                 <div class="glass-card rounded-2xl p-8 mb-8">
                     <div class="flex items-center gap-3 mb-8">
                         <span class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-primary text-white font-bold text-lg">1</span>
                         <div>
-                            <h3 class="text-2xl font-bold text-gray-900">Enter Phone Number</h3>
-                            <p class="text-sm text-gray-600 mt-1">Phone yang ingin dijadikan bot WhatsApp</p>
+                            <h3 class="text-2xl font-bold text-gray-900">Authenticate WhatsApp</h3>
+                            <p class="text-sm text-gray-600 mt-1">Scan QR code untuk menghubungkan ponsel Anda</p>
                         </div>
                     </div>
 
@@ -205,47 +205,32 @@
                         <div class="flex gap-3">
                             <i class="fas fa-info-circle text-blue-600 flex-shrink-0 mt-0.5"></i>
                             <div class="text-sm">
-                                <p class="font-semibold text-gray-900 mb-1">Petunjuk:</p>
+                                <p class="font-semibold text-gray-900 mb-1">Petunjuk Setup (Sekali saja):</p>
                                 <ol class="text-gray-700 space-y-1 ml-5 list-decimal">
-                                    <li>Masukkan nomor telepon yang ingin dijadikan bot (format: 628123456789)</li>
-                                    <li>Klik "Generate Pairing Code"</li>
-                                    <li>Kode 8 digit akan muncul di bawah</li>
-                                    <li>Buka WhatsApp di ponsel dengan nomor tersebut</li>
-                                    <li>Settings → Linked Devices → Link a Device → "Use a phone number instead"</li>
-                                    <li>Masukkan kode yang ditampilkan</li>
-                                    <li>Tunggu sampai status berubah menjadi "Connected & Verified ✓"</li>
+                                    <li>Klik tombol "Refresh QR" di bawah untuk menampilkan QR code</li>
+                                    <li>Buka WhatsApp di ponsel Anda</li>
+                                    <li>Buka Settings → Linked Devices</li>
+                                    <li>Klik "Link a Device"</li>
+                                    <li>Arahkan ponsel untuk scan QR code di bawah</li>
+                                    <li>Tunggu sampai status berubah menjadi "Connected ✓"</li>
+                                    <li>Session akan otomatis tersimpan - bot siap digunakan selamanya!</li>
                                 </ol>
                             </div>
                         </div>
                     </div>
 
-                    <div class="space-y-4 mb-6">
-                        <div>
-                            <label class="block text-sm font-bold text-gray-900 mb-2">Nomor Telepon</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="pairing-phone" placeholder="628123456789" value="" 
-                                    class="flex-1 px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-600 bg-white text-gray-900">
-                                <button onclick="startPairing()" class="bg-gradient-primary text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
-                                    <i class="fas fa-play"></i>
-                                    <span>Generate Code</span>
-                                </button>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-2">Format: 62 + nomor (contoh: 628123456789)</p>
-                        </div>
-                    </div>
-
                     <div class="qr-container rounded-2xl" id="qr-display">
                         <div class="text-center">
-                            <i class="fas fa-mobile-alt text-6xl text-green-500 mb-3"></i>
-                            <p class="text-gray-600 font-semibold text-lg">Pairing Code akan muncul di sini</p>
-                            <p class="text-sm text-gray-500 mt-2">Masukkan nomor dan klik "Generate Code"</p>
+                            <i class="fas fa-qrcode text-6xl text-blue-500 mb-3"></i>
+                            <p class="text-gray-600 font-semibold text-lg">QR Code akan muncul di sini</p>
+                            <p class="text-sm text-gray-500 mt-2">Klik "Refresh QR" untuk menampilkan</p>
                         </div>
                     </div>
 
                     <div class="flex gap-3">
-                        <button onclick="refreshQR()" class="flex-1 bg-gray-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
+                        <button onclick="refreshQR()" class="flex-1 bg-gradient-primary text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
                             <i class="fas fa-sync-alt"></i>
-                            <span>Refresh Code</span>
+                            <span>Refresh QR</span>
                         </button>
                         <button onclick="checkConnectionStatus()" class="flex-1 bg-gradient-success text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2">
                             <i class="fas fa-check-circle"></i>
@@ -259,8 +244,8 @@
                     <div class="flex items-center gap-3 mb-8">
                         <span class="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-success text-white font-bold text-lg">2</span>
                         <div>
-                            <h3 class="text-2xl font-bold text-gray-900">Connection Status</h3>
-                            <p class="text-sm text-gray-600 mt-1">Real-time monitoring</p>
+                            <h3 class="text-2xl font-bold text-gray-900">Connected Phone</h3>
+                            <p class="text-sm text-gray-600 mt-1">Status koneksi WhatsApp real-time</p>
                         </div>
                     </div>
 
@@ -274,7 +259,7 @@
                         </div>
 
                         <div id="connected-phone-info" class="grid grid-cols-1 gap-4">
-                            <div class="p-3 bg-white rounded-lg border border-gray-200">
+                            <div class="p-3 bg-white rounded-lg border border-green-200">
                                 <span class="text-xs text-gray-600">Connected Phone</span>
                                 <p class="font-bold text-gray-900">-</p>
                             </div>
@@ -402,15 +387,15 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                         <details class="group cursor-pointer">
                             <summary class="flex items-center gap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
                                 <i class="fas fa-chevron-down group-open:rotate-180 transition-transform text-lg"></i>
-                                <span>Pairing Code tidak muncul?</span>
+                                <span>QR Code tidak muncul?</span>
                             </summary>
                             <div class="p-4 mt-2 bg-gray-50 rounded-xl text-sm text-gray-700 space-y-2 border-l-4 border-yellow-400 ml-2">
-                                <p><strong>Penyebab:</strong> Server belum selesai initialize WhatsApp service</p>
+                                <p><strong>Penyebab:</strong> Server belum selesai initialize WhatsApp Baileys service</p>
                                 <p><strong>Solusi:</strong></p>
                                 <ul class="ml-5 list-disc space-y-1">
                                     <li>Tunggu 5-10 detik untuk server load</li>
-                                    <li>Klik tombol "Get Pairing Code"</li>
-                                    <li>Cek terminal server: apakah ada log "[WhatsApp] Pairing code generated"?</li>
+                                    <li>Klik tombol "Refresh QR"</li>
+                                    <li>Cek terminal server: apakah ada log "[WhatsApp] QR Code generated"?</li>
                                     <li>Restart server jika masih tidak muncul</li>
                                 </ul>
                             </div>
@@ -419,15 +404,15 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                         <details class="group cursor-pointer">
                             <summary class="flex items-center gap-3 font-semibold text-gray-900 p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
                                 <i class="fas fa-chevron-down group-open:rotate-180 transition-transform text-lg"></i>
-                                <span>Status masih "Disconnected" setelah memasukkan kode?</span>
+                                <span>Status masih "Disconnected" setelah scan QR?</span>
                             </summary>
                             <div class="p-4 mt-2 bg-gray-50 rounded-xl text-sm text-gray-700 space-y-2 border-l-4 border-yellow-400 ml-2">
-                                <p><strong>Penyebab:</strong> Pairing code sudah expired atau input tidak benar</p>
+                                <p><strong>Penyebab:</strong> QR code sudah expired atau scan tidak berhasil</p>
                                 <p><strong>Solusi:</strong></p>
                                 <ul class="ml-5 list-disc space-y-1">
-                                    <li>Klik "Get Pairing Code" untuk generate kode baru</li>
-                                    <li>Masukkan kode dengan cepat (berlaku 60 detik)</li>
-                                    <li>Pastikan koneksi internet ponsel stabil</li>
+                                    <li>Klik "Refresh QR" untuk generate QR code baru</li>
+                                    <li>Scan dengan cepat sebelum QR code expired (biasanya 20-30 detik)</li>
+                                    <li>Pastikan koneksi internet ponsel stabil saat scan</li>
                                     <li>Cek log server untuk error message</li>
                                 </ul>
                             </div>
@@ -443,9 +428,9 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                                 <p><strong>Solusi:</strong></p>
                                 <ul class="ml-5 list-disc space-y-1">
                                     <li>Pastikan status connection: "Connected ✓"</li>
-                                    <li>Cek circuit breaker status (jika "Open", tunggu 5 menit)</li>
-                                    <li>Verifikasi format nomor telepon (62 + nomor)</li>
-                                    <li>Tunggu 10-20 detik sebelum retry (anti-ban protection)</li>
+                                    <li>Cek circuit breaker status (jika "⚠️ Open", tunggu 5 menit)</li>
+                                    <li>Verifikasi format nomor telepon (62 + nomor, contoh: 628123456789)</li>
+                                    <li>Tunggu 10-20 detik sebelum retry (anti-ban protection aktif)</li>
                                 </ul>
                             </div>
                         </details>
@@ -460,8 +445,8 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                                 <ul class="ml-5 list-disc space-y-1">
                                     <li>SSH ke server: <code class="bg-white px-2 py-1 rounded text-xs">rm -rf data/wa-auth/</code></li>
                                     <li>Restart server: <code class="bg-white px-2 py-1 rounded text-xs">npm start</code></li>
-                                    <li>Klik "Get Pairing Code" untuk generate kode baru</li>
-                                    <li>Masukkan kode 8 digit di WhatsApp Anda</li>
+                                    <li>Klik "Refresh QR" untuk generate QR code baru</li>
+                                    <li>Scan QR code dengan ponsel Anda</li>
                                 </ul>
                             </div>
                         </details>
@@ -528,39 +513,37 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                         <div class="text-center">
                             <div class="inline-block">
                                 <i class="fas fa-spinner fa-spin text-6xl text-purple-600 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Getting Pairing Code...</p>
+                                <p class="text-gray-600 font-semibold">Getting QR Code...</p>
                             </div>
                         </div>
                     `;
 
-                    // Fetch pairing code from API
-                    const response = await fetch('/api/whatsapp/pairing-code');
+                    // Fetch QR code from API
+                    const response = await fetch('/api/whatsapp/qr');
 
                     if (response.ok) {
                         const data = await response.json();
                         
-                        if (data.pairingCode) {
-                            // Display pairing code in large, easy-to-read format
-                            const code = data.pairingCode;
+                        if (data.qr) {
+                            // Display QR code
+                            const qrCode = data.qr;
                             document.getElementById('qr-display').innerHTML = `
                                 <div class="text-center p-8">
                                     <div class="mb-4">
-                                        <i class="fas fa-mobile-alt text-6xl text-green-500 mb-4"></i>
-                                        <p class="text-gray-600 font-semibold text-lg">Pairing Code</p>
-                                        ${data.expectedPhone ? `<p class="text-sm text-gray-500">Phone: ${data.expectedPhone}</p>` : ''}
+                                        <p class="text-gray-600 font-semibold text-lg mb-4">QR Code - Scan dengan WhatsApp</p>
                                     </div>
-                                    <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl p-8 border-2 border-green-300 mb-4">
-                                        <p class="text-5xl font-bold text-gray-900 tracking-widest font-mono">${code}</p>
+                                    <div class="bg-white rounded-2xl p-8 border-2 border-gray-200 inline-block">
+                                        <img src="${qrCode}" alt="WhatsApp QR Code" style="width: 280px; height: 280px;">
                                     </div>
-                                    <p class="text-sm text-gray-600 mb-2">Valid for 60 seconds</p>
-                                    <p class="text-xs text-gray-500">Masukkan kode ini di WhatsApp ponsel Anda</p>
+                                    <p class="text-sm text-gray-600 mt-4 mb-2">Buka WhatsApp di ponsel Anda</p>
+                                    <p class="text-xs text-gray-500">Settings → Linked Devices → Scan dengan perangkat ini</p>
                                 </div>
                             `;
                         } else {
                             document.getElementById('qr-display').innerHTML = `
                                 <div class="text-center">
                                     <i class="fas fa-info-circle text-6xl text-blue-500 mb-4"></i>
-                                    <p class="text-gray-600 font-semibold">Pairing Code belum siap</p>
+                                    <p class="text-gray-600 font-semibold">QR Code belum siap</p>
                                     <p class="text-sm text-gray-500 mt-2">Tunggu koneksi WhatsApp Baileys siap</p>
                                 </div>
                             `;
@@ -570,14 +553,14 @@ Pesan ini dikirim untuk memverifikasi koneksi WhatsApp.</textarea>
                         document.getElementById('qr-display').innerHTML = `
                             <div class="text-center">
                                 <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
-                                <p class="text-gray-600 font-semibold">Pairing Code belum siap</p>
+                                <p class="text-gray-600 font-semibold">QR Code belum siap</p>
                                 <p class="text-sm text-gray-500 mt-2">${error.error || 'Server WhatsApp belum connecting'}</p>
                                 <p class="text-xs text-gray-400 mt-3">${error.hint || 'Coba lagi...'}</p>
                             </div>
                         `;
                     }
                 } catch (fetchErr) {
-                    console.error('Fetch pairing code error:', fetchErr);
+                    console.error('Fetch QR code error:', fetchErr);
                     document.getElementById('qr-display').innerHTML = `
                         <div class="text-center">
                             <i class="fas fa-exclamation-circle text-6xl text-red-500 mb-4"></i>
