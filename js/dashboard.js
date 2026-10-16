@@ -4022,7 +4022,14 @@ async function deleteInvoice(faktur, invoiceId) {
                 
                 // Reload the data
                 Swal.close();
-                location.reload();
+                setTimeout(async () => {
+                    try {
+                        await loadInvoicesInDashboard(1);
+                        await loadFilterOptions();
+                    } catch (err) {
+                        console.error('Failed to reload:', err);
+                    }
+                }, 500);
                 
             } catch (error) {
                 console.error('[Dashboard] Delete error:', error);
