@@ -2687,6 +2687,18 @@ let invoiceCurrentPage = 1;
 let invoiceTotalCount = 0;
 
 // ============================================
+// Track currently active filters for pagination
+// ============================================
+let activeInvoiceFilters = {
+    status: '',
+    toko: '',
+    keterangan: '',
+    date_from: '',
+    date_to: '',
+    search: ''
+};
+
+// ============================================
 // NEW FLOW: Filter State & Background Scanning
 // ============================================
 let invoiceFilterState = {
@@ -2802,7 +2814,18 @@ async function loadInvoicesInDashboard(page = 1) {
         }
         
         const offset = (page - 1) * INVOICE_PAGE_SIZE;
-        const url = `${CONFIG.API_URL}/api/invoice/list?limit=${INVOICE_PAGE_SIZE}&offset=${offset}`;
+        
+        // BUILD URL WITH ACTIVE FILTERS
+        const params = new URLSearchParams();
+        if (activeInvoiceFilters.toko) params.append('toko', activeInvoiceFilters.toko);
+        if (activeInvoiceFilters.keterangan) params.append('keterangan', activeInvoiceFilters.keterangan);
+        if (activeInvoiceFilters.search) params.append('search', activeInvoiceFilters.search);
+        if (activeInvoiceFilters.date_from) params.append('date_from', activeInvoiceFilters.date_from);
+        if (activeInvoiceFilters.date_to) params.append('date_to', activeInvoiceFilters.date_to);
+        params.append('limit', INVOICE_PAGE_SIZE);
+        params.append('offset', offset);
+        
+        const url = `${CONFIG.API_URL}/api/invoice/list?${params.toString()}`;
         
         // Check if we have cached stats (prevents repeated calculations)
         const cachedStats = window.invoiceStatsCache?.getStats({
@@ -4167,10 +4190,19 @@ async function applyInvoiceFilters() {
             
         }
         
+        // SAVE ACTIVE FILTERS - Used when paginating
+        activeInvoiceFilters = {
+            status: status,
+            toko: toko,
+            keterangan: keterangan,
+            date_from: dateFromValue,
+            date_to: dateToValue,
+            search: search
+        };
+        
         params.append('limit', INVOICE_PAGE_SIZE);
         params.append('offset', 0);
-        
-        
+        invoiceCurrentPage = 1;  // Reset to page 1 when applying filters
         
         const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
             method: 'GET',
