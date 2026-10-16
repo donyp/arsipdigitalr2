@@ -44,6 +44,84 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
         statsCache.timestamp = Date.now();
     };
     
+    /**
+     * Helper: Update invoice file count after deletion
+     * Checks if deleted file is an invoice file and updates the count
+     */
+    async function updateInvoiceFileCountAfterDelete(supabaseClient, deletedFilePath) {
+        try {
+            // Check if file is in INVOICE_FILE path
+            if (!deletedFilePath.includes('INVOICE')) {
+                return; // Not an invoice file
+            }
+
+            // Extract faktur from path - typically: INVOICE/BEKASI/2026/SEPTEMBER/02/PPN/faktur.pdf
+            const pathParts = deletedFilePath.split('/');
+            const fileNameIndex = pathParts.length - 1;
+            
+            // Try to find faktur by matching the path pattern
+            let faktur = null;
+            
+            // Look for faktur pattern (numeric, often 15-30 digits)
+            for (const part of pathParts) {
+                if (/^\d{10,}$/.test(part)) {
+                    faktur = part;
+                    break;
+                }
+            }
+
+            if (!faktur) {
+                console.log(`[StorageHandler] Could not extract faktur from path: ${deletedFilePath}`);
+                return;
+            }
+
+            console.log(`[StorageHandler] Updating file count for faktur: ${faktur}`);
+
+            // Get current invoice record
+            const { data: invoice, error: fetchError } = await supabaseClient
+                .from('invoice_file_list')
+                .select('*')
+                .eq('faktur', faktur)
+                .single();
+
+            if (fetchError) {
+                console.warn(`[StorageHandler] Could not find invoice: ${faktur}`);
+                return;
+            }
+
+            // Recount files from R2 storage
+            let filesCount = 0;
+            
+            if (invoice.invoice_pdf_path && invoice.invoice_pdf_path !== deletedFilePath) {
+                filesCount++;
+            }
+            if (invoice.bukti_bayar_path && invoice.bukti_bayar_path !== deletedFilePath) {
+                filesCount++;
+            }
+            if (invoice.faktur_pajak_path && invoice.faktur_pajak_path !== deletedFilePath) {
+                filesCount++;
+            }
+
+            console.log(`[StorageHandler] Recounted files for ${faktur}: ${filesCount}`);
+
+            // Update the count
+            const { error: updateError } = await supabaseClient
+                .from('invoice_file_list')
+                .update({ files_uploaded_count: filesCount })
+                .eq('faktur', faktur);
+
+            if (updateError) {
+                console.error(`[StorageHandler] Error updating file count: ${updateError.message}`);
+                return;
+            }
+
+            console.log(`[StorageHandler] ✅ Updated files_uploaded_count to ${filesCount} for faktur ${faktur}`);
+
+        } catch (error) {
+            console.error(`[StorageHandler] Error in updateInvoiceFileCountAfterDelete: ${error.message}`);
+        }
+    }
+    
     // Get S3 client and config from r2-storage module
     const s3Client = r2Storage.getS3Client();
     const config = r2Storage.getConfig();
@@ -645,6 +723,14 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 await s3Client.send(command);
 
                 console.log(`[StorageHandler] ✅ Deleted file: ${filePath}`);
+
+                // Update invoice_file_list if this is an invoice file
+                try {
+                    await updateInvoiceFileCountAfterDelete(supabase, filePath);
+                } catch (updateError) {
+                    console.warn(`[StorageHandler] Could not update invoice count: ${updateError.message}`);
+                    // Don't fail the delete if update fails
+                }
 
                 res.json({
                     success: true,
