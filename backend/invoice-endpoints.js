@@ -979,10 +979,19 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 let processedCount = 0;
                 let duplicateCount = 0;
                 let failedCount = 0;
+                let skippedReturs = 0;
                 const errors = [];
                 
                 for (const item of parseResult.data) {
                     try {
+                        // FILTER: Skip RETUR transactions
+                        const transType = String(item.jenis_transaksi || 'jual').toLowerCase().trim();
+                        if (transType === 'retur' || transType === 'return') {
+                            skippedReturs++;
+                            console.log(`[Invoice API] Skipping RETUR transaction: ${item.faktur}`);
+                            continue;
+                        }
+                        
                         // Check if faktur already exists
                         const { data: existing } = await supabase
                             .from('invoice_file_list')
@@ -1047,7 +1056,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 await supabase.from('audit_logs').insert({
                     user_id: req.user.id,
                     action: 'upload_excel',
-                    context: `Uploaded ${req.file.originalname}: ${processedCount} processed, ${duplicateCount} duplicates, ${failedCount} failed`
+                    context: `Uploaded ${req.file.originalname}: ${processedCount} processed, ${duplicateCount} duplicates, ${failedCount} failed, ${skippedReturs} retur skipped`
                 });
                 
                 res.json({
@@ -1059,6 +1068,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         processed: processedCount,
                         duplicates: duplicateCount,
                         failed: failedCount,
+                        skippedReturs: skippedReturs,
                         errors: errors.slice(0, 10)
                     }
                 });

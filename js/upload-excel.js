@@ -190,9 +190,12 @@ async function checkData() {
         
         // Show skipped returs in validation if any
         const skippedReturValidation = document.getElementById('skippedReturValidation');
+        const skippedReturBadge = document.getElementById('skippedReturCountBadge');
         if (skippedReturs > 0) {
             if (skippedReturValidation) {
-                skippedReturValidation.textContent = 'Transaksi RETUR diabaikan: ' + skippedReturs;
+                if (skippedReturBadge) {
+                    skippedReturBadge.textContent = skippedReturs;
+                }
                 skippedReturValidation.style.display = 'block';
             }
         } else {
@@ -247,8 +250,8 @@ async function uploadData() {
     const originalText = btnUpload.textContent;
     btnUpload.disabled = true;
     
-    // Show loading spinner with animated text
-    btnUpload.innerHTML = '<span class="loading-spinner"></span><span class="loading-text">Uploading...</span>';
+    // Show loading spinner with animated text (using inline styles)
+    btnUpload.innerHTML = '<span style="display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 6px;"></span>Mengupload...';
 
     try {
         const token = API.getToken() || localStorage.getItem('jwt_token');
