@@ -11,7 +11,14 @@ const { DisconnectReason, useMultiFileAuthState } = require('@whiskeysockets/bai
 const fs = require('fs');
 const path = require('path');
 const P = require('pino');
-const qrcode = require('qrcode-terminal');
+
+// Optional: QR code terminal display
+let qrcode = null;
+try {
+    qrcode = require('qrcode-terminal');
+} catch (e) {
+    console.warn('[WhatsApp] qrcode-terminal not installed - QR will be logged as text only');
+}
 
 class WhatsAppService {
     constructor() {
@@ -41,7 +48,7 @@ class WhatsAppService {
                 browser: ['Linux', 'Chrome', '121.0.6167.160']
             });
 
-            // Handle connection updates - NEW: Generate QR from event
+            // Handle connection updates - Generate QR from event
             this.socket.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
 
@@ -49,9 +56,20 @@ class WhatsAppService {
                     this.lastQR = qr;
                     console.log('[WhatsApp] ⏳ QR Code generated - Please scan below:');
                     console.log('');
-                    qrcode.generate(qr, { small: true });
+                    
+                    if (qrcode) {
+                        // If qrcode-terminal installed, display as ASCII art
+                        qrcode.generate(qr, { small: true });
+                    } else {
+                        // Fallback: show as text
+                        console.log('QR String: ' + qr);
+                        console.log('');
+                        console.log('(Install qrcode-terminal to see ASCII art QR code)');
+                        console.log('npm install qrcode-terminal');
+                    }
+                    
                     console.log('');
-                    console.log('[WhatsApp] Scan above QR code with WhatsApp on your phone');
+                    console.log('[WhatsApp] Scan QR code with WhatsApp on your phone');
                 }
 
                 if (connection === 'connecting') {
