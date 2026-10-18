@@ -107,10 +107,16 @@
 
     // Function to apply CSS variables based on dark mode
     window.applyDarkModeInlineStyles = function(isDark) {
+        // If isDark is not passed, determine from localStorage
+        if (isDark === undefined) {
+            isDark = localStorage.getItem('dark_mode_enabled') === 'true';
+        }
+        
         const root = document.documentElement;
         
         if (isDark) {
             // Dark mode variables
+            root.setAttribute('data-dark-mode', 'true');
             root.style.setProperty('--color-bg-primary', '#0f172a');
             root.style.setProperty('--color-bg-secondary', '#1e293b');
             root.style.setProperty('--color-bg-tertiary', '#334155');
@@ -121,6 +127,7 @@
             root.style.setProperty('--color-border-dark', '#64748b');
         } else {
             // Light mode variables (improved contrast)
+            root.setAttribute('data-dark-mode', 'false');
             root.style.setProperty('--color-bg-primary', '#ffffff');
             root.style.setProperty('--color-bg-secondary', '#f8f9fa');
             root.style.setProperty('--color-bg-tertiary', '#f0f2f5');

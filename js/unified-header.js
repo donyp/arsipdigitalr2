@@ -224,16 +224,27 @@ function updateDarkModeIcon() {
     icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
 }
 
+function updateCalendarIconColor(isDark) {
+    // Update calendar icon fill color based on dark mode
+    const calendarIcons = document.querySelectorAll('.empty-state-icon svg path');
+    if (calendarIcons.length > 0) {
+        calendarIcons.forEach(path => {
+            path.setAttribute('fill', isDark ? '#ffffff' : '#3d3b6b');
+        });
+    }
+}
+
 function toggleDarkMode() {
     const isDark = localStorage.getItem('dark_mode_enabled') === 'true';
     localStorage.setItem('dark_mode_enabled', isDark ? 'false' : 'true');
     
     // Trigger dark mode change
     if (typeof applyDarkModeInlineStyles === 'function') {
-        applyDarkModeInlineStyles();
+        applyDarkModeInlineStyles(!isDark);
     }
     
     updateDarkModeIcon();
+    updateCalendarIconColor(!isDark);
 }
 
 function performSearch(query) {
