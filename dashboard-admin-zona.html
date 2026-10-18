@@ -1072,12 +1072,16 @@
 
         .stat-label {
             font-size: 11px;
-            color: var(--color-text-tertiary);
+            color: rgba(61, 59, 107, 0.7);
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1.2px;
             margin-bottom: 8px;
             opacity: 0.8;
+        }
+
+        html.dark-mode .stat-label {
+            color: var(--color-text-tertiary);
         }
 
         .stat-value {
@@ -1090,10 +1094,15 @@
 
         .stat-description {
             font-size: 11px;
-            color: var(--color-text-tertiary);
+            color: rgba(61, 59, 107, 0.6);
             margin-top: 6px;
-            opacity: 0.7;
+            opacity: 1;
             font-weight: 500;
+        }
+
+        html.dark-mode .stat-description {
+            color: var(--color-text-tertiary);
+            opacity: 0.7;
         }
 
         .btn-logout {
