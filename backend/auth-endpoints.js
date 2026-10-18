@@ -142,7 +142,9 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             
             const jwtToken = jwt.sign(
                 {
+                    sub: users.id,  // Standard JWT subject claim
                     userId: users.id,
+                    id: users.id,
                     username: users.username,
                     email: users.email,
                     role: users.role || 'user',
