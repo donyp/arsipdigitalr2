@@ -832,6 +832,8 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
             color: var(--color-text-primary);
             display: none;
             animation: slideIn 0.3s ease-out;
@@ -4699,6 +4701,13 @@
                 
                 document.getElementById('profileEmail').textContent = newEmail;
                 document.getElementById('profileUsername').textContent = newUsername || '-';
+                
+                // Update password in localStorage and display if changed
+                if (newPassword) {
+                    localStorage.setItem('user_password', newPassword);
+                    document.getElementById('profilePassword').textContent = '••••••••';
+                    console.log('[Profile Save] Password updated in localStorage and display reset');
+                }
 
                 // Exit edit mode
                 window.exitProfileEditMode();
