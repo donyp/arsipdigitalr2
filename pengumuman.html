@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengumuman - Sistem</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/color-vars.css">
+    <style>
+        :root {
+            --color-bg-primary: #f5f7fa;
+            --color-bg-secondary: #ffffff;
+            --color-bg-tertiary: #f3f4f6;
+            --color-text-primary: #1f2937;
+            --color-text-secondary: #6b7280;
+            --color-text-tertiary: #9ca3af;
+            --color-border: #e5e7eb;
+            --color-border-dark: #d1d5db;
+            --color-accent: #3b82f6;
+        }
+
+        html[data-dark-mode="true"] {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1a2332;
+            --color-bg-tertiary: #243447;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-text-tertiary: #94a3b8;
+            --color-border: #2d3d50;
+            --color-border-dark: #3d4d60;
+            --color-accent: #60a5fa;
+        }
+
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+        }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .editor-btn {
+            padding: 8px 12px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-tertiary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .editor-btn:hover {
+            background: var(--color-border);
+        }
+
+        .editor-btn.active {
+            background: var(--color-accent);
+            color: white;
+            border-color: var(--color-accent);
+        }
+
+        .content-editor {
+            min-height: 300px;
+            padding: 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .content-editor:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .recipient-card {
+            padding: 12px;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-6 py-10">
+        <!-- Header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--color-border);">
+            <div>
+                <h1 style="font-size: 32px; font-weight: 800; color: var(--color-text-primary); margin: 0;">
+                    <i class="fas fa-bell" style="color: #ff9800; margin-right: 12px;"></i>Pengumuman
+                </h1>
+                <p style="color: var(--color-text-secondary); font-size: 14px; margin: 8px 0 0 0;">Kelola dan kirim pengumuman sistem ke semua pengguna</p>
+            </div>
+            <a href="/dashboard" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Kembali
+            </a>
+        </div>
+
+        <!-- Main Content -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+            <!-- Form Pengumuman -->
+            <div style="background: var(--color-bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-border);">
+                <h2 style="font-size: 18px; font-weight: 700; margin: 0 0 20px 0; color: var(--color-text-primary);">Buat Pengumuman Baru</h2>
+
+                <!-- Judul -->
+                <div class="form-group">
+                    <label class="form-label">Judul Pengumuman</label>
+                    <input type="text" id="announcementTitle" class="form-control" placeholder="Masukkan judul pengumuman...">
+                </div>
+
+                <!-- Jenis Pengumuman -->
+                <div class="form-group">
+                    <label class="form-label">Jenis Pengumuman</label>
+                    <select id="announcementType" class="form-control">
+                        <option value="Informasi">Informasi</option>
+                        <option value="Peringatan">Peringatan</option>
+                        <option value="Penting">Penting</option>
+                        <option value="Maintenance">Maintenance</option>
+                    </select>
+                </div>
+
+                <!-- Content Editor -->
+                <div class="form-group">
+                    <label class="form-label">Konten Pengumuman</label>
+                    <div class="editor-toolbar">
+                        <button class="editor-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i> Bold</button>
+                        <button class="editor-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i> Italic</button>
+                        <button class="editor-btn" onclick="formatText('underline')"><i class="fas fa-underline"></i> Underline</button>
+                        <button class="editor-btn" onclick="formatText('insertUnorderedList')"><i class="fas fa-list"></i> List</button>
+                        <button class="editor-btn" onclick="formatText('insertOrderedList')"><i class="fas fa-list-ol"></i> Numbered</button>
+                    </div>
+                    <div id="contentEditor" class="content-editor" contenteditable="true"></div>
+                </div>
+
+                <!-- Penerima Pengumuman -->
+                <div class="form-group">
+                    <label class="form-label">Kirim Ke</label>
+                    <select id="recipientType" class="form-control" onchange="updateRecipientOptions()">
+                        <option value="all_users">Semua Pengguna</option>
+                        <option value="all_zonas">Semua Zona</option>
+                        <option value="specific_users">Pengguna Spesifik</option>
+                        <option value="specific_zonas">Zona Spesifik</option>
+                    </select>
+                </div>
+
+                <!-- Recipient Selection (hidden by default) -->
+                <div id="recipientSelectionDiv" style="display: none; margin-bottom: 20px;">
+                    <label class="form-label">Pilih Penerima</label>
+                    <div id="recipientList" style="max-height: 300px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; padding: 12px; background: var(--color-bg-tertiary);"></div>
+                </div>
+
+                <!-- Submit Button -->
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-primary" onclick="submitAnnouncement()">
+                        <i class="fas fa-paper-plane"></i> Kirim Pengumuman
+                    </button>
+                    <button class="btn" style="background: var(--color-bg-tertiary); color: var(--color-text-primary); border: 1px solid var(--color-border);" onclick="resetForm()">
+                        <i class="fas fa-redo"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sidebar: Pengumuman Terbaru -->
+            <div style="background: var(--color-bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-border); height: fit-content;">
+                <h3 style="font-size: 16px; font-weight: 700; margin: 0 0 16px 0; color: var(--color-text-primary);">Pengumuman Terbaru</h3>
+                <div id="recentAnnouncements" style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="text-align: center; color: var(--color-text-tertiary); font-size: 13px;">Memuat...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script>
+        let selectedRecipients = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initAuth();
+            if (!currentUser || currentUser.role !== 'moderator') {
+                window.location.href = '/dashboard';
+                return;
+            }
+            loadRecentAnnouncements();
+        });
+
+        function formatText(command) {
+            document.execCommand(command, false, null);
+            document.getElementById('contentEditor').focus();
+        }
+
+        function updateRecipientOptions() {
+            const recipientType = document.getElementById('recipientType').value;
+            const selectionDiv = document.getElementById('recipientSelectionDiv');
+
+            if (recipientType === 'all_users' || recipientType === 'all_zonas') {
+                selectionDiv.style.display = 'none';
+                selectedRecipients = [];
+            } else {
+                selectionDiv.style.display = 'block';
+                loadRecipientOptions(recipientType);
+            }
+        }
+
+        async function loadRecipientOptions(type) {
+            const token = localStorage.getItem('jwt_token');
+            const recipientList = document.getElementById('recipientList');
+
+            try {
+                let endpoint = type === 'specific_users' ? '/api/users' : '/api/zonas';
+                const response = await fetch(endpoint, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load recipients');
+                const data = await response.json();
+                const items = type === 'specific_users' ? data.users : data.zonas;
+
+                recipientList.innerHTML = items.map(item => `
+                    <label style="display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer;">
+                        <input type="checkbox" value="${item.id}" onchange="updateSelectedRecipients(this)" style="cursor: pointer;">
+                        <span>${item.username || item.email || item.nama}</span>
+                    </label>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading recipients:', error);
+                recipientList.innerHTML = '<div style="color: red;">Error loading recipients</div>';
+            }
+        }
+
+        function updateSelectedRecipients(checkbox) {
+            selectedRecipients = Array.from(
+                document.querySelectorAll('#recipientList input[type="checkbox"]:checked')
+            ).map(cb => parseInt(cb.value));
+        }
+
+        async function submitAnnouncement() {
+            const title = document.getElementById('announcementTitle').value;
+            const content = document.getElementById('contentEditor').innerHTML;
+            const announcementType = document.getElementById('announcementType').value;
+            const recipientType = document.getElementById('recipientType').value;
+
+            if (!title || !content.trim()) {
+                alert('Judul dan konten pengumuman harus diisi');
+                return;
+            }
+
+            const token = localStorage.getItem('jwt_token');
+            try {
+                const response = await fetch('/api/announcements', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        announcement_type: announcementType,
+                        recipient_type: recipientType,
+                        recipients: selectedRecipients
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create announcement');
+                }
+
+                alert('Pengumuman berhasil dikirim!');
+                resetForm();
+                loadRecentAnnouncements();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Gagal mengirim pengumuman');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('announcementTitle').value = '';
+            document.getElementById('contentEditor').innerHTML = '';
+            document.getElementById('announcementType').value = 'Informasi';
+            document.getElementById('recipientType').value = 'all_users';
+            selectedRecipients = [];
+            document.getElementById('recipientSelectionDiv').style.display = 'none';
+        }
+
+        async function loadRecentAnnouncements() {
+            const token = localStorage.getItem('jwt_token');
+            try {
+                const response = await fetch('/api/announcements', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load announcements');
+                const data = await response.json();
+
+                const recentDiv = document.getElementById('recentAnnouncements');
+                if (data.announcements.length === 0) {
+                    recentDiv.innerHTML = '<div style="text-align: center; color: var(--color-text-tertiary); font-size: 13px;">Belum ada pengumuman</div>';
+                    return;
+                }
+
+                const typeColors = {
+                    'Informasi': 'badge-info',
+                    'Peringatan': 'badge-warning',
+                    'Penting': 'badge-danger',
+                    'Maintenance': 'badge-success'
+                };
+
+                recentDiv.innerHTML = data.announcements.slice(0, 5).map(ann => `
+                    <div style="padding: 12px; background: var(--color-bg-tertiary); border-radius: 8px; border-left: 3px solid #667eea;">
+                        <div style="font-weight: 600; font-size: 13px; color: var(--color-text-primary); margin-bottom: 4px;">
+                            ${ann.title}
+                        </div>
+                        <div style="font-size: 11px; color: var(--color-text-secondary); margin-bottom: 8px;">
+                            ${new Date(ann.created_at).toLocaleDateString('id-ID')}
+                        </div>
+                        <span class="badge ${typeColors[ann.announcement_type] || 'badge-info'}">
+                            ${ann.announcement_type}
+                        </span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('recentAnnouncements').innerHTML = '<div style="color: red;">Error loading announcements</div>';
+            }
+        }
+
+        // Apply dark mode if enabled
+        if (localStorage.getItem('dark_mode_enabled') === 'true') {
+            document.documentElement.setAttribute('data-dark-mode', 'true');
+        }
+    </script>
+</body>
+</html>
