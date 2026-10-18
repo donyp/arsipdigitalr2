@@ -489,6 +489,41 @@
             transform: translateY(-1px);
         }
 
+        .btn-notification-action {
+            background: transparent;
+            color: var(--color-text-secondary) !important;
+            position: relative;
+        }
+        
+        .btn-notification-action::before {
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .btn-notification-action:hover {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+            border-color: #667eea;
+            color: #667eea;
+            box-shadow: none;
+            transform: translateY(-1px);
+        }
+
         /* PROFILE MODAL */
         .profile-modal-overlay {
             position: fixed;
@@ -1758,6 +1793,10 @@
                         <a href="/zona/support" class="btn-action btn-support" title="Support Tickets">
                             <i class="fas fa-headset"></i>
                         </a>
+                        <button class="btn-action btn-notification-action" id="announcementNotifBtn" onclick="openAnnouncementNotifications()" title="Notifikasi Pengumuman">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-badge" id="announcementBadge" style="display: none;">0</span>
+                        </button>
                         <button class="btn-action btn-logout-action" onclick="logout()" title="Logout">
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
@@ -3362,21 +3401,8 @@
                     return;
                 }
 
-                // Initialize header with notification button for admin zonas
-                const existingHeader = document.getElementById('unified-header');
-                if (existingHeader) {
-                    existingHeader.remove();
-                }
-                
-                const customBtns = [
-                    {
-                        title: 'Notifikasi Pengumuman',
-                        icon: 'fas fa-envelope',
-                        onclick: "openAnnouncementNotifications()"
-                    }
-                ];
-                
-                initializeUnifiedHeader({ customButtons: customBtns });
+                // Add notification button to the existing welcome section
+                // Do NOT use initializeUnifiedHeader as it creates the wrong header for admin zonas
 
                 let zonaName = 'Admin';
                 if (currentUser.zonas?.nama) {
@@ -3423,6 +3449,24 @@
 
                 const welcomeInfoEl = document.getElementById('welcome-info');
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
+
+                // Load and display unread announcement count
+                try {
+                    const token = localStorage.getItem('jwt_token');
+                    const unreadResponse = await fetch('/api/announcements/unread/count', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (unreadResponse.ok) {
+                        const unreadData = await unreadResponse.json();
+                        const badge = document.getElementById('announcementBadge');
+                        if (badge && unreadData.unread_count > 0) {
+                            badge.textContent = unreadData.unread_count;
+                            badge.style.display = 'block';
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Could not load announcement unread count:', err.message);
+                }
 
                 // Load filter options only (DON'T load stats until user filters)
                 await loadFilterOptionsOnly();
