@@ -2045,7 +2045,7 @@
             const selectedOption = event.currentTarget;
             selectedOption.classList.add('selected');
             const checkmark = selectedOption.querySelector('.checkmark');
-            if (checkmark) checkmark.textContent = '?';
+            if (checkmark) checkmark.textContent = '✓';
             
             // Close dropdown
             if (menu) menu.style.display = 'none';
@@ -2101,7 +2101,7 @@
                                 opt.classList.add('selected');
                                 const checkmark = opt.querySelector('.checkmark');
                                 if (checkmark) {
-                                    checkmark.textContent = '?';
+                                    checkmark.textContent = '✓';
                                 }
                             }
                         });
@@ -3055,7 +3055,7 @@
                 if (firstOption) {
                     firstOption.classList.add('selected');
                     const checkmark = firstOption.querySelector('.checkmark');
-                    if (checkmark) checkmark.textContent = '?';
+                    if (checkmark) checkmark.textContent = '✓';
                 }
             });
             
