@@ -60,7 +60,7 @@
         * { box-sizing: border-box; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-tertiary) 100%);
+            background: var(--color-bg-primary);
             color: var(--color-text-primary);
             transition: background 0.3s, color 0.3s;
             min-height: 100vh;
@@ -68,11 +68,11 @@
         
         .stat-card {
             background: var(--color-bg-secondary);
-            border-radius: 16px;
-            padding: 28px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--color-border);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 20px;
@@ -80,82 +80,42 @@
             overflow: hidden;
         }
         
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #4f46e5, #7c3aed, #4f46e5);
-            background-size: 200% 100%;
-            animation: shimmer 3s linear infinite;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .stat-card:hover::before {
-            opacity: 1;
-        }
-        
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
         .stat-card:hover {
-            box-shadow: 0 12px 40px rgba(79, 70, 229, 0.15);
-            transform: translateY(-4px) scale(1.02);
-            border-color: rgba(79, 70, 229, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+            border-color: var(--color-border-dark);
         }
         
         .stat-icon {
             width: 64px;
             height: 64px;
-            border-radius: 16px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 28px;
             color: white;
             flex-shrink: 0;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             position: relative;
             overflow: hidden;
         }
         
-        .stat-icon::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transform: rotate(45deg);
-            animation: icon-shine 3s infinite;
-        }
-        
-        @keyframes icon-shine {
-            0%, 100% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            50% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
         .stat-total { 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+            background: #667eea;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
         }
         .stat-open { 
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.4);
+            background: #ef4444;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
         }
         .stat-answered { 
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+            background: #10b981;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
         }
         .stat-closed { 
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.4);
+            background: #06b6d4;
+            box-shadow: 0 2px 4px rgba(6, 182, 212, 0.2);
         }
         
         .stat-content {
@@ -168,10 +128,6 @@
             color: var(--color-text-primary);
             margin-bottom: 4px;
             line-height: 1;
-            background: linear-gradient(135deg, var(--color-text-primary) 0%, var(--color-accent) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
         
         .stat-label {
@@ -196,34 +152,32 @@
         .filter-bar {
             background: var(--color-bg-secondary);
             padding: 20px;
-            border-radius: 16px;
+            border-radius: 12px;
             border: 1px solid var(--color-border);
             margin-bottom: 28px;
             display: flex;
             gap: 14px;
             flex-wrap: wrap;
             align-items: center;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         
         .search-input, .filter-select {
-            padding: 13px 16px;
-            border: 2px solid var(--color-border-dark);
-            border-radius: 12px;
+            padding: 12px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
             font-size: 14px;
             background: var(--color-bg-secondary);
             color: var(--color-text-primary);
             font-family: inherit;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
         }
         
         .search-input:focus, .filter-select:focus {
             outline: none;
             border-color: #667eea;
             background: var(--color-bg-secondary);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
-            transform: translateY(-1px);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
         .search-input {
@@ -252,36 +206,20 @@
         
         .ticket-card {
             background: var(--color-bg-secondary);
-            border: 2px solid var(--color-border);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 18px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
             cursor: pointer;
             position: relative;
             overflow: hidden;
         }
         
-        .ticket-card::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .ticket-card:hover::before {
-            opacity: 1;
-        }
-        
         .ticket-card:hover {
             border-color: #667eea;
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
-            transform: translateY(-3px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
         }
         
         .ticket-header {
@@ -292,12 +230,12 @@
         }
         
         .btn {
-            padding: 12px 20px;
+            padding: 11px 18px;
             border: none;
-            border-radius: 12px;
-            font-weight: 700;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             font-size: 14px;
             display: inline-flex;
             align-items: center;
@@ -306,44 +244,22 @@
             overflow: hidden;
         }
         
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-        
-        .btn > * {
-            position: relative;
-            z-index: 1;
-        }
-        
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #667eea;
             color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
         }
         
         .btn-primary:hover {
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
-            transform: translateY(-2px);
+            background: #5568d3;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
         }
         
         .btn-secondary {
             background: var(--color-bg-tertiary);
             color: var(--color-text-primary);
-            border: 2px solid var(--color-border);
+            border: 1px solid var(--color-border);
         }
         
         .btn-secondary:hover {
@@ -353,7 +269,7 @@
         }
         
         .btn-sm {
-            padding: 10px 16px;
+            padding: 9px 14px;
             font-size: 13px;
         }
         
@@ -415,11 +331,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 28px;
-            padding: 20px;
+            margin-top: 24px;
+            padding: 16px;
             background: var(--color-bg-secondary);
             border-radius: 12px;
             border: 1px solid var(--color-border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
         
         .pagination-info {
@@ -440,25 +357,25 @@
             color: var(--color-text-secondary);
             text-decoration: none;
             font-size: 14px;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
             cursor: pointer;
-            font-weight: 700;
-            transition: all 0.3s;
-            padding: 8px 12px;
-            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            padding: 6px 10px;
+            border-radius: 6px;
         }
         
         .back-link:hover {
             color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-            transform: translateX(-4px);
+            background: rgba(102, 126, 234, 0.08);
+            transform: none;
         }
         
         .tickets-container {
             background: var(--color-bg-secondary);
-            border-radius: 16px;
-            padding: 28px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             border: 1px solid var(--color-border);
         }
         
@@ -496,14 +413,14 @@
         
         .ticket-table tbody tr {
             border-bottom: 1px solid var(--color-border);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
             cursor: pointer;
             height: auto;
         }
         
         .ticket-table tbody tr:hover {
-            background: rgba(102, 126, 234, 0.08);
-            transform: scale(1.01);
+            background: rgba(102, 126, 234, 0.05);
+            transform: none;
         }
         
         .ticket-table td {
@@ -592,28 +509,28 @@
         
         .status-open { 
             color: #dc2626;
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.15) 100%);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: #fee2e2;
+            border: none;
         }
         .status-closed { 
             color: #4b5563;
-            background: linear-gradient(135deg, rgba(107, 114, 128, 0.15) 0%, rgba(75, 85, 99, 0.15) 100%);
-            border: 1px solid rgba(107, 114, 128, 0.3);
+            background: #f3f4f6;
+            border: none;
         }
         .status-answered { 
             color: #0369a1;
-            background: linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(3, 105, 161, 0.15) 100%);
-            border: 1px solid rgba(2, 132, 199, 0.3);
+            background: #cffafe;
+            border: none;
         }
         .status-in-progress { 
             color: #c2410c;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(194, 65, 12, 0.15) 100%);
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: #fef3c7;
+            border: none;
         }
         .status-resolved { 
             color: #15803d;
-            background: linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(21, 128, 61, 0.15) 100%);
-            border: 1px solid rgba(22, 163, 74, 0.3);
+            background: #dcfce7;
+            border: none;
         }
         
         .last-update-col {
@@ -685,7 +602,7 @@
                     </div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <h1 style="font-size: 38px; font-weight: 900; background: linear-gradient(135deg, var(--color-text-primary) 0%, #667eea 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0; letter-spacing: -1px;">Support Tickets</h1>
+                            <h1 style="font-size: 36px; font-weight: 800; color: var(--color-text-primary); margin: 0; letter-spacing: -0.5px;">Support Tickets</h1>
                             <p style="color: var(--color-text-secondary); font-size: 15px; margin: 8px 0 0 0; font-weight: 500;">Kelola dan lacak semua tiket support Anda dengan mudah</p>
                         </div>
                         <a href="/zona/ticket" class="btn btn-primary">
