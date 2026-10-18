@@ -233,6 +233,7 @@ class AnnouncementNotification {
                 right: 0;
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -492,11 +493,15 @@ class AnnouncementNotification {
         document.getElementById('detailTitle').textContent = ann.title;
         document.getElementById('detailType').textContent = ann.announcement_type;
         document.getElementById('detailType').className = `announcement-item-type ${ann.announcement_type}`;
-        document.getElementById('detailDate').textContent = `Di release Pada: ${new Date(ann.created_at).toLocaleDateString('id-ID')}`;
-        document.getElementById('detailContent').innerHTML = `
-            ${ann.content}
-            <div class="announcement-detail-date">Terakhir diupdate: ${new Date(ann.updated_at).toLocaleString('id-ID')}</div>
-        `;
+        
+        // Format date with time in WIB timezone
+        const createdDate = new Date(ann.created_at);
+        const formattedDate = createdDate.toLocaleDateString('id-ID') + ' ' + 
+                             String(createdDate.getHours()).padStart(2, '0') + ':' +
+                             String(createdDate.getMinutes()).padStart(2, '0') + ' WIB';
+        document.getElementById('detailDate').textContent = `Di release Pada: ${formattedDate}`;
+        
+        document.getElementById('detailContent').innerHTML = `${ann.content}`;
 
         document.getElementById('announcementDetailModal').classList.remove('hidden');
         this.loadUnreadCount(); // Update unread count
