@@ -1666,7 +1666,7 @@
             <div class="welcome-section">
                 <div class="welcome-header">
                     <div class="welcome-text">
-                        <h2 id="welcome-name">Selamat siang, Admin ??</h2>
+                        <h2 id="welcome-name">Selamat siang, Admin 👋</h2>
                         <p id="welcome-info">Informasi data zona anda</p>
                     </div>
                     
@@ -1927,7 +1927,7 @@
                     <tbody id="invoiceTableBody">
                         <tr>
                             <td colspan="8" class="empty-state">
-                                <div class="empty-state-icon">??</div>
+                                <div class="empty-state-icon">📅</div>
                                 <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
@@ -2280,7 +2280,7 @@
                     tableBody.innerHTML = `
                         <tr>
                             <td colspan="8" class="empty-state">
-                                <div class="empty-state-icon">??</div>
+                                <div class="empty-state-icon">📅</div>
                                 <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
@@ -3083,7 +3083,7 @@
         // ============================================
         function showDownloadMenu(faktur) {
             Swal.fire({
-                title: '?? Download Files',
+                title: '📥 Download Files',
                 html: `<p>Fitur download sedang dalam pengembangan</p>`,
                 icon: 'info',
                 confirmButtonText: 'OK',
@@ -3319,7 +3319,7 @@
                 }
                 
                 const welcomeNameEl = document.getElementById('welcome-name');
-                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} ??`;
+                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
 
                 const welcomeInfoEl = document.getElementById('welcome-info');
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
@@ -3341,7 +3341,7 @@
                     } else if (hour >= 18 || hour < 5) {
                         greeting = 'malam';
                     }
-                    welcomeNameEl.textContent = `Selamat ${greeting}, User ??`;
+                    welcomeNameEl.textContent = `Selamat ${greeting}, User 👋`;
                 }
             }
         });
@@ -3538,7 +3538,7 @@
                                     text-align: center;
                                     backdrop-filter: blur(2px);
                                 ">
-                                <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.7;">??</div>
+                                <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.7;">📁</div>
                                 <p style="color: ${infoTextColor}; font-size: 14px; margin: 0; line-height: 1.6; font-weight: 500;">
                                     Belum ada file yang diupload
                                 </p>
@@ -3555,7 +3555,7 @@
                 
                 // Show popup with dark mode support
                 Swal.fire({
-                    title: '?? Download Files',
+                    title: '📥 Download Files',
                     html: menuHTML,
                     icon: 'info',
                     showConfirmButton: false,
@@ -3727,12 +3727,12 @@
         async function downloadAdminZonaFile(faktur, fileType) {
             // Define file type styling
             const fileTypeColors = {
-                'invoice': { bg: '#3498db', icon: '??', text: 'Invoice' },
-                'bukti_bayar': { bg: '#27ae60', icon: '?', text: 'Bukti Bayar' },
-                'faktur_pajak': { bg: '#9b59b6', icon: '??', text: 'Faktur Pajak' }
+                'invoice': { bg: '#3498db', icon: '📄', text: 'Invoice' },
+                'bukti_bayar': { bg: '#27ae60', icon: '💰', text: 'Bukti Bayar' },
+                'faktur_pajak': { bg: '#9b59b6', icon: '📋', text: 'Faktur Pajak' }
             };
             
-            const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '??', text: 'File' };
+            const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📎', text: 'File' };
             const isDarkMode = document.body.classList.contains('dark-mode');
             
             
@@ -4041,7 +4041,7 @@
             // Show loading modal and execute combine inside didOpen
             return new Promise((resolve) => {
                 Swal.fire({
-                    title: '?? Menggabungkan PDF',
+                    title: '📄 Menggabungkan PDF',
                     html: `
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 0;">
                             <div class="download-spinner" style="
