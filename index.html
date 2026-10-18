@@ -664,6 +664,8 @@
                 localStorage.setItem('jwt_token', data.token);
                 localStorage.setItem('user_info', JSON.stringify(data.user));
                 localStorage.setItem('user_password', password); // Store password for reveal feature
+                console.log('[Login] Password stored in localStorage:', password ? 'YES' : 'NO');
+                console.log('[Login] Stored password check:', localStorage.getItem('user_password') ? 'VERIFIED' : 'FAILED');
                 
                 // Store session ID for keep-alive tracking
                 if (data.sessionId) {

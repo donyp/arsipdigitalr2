@@ -4504,12 +4504,18 @@
             if (currentText === '••••••••') {
                 // Reveal password - get from localStorage
                 const password = localStorage.getItem('user_password');
+                console.log('[Password Reveal] Attempting to reveal password');
+                console.log('[Password Reveal] Password in localStorage:', password ? 'YES' : 'NO');
+                
                 if (password) {
                     profilePasswordDiv.textContent = password;
                     profilePasswordDiv.style.fontFamily = 'monospace';
                     toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                    console.log('[Password Reveal] ✅ Password revealed');
                 } else {
-                    alert('Password tidak tersedia');
+                    console.warn('[Password Reveal] ❌ No password found in localStorage');
+                    console.warn('[Password Reveal] Available keys:', Object.keys(localStorage));
+                    alert('Password tidak tersedia - silakan login ulang');
                 }
             } else {
                 // Hide password back to dots
