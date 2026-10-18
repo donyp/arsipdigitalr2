@@ -1,0 +1,236 @@
+/* Monitoring Page Icons - Theme Responsive Colors */
+
+/* Icon sizing */
+.monitoring-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* Overview Icon */
+.icon-overview {
+    background-image: url('data:image/svg+xml;utf8,<svg version="1.1" id="Icons" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M23,28L23,28c-1.1,0-2.1-0.7-2.5-1.8c0-0.1,0-0.2-0.1-0.2h-8.9c0,0.1,0,0.2-0.1,0.2C11.1,27.3,10.1,28,9,28h0c-0.6,0-1,0.4-1,1s0.4,1,1,1h14c0.6,0,1-0.4,1-1S23.6,28,23,28z"/><path d="M27,3H5C3.3,3,2,4.3,2,6v15c0,1.7,1.3,3,3,3h6.9h8.1H27c1.7,0,3-1.3,3-3V6C30,4.3,28.7,3,27,3z M25,15h-5c-0.3,0-0.6-0.2-0.8-0.4l-0.9-1.4l-1.3,3.2C16.8,16.7,16.4,17,16,17c0,0,0,0,0,0c-0.4,0-0.7-0.2-0.9-0.6l-1.4-2.8l-1,1C12.5,14.9,12.3,15,12,15H7c-0.6,0-1-0.4-1-1s0.4-1,1-1h4.6l1.7-1.7c0.2-0.2,0.6-0.3,0.9-0.3c0.3,0.1,0.6,0.3,0.7,0.5l1,2l1.2-2.9c0.1-0.3,0.5-0.6,0.8-0.6c0.4,0,0.7,0.1,0.9,0.4l1.7,2.6H25c0.6,0,1,0.4,1,1S25.6,15,25,15z"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* CPU & CPU Usage Icon */
+.icon-cpu {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><rect x="141.312" width="32.771" height="71.683" fill="black"/><rect x="206.853" width="32.761" height="71.683" fill="black"/><rect x="272.385" width="32.761" height="71.683" fill="black"/><rect x="337.917" width="32.77" height="71.683" fill="black"/><rect x="141.312" y="440.326" width="32.771" height="71.674" fill="black"/><rect x="206.853" y="440.326" width="32.761" height="71.674" fill="black"/><rect x="272.385" y="440.326" width="32.761" height="71.674" fill="black"/><rect x="337.917" y="440.326" width="32.77" height="71.674" fill="black"/><rect x="440.321" y="141.307" width="71.674" height="32.771" fill="black"/><rect x="440.321" y="206.849" width="71.674" height="32.77" fill="black"/><rect x="440.321" y="272.39" width="71.674" height="32.761" fill="black"/><rect x="440.321" y="337.922" width="71.674" height="32.77" fill="black"/><rect x="0.005" y="141.307" width="71.674" height="32.771" fill="black"/><rect x="0.005" y="206.849" width="71.674" height="32.77" fill="black"/><rect x="0.005" y="272.39" width="71.674" height="32.761" fill="black"/><rect x="0.005" y="337.922" width="71.674" height="32.77" fill="black"/><path d="M255.246,252.209c6.171,0,9.862-3.586,9.862-9.06c0-5.485-3.69-9.176-9.862-9.176h-11.16c-0.4,0-0.6,0.21-0.6,0.61v17.025c0,0.4,0.2,0.601,0.6,0.601H255.246z"/><path d="M92.165,419.84h327.67V92.17H92.165V419.84z M367.359,130.568c8.479,0,15.356,6.867,15.356,15.356c0,8.488-6.876,15.355-15.356,15.355c-8.479,0-15.356-6.867-15.356-15.355C352.004,137.434,358.88,130.568,367.359,130.568z M367.359,353.287c8.479,0,15.356,6.867,15.356,15.356c0,8.488-6.876,15.355-15.356,15.355c-8.479,0-15.356-6.867-15.356-15.355C352.004,360.154,358.88,353.287,367.359,353.287z"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Memory Icon */
+.icon-memory {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M106.672,42.432c0-9.958-8.074-18.032-18.022-18.032h-6.63c-9.948,0-18.022,8.074-18.022,18.032v49.878h42.674V42.432z"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Disk Icon */
+.icon-disk {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11 1H1V15L4 15L4 9L12 9L12 15H15V5L11 1Z M10 15V11H6L6 15H10Z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Network Icon */
+.icon-network {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M44,32H42V24a2,2,0,0,0-2-2H26V20h0V16h2a2,2,0,0,0,2-2V6a2,2,0,0,0-2-2H20a2,2,0,0,0-2,2v8a2,2,0,0,0,2,2h2v6H8a2,2,0,0,0-2,2v8H4a2,2,0,0,0-2,2v8a2,2,0,0,0,2,2h8a2,2,0,0,0,2-2V34a2,2,0,0,0-2-2H10V26H22v6H20a2,2,0,0,0-2,2v8a2,2,0,0,0,2,2h8a2,2,0,0,0,2-2V34a2,2,0,0,0-2-2H26V26H38v6H36a2,2,0,0,0-2,2v8a2,2,0,0,0,2,2h8a2,2,0,0,0,2-2V34A2,2,0,0,0,44,32Z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Processes Icon */
+.icon-processes {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><rect x="8.536" y="197.271" width="42.666" height="17.067" fill="black"/><rect x="8.536" y="231.405" width="42.666" height="17.067" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Services Icon */
+.icon-services {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 11.5312C9.24 11.5312 7 13.7713 7 16.5313" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Logs Icon */
+.icon-logs {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 3h18a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Uptime Icon */
+.icon-uptime {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* System Status Icon */
+.icon-system-status {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 316.89 316.89" xmlns="http://www.w3.org/2000/svg"><path d="M182.47,212.195c0-0.754,0.036-1.5,0.057-2.25H38.5" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Cores Icon */
+.icon-cores {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Load 1M & Load 5M Icon */
+.icon-load {
+    background-image: url('data:image/svg+xml;utf8,<svg fill="black" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 12a2 2 0 0 0-.703.133l-2.398-1.963c.059-.214.101-.436.101-.67C17 8.114 15.886 7 14.5 7"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Backend Icon */
+.icon-backend {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><polygon points="154.219,205.188 166.219,335.031 110.922,405.563 96.406,296.563" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Database Icon */
+.icon-database {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 6c0-1.6.8-3 2-4h-1c-3.9 0-7 .9-7 2 0 1 2.6 1.8 6 2z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Storage Icon */
+.icon-storage {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M0,17.067V153.6h512V17.067H0z M110.933,110.925h-51.2v-51.2h51.2V110.925z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* SSL Icon */
+.icon-ssl {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M15.986 21.652c0.004-0 0.009-0 0.014-0 0.883 0 1.599 0.716 1.599 1.599" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Backend Logs Icon */
+.icon-backend-logs {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M924.8 385.6a446.7 446.7 0 0 0-96-142.4" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Clear Icon */
+.icon-clear {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283Z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Pause Icon */
+.icon-pause {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 6C2 4.11438 2 3.17157 2.58579 2.58579" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Resume Icon */
+.icon-resume {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="m 2 2.5 v 11 c 0 1.5 1.269531 1.492188 1.269531 1.492188" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Copy Icon */
+.icon-copy {
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20,4V16a2,2,0,0,1-2,2H10a2,2,0,0,1-2-2V4a2,2,0,0,1,2-2h8A2,2,0,0,1,20,4Z" fill="black"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    filter: brightness(0) saturate(100%);
+}
+
+/* Light mode - icons #3d3b6b */
+html[data-dark-mode="false"] .monitoring-icon,
+html:not([data-dark-mode]) .monitoring-icon {
+    filter: brightness(0) saturate(100%) invert(23%) sepia(24%) saturate(1150%) hue-rotate(226deg) brightness(97%) contrast(89%);
+}
+
+/* Dark mode - icons white */
+html[data-dark-mode="true"] .monitoring-icon {
+    filter: brightness(0) saturate(100%) invert(1);
+}
+
+/* Tab button styling with icons */
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-btn .monitoring-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+/* Button styling with icons */
+button .monitoring-icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 4px;
+}
+
+/* Card title styling with icons */
+.card-title .monitoring-icon,
+.stat-card-title .monitoring-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    flex-shrink: 0;
+}

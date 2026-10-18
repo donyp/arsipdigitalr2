@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VPS Monitor</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/monitoring-icons.css">
+    <meta name="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta name="pragma" content="no-cache">
+    <meta name="expires" content="0">
     <style>
         * {
             margin: 0;
@@ -424,49 +428,49 @@
 
         <!-- TABS -->
         <div class="tabs">
-            <button class="tab-btn active" data-tab="overview">📊 Overview</button>
-            <button class="tab-btn" data-tab="cpu">⚡ CPU</button>
-            <button class="tab-btn" data-tab="memory">🧠 Memory</button>
-            <button class="tab-btn" data-tab="disk">💾 Disk</button>
-            <button class="tab-btn" data-tab="network">🌐 Network</button>
-            <button class="tab-btn" data-tab="processes">⚙️ Processes</button>
-            <button class="tab-btn" data-tab="services">🚀 Services</button>
-            <button class="tab-btn" data-tab="logs">📋 Logs</button>
+            <button class="tab-btn active" data-tab="overview"><span class="monitoring-icon icon-overview"></span> Overview</button>
+            <button class="tab-btn" data-tab="cpu"><span class="monitoring-icon icon-cpu"></span> CPU</button>
+            <button class="tab-btn" data-tab="memory"><span class="monitoring-icon icon-memory"></span> Memory</button>
+            <button class="tab-btn" data-tab="disk"><span class="monitoring-icon icon-disk"></span> Disk</button>
+            <button class="tab-btn" data-tab="network"><span class="monitoring-icon icon-network"></span> Network</button>
+            <button class="tab-btn" data-tab="processes"><span class="monitoring-icon icon-processes"></span> Processes</button>
+            <button class="tab-btn" data-tab="services"><span class="monitoring-icon icon-services"></span> Services</button>
+            <button class="tab-btn" data-tab="logs"><span class="monitoring-icon icon-logs"></span> Logs</button>
         </div>
 
         <!-- TAB: OVERVIEW -->
         <div id="overview" class="tab-content">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-card-title">⚡ CPU Usage</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-cpu"></span> CPU Usage</div>
                     <div class="stat-card-value" id="cpuPercent">0%</div>
                     <div class="stat-card-subtitle" id="cpuCores">0 cores</div>
                     <div class="progress"><div class="progress-bar" id="cpuBar"></div></div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-card-title">🧠 Memory</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Memory</div>
                     <div class="stat-card-value" id="memPercent">0%</div>
                     <div class="stat-card-subtitle" id="memUsage">0 MB / 0 MB</div>
                     <div class="progress"><div class="progress-bar" id="memBar"></div></div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-card-title">💾 Disk</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Disk</div>
                     <div class="stat-card-value" id="diskPercent">0%</div>
                     <div class="stat-card-subtitle" id="diskUsage">0 GB / 0 GB</div>
                     <div class="progress"><div class="progress-bar" id="diskBar"></div></div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-card-title">⏱️ Uptime</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-uptime"></span> Uptime</div>
                     <div class="stat-card-value" id="uptime" style="font-family: 'Courier New', monospace; font-size: 32px;">00:00:00:00</div>
                     <div class="stat-card-subtitle">DD:HH:MM:SS</div>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-title">🚨 System Status</div>
+                <div class="card-title"><span class="monitoring-icon icon-system-status"></span> System Status</div>
                 <div id="alertsContainer" class="alerts">
                     <div class="alert alert-success">✓ All systems operational</div>
                 </div>
@@ -477,25 +481,25 @@
         <div id="cpu" class="tab-content" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-card-title">📊 CPU Usage</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-cpu"></span> CPU Usage</div>
                     <div class="stat-card-value" id="cpuDetailPercent">0%</div>
                     <div class="progress"><div class="progress-bar" id="cpuDetailBar"></div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">⚙️ Cores</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-cores"></span> Cores</div>
                     <div class="stat-card-value" id="cpuDetailCores">0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">📈 Load 1m</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-load"></span> Load 1m</div>
                     <div class="stat-card-value" id="loadAvg1">0.0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Load 5m</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-load"></span> Load 5m</div>
                     <div class="stat-card-value" id="loadAvg5">0.0</div>
                 </div>
             </div>
             <div class="card">
-                <div class="card-title">CPU History (60s)</div>
+                <div class="card-title"><span class="monitoring-icon icon-cpu"></span> CPU History (60s)</div>
                 <div class="chart" id="cpuChart"></div>
             </div>
         </div>
@@ -504,24 +508,24 @@
         <div id="memory" class="tab-content" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-card-title">Total Memory</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Total Memory</div>
                     <div class="stat-card-value" id="memTotal">0 GB</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Used</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Used</div>
                     <div class="stat-card-value" id="memUsedValue">0 GB</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Free</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Free</div>
                     <div class="stat-card-value" id="memFreeValue">0 GB</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Usage</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Usage</div>
                     <div class="stat-card-value" id="memPercentValue">0%</div>
                 </div>
             </div>
             <div class="card">
-                <div class="card-title">Memory History (60s)</div>
+                <div class="card-title"><span class="monitoring-icon icon-memory"></span> Memory History (60s)</div>
                 <div class="chart" id="memChart"></div>
             </div>
         </div>
@@ -530,19 +534,19 @@
         <div id="disk" class="tab-content" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-card-title">Total Disk</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Total Disk</div>
                     <div class="stat-card-value" id="diskTotal">0 GB</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Used</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Used</div>
                     <div class="stat-card-value" id="diskUsedValue">0 GB</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Free</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Free</div>
                     <div class="stat-card-value" id="diskFreeValue">0 GB</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Usage</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Usage</div>
                     <div class="stat-card-value" id="diskPercentValue">0%</div>
                 </div>
             </div>
@@ -552,24 +556,24 @@
         <div id="network" class="tab-content" style="display: none;">
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-card-title">📥 Input</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Input</div>
                     <div class="stat-card-value" id="netIn">0 Mb/s</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">📤 Output</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Output</div>
                     <div class="stat-card-value" id="netOut">0 Mb/s</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Total</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Total</div>
                     <div class="stat-card-value" id="netTotal">0 Mb/s</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">Status</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Status</div>
                     <div class="stat-card-value" style="color: #10b981; font-size: 14px;">Connected</div>
                 </div>
             </div>
             <div class="card">
-                <div class="card-title">Network I/O (60s)</div>
+                <div class="card-title"><span class="monitoring-icon icon-network"></span> Network I/O (60s)</div>
                 <div class="chart" id="netChart"></div>
             </div>
         </div>
@@ -577,7 +581,7 @@
         <!-- TAB: PROCESSES -->
         <div id="processes" class="tab-content" style="display: none;">
             <div class="card">
-                <div class="card-title">Top 20 Processes by CPU</div>
+                <div class="card-title"><span class="monitoring-icon icon-processes"></span> Top 20 Processes by CPU</div>
                 <div class="table-responsive">
                     <table>
                         <thead>
@@ -601,22 +605,22 @@
         <div id="services" class="tab-content" style="display: none;">
             <div class="grid-full">
                 <div class="stat-card">
-                    <div class="stat-card-title">🚀 Backend</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-backend"></span> Backend</div>
                     <div id="backendStatus" style="color: #10b981; font-weight: 600; margin: 12px 0;">RUNNING</div>
                     <div class="stat-card-subtitle">Node.js • Port 5000</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">🗄️ Database</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-database"></span> Database</div>
                     <div style="color: #10b981; font-weight: 600; margin: 12px 0;">CONNECTED</div>
                     <div class="stat-card-subtitle">PostgreSQL</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">☁️ Storage</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-storage"></span> Storage</div>
                     <div style="color: #10b981; font-weight: 600; margin: 12px 0;">ACTIVE</div>
                     <div class="stat-card-subtitle">Cloudflare R2</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-card-title">🔒 SSL</div>
+                    <div class="stat-card-title"><span class="monitoring-icon icon-ssl"></span> SSL</div>
                     <div style="color: #10b981; font-weight: 600; margin: 12px 0;">VALID</div>
                     <div class="stat-card-subtitle">Expires: 180 days</div>
                 </div>
@@ -627,12 +631,12 @@
         <div id="logs" class="tab-content" style="display: none;">
             <div class="card">
                 <div class="card-title" style="justify-content: space-between;">
-                    <span>📋 Backend Logs</span>
+                    <span><span class="monitoring-icon icon-backend-logs"></span> Backend Logs</span>
                     <div style="display: flex; gap: 8px;">
-                        <button id="logsClearBtn">🗑️ Clear</button>
-                        <button id="logsPauseBtn">⏸️ Pause</button>
-                        <button id="logsResumeBtn" style="display: none;">▶️ Resume</button>
-                        <button id="logsCopyBtn">📋 Copy</button>
+                        <button id="logsClearBtn"><span class="monitoring-icon icon-clear"></span> Clear</button>
+                        <button id="logsPauseBtn"><span class="monitoring-icon icon-pause"></span> Pause</button>
+                        <button id="logsResumeBtn" style="display: none;"><span class="monitoring-icon icon-resume"></span> Resume</button>
+                        <button id="logsCopyBtn"><span class="monitoring-icon icon-copy"></span> Copy</button>
                     </div>
                 </div>
                 <div id="logsContainer"><div style="color: #10b981;">🔄 Connecting...</div></div>
