@@ -14,6 +14,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/color-vars.css">
+    <link rel="stylesheet" href="css/ticket-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
@@ -490,6 +491,56 @@
                         <p class="text-gray-600 dark:text-gray-400 text-lg">Kelola dan monitor semua file arsip sistem</p>
                     </div>
 
+                    <!-- Ticket Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <!-- Total Tickets -->
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-700 dark:to-blue-800 rounded-lg shadow-lg p-6 text-white transform hover:scale-105 transition-transform">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-blue-100 text-sm font-medium mb-1">Total Tickets</p>
+                                    <p class="text-3xl font-bold" id="totalTicketsCount">0</p>
+                                </div>
+                                <div class="ticket-icon-total opacity-80"></div>
+                            </div>
+                        </div>
+
+                        <!-- Open Tickets -->
+                        <div class="bg-gradient-to-br from-orange-500 to-orange-600 dark:from-orange-700 dark:to-orange-800 rounded-lg shadow-lg p-6 text-white transform hover:scale-105 transition-transform">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-orange-100 text-sm font-medium mb-1">Open Tickets</p>
+                                    <p class="text-3xl font-bold" id="openTicketsCount">0</p>
+                                </div>
+                                <div class="ticket-icon-open opacity-80"></div>
+                            </div>
+                        </div>
+
+                        <!-- Answered Tickets -->
+                        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 dark:from-yellow-700 dark:to-yellow-800 rounded-lg shadow-lg p-6 text-white transform hover:scale-105 transition-transform">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-yellow-100 text-sm font-medium mb-1">Answered Tickets</p>
+                                    <p class="text-3xl font-bold" id="answeredTicketsCount">0</p>
+                                </div>
+                                <div class="ticket-icon-answered opacity-80"></div>
+                            </div>
+                        </div>
+
+                        <!-- Resolved Tickets -->
+                        <div class="bg-gradient-to-br from-green-500 to-green-600 dark:from-green-700 dark:to-green-800 rounded-lg shadow-lg p-6 text-white transform hover:scale-105 transition-transform">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-green-100 text-sm font-medium mb-1">Resolved Tickets</p>
+                                    <p class="text-3xl font-bold" id="resolvedTicketsCount">0</p>
+                                </div>
+                                <div class="ticket-icon-resolved opacity-80"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Header -->
+                    <div class="mb-8">
+
                     <!-- Sample Table with Three-dot Menu -->
                     <div class="rounded-lg bg-white dark:bg-gray-800 shadow-md overflow-hidden">
                         <div class="p-6">
@@ -786,6 +837,37 @@
                 closeModernDownloadPopup();
             }
         });
+
+        // ========== TICKET STATS ==========
+        async function loadTicketStats() {
+            try {
+                const response = await fetch('/api/tickets/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('totalTicketsCount').textContent = stats.total || 0;
+                    document.getElementById('openTicketsCount').textContent = stats.open || 0;
+                    document.getElementById('answeredTicketsCount').textContent = stats.answered || 0;
+                    document.getElementById('resolvedTicketsCount').textContent = stats.resolved || 0;
+                } else {
+                    console.error('Failed to load ticket stats');
+                    // Set default values
+                    document.getElementById('totalTicketsCount').textContent = '0';
+                    document.getElementById('openTicketsCount').textContent = '0';
+                    document.getElementById('answeredTicketsCount').textContent = '0';
+                    document.getElementById('resolvedTicketsCount').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading ticket stats:', error);
+                // Set default values
+                document.getElementById('totalTicketsCount').textContent = '0';
+                document.getElementById('openTicketsCount').textContent = '0';
+                document.getElementById('answeredTicketsCount').textContent = '0';
+                document.getElementById('resolvedTicketsCount').textContent = '0';
+            }
+        }
+
+        // Load stats when page loads
+        document.addEventListener('DOMContentLoaded', loadTicketStats);
     </script>
 </body>
 </html>
