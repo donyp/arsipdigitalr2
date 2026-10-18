@@ -103,7 +103,7 @@
 
         .grid-2 {
             display: grid;
-            grid-template-columns: 2fr 1fr;
+            grid-template-columns: 1fr;
             gap: 30px;
             margin-bottom: 40px;
         }
@@ -507,18 +507,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Sidebar: Recent Announcements -->
-            <div>
-                <div class="card">
-                    <h2>
-                        <i class="fas fa-star" style="color: #fbbf24;"></i>Pengumuman Terbaru
-                    </h2>
-                    <div id="recentAnnouncements" class="announcement-list">
-                        <div class="empty-state">Memuat...</div>
-                    </div>
-                </div>
-            </div>
+        </div>
         </div>
     </div>
 
@@ -553,7 +542,6 @@
                 }, 30000);
 
                 await Promise.all([
-                    loadRecentAnnouncements().catch(e => console.error('Error loading recent:', e)),
                     loadAnnouncementHistory().catch(e => console.error('Error loading history:', e))
                 ]);
 
@@ -709,7 +697,6 @@
 
                 alert('Pengumuman berhasil dikirim!');
                 resetForm();
-                loadRecentAnnouncements();
                 loadAnnouncementHistory();
             } catch (error) {
                 console.error('Error:', error);
@@ -725,38 +712,6 @@
             document.getElementById('recipientType').value = 'all_users';
             selectedRecipients = [];
             updateRecipientOptions();
-        }
-
-        // Load recent announcements
-        async function loadRecentAnnouncements() {
-            const token = localStorage.getItem('jwt_token');
-            try {
-                const response = await fetch('/api/announcements', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (!response.ok) throw new Error('Failed to load announcements');
-                
-                const data = await response.json();
-                const recentDiv = document.getElementById('recentAnnouncements');
-                
-                if (!data.announcements || data.announcements.length === 0) {
-                    recentDiv.innerHTML = '<div class="empty-state">Belum ada pengumuman</div>';
-                    return;
-                }
-
-                const recent = data.announcements.slice(0, 5);
-                recentDiv.innerHTML = recent.map(ann => `
-                    <div class="announcement-item">
-                        <div>
-                            <div class="announcement-item-title">${ann.title || 'Tanpa Judul'}</div>
-                            <div class="announcement-item-date">${new Date(ann.created_at).toLocaleDateString('id-ID')}</div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('recentAnnouncements').innerHTML = '<div style="color: red; font-size: 12px;">Error memuat pengumuman</div>';
-            }
         }
 
         // Load announcement history
