@@ -2459,46 +2459,72 @@
                                 </div>
 
                                 <!-- Modern Terapkan & Reset Buttons -->
-                                <div style="display: flex; gap: 8px; margin-top: 12px; width: 100%;">
-                                    <button id="applyFiltersBtn" onclick="applyInvoiceFilters()" disabled style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: not-allowed; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; opacity: 0.5;">
-                                        <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 6px;">
-                                            <i class="fas fa-check"></i> Terapkan
-                                        </span>
+                                <div style="display: flex; gap: 12px; margin-top: 12px; width: 100%;">
+                                    <button id="applyFiltersBtn" onclick="applyInvoiceFilters()" disabled style="background: #667eea; color: white; border: none; padding: 11px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: not-allowed; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; opacity: 0.6;">
+                                        <i class="fas fa-check"></i>
+                                        <span>Terapkan</span>
                                     </button>
-                                    <button id="resetBtn" onclick="resetInvoiceFilters()" class="modern-reset-btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: not-allowed; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3); position: relative; overflow: hidden; opacity: 0.5; display: disabled;" disabled>
-                                        <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 6px;">
-                                            <i class="fas fa-redo"></i> Reset
-                                        </span>
+                                    <button id="resetBtn" onclick="resetInvoiceFilters()" disabled style="background: #ef4444; color: white; border: none; padding: 11px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: not-allowed; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; opacity: 0.6;">
+                                        <i class="fas fa-redo"></i>
+                                        <span>Reset</span>
                                     </button>
                                 </div>
                                 
                                 <style>
-                                    .modern-reset-btn::before {
-                                        content: '';
-                                        position: absolute;
-                                        top: 50%;
-                                        left: 50%;
-                                        width: 0;
-                                        height: 0;
-                                        border-radius: 50%;
-                                        background: rgba(255, 255, 255, 0.3);
-                                        transform: translate(-50%, -50%);
-                                        transition: width 0.6s, height 0.6s;
+                                    #applyFiltersBtn:not(:disabled) {
+                                        opacity: 1;
+                                        background: #667eea;
+                                        cursor: pointer;
+                                        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
                                     }
                                     
-                                    .modern-reset-btn:hover::before {
-                                        width: 300px;
-                                        height: 300px;
+                                    #applyFiltersBtn:not(:disabled):hover {
+                                        background: #5568d3;
+                                        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+                                        transform: translateY(-1px);
                                     }
                                     
-                                    .modern-reset-btn:hover {
-                                        transform: translateY(-2px);
-                                        box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4) !important;
-                                    }
-                                    
-                                    .modern-reset-btn:active {
+                                    #applyFiltersBtn:not(:disabled):active {
                                         transform: translateY(0px);
-                                        box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3) !important;
+                                        box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+                                    }
+                                    
+                                    #resetBtn:not(:disabled) {
+                                        opacity: 1;
+                                        background: #ef4444;
+                                        cursor: pointer;
+                                        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+                                    }
+                                    
+                                    #resetBtn:not(:disabled):hover {
+                                        background: #dc2626;
+                                        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+                                        transform: translateY(-1px);
+                                    }
+                                    
+                                    #resetBtn:not(:disabled):active {
+                                        transform: translateY(0px);
+                                        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+                                    }
+                                    
+                                    html[data-dark-mode="true"] #applyFiltersBtn:not(:disabled) {
+                                        background: #5568d3;
+                                        box-shadow: 0 2px 6px rgba(85, 104, 211, 0.3);
+                                    }
+                                    
+                                    html[data-dark-mode="true"] #applyFiltersBtn:not(:disabled):hover {
+                                        background: #4557c2;
+                                        box-shadow: 0 4px 12px rgba(85, 104, 211, 0.4);
+                                    }
+                                    
+                                    html[data-dark-mode="true"] #resetBtn:not(:disabled) {
+                                        background: #dc2626;
+                                        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+                                    }
+                                    
+                                    html[data-dark-mode="true"] #resetBtn:not(:disabled):hover {
+                                        background: #b91c1c;
+                                        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
                                     }
                                 </style>
                             </div>
