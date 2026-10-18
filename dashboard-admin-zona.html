@@ -1335,11 +1335,14 @@
         .empty-state-icon svg {
             width: 80px;
             height: 80px;
-            filter: brightness(0) saturate(100%) invert(23%) sepia(24%) saturate(1150%) hue-rotate(226deg) brightness(97%) contrast(89%);
         }
 
-        html[data-dark-mode="true"] .empty-state-icon svg {
-            filter: brightness(0) saturate(100%) invert(1);
+        .empty-state-icon svg path {
+            fill: #3d3b6b;
+        }
+
+        html[data-dark-mode="true"] .empty-state-icon svg path {
+            fill: #ffffff;
         }
 
         .empty-state-title {
