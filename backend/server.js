@@ -4451,7 +4451,7 @@ app.get('/api/users', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, created_at, username')
+            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, created_at, username, avatar')
             .order('created_at', { ascending: false });
 
         if (error) throw error;

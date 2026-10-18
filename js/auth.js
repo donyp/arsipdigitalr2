@@ -274,9 +274,12 @@ function updateUserUI() {
         el.textContent = `@${currentUser.username || (currentUser.email ? currentUser.email.split('@')[0] : 'user')}`;
     });
 
-    // Update avatar
+    // Update avatar (use stored avatar if available, fallback to generated)
     document.querySelectorAll('[data-user-avatar]').forEach(el => {
-        el.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff&size=200`;
+        const avatarUrl = currentUser.avatar && currentUser.avatar.trim() 
+            ? currentUser.avatar
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff&size=200`;
+        el.src = avatarUrl;
     });
 
     // Update role badge and label

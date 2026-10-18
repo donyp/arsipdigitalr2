@@ -503,7 +503,7 @@ function renderLoginHistory() {
             <td class="text-xs text-gray-400">${formatDateTime(log.created_at)}</td>
             <td>
                 <div class="flex items-center gap-3">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(log.users?.name || '?')}&background=1e293b&color=cbd5e1" class="w-7 h-7 rounded-full ring-1 ring-white/10">
+                    <img src="${log.users?.avatar && log.users.avatar.trim() ? log.users.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(log.users?.name || '?')}&background=1e293b&color=cbd5e1`}" class="w-7 h-7 rounded-full ring-1 ring-white/10">
                     <span class="font-semibold text-gray-800 text-sm">${log.users?.name || 'System'}</span>
                 </div>
             </td>
@@ -588,7 +588,7 @@ function renderActivityLogs() {
             <td class="text-xs text-gray-400">${formatDateTime(log.created_at)}</td>
             <td>
                 <div class="flex items-center gap-3">
-                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(log.users?.name || '?')}&background=1e293b&color=cbd5e1" class="w-7 h-7 rounded-full ring-1 ring-white/5">
+                    <img src="${log.users?.avatar && log.users.avatar.trim() ? log.users.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(log.users?.name || '?')}&background=1e293b&color=cbd5e1`}" class="w-7 h-7 rounded-full ring-1 ring-white/5">
                     <div class="flex flex-col">
                         <span class="font-semibold text-gray-800 text-sm">${log.users?.name || 'System'}</span>
                         <div class="scale-90 origin-left">${roleBadge}</div>
