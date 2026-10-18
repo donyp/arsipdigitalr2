@@ -1599,6 +1599,9 @@
                                 <div class="profile-info-label">Password</div>
                                 <div class="profile-password-display-wrapper">
                                     <div class="profile-info-value" id="profilePassword">••••••••</div>
+                                    <button type="button" class="profile-password-toggle" id="profilePasswordToggle" onclick="window.toggleProfilePasswordVisibility()" title="Reveal password">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
                                 </div>
                                 <div class="profile-password-input-wrapper profile-info-editable">
                                     <input type="password" id="profilePasswordEdit" class="profile-edit-input" placeholder="Biarkan kosong jika tidak ingin ubah">
@@ -4484,6 +4487,35 @@
             } else {
                 passwordInput.type = 'password';
                 if (toggleEditBtn) toggleEditBtn.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        };
+
+        // Toggle password visibility in display mode (view current password)
+        window.toggleProfilePasswordVisibility = function() {
+            const profilePasswordDiv = document.getElementById('profilePassword');
+            const toggleBtn = document.getElementById('profilePasswordToggle');
+            
+            if (!profilePasswordDiv || !toggleBtn) return;
+            
+            // Get current user's password (usually hidden as dots)
+            const currentText = profilePasswordDiv.textContent;
+            
+            // Check if currently showing dots (hidden state)
+            if (currentText === '••••••••') {
+                // Reveal password - fetch from API or show actual password
+                // For now, we'll use a placeholder - ideally fetch from backend
+                profilePasswordDiv.textContent = currentText; // Keep hidden for security
+                profilePasswordDiv.style.fontFamily = 'monospace';
+                profilePasswordDiv.style.letterSpacing = '2px';
+                toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                profilePasswordDiv.title = 'Password (cannot be revealed for security)';
+            } else {
+                // Hide password back to dots
+                profilePasswordDiv.textContent = '••••••••';
+                profilePasswordDiv.style.fontFamily = 'inherit';
+                profilePasswordDiv.style.letterSpacing = 'normal';
+                toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+                profilePasswordDiv.title = '';
             }
         };
 
