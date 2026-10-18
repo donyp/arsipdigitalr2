@@ -55,6 +55,26 @@
             --color-form-placeholder: #64748b;
             --color-form-bg: transparent;
         }
+
+        /* Form input icons - responsive to dark mode */
+        .form-group svg {
+            color: #3d3b6b;
+            transition: color 0.3s;
+        }
+
+        html[data-dark-mode="true"] .form-group svg {
+            color: #60a5fa;
+        }
+
+        /* Theme toggle SVG icons */
+        .theme-toggle-icon {
+            fill: #3d3b6b;
+            transition: fill 0.3s;
+        }
+
+        html[data-dark-mode="true"] .theme-toggle-icon {
+            fill: #cbd5e1;
+        }
         
         .gradient-blue {
             background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 50%, #1d4ed8 100%);
@@ -464,7 +484,8 @@
         <div class="right-section">
             <!-- Dark Mode Toggle -->
             <button id="dark-mode-btn" class="dark-mode-toggle" title="Toggle dark mode" onclick="toggleDarkMode()">
-                <span id="theme-icon">🌙</span>
+                <svg class="sun-icon theme-toggle-icon" style="width: 18px; height: 18px; display: none;" version="1.0" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64" enable-background="new 0 0 64 64" xml:space="preserve"><g><circle fill-rule="evenodd" clip-rule="evenodd" cx="32.003" cy="32.005" r="16.001"></circle><path fill-rule="evenodd" clip-rule="evenodd" d="M12.001,31.997c0-2.211-1.789-4-4-4H4c-2.211,0-4,1.789-4,4 s1.789,4,4,4h4C10.212,35.997,12.001,34.208,12.001,31.997z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M12.204,46.139l-2.832,2.833c-1.563,1.562-1.563,4.094,0,5.656 c1.562,1.562,4.094,1.562,5.657,0l2.833-2.832c1.562-1.562,1.562-4.095,0-5.657C16.298,44.576,13.767,44.576,12.204,46.139z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M32.003,51.999c-2.211,0-4,1.789-4,4V60c0,2.211,1.789,4,4,4 s4-1.789,4-4l-0.004-4.001C36.003,53.788,34.21,51.999,32.003,51.999z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M51.798,46.143c-1.559-1.566-4.091-1.566-5.653-0.004 s-1.562,4.095,0,5.657l2.829,2.828c1.562,1.57,4.094,1.562,5.656,0s1.566-4.09,0-5.656L51.798,46.143z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M60.006,27.997l-4.009,0.008 c-2.203-0.008-3.992,1.781-3.992,3.992c-0.008,2.211,1.789,4,3.992,4h4.001c2.219,0.008,4-1.789,4-4 C64.002,29.79,62.217,27.997,60.006,27.997z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M51.798,17.859l2.828-2.829c1.574-1.566,1.562-4.094,0-5.657 c-1.559-1.567-4.09-1.567-5.652-0.004l-2.829,2.836c-1.562,1.555-1.562,4.086,0,5.649C47.699,19.426,50.239,19.418,51.798,17.859z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M32.003,11.995c2.207,0.016,4-1.789,4-3.992v-4 c0-2.219-1.789-4-4-4c-2.211-0.008-4,1.781-4,3.993l0.008,4.008C28.003,10.206,29.792,11.995,32.003,11.995z"></path><path fill-rule="evenodd" clip-rule="evenodd" d="M12.212,17.855c1.555,1.562,4.079,1.562,5.646-0.004 c1.574-1.551,1.566-4.09,0.008-5.649l-2.829-2.828c-1.57-1.571-4.094-1.559-5.657,0c-1.575,1.559-1.575,4.09-0.012,5.653 L12.212,17.855z"></path></g></svg>
+                <svg class="moon-icon theme-toggle-icon" style="width: 18px; height: 18px; display: block;" fill="currentColor" viewBox="0 0 24 24"><path d="M12,2h-.46a1,1,0,0,0-.44,1.86A5.94,5.94,0,0,1,14,9,6,6,0,0,1,3.93,13.4a1,1,0,0,0-1.65,1A10,10,0,1,0,12,2Z"></path></svg>
             </button>
             
             <div class="form-container">
@@ -495,8 +516,8 @@
                 <form id="login-form" autocomplete="on" style="display: block;">
                     <div class="form-group">
                         <div style="position: relative;">
-                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #3d3b6b; stroke: currentColor; stroke-width: 2; fill: none;" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #3d3b6b; fill: currentColor; transition: color 0.3s;" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12ZM15 9C15 10.6569 13.6569 12 12 12C10.3431 12 9 10.6569 9 9C9 7.34315 10.3431 6 12 6C13.6569 6 15 7.34315 15 9ZM12 20.5C13.784 20.5 15.4397 19.9504 16.8069 19.0112C17.4108 18.5964 17.6688 17.8062 17.3178 17.1632C16.59 15.8303 15.0902 15 11.9999 15C8.90969 15 7.40997 15.8302 6.68214 17.1632C6.33105 17.8062 6.5891 18.5963 7.19296 19.0111C8.56018 19.9503 10.2159 20.5 12 20.5Z"></path>
                             </svg>
                             <input type="text" id="username" name="username" autocomplete="username" placeholder="Username" class="form-input" style="padding-left: 28px;" required>
                         </div>
@@ -504,8 +525,8 @@
 
                     <div class="form-group">
                         <div style="position: relative;">
-                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #3d3b6b; stroke: currentColor; stroke-width: 2; fill: none;" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #3d3b6b; fill: currentColor; transition: color 0.3s;" viewBox="-1 0 19 19" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16.417 9.583A7.917 7.917 0 1 1 8.5 1.666a7.917 7.917 0 0 1 7.917 7.917zm-4.23-.585a.476.476 0 0 0-.475-.475h-.7V7.262a2.52 2.52 0 0 0-5.041 0v1.261h-.7a.476.476 0 0 0-.475.475v5.108a.476.476 0 0 0 .475.475h6.44a.477.477 0 0 0 .476-.475zM10.22 7.262v1.261H6.762V7.262a1.73 1.73 0 0 1 3.459 0zm-1.413 4.363v1.309a.317.317 0 1 1-.633 0v-1.309a.79.79 0 1 1 .633 0z"></path>
                             </svg>
                             <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Password" class="form-input" style="padding-left: 28px;" required>
                             <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 0; top: 12px; background: none; border: none; cursor: pointer; padding: 0; color: #999;">
