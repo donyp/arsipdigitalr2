@@ -1598,7 +1598,7 @@
                             <div class="profile-info-content">
                                 <div class="profile-info-label">Password</div>
                                 <div class="profile-password-display-wrapper">
-                                    <div class="profile-info-value" id="profilePassword">��������</div>
+                                    <div class="profile-info-value" id="profilePassword">••••••••</div>
                                 </div>
                                 <div class="profile-password-input-wrapper profile-info-editable">
                                     <input type="password" id="profilePasswordEdit" class="profile-edit-input" placeholder="Biarkan kosong jika tidak ingin ubah">
@@ -1666,7 +1666,7 @@
             <div class="welcome-section">
                 <div class="welcome-header">
                     <div class="welcome-text">
-                        <h2 id="welcome-name">Selamat siang, Admin ??</h2>
+                        <h2 id="welcome-name">Selamat siang, Admin 👋</h2>
                         <p id="welcome-info">Informasi data zona anda</p>
                     </div>
                     
@@ -1927,7 +1927,7 @@
                     <tbody id="invoiceTableBody">
                         <tr>
                             <td colspan="8" class="empty-state">
-                                <div class="empty-state-icon">??</div>
+                                <div class="empty-state-icon">📅</div>
                                 <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
@@ -2174,7 +2174,7 @@
             tableBody.innerHTML = `
                 <tr>
                     <td colspan="8" class="empty-state">
-                        <div class="empty-state-icon">??</div>
+                        <div class="empty-state-icon">📅</div>
                         <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                         <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                     </td>
@@ -2280,7 +2280,7 @@
                     tableBody.innerHTML = `
                         <tr>
                             <td colspan="8" class="empty-state">
-                                <div class="empty-state-icon">??</div>
+                                <div class="empty-state-icon">📅</div>
                                 <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
@@ -3319,7 +3319,7 @@
                 }
                 
                 const welcomeNameEl = document.getElementById('welcome-name');
-                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} ??`;
+                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
 
                 const welcomeInfoEl = document.getElementById('welcome-info');
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
@@ -3341,7 +3341,7 @@
                     } else if (hour >= 18 || hour < 5) {
                         greeting = 'malam';
                     }
-                    welcomeNameEl.textContent = `Selamat ${greeting}, User ??`;
+                    welcomeNameEl.textContent = `Selamat ${greeting}, User 👋`;
                 }
             }
         });
@@ -3727,9 +3727,9 @@
         async function downloadAdminZonaFile(faktur, fileType) {
             // Define file type styling
             const fileTypeColors = {
-                'invoice': { bg: '#3498db', icon: '??', text: 'Invoice' },
-                'bukti_bayar': { bg: '#27ae60', icon: '??', text: 'Bukti Bayar' },
-                'faktur_pajak': { bg: '#9b59b6', icon: '??', text: 'Faktur Pajak' }
+                'invoice': { bg: '#3498db', icon: '📄', text: 'Invoice' },
+                'bukti_bayar': { bg: '#27ae60', icon: '💰', text: 'Bukti Bayar' },
+                'faktur_pajak': { bg: '#9b59b6', icon: '📋', text: 'Faktur Pajak' }
             };
             
             const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '??', text: 'File' };
