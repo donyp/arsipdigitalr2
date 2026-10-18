@@ -1602,7 +1602,7 @@
                             </div>
                             <div class="profile-info-content">
                                 <div class="profile-info-label">Password</div>
-                                <div class="profile-password-display-wrapper">
+                                <div class="profile-password-display-wrapper" id="profilePasswordDisplayWrapper">
                                     <div class="profile-info-value" id="profilePassword">••••••••</div>
                                     <button type="button" class="profile-password-toggle" id="profilePasswordToggle" onclick="window.toggleProfilePasswordVisibility()" title="Reveal password">
                                         <i class="fas fa-eye"></i>
@@ -4545,7 +4545,7 @@
             // Hide display values, show inputs
             document.getElementById('profileEmail').classList.add('hidden');
             document.getElementById('profileUsername').classList.add('hidden');
-            document.getElementById('profilePassword').classList.add('hidden');
+            document.getElementById('profilePasswordDisplayWrapper').classList.add('hidden');
             document.getElementById('profileEmailEdit').classList.add('active');
             document.getElementById('profileUsernameEdit').classList.add('active');
             document.querySelector('.profile-password-input-wrapper').classList.add('active');
@@ -4576,6 +4576,7 @@
             document.getElementById('profileEmail').classList.remove('hidden');
             document.getElementById('profileUsername').classList.remove('hidden');
             document.getElementById('profilePassword').classList.remove('hidden');
+            document.getElementById('profilePasswordDisplayWrapper').classList.remove('hidden');
             document.getElementById('profileEmailEdit').classList.remove('active');
             document.getElementById('profileUsernameEdit').classList.remove('active');
             document.querySelector('.profile-password-input-wrapper').classList.remove('active');
