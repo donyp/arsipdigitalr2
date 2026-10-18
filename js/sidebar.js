@@ -182,13 +182,13 @@
         // Icon sizing
         iconSize: '1.2rem',                  // 19.2px
         
-        // Colors (light mode default)
+        // Colors (light mode default) - Using purple #3d3b6b
         bgColor: '#ffffff',
-        textColor: '#1f2937',
-        textMutedColor: '#6b7280',
-        hoverBg: 'rgba(37, 99, 235, 0.08)',
+        textColor: '#3d3b6b',
+        textMutedColor: 'rgba(61, 59, 107, 0.7)',
+        hoverBg: 'rgba(61, 59, 107, 0.08)',
         borderColor: '#e5e7eb',
-        activeTextColor: '#2563eb'
+        activeTextColor: '#3d3b6b'
     };
 
     // ============================================================
