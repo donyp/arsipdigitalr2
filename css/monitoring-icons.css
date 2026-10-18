@@ -28,7 +28,7 @@
 
 /* Memory Icon */
 .icon-memory {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M106.672,42.432c0-9.958-8.074-18.032-18.022-18.032h-6.63c-9.948,0-18.022,8.074-18.022,18.032v49.878h42.674V42.432z"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="4" width="18" height="14" rx="1" fill="black"/><rect x="5" y="6" width="3" height="3" fill="black"/><rect x="10" y="6" width="3" height="3" fill="black"/><rect x="15" y="6" width="3" height="3" fill="black"/><rect x="3" y="20" width="18" height="1" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -82,7 +82,7 @@
 
 /* Uptime Icon */
 .icon-uptime {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" fill="none" stroke="black" stroke-width="2"/><path d="M12 7v5l4 2" fill="none" stroke="black" stroke-width="2" stroke-linecap="round"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -91,7 +91,7 @@
 
 /* System Status Icon */
 .icon-system-status {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 316.89 316.89" xmlns="http://www.w3.org/2000/svg"><path d="M182.47,212.195c0-0.754,0.036-1.5,0.057-2.25H38.5" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="3" width="20" height="14" rx="1" fill="black"/><path d="M7 19h10M9 19h6M10 21h4" stroke="black" stroke-width="2" stroke-linecap="round"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -100,7 +100,7 @@
 
 /* Cores Icon */
 .icon-cores {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 6a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="6" cy="6" r="2" fill="black"/><circle cx="18" cy="6" r="2" fill="black"/><circle cx="6" cy="18" r="2" fill="black"/><circle cx="18" cy="18" r="2" fill="black"/><path d="M8 6h8M6 8v8M18 8v8M8 18h8" stroke="black" stroke-width="1.5"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -109,7 +109,7 @@
 
 /* Load 1M & Load 5M Icon */
 .icon-load {
-    background-image: url('data:image/svg+xml;utf8,<svg fill="black" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 12a2 2 0 0 0-.703.133l-2.398-1.963c.059-.214.101-.436.101-.67C17 8.114 15.886 7 14.5 7"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 0 1 9-9M21 12a9 9 0 0 1-9 9" fill="none" stroke="black" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -118,7 +118,7 @@
 
 /* Backend Icon */
 .icon-backend {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><polygon points="154.219,205.188 166.219,335.031 110.922,405.563 96.406,296.563" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="3" width="20" height="6" rx="1" fill="black" opacity="0.3"/><rect x="2" y="11" width="20" height="6" rx="1" fill="black"/><rect x="2" y="19" width="20" height="2" rx="1" fill="black" opacity="0.5"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -127,7 +127,7 @@
 
 /* Database Icon */
 .icon-database {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M9 6c0-1.6.8-3 2-4h-1c-3.9 0-7 .9-7 2 0 1 2.6 1.8 6 2z" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="4" rx="8" ry="3" fill="black" opacity="0.3"/><path d="M4 7v9c0 1.66 3.58 3 8 3s8-1.34 8-3V7" fill="none" stroke="black" stroke-width="1.5"/><ellipse cx="12" cy="19" rx="8" ry="3" fill="black" opacity="0.5"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -136,7 +136,7 @@
 
 /* Storage Icon */
 .icon-storage {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="M0,17.067V153.6h512V17.067H0z M110.933,110.925h-51.2v-51.2h51.2V110.925z" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16v3H4zM4 12h16v3H4zM4 18h16v2H4z" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -145,7 +145,7 @@
 
 /* SSL Icon */
 .icon-ssl {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><path d="M15.986 21.652c0.004-0 0.009-0 0.014-0 0.883 0 1.599 0.716 1.599 1.599" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z" fill="black"/><path d="M10 17l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="black" opacity="0.3"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -154,7 +154,7 @@
 
 /* Backend Logs Icon */
 .icon-backend-logs {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"><path d="M924.8 385.6a446.7 446.7 0 0 0-96-142.4" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 6h16v2H4zM4 12h16v2H4zM4 18h16v2H4z" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -163,7 +163,7 @@
 
 /* Clear Icon */
 .icon-clear {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5.755,20.283,4,8H20L18.245,20.283A2,2,0,0,1,16.265,22H7.735A2,2,0,0,1,5.755,20.283Z" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -172,7 +172,7 @@
 
 /* Pause Icon */
 .icon-pause {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2 6C2 4.11438 2 3.17157 2.58579 2.58579" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M6 4h4v16H6zM14 4h4v16h-4z" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -181,7 +181,7 @@
 
 /* Resume Icon */
 .icon-resume {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="m 2 2.5 v 11 c 0 1.5 1.269531 1.492188 1.269531 1.492188" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M8 5v14l11-7z" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -190,7 +190,7 @@
 
 /* Copy Icon */
 .icon-copy {
-    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20,4V16a2,2,0,0,1-2,2H10a2,2,0,0,1-2-2V4a2,2,0,0,1,2-2h8A2,2,0,0,1,20,4Z" fill="black"/></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" fill="black"/></svg>');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
