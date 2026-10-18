@@ -203,8 +203,9 @@
         <!-- Main Content -->
         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
             <!-- Form Pengumuman -->
-            <div style="background: var(--color-bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-border);">
-                <h2 style="font-size: 18px; font-weight: 700; margin: 0 0 20px 0; color: var(--color-text-primary);">Buat Pengumuman Baru</h2>
+            <div>
+                <div style="background: var(--color-bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-border); margin-bottom: 24px;">
+                    <h2 style="font-size: 18px; font-weight: 700; margin: 0 0 20px 0; color: var(--color-text-primary);">Buat Pengumuman Baru</h2>
 
                 <!-- Judul -->
                 <div class="form-group">
@@ -262,6 +263,16 @@
                         <i class="fas fa-redo"></i> Reset
                     </button>
                 </div>
+
+                <!-- History Pengumuman -->
+                <div style="background: var(--color-bg-secondary); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); border: 1px solid var(--color-border);">
+                    <h2 style="font-size: 18px; font-weight: 700; margin: 0 0 20px 0; color: var(--color-text-primary); display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-history" style="color: #667eea;"></i>Riwayat Pengumuman
+                    </h2>
+                    <div id="announcementHistory" style="display: flex; flex-direction: column; gap: 12px; max-height: 600px; overflow-y: auto;">
+                        <div style="text-align: center; color: var(--color-text-tertiary); font-size: 13px;">Memuat...</div>
+                    </div>
+                </div>
             </div>
 
             <!-- Sidebar: Pengumuman Terbaru -->
@@ -287,6 +298,7 @@
                 return;
             }
             loadRecentAnnouncements();
+            loadAnnouncementHistory();
         });
 
         function formatText(command) {
@@ -434,6 +446,97 @@
         // Apply dark mode if enabled
         if (localStorage.getItem('dark_mode_enabled') === 'true') {
             document.documentElement.setAttribute('data-dark-mode', 'true');
+        }
+
+        async function loadAnnouncementHistory() {
+            const token = localStorage.getItem('jwt_token');
+            try {
+                const response = await fetch('/api/announcements?limit=100', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load announcement history');
+                const data = await response.json();
+
+                const historyDiv = document.getElementById('announcementHistory');
+                
+                // Get only announcements created by current user
+                const myAnnouncements = data.announcements.filter(ann => ann.created_by === currentUser.id);
+
+                if (myAnnouncements.length === 0) {
+                    historyDiv.innerHTML = '<div style="text-align: center; color: var(--color-text-tertiary); font-size: 13px;">Belum ada pengumuman yang dikirim</div>';
+                    return;
+                }
+
+                const typeColors = {
+                    'Informasi': 'badge-info',
+                    'Peringatan': 'badge-warning',
+                    'Penting': 'badge-danger',
+                    'Maintenance': 'badge-success'
+                };
+
+                const recipientLabels = {
+                    'all_users': 'Semua Pengguna',
+                    'all_zonas': 'Semua Zona',
+                    'specific_users': 'Pengguna Spesifik',
+                    'specific_zonas': 'Zona Spesifik'
+                };
+
+                historyDiv.innerHTML = myAnnouncements.map(ann => {
+                    const date = new Date(ann.created_at);
+                    const dateStr = date.toLocaleDateString('id-ID');
+                    const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const recipientCount = ann.unread_count || 0;
+                    const isActive = ann.is_active ? 'Aktif' : 'Nonaktif';
+                    const isActiveBg = ann.is_active ? 'background: #dcfce7; color: #15803d;' : 'background: #fee2e2; color: #991b1b;';
+
+                    return `
+                        <div style="padding: 14px; background: var(--color-bg-tertiary); border-radius: 8px; border-left: 3px solid #667eea; cursor: pointer; transition: all 0.2s;" onclick="expandHistoryItem(this)">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; font-size: 13px; color: var(--color-text-primary); margin-bottom: 4px;">
+                                        ${ann.title}
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--color-text-secondary);">
+                                        ${dateStr} • ${timeStr}
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-down" style="color: var(--color-text-tertiary); margin-top: 2px;"></i>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+                                <span class="badge badge-${typeColors[ann.announcement_type]}" style="background: ${ann.announcement_type === 'Informasi' ? '#dbeafe' : ann.announcement_type === 'Peringatan' ? '#fef3c7' : ann.announcement_type === 'Penting' ? '#fee2e2' : '#dcfce7'}; color: ${ann.announcement_type === 'Informasi' ? '#1e40af' : ann.announcement_type === 'Peringatan' ? '#92400e' : ann.announcement_type === 'Penting' ? '#991b1b' : '#15803d'};">
+                                    ${ann.announcement_type}
+                                </span>
+                                <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; ${isActiveBg};">
+                                    ${isActive}
+                                </span>
+                                <span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #e0e7ff; color: #3730a3;">
+                                    ${recipientLabels[ann.recipient_type]}
+                                </span>
+                            </div>
+                            <div style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--color-border); font-size: 12px; color: var(--color-text-secondary); line-height: 1.4; max-height: 100px; overflow-y: auto;" class="history-content">
+                                ${ann.content.replace(/<[^>]*>/g, '')}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('announcementHistory').innerHTML = '<div style="color: red;">Error memuat riwayat pengumuman</div>';
+            }
+        }
+
+        function expandHistoryItem(element) {
+            const content = element.querySelector('.history-content');
+            const icon = element.querySelector('.fa-chevron-down');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(0deg)';
+            }
         }
     </script>
 </body>
