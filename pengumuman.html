@@ -7,7 +7,6 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="css/color-vars.css">
     
     <!-- DARK MODE - Apply immediately to prevent flash -->
@@ -363,6 +362,48 @@
             color: #86efac;
         }
 
+        /* Simple notification system */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            max-width: 400px;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            background: #10b981;
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .notification.warning {
+            background: #f59e0b;
+        }
+
+        .notification.info {
+            background: #3b82f6;
+        }
+
         .announcement-list {
             display: flex;
             flex-direction: column;
@@ -615,7 +656,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
@@ -625,15 +665,21 @@
     <script>
         let selectedRecipients = [];
 
-        // Safe toastr wrapper with fallback
+        // Simple built-in notification system (no external dependencies)
         function showNotification(type, message, title = '') {
-            if (typeof toastr !== 'undefined' && toastr[type]) {
-                toastr[type](message, title);
-            } else {
-                // Fallback to console and alert
-                console.warn(`[${type.toUpperCase()}] ${title}: ${message}`);
-                if (type === 'error') alert(`Error: ${message}`);
-            }
+            const notificationEl = document.createElement('div');
+            notificationEl.className = `notification ${type}`;
+            notificationEl.textContent = title ? `${title}: ${message}` : message;
+            document.body.appendChild(notificationEl);
+
+            // Auto-remove after 4 seconds
+            setTimeout(() => {
+                notificationEl.style.animation = 'slideInRight 0.3s ease reverse';
+                setTimeout(() => notificationEl.remove(), 300);
+            }, 4000);
+
+            // Log to console as well
+            console.log(`[${type.toUpperCase()}] ${message}`);
         }
 
         // Get announcement type icon SVG
