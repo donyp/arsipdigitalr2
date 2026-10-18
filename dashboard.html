@@ -542,7 +542,16 @@
             border-color: var(--color-border) !important;
         }
 
-        /* Filter label icons - responsive color */
+        /* Filter label icons - responsive color - same as Toko */
+        .filter-label-icon {
+            color: #2563eb; /* Same blue as Toko fas fa-store text-blue-600 */
+        }
+
+        html[data-dark-mode="true"] .filter-label-icon {
+            color: #60a5fa; /* Light blue in dark mode */
+        }
+
+        /* Filter icon */
         .filter-icon {
             color: #3d3b6b;
         }
@@ -580,8 +589,19 @@
         }
 
         .theme-toggle-icon {
-            fill: currentColor;
-            color: currentColor;
+            fill: #6b7280;
+            color: #6b7280;
+            transition: fill 0.3s, color 0.3s;
+        }
+
+        html:not([data-dark-mode="true"]) .theme-toggle-icon {
+            fill: #6b7280 !important;
+            color: #6b7280 !important;
+        }
+
+        html[data-dark-mode="true"] .theme-toggle-icon {
+            fill: #cbd5e1 !important;
+            color: #cbd5e1 !important;
         }
 
         /* Fix "Daftar File Invoice" heading text color */
@@ -2253,7 +2273,7 @@
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px;">
                                     <!-- Status filter - CUSTOM DROPDOWN -->
                                     <div style="display: flex; flex-direction: column;">
-                                        <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><svg class="filter-icon" style="width: 16px; height: 16px;" fill="currentColor" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30.714 30.714"><g><g><path d="M16.463,0.029v14.234h14.236C30.173,6.637,24.09,0.554,16.463,0.029z"></path><path d="M16.712,16.398l6.081,12.363c4.445-2.451,7.555-7.022,7.921-12.363H16.712z M23.639,25.643l-3.498-7.11h8.084 C27.525,21.339,25.918,23.833,23.639,25.643z"></path><path d="M14.329,0.027C6.33,0.557,0,7.196,0,15.33c0,8.481,6.875,15.357,15.356,15.357c1.94,0,3.785-0.383,5.492-1.043 l-6.52-13.246L14.329,0.027L14.329,0.027z"></path></g></g></svg>Status Bayar</label>
+                                        <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><i class="fas fa-filter filter-label-icon"></i>Status Bayar</label>
                                         <div class="custom-dropdown" id="statusDropdown">
                                             <button class="dropdown-trigger" onclick="toggleCustomDropdown(event, 'statusDropdown')">
                                                 <span class="dropdown-label">Semua Status</span>
@@ -2283,7 +2303,7 @@
                                     
                                     <!-- Kategori filter - CUSTOM DROPDOWN -->
                                     <div style="display: flex; flex-direction: column;">
-                                        <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><svg class="filter-icon" style="width: 16px; height: 16px;" fill="currentColor" viewBox="0 0 24 24"><path d="M10 3H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zm10 10h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1zM17 3c-2.206 0-4 1.794-4 4s1.794 4 4 4 4-1.794 4-4-1.794-4-4-4zM7 13c-2.206 0-4 1.794-4 4s1.794 4 4 4 4-1.794 4-4-1.794-4-4-4z"></path></svg>Kategori</label>
+                                        <label style="font-size: 12px; color: #1f2937; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; display: flex; align-items: center; gap: 6px;"><i class="fas fa-list filter-label-icon"></i>Kategori</label>
                                         <div class="custom-dropdown" id="kategoriDropdown">
                                             <button class="dropdown-trigger" onclick="toggleCustomDropdown(event, 'kategoriDropdown')">
                                                 <span class="dropdown-label">Semua</span>
