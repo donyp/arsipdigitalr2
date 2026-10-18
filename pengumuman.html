@@ -476,7 +476,14 @@
 
                     <div id="recipientInputDiv" class="form-group" style="display: none;">
                         <label class="form-label">Pilih Zona/Pengguna</label>
-                        <select id="recipientInput" class="form-select" multiple style="height: 100px;"></select>
+                        <div id="recipientList" style="
+                            border: 1px solid var(--color-border);
+                            border-radius: 6px;
+                            padding: 12px;
+                            background: var(--color-bg-primary);
+                            max-height: 300px;
+                            overflow-y: auto;
+                        "></div>
                     </div>
 
                     <!-- Submit Buttons -->
@@ -575,12 +582,22 @@
                 if (!response.ok) throw new Error('Failed to load users');
                 
                 const data = await response.json();
-                const select = document.getElementById('recipientInput');
-                select.innerHTML = data.users.map(u => 
-                    `<option value="${u.id}">${u.name || u.email}</option>`
-                ).join('');
+                const list = document.getElementById('recipientList');
+                list.innerHTML = data.users.map(u => `
+                    <div style="display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--color-border);">
+                        <input type="checkbox" id="user-${u.id}" value="${u.id}" class="recipient-checkbox" 
+                               style="width: 16px; height: 16px; cursor: pointer; margin-right: 8px;">
+                        <label for="user-${u.id}" style="cursor: pointer; flex: 1; margin: 0;">${u.name || u.email}</label>
+                    </div>
+                `).join('');
+                
+                // Add event listeners
+                document.querySelectorAll('.recipient-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSelectedRecipients);
+                });
             } catch (error) {
                 console.error('Error loading users:', error);
+                document.getElementById('recipientList').innerHTML = '<div style="color: red;">Error memuat pengguna</div>';
             }
         }
 
@@ -594,13 +611,30 @@
                 if (!response.ok) throw new Error('Failed to load zonas');
                 
                 const data = await response.json();
-                const select = document.getElementById('recipientInput');
-                select.innerHTML = data.map(z => 
-                    `<option value="${z.id}">${z.nama}</option>`
-                ).join('');
+                const list = document.getElementById('recipientList');
+                list.innerHTML = data.map(z => `
+                    <div style="display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--color-border);">
+                        <input type="checkbox" id="zona-${z.id}" value="${z.id}" class="recipient-checkbox" 
+                               style="width: 16px; height: 16px; cursor: pointer; margin-right: 8px;">
+                        <label for="zona-${z.id}" style="cursor: pointer; flex: 1; margin: 0;">${z.nama}</label>
+                    </div>
+                `).join('');
+                
+                // Add event listeners
+                document.querySelectorAll('.recipient-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', updateSelectedRecipients);
+                });
             } catch (error) {
                 console.error('Error loading zonas:', error);
+                document.getElementById('recipientList').innerHTML = '<div style="color: red;">Error memuat zona</div>';
             }
+        }
+
+        // Update selected recipients from checkboxes
+        function updateSelectedRecipients() {
+            const checkboxes = document.querySelectorAll('.recipient-checkbox:checked');
+            selectedRecipients = Array.from(checkboxes).map(cb => cb.value);
+            console.log('Selected recipients:', selectedRecipients);
         }
 
         // Submit announcement
@@ -742,13 +776,6 @@
                 icon.style.transform = element.classList.contains('expanded') ? 'rotate(180deg)' : 'rotate(0deg)';
             }
         }
-
-        // Store recipient selection
-        document.addEventListener('change', (e) => {
-            if (e.target.id === 'recipientInput') {
-                selectedRecipients = Array.from(e.target.selectedOptions, option => option.value);
-            }
-        });
     </script>
 </body>
 </html>
