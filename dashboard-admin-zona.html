@@ -1666,7 +1666,7 @@
             <div class="welcome-section">
                 <div class="welcome-header">
                     <div class="welcome-text">
-                        <h2 id="welcome-name">Selamat siang, Admin 👋</h2>
+                        <h2 id="welcome-name">Selamat siang, Admin ??</h2>
                         <p id="welcome-info">Informasi data zona anda</p>
                     </div>
                     
@@ -1927,7 +1927,7 @@
                     <tbody id="invoiceTableBody">
                         <tr>
                             <td colspan="8" class="empty-state">
-                                <div class="empty-state-icon">📅</div>
+                                <div class="empty-state-icon">??</div>
                                 <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
@@ -2045,7 +2045,7 @@
             const selectedOption = event.currentTarget;
             selectedOption.classList.add('selected');
             const checkmark = selectedOption.querySelector('.checkmark');
-            if (checkmark) checkmark.textContent = '✓';
+            if (checkmark) checkmark.textContent = '?';
             
             // Close dropdown
             if (menu) menu.style.display = 'none';
@@ -2227,7 +2227,7 @@
                 const yearOptions = yearDropdown.querySelector('.dropdown-options');
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
                 
-                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">?</span><span>Semua Tahun</span></div>';
+                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">✓</span><span>Semua Tahun</span></div>';
                 years.forEach(year => {
                     yearHTML += `<div class="dropdown-option" onclick="selectOption(event, 'yearDropdown', '${year}', '${year}')"><span class="checkmark"></span><span>${year}</span></div>`;
                 });
@@ -2242,7 +2242,7 @@
                     '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
                 };
                 
-                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">?</span><span>Semua Bulan</span></div>';
+                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">✓</span><span>Semua Bulan</span></div>';
                 const months = Array.from(monthsSet).sort();
                 months.forEach(month => {
                     monthHTML += `<div class="dropdown-option" onclick="selectOption(event, 'monthDropdown', '${month}', '${monthNames[month]}')"><span class="checkmark"></span><span>${monthNames[month]}</span></div>`;
@@ -2254,7 +2254,7 @@
                 const tokoDropdown = document.getElementById('tokoDropdown');
                 const tokoOptions = tokoDropdown.querySelector('.dropdown-options');
                 
-                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">?</span><span>Semua Toko</span></div>';
+                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">✓</span><span>Semua Toko</span></div>';
                 tokoList.forEach(toko => {
                     const escaped = toko.replace(/'/g, "\\'");
                     tokoHTML += `<div class="dropdown-option" onclick="selectOption(event, 'tokoDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${toko}</span></div>`;
@@ -2266,7 +2266,7 @@
                 const supplierDropdown = document.getElementById('supplierDropdown');
                 const supplierOptions = supplierDropdown.querySelector('.dropdown-options');
                 
-                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">?</span><span>Semua Supplier</span></div>';
+                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">✓</span><span>Semua Supplier</span></div>';
                 suppliers.forEach(supplier => {
                     const escaped = supplier.replace(/'/g, "\\'");
                     supplierHTML += `<div class="dropdown-option" onclick="selectOption(event, 'supplierDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${supplier}</span></div>`;
@@ -2280,7 +2280,7 @@
                     tableBody.innerHTML = `
                         <tr>
                             <td colspan="8" class="empty-state">
-                                <div class="empty-state-icon">📅</div>
+                                <div class="empty-state-icon">??</div>
                                 <div class="empty-state-title">Silahkan pilih bulan terlebih dahulu</div>
                                 <div class="empty-state-desc">Gunakan filter di atas untuk memilih periode data yang ingin Anda lihat</div>
                             </td>
@@ -2394,7 +2394,7 @@
                 const yearOptions = yearDropdown.querySelector('.dropdown-options');
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
                 
-                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">?</span><span>Semua Tahun</span></div>';
+                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">✓</span><span>Semua Tahun</span></div>';
                 years.forEach(year => {
                     yearHTML += `<div class="dropdown-option" onclick="selectOption(event, 'yearDropdown', '${year}', '${year}')"><span class="checkmark"></span><span>${year}</span></div>`;
                 });
@@ -2409,7 +2409,7 @@
                     '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
                 };
                 
-                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">?</span><span>Semua Bulan</span></div>';
+                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">✓</span><span>Semua Bulan</span></div>';
                 const months = Array.from(monthsSet).sort();
                 months.forEach(month => {
                     monthHTML += `<div class="dropdown-option" onclick="selectOption(event, 'monthDropdown', '${month}', '${monthNames[month]}')"><span class="checkmark"></span><span>${monthNames[month]}</span></div>`;
@@ -2421,7 +2421,7 @@
                 const tokoDropdown = document.getElementById('tokoDropdown');
                 const tokoOptions = tokoDropdown.querySelector('.dropdown-options');
                 
-                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">?</span><span>Semua Toko</span></div>';
+                let tokoHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'tokoDropdown\', \'\', \'Semua Toko\')"><span class="checkmark">✓</span><span>Semua Toko</span></div>';
                 tokoList.forEach(toko => {
                     const escaped = toko.replace(/'/g, "\\'");
                     tokoHTML += `<div class="dropdown-option" onclick="selectOption(event, 'tokoDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${toko}</span></div>`;
@@ -2433,7 +2433,7 @@
                 const supplierDropdown = document.getElementById('supplierDropdown');
                 const supplierOptions = supplierDropdown.querySelector('.dropdown-options');
                 
-                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">?</span><span>Semua Supplier</span></div>';
+                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">✓</span><span>Semua Supplier</span></div>';
                 suppliers.forEach(supplier => {
                     const escaped = supplier.replace(/'/g, "\\'");
                     supplierHTML += `<div class="dropdown-option" onclick="selectOption(event, 'supplierDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${supplier}</span></div>`;
@@ -2548,7 +2548,7 @@
                 const yearOptions = yearDropdown.querySelector('.dropdown-options');
                 const years = Array.from(yearsSet).sort((a, b) => b - a);
                 
-                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">?</span><span>Semua Tahun</span></div>';
+                let yearHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'yearDropdown\', \'\', \'Semua Tahun\')"><span class="checkmark">✓</span><span>Semua Tahun</span></div>';
                 years.forEach(year => {
                     yearHTML += `<div class="dropdown-option" onclick="selectOption(event, 'yearDropdown', '${year}', '${year}')"><span class="checkmark"></span><span>${year}</span></div>`;
                 });
@@ -2563,7 +2563,7 @@
                     '09': 'September', '10': 'Oktober', '11': 'November', '12': 'Desember'
                 };
                 
-                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">?</span><span>Semua Bulan</span></div>';
+                let monthHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'monthDropdown\', \'\', \'Semua Bulan\')"><span class="checkmark">✓</span><span>Semua Bulan</span></div>';
                 const months = Array.from(monthsSet).sort();
                 months.forEach(month => {
                     monthHTML += `<div class="dropdown-option" onclick="selectOption(event, 'monthDropdown', '${month}', '${monthNames[month]}')"><span class="checkmark"></span><span>${monthNames[month]}</span></div>`;
@@ -2575,7 +2575,7 @@
                 const supplierDropdown = document.getElementById('supplierDropdown');
                 const supplierOptions = supplierDropdown.querySelector('.dropdown-options');
                 
-                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">?</span><span>Semua Supplier</span></div>';
+                let supplierHTML = '<div class="dropdown-option selected" onclick="selectOption(event, \'supplierDropdown\', \'\', \'Semua Supplier\')"><span class="checkmark">✓</span><span>Semua Supplier</span></div>';
                 suppliers.forEach(supplier => {
                     const escaped = supplier.replace(/'/g, "\\'");
                     supplierHTML += `<div class="dropdown-option" onclick="selectOption(event, 'supplierDropdown', '${escaped}', '${escaped}')"><span class="checkmark"></span><span>${supplier}</span></div>`;
@@ -3055,7 +3055,7 @@
                 if (firstOption) {
                     firstOption.classList.add('selected');
                     const checkmark = firstOption.querySelector('.checkmark');
-                    if (checkmark) checkmark.textContent = '✓';
+                    if (checkmark) checkmark.textContent = '?';
                 }
             });
             
@@ -3083,7 +3083,7 @@
         // ============================================
         function showDownloadMenu(faktur) {
             Swal.fire({
-                title: '📥 Download Files',
+                title: '?? Download Files',
                 html: `<p>Fitur download sedang dalam pengembangan</p>`,
                 icon: 'info',
                 confirmButtonText: 'OK',
@@ -3319,7 +3319,7 @@
                 }
                 
                 const welcomeNameEl = document.getElementById('welcome-name');
-                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
+                if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} ??`;
 
                 const welcomeInfoEl = document.getElementById('welcome-info');
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
@@ -3341,7 +3341,7 @@
                     } else if (hour >= 18 || hour < 5) {
                         greeting = 'malam';
                     }
-                    welcomeNameEl.textContent = `Selamat ${greeting}, User 👋`;
+                    welcomeNameEl.textContent = `Selamat ${greeting}, User ??`;
                 }
             }
         });
@@ -3538,7 +3538,7 @@
                                     text-align: center;
                                     backdrop-filter: blur(2px);
                                 ">
-                                <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.7;">📁</div>
+                                <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.7;">??</div>
                                 <p style="color: ${infoTextColor}; font-size: 14px; margin: 0; line-height: 1.6; font-weight: 500;">
                                     Belum ada file yang diupload
                                 </p>
@@ -3555,7 +3555,7 @@
                 
                 // Show popup with dark mode support
                 Swal.fire({
-                    title: '📥 Download Files',
+                    title: '?? Download Files',
                     html: menuHTML,
                     icon: 'info',
                     showConfirmButton: false,
@@ -3727,12 +3727,12 @@
         async function downloadAdminZonaFile(faktur, fileType) {
             // Define file type styling
             const fileTypeColors = {
-                'invoice': { bg: '#3498db', icon: '📄', text: 'Invoice' },
-                'bukti_bayar': { bg: '#27ae60', icon: '💰', text: 'Bukti Bayar' },
-                'faktur_pajak': { bg: '#9b59b6', icon: '📋', text: 'Faktur Pajak' }
+                'invoice': { bg: '#3498db', icon: '??', text: 'Invoice' },
+                'bukti_bayar': { bg: '#27ae60', icon: '??', text: 'Bukti Bayar' },
+                'faktur_pajak': { bg: '#9b59b6', icon: '??', text: 'Faktur Pajak' }
             };
             
-            const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '📎', text: 'File' };
+            const colorConfig = fileTypeColors[fileType] || { bg: '#95a5a6', icon: '??', text: 'File' };
             const isDarkMode = document.body.classList.contains('dark-mode');
             
             
@@ -4041,7 +4041,7 @@
             // Show loading modal and execute combine inside didOpen
             return new Promise((resolve) => {
                 Swal.fire({
-                    title: '📄 Menggabungkan PDF',
+                    title: '?? Menggabungkan PDF',
                     html: `
                         <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px 0;">
                             <div class="download-spinner" style="
@@ -4674,4 +4674,9 @@
             }
         };
     </script>
+
+
+
+
+
 
