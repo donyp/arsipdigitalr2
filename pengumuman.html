@@ -345,6 +345,35 @@
             margin-bottom: 8px;
         }
 
+        .btn-action-small {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-action-small:hover {
+            background: var(--color-bg-tertiary);
+        }
+
+        .btn-edit:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        .btn-delete:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
         .announcement-card-title {
             font-weight: 700;
             font-size: 14px;
@@ -672,31 +701,52 @@
                 return;
             }
 
-            const payload = {
-                title,
-                content,
-                announcement_type: type,
-                recipient_type: recipientType,
-                recipients: selectedRecipients
-            };
+            // Check if editing
+            const announcementId = window.editingAnnouncementId;
 
             try {
-                const response = await fetch('/api/announcements', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
+                let response;
+                if (announcementId) {
+                    // Update existing announcement
+                    response = await fetch(`/api/announcements/${announcementId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            title,
+                            content,
+                            announcement_type: type,
+                            is_active: true
+                        })
+                    });
+                } else {
+                    // Create new announcement
+                    response = await fetch('/api/announcements', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            title,
+                            content,
+                            announcement_type: type,
+                            recipient_type: recipientType,
+                            recipients: selectedRecipients
+                        })
+                    });
+                }
 
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Failed to submit announcement');
                 }
 
-                alert('Pengumuman berhasil dikirim!');
+                alert(announcementId ? 'Pengumuman berhasil diupdate!' : 'Pengumuman berhasil dikirim!');
                 resetForm();
+                window.editingAnnouncementId = null;
                 loadAnnouncementHistory();
             } catch (error) {
                 console.error('Error:', error);
@@ -711,6 +761,7 @@
             document.getElementById('announcementType').value = 'Informasi';
             document.getElementById('recipientType').value = 'all_users';
             selectedRecipients = [];
+            window.editingAnnouncementId = null;
             updateRecipientOptions();
         }
 
@@ -747,7 +798,15 @@
                         <div class="announcement-card" onclick="toggleAnnouncement(this)">
                             <div class="announcement-card-header">
                                 <div class="announcement-card-title">${ann.title || 'Tanpa Judul'}</div>
-                                <i class="fas fa-chevron-down" style="transition: transform 0.3s;"></i>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="btn-action-small btn-edit" onclick="event.stopPropagation(); editAnnouncement(${ann.id}, '${ann.title}', '${ann.announcement_type}', \`${ann.content}\`)" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn-action-small btn-delete" onclick="event.stopPropagation(); deleteAnnouncement(${ann.id})" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    <i class="fas fa-chevron-down" style="transition: transform 0.3s;"></i>
+                                </div>
                             </div>
                             <div class="announcement-card-meta">
                                 <span class="${badgeClass}">${ann.announcement_type || 'Informasi'}</span>
@@ -771,6 +830,50 @@
             const icon = element.querySelector('i');
             if (icon) {
                 icon.style.transform = element.classList.contains('expanded') ? 'rotate(180deg)' : 'rotate(0deg)';
+            }
+        }
+
+        // Edit announcement
+        function editAnnouncement(id, title, type, content) {
+            // Pre-fill form with existing data
+            document.getElementById('announcementTitle').value = title;
+            document.getElementById('announcementType').value = type;
+            document.getElementById('contentEditor').innerHTML = content;
+            
+            // Scroll to form
+            document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
+            
+            // Store the ID for update
+            window.editingAnnouncementId = id;
+            alert('Form sudah diisi dengan data pengumuman. Ubah konten lalu klik "Kirim Pengumuman" untuk update.');
+        }
+
+        // Delete announcement
+        async function deleteAnnouncement(id) {
+            if (!confirm('Yakin ingin menghapus pengumuman ini? Semua user akan tidak bisa melihat pengumuman ini.')) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch(`/api/announcements/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Gagal menghapus pengumuman');
+                }
+
+                alert('Pengumuman berhasil dihapus!');
+                loadAnnouncementHistory();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Gagal menghapus pengumuman: ' + error.message);
             }
         }
     </script>
