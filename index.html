@@ -35,11 +35,11 @@
         :root {
             --color-bg-primary: #ffffff;
             --color-bg-secondary: #f5f5f5;
-            --color-text-primary: #3b5bdb;
+            --color-text-primary: #3d3b6b;
             --color-text-secondary: #666;
             --color-border: #ddd;
             --color-form-input-border: #ddd;
-            --color-form-input-text: #3b5bdb;
+            --color-form-input-text: #3d3b6b;
             --color-form-placeholder: #a8afd8;
             --color-form-bg: transparent;
         }
@@ -170,7 +170,7 @@
             margin-bottom: 10px;
             margin-top: -30px;
             letter-spacing: -0.5px;
-            color: #4f46e5;
+            color: #3d3b6b;
             transition: color 0.3s;
             display: block;
         }
@@ -184,7 +184,7 @@
             line-height: 1.6;
             max-width: 500px;
             opacity: 0.95;
-            color: #4f46e5;
+            color: #3d3b6b;
             transition: color 0.3s;
             display: block;
             margin-top: 0px;
@@ -199,7 +199,7 @@
             left: 80px;
             font-size: 14px;
             opacity: 0.6;
-            color: #4f46e5;
+            color: #3d3b6b;
             transition: color 0.3s;
             height: 20px;
             line-height: 1;
@@ -241,7 +241,7 @@
         .brand-name {
             font-size: 24px;
             font-weight: 900;
-            color: #3b5bdb;
+            color: #3d3b6b;
             margin-bottom: 30px;
             transition: color 0.3s;
         }
@@ -264,7 +264,7 @@
             transition: color 0.3s;
         }
         .welcome-subtitle a {
-            color: #3b5bdb;
+            color: #3d3b6b;
             font-weight: 900;
             text-decoration: underline;
         }
@@ -288,13 +288,13 @@
         }
         .form-input:focus {
             outline: none;
-            border-bottom-color: #4f46e5;
-            box-shadow: 0 2px 0 rgba(79, 70, 229, 0.3);
+            border-bottom-color: #3d3b6b;
+            box-shadow: 0 2px 0 rgba(61, 59, 107, 0.3);
         }
         .login-btn {
             width: 100%;
             padding: 12px 18px;
-            background: linear-gradient(135deg, #4f46e5 0%, #3b5bdb 100%);
+            background: linear-gradient(135deg, #3d3b6b 0%, #3d3b6b 100%);
             color: white;
             border: none;
             border-radius: 8px;
@@ -308,9 +308,19 @@
             box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
         }
         .login-btn:hover {
-            background: linear-gradient(135deg, #3b5bdb 0%, #2b4bbb 100%);
+            background: linear-gradient(135deg, #3d3b6b 0%, #2b4bbb 100%);
             box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
             transform: translateY(-2px);
+        }
+
+        html[data-dark-mode="true"] .login-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        html[data-dark-mode="true"] .login-btn:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
         }
         .login-btn:active {
             transform: translateY(0);
@@ -344,7 +354,7 @@
             transition: color 0.3s;
         }
         .forgot-password a {
-            color: #3b5bdb;
+            color: #3d3b6b;
             font-weight: 900;
             text-decoration: none;
         }
@@ -485,7 +495,7 @@
                 <form id="login-form" autocomplete="on" style="display: block;">
                     <div class="form-group">
                         <div style="position: relative;">
-                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #667eea; stroke: currentColor; stroke-width: 2; fill: none;" viewBox="0 0 24 24">
+                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #3d3b6b; stroke: currentColor; stroke-width: 2; fill: none;" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                             <input type="text" id="username" name="username" autocomplete="username" placeholder="Username" class="form-input" style="padding-left: 28px;" required>
@@ -494,7 +504,7 @@
 
                     <div class="form-group">
                         <div style="position: relative;">
-                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #667eea; stroke: currentColor; stroke-width: 2; fill: none;" viewBox="0 0 24 24">
+                            <svg style="position: absolute; left: 0; top: 12px; width: 18px; height: 18px; color: #3d3b6b; stroke: currentColor; stroke-width: 2; fill: none;" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
                             <input type="password" id="password" name="password" autocomplete="current-password" placeholder="Password" class="form-input" style="padding-left: 28px;" required>
@@ -525,9 +535,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                 </div>
-                <h3 style="font-size: 18px; font-weight: 900; color: #3b5bdb; margin-bottom: 8px;">Informasi Sistem</h3>
+                <h3 style="font-size: 18px; font-weight: 900; color: #3d3b6b; margin-bottom: 8px;">Informasi Sistem</h3>
                 <p id="alert-message" style="font-size: 14px; font-weight: 500; color: #666; line-height: 1.5; margin-bottom: 32px;">Sistem sedang dalam perbaikan.</p>
-                <button onclick="closeAlert()" style="width: 100%; padding: 12px; background: #3b5bdb; color: white; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;">
+                <button onclick="closeAlert()" style="width: 100%; padding: 12px; background: #3d3b6b; color: white; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px;">
                     Oke, Mengerti
                 </button>
             </div>
