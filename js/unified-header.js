@@ -229,14 +229,24 @@ function toggleDarkMode() {
     localStorage.setItem('dark_mode_enabled', isDark ? 'false' : 'true');
     
     // Update data-dark-mode attribute immediately
-    document.documentElement.setAttribute('data-dark-mode', isDark ? 'false' : 'true');
+    const newDarkState = isDark ? 'false' : 'true';
+    document.documentElement.setAttribute('data-dark-mode', newDarkState);
     
     // Trigger dark mode change
     if (typeof applyDarkModeInlineStyles === 'function') {
         applyDarkModeInlineStyles(!isDark);
     }
     
+    // Update calendar icon colors by removing inline fill and letting CSS handle it
+    updateCalendarIconsForDarkMode(!isDark);
     updateDarkModeIcon();
+}
+
+function updateCalendarIconsForDarkMode(isDark) {
+    const calendarIcons = document.querySelectorAll('.empty-state-icon svg path');
+    calendarIcons.forEach(path => {
+        path.removeAttribute('fill');
+    });
 }
 
 function performSearch(query) {
