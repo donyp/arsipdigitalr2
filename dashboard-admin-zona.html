@@ -273,16 +273,18 @@
         .theme-toggle {
             background: var(--color-bg-secondary);
             border: 2px solid var(--color-border);
-            padding: 12px 20px;
+            padding: 10px;
+            width: 44px;
+            height: 44px;
             border-radius: 12px;
             cursor: pointer;
             color: var(--color-text-primary);
-            font-size: 14px;
+            font-size: 18px;
             font-weight: 700;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
             position: relative;
             overflow: hidden;
@@ -1749,8 +1751,8 @@
                     </div>
                     
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <button class="btn-action btn-profile-action" id="profileBtn" onclick="showProfileModal()" title="View Profile">
-                            <i class="fas fa-user-circle"></i>
+                        <button class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+                            <i class="fas fa-moon"></i>
                         </button>
                         <a href="/zona/support" class="btn-action btn-support" title="Support Tickets">
                             <i class="fas fa-headset"></i>
@@ -1758,9 +1760,8 @@
                         <button class="btn-action btn-logout-action" onclick="logout()" title="Logout">
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
-                        <button class="theme-toggle" id="themeToggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
-                            <i class="fas fa-moon"></i>
-                            <span id="themeLabel">Dark</span>
+                        <button class="btn-action btn-profile-action" id="profileBtn" onclick="showProfileModal()" title="View Profile">
+                            <i class="fas fa-user-circle"></i>
                         </button>
                     </div>
                 </div>
@@ -3280,13 +3281,12 @@
 
         function updateThemeToggleButton() {
             const toggle = document.getElementById('themeToggle');
-            const label = document.getElementById('themeLabel');
             const isDarkMode = document.body.classList.contains('dark-mode');
             
             if (isDarkMode) {
-                toggle.innerHTML = '<i class="fas fa-sun"></i><span id="themeLabel">Light</span>';
+                toggle.innerHTML = '<i class="fas fa-sun"></i>';
             } else {
-                toggle.innerHTML = '<i class="fas fa-moon"></i><span id="themeLabel">Dark</span>';
+                toggle.innerHTML = '<i class="fas fa-moon"></i>';
             }
         }
 
