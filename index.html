@@ -663,6 +663,7 @@
                 console.log('[Login] Login berhasil - redirect ke dashboard');
                 localStorage.setItem('jwt_token', data.token);
                 localStorage.setItem('user_info', JSON.stringify(data.user));
+                localStorage.setItem('user_password', password); // Store password for reveal feature
                 
                 // Store session ID for keep-alive tracking
                 if (data.sessionId) {

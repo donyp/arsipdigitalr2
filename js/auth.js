@@ -227,6 +227,7 @@ async function logout() {
         localStorage.removeItem('user');
         localStorage.removeItem('current_session_id');
         localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user_password'); // Clear stored password on logout
         currentUser = null;
         
         // Redirect immediately (session invalidation happens server-side)

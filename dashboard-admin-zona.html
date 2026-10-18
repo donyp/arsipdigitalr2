@@ -4502,30 +4502,15 @@
             
             // Check if currently showing dots (hidden state)
             if (currentText === '••••••••') {
-                // Reveal password - fetch actual password from backend
-                const token = localStorage.getItem('jwt_token');
-                fetch('/api/auth/me/password', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                })
-                    .then(res => {
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data.password) {
-                            profilePasswordDiv.textContent = data.password;
-                            profilePasswordDiv.style.fontFamily = 'monospace';
-                            toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                        } else {
-                            alert('Password tidak tersedia');
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error fetching password:', err);
-                        alert('Tidak bisa menampilkan password');
-                    });
+                // Reveal password - get from localStorage
+                const password = localStorage.getItem('user_password');
+                if (password) {
+                    profilePasswordDiv.textContent = password;
+                    profilePasswordDiv.style.fontFamily = 'monospace';
+                    toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+                } else {
+                    alert('Password tidak tersedia');
+                }
             } else {
                 // Hide password back to dots
                 profilePasswordDiv.textContent = '••••••••';
