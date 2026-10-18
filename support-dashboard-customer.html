@@ -446,6 +446,15 @@
             border-bottom-color: var(--color-border-dark);
         }
         
+        .header-section {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        html[data-dark-mode="true"] .header-section {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border-bottom-color: var(--color-border-dark) !important;
+        }
+        
         .ticket-table th {
             padding: 18px;
             text-align: left;
@@ -645,7 +654,7 @@
     </style>
 </head>
 <script src="/js/notification-system.js"></script>
-<body class="bg-gray-50">
+<body>
     <!-- Apply dark mode if enabled -->
     <script>
         if (localStorage.getItem('dark_mode_enabled') === 'true') {
@@ -657,7 +666,7 @@
         <!-- Main Content -->
         <div style="width: 100%;">
             <!-- Header -->
-            <div style="background: var(--color-bg-secondary); border-bottom: 2px solid var(--color-border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);">
+            <div style="background: var(--color-bg-secondary); border-bottom: 2px solid var(--color-border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);" class="header-section">
                 <div class="px-6 py-10">
                     <div class="flex items-center justify-between mb-6">
                         <a href="/zona/dashboard" class="back-link">
@@ -737,7 +746,7 @@
 
                 <!-- Tickets Container -->
                 <div class="tickets-container">
-                    <div id="ticketsContainer" style="text-align: center; padding: 40px 20px; color: #9ca3af;">
+                    <div id="ticketsContainer" style="text-align: center; padding: 40px 20px; color: var(--color-text-tertiary);">
                         <div style="font-size: 14px;">Loading...</div>
                     </div>
                 </div>
