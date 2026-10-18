@@ -1,52 +1,47 @@
 // Announcement System Endpoints
 
-module.exports = (app, db, verifyToken) => {
+module.exports = (app, supabase, verifyToken, authorizeRole) => {
     // GET: List announcements for current user
     app.get('/api/announcements', verifyToken, async (req, res) => {
         try {
             const userId = req.user.id;
-            const userRole = req.user.role;
             const userZonaId = req.user.zona_id;
 
-            const query = `
-                SELECT a.*, 
-                       COUNT(CASE WHEN ar.is_read = FALSE THEN 1 END) as unread_count,
-                       CASE WHEN ar2.is_read = TRUE THEN 1 ELSE 0 END as current_user_read
-                FROM announcements a
-                LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id 
-                LEFT JOIN announcement_reads ar2 ON a.id = ar2.announcement_id AND ar2.user_id = $1
-                WHERE a.is_active = TRUE
-                AND (
-                    a.recipient_type = 'all_users'
-                    OR (a.recipient_type = 'all_zonas' AND $2 IS NOT NULL)
-                    OR (a.recipient_type = 'specific_users' AND EXISTS (
-                        SELECT 1 FROM announcement_recipients 
-                        WHERE announcement_id = a.id 
-                        AND recipient_type = 'user' 
-                        AND recipient_id = $1
-                    ))
-                    OR (a.recipient_type = 'specific_zonas' AND EXISTS (
-                        SELECT 1 FROM announcement_recipients 
-                        WHERE announcement_id = a.id 
-                        AND recipient_type = 'zona' 
-                        AND recipient_id::text = $2::text
-                    ))
-                )
-                GROUP BY a.id
-                ORDER BY a.created_at DESC
-                LIMIT 50
-            `;
+            const { data, error } = await supabase
+                .from('announcements')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false })
+                .limit(50);
 
-            db.query(query, [userId, userZonaId], (err, results) => {
-                if (err) {
-                    console.error('Error fetching announcements:', err);
-                    return res.status(500).json({ error: 'Failed to fetch announcements' });
-                }
-                res.json({ announcements: results.rows || [] });
+            if (error) throw error;
+
+            // Filter based on recipient type
+            const filtered = data.filter(a => {
+                if (a.recipient_type === 'all_users') return true;
+                if (a.recipient_type === 'all_zonas' && userZonaId) return true;
+                return false;
             });
+
+            // Get read status
+            const announcements = await Promise.all(filtered.map(async (a) => {
+                const { data: reads } = await supabase
+                    .from('announcement_reads')
+                    .select('is_read')
+                    .eq('announcement_id', a.id)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+                
+                return {
+                    ...a,
+                    current_user_read: reads?.is_read || false
+                };
+            }));
+
+            res.json({ announcements });
         } catch (error) {
-            console.error('Error:', error);
-            res.status(500).json({ error: 'Server error' });
+            console.error('Error fetching announcements:', error);
+            res.status(500).json({ error: 'Failed to fetch announcements' });
         }
     });
 
@@ -56,28 +51,30 @@ module.exports = (app, db, verifyToken) => {
             const announcementId = req.params.id;
             const userId = req.user.id;
 
-            db.query(
-                'SELECT * FROM announcements WHERE id = $1 AND is_active = TRUE',
-                [announcementId],
-                (err, result) => {
-                    if (err || !result.rows || result.rows.length === 0) {
-                        return res.status(404).json({ error: 'Announcement not found' });
-                    }
+            const { data, error } = await supabase
+                .from('announcements')
+                .select('*')
+                .eq('id', announcementId)
+                .eq('is_active', true)
+                .maybeSingle();
 
-                    // Mark as read
-                    db.query(
-                        `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at)
-                         VALUES ($1, $2, TRUE, NOW())
-                         ON CONFLICT (announcement_id, user_id) DO UPDATE SET is_read = TRUE, read_at = NOW()`,
-                        [announcementId, userId],
-                        (err) => {
-                            if (err) console.error('Error marking as read:', err);
-                        }
-                    );
+            if (error || !data) {
+                return res.status(404).json({ error: 'Announcement not found' });
+            }
 
-                    res.json({ announcement: result.rows[0] });
-                }
-            );
+            // Mark as read
+            await supabase
+                .from('announcement_reads')
+                .upsert({
+                    announcement_id: announcementId,
+                    user_id: userId,
+                    is_read: true,
+                    read_at: new Date().toISOString()
+                }, {
+                    onConflict: 'announcement_id,user_id'
+                });
+
+            res.json({ announcement: data });
         } catch (error) {
             console.error('Error:', error);
             res.status(500).json({ error: 'Server error' });
@@ -85,52 +82,50 @@ module.exports = (app, db, verifyToken) => {
     });
 
     // POST: Create announcement (MODERATOR only)
-    app.post('/api/announcements', verifyToken, async (req, res) => {
+    app.post('/api/announcements', [verifyToken, authorizeRole('moderator', 'super_admin')], async (req, res) => {
         try {
-            if (req.user.role !== 'moderator') {
-                return res.status(403).json({ error: 'Only moderators can create announcements' });
-            }
-
             const { title, content, announcement_type, recipient_type, recipients } = req.body;
 
             if (!title || !content || !announcement_type) {
                 return res.status(400).json({ error: 'Missing required fields' });
             }
 
-            // Insert announcement
-            db.query(
-                `INSERT INTO announcements (title, content, announcement_type, recipient_type, created_by)
-                 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-                [title, content, announcement_type, recipient_type, req.user.id],
-                async (err, result) => {
-                    if (err) {
-                        console.error('Error creating announcement:', err);
-                        return res.status(500).json({ error: 'Failed to create announcement' });
-                    }
+            const { data, error } = await supabase
+                .from('announcements')
+                .insert({
+                    title,
+                    content,
+                    announcement_type,
+                    recipient_type,
+                    created_by: req.user.id,
+                    is_active: true
+                })
+                .select('id')
+                .maybeSingle();
 
-                    const announcementId = result.rows[0].id;
+            if (error) {
+                console.error('Error creating announcement:', error);
+                return res.status(500).json({ error: 'Failed to create announcement' });
+            }
 
-                    // Insert recipients if specific users/zonas
-                    if (recipient_type === 'specific_users' || recipient_type === 'specific_zonas') {
-                        if (recipients && recipients.length > 0) {
-                            const recipientType = recipient_type === 'specific_users' ? 'user' : 'zona';
-                            const values = recipients.map((id, idx) => 
-                                `(${announcementId}, '${recipientType}', $${idx + 1})`
-                            ).join(',');
-                            
-                            const query = `INSERT INTO announcement_recipients (announcement_id, recipient_type, recipient_id) VALUES ${values}`;
-                            db.query(query, recipients, (err) => {
-                                if (err) console.error('Error inserting recipients:', err);
-                            });
-                        }
-                    }
+            const announcementId = data.id;
 
-                    // Create read records for all eligible users
-                    createReadRecords(announcementId, recipient_type, recipients, db, req.user.id);
+            // Insert recipients if specific
+            if ((recipient_type === 'specific_users' || recipient_type === 'specific_zonas') && recipients && recipients.length > 0) {
+                const recipientType = recipient_type === 'specific_users' ? 'user' : 'zona';
+                const recipientRecords = recipients.map(id => ({
+                    announcement_id: announcementId,
+                    recipient_type: recipientType,
+                    recipient_id: id
+                }));
 
-                    res.json({ id: announcementId, message: 'Announcement created successfully' });
-                }
-            );
+                await supabase.from('announcement_recipients').insert(recipientRecords);
+            }
+
+            // Create read records
+            await createReadRecords(announcementId, recipient_type, recipients, supabase);
+
+            res.json({ id: announcementId, message: 'Announcement created successfully' });
         } catch (error) {
             console.error('Error:', error);
             res.status(500).json({ error: 'Server error' });
@@ -138,25 +133,47 @@ module.exports = (app, db, verifyToken) => {
     });
 
     // PUT: Update announcement (MODERATOR only)
-    app.put('/api/announcements/:id', verifyToken, async (req, res) => {
+    app.put('/api/announcements/:id', [verifyToken, authorizeRole('moderator', 'super_admin')], async (req, res) => {
         try {
-            if (req.user.role !== 'moderator') {
-                return res.status(403).json({ error: 'Only moderators can update announcements' });
-            }
-
             const { title, content, announcement_type, is_active } = req.body;
 
-            db.query(
-                `UPDATE announcements SET title = $1, content = $2, announcement_type = $3, is_active = $4, updated_at = NOW() WHERE id = $5`,
-                [title, content, announcement_type, is_active, req.params.id],
-                (err) => {
-                    if (err) {
-                        console.error('Error updating announcement:', err);
-                        return res.status(500).json({ error: 'Failed to update announcement' });
-                    }
-                    res.json({ message: 'Announcement updated successfully' });
-                }
-            );
+            const { error } = await supabase
+                .from('announcements')
+                .update({
+                    title,
+                    content,
+                    announcement_type,
+                    is_active: is_active !== undefined ? is_active : true,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', req.params.id);
+
+            if (error) {
+                console.error('Error updating announcement:', error);
+                return res.status(500).json({ error: 'Failed to update announcement' });
+            }
+
+            res.json({ message: 'Announcement updated successfully' });
+        } catch (error) {
+            console.error('Error:', error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+
+    // DELETE: Delete announcement (MODERATOR only)
+    app.delete('/api/announcements/:id', [verifyToken, authorizeRole('moderator', 'super_admin')], async (req, res) => {
+        try {
+            const { error } = await supabase
+                .from('announcements')
+                .update({ is_active: false })
+                .eq('id', req.params.id);
+
+            if (error) {
+                console.error('Error deleting announcement:', error);
+                return res.status(500).json({ error: 'Failed to delete announcement' });
+            }
+
+            res.json({ message: 'Announcement deleted successfully' });
         } catch (error) {
             console.error('Error:', error);
             res.status(500).json({ error: 'Server error' });
@@ -164,42 +181,38 @@ module.exports = (app, db, verifyToken) => {
     });
 
     // GET: Unread count for current user
-    app.get('/api/announcements/unread/count', verifyToken, (req, res) => {
+    app.get('/api/announcements/unread/count', verifyToken, async (req, res) => {
         try {
             const userId = req.user.id;
             const userZonaId = req.user.zona_id;
 
-            const query = `
-                SELECT COUNT(DISTINCT a.id) as unread_count
-                FROM announcements a
-                LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id AND ar.user_id = $1
-                WHERE a.is_active = TRUE
-                AND (ar.is_read IS NULL OR ar.is_read = FALSE)
-                AND (
-                    a.recipient_type = 'all_users'
-                    OR (a.recipient_type = 'all_zonas' AND $2 IS NOT NULL)
-                    OR (a.recipient_type = 'specific_users' AND EXISTS (
-                        SELECT 1 FROM announcement_recipients 
-                        WHERE announcement_id = a.id 
-                        AND recipient_type = 'user' 
-                        AND recipient_id = $1
-                    ))
-                    OR (a.recipient_type = 'specific_zonas' AND EXISTS (
-                        SELECT 1 FROM announcement_recipients 
-                        WHERE announcement_id = a.id 
-                        AND recipient_type = 'zona' 
-                        AND recipient_id::text = $2::text
-                    ))
-                )
-            `;
+            const { data: announcements, error } = await supabase
+                .from('announcements')
+                .select('id, recipient_type')
+                .eq('is_active', true);
 
-            db.query(query, [userId, userZonaId], (err, result) => {
-                if (err) {
-                    console.error('Error fetching unread count:', err);
-                    return res.status(500).json({ error: 'Failed to fetch unread count' });
-                }
-                res.json({ unread_count: parseInt(result.rows[0].unread_count) });
-            });
+            if (error) throw error;
+
+            // Filter eligible announcements
+            const eligible = announcements.filter(a => 
+                a.recipient_type === 'all_users' || (a.recipient_type === 'all_zonas' && userZonaId)
+            );
+
+            if (eligible.length === 0) {
+                return res.json({ unread_count: 0 });
+            }
+
+            // Count unread
+            const { data: unread, error: countError } = await supabase
+                .from('announcement_reads')
+                .select('announcement_id')
+                .eq('user_id', userId)
+                .eq('is_read', false)
+                .in('announcement_id', eligible.map(a => a.id));
+
+            if (countError) throw countError;
+
+            res.json({ unread_count: unread?.length || 0 });
         } catch (error) {
             console.error('Error:', error);
             res.status(500).json({ error: 'Server error' });
@@ -208,34 +221,49 @@ module.exports = (app, db, verifyToken) => {
 };
 
 // Helper function to create read records
-function createReadRecords(announcementId, recipientType, recipients, db, createdById) {
-    let userIds = [];
+async function createReadRecords(announcementId, recipientType, recipients, supabase) {
+    try {
+        if (recipientType === 'all_users') {
+            const { data: users } = await supabase
+                .from('users')
+                .select('id')
+                .eq('is_active', true);
 
-    if (recipientType === 'all_users') {
-        db.query('SELECT id FROM users WHERE is_active = TRUE', (err, result) => {
-            if (!err && result.rows) {
-                const values = result.rows.map((u, idx) => `(${announcementId}, $${idx + 1}, FALSE, NULL)`).join(',');
-                const query = `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at) VALUES ${values} ON CONFLICT DO NOTHING`;
-                db.query(query, result.rows.map(u => u.id), (err) => {
-                    if (err) console.error('Error creating read records:', err);
-                });
+            if (users && users.length > 0) {
+                const readRecords = users.map(u => ({
+                    announcement_id: announcementId,
+                    user_id: u.id,
+                    is_read: false,
+                    read_at: null
+                }));
+                await supabase.from('announcement_reads').insert(readRecords);
             }
-        });
-    } else if (recipientType === 'specific_users' && recipients) {
-        const values = recipients.map((id, idx) => `(${announcementId}, $${idx + 1}, FALSE, NULL)`).join(',');
-        const query = `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at) VALUES ${values} ON CONFLICT DO NOTHING`;
-        db.query(query, recipients, (err) => {
-            if (err) console.error('Error creating read records:', err);
-        });
-    } else if (recipientType === 'all_zonas') {
-        db.query('SELECT id FROM users WHERE zona_id IS NOT NULL AND is_active = TRUE', (err, result) => {
-            if (!err && result.rows) {
-                const values = result.rows.map((u, idx) => `(${announcementId}, $${idx + 1}, FALSE, NULL)`).join(',');
-                const query = `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at) VALUES ${values} ON CONFLICT DO NOTHING`;
-                db.query(query, result.rows.map(u => u.id), (err) => {
-                    if (err) console.error('Error creating read records:', err);
-                });
+        } else if (recipientType === 'specific_users' && recipients) {
+            const readRecords = recipients.map(id => ({
+                announcement_id: announcementId,
+                user_id: id,
+                is_read: false,
+                read_at: null
+            }));
+            await supabase.from('announcement_reads').insert(readRecords);
+        } else if (recipientType === 'all_zonas') {
+            const { data: zonaUsers } = await supabase
+                .from('users')
+                .select('id')
+                .not('zona_id', 'is', null)
+                .eq('is_active', true);
+
+            if (zonaUsers && zonaUsers.length > 0) {
+                const readRecords = zonaUsers.map(u => ({
+                    announcement_id: announcementId,
+                    user_id: u.id,
+                    is_read: false,
+                    read_at: null
+                }));
+                await supabase.from('announcement_reads').insert(readRecords);
             }
-        });
+        }
+    } catch (error) {
+        console.error('Error creating read records:', error);
     }
 }
