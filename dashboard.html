@@ -2456,51 +2456,51 @@
                                         </div>
                                         <input type="hidden" id="filterMonth" value="">
                                     </div>
-
-                                    <!-- Modern Terapkan & Reset Buttons with Gradient -->
-                                    <div style="display: flex; gap: 8px; flex-direction: column; justify-content: flex-end;">
-                                        <button id="applyFiltersBtn" onclick="applyInvoiceFilters()" disabled style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: not-allowed; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; opacity: 0.5;">
-                                            <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 6px;">
-                                                <i class="fas fa-check"></i> Terapkan
-                                            </span>
-                                        </button>
-                                        <button id="resetBtn" onclick="resetInvoiceFilters()" class="modern-reset-btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: not-allowed; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3); position: relative; overflow: hidden; opacity: 0.5; display: disabled;" disabled>
-                                            <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 6px;">
-                                                <i class="fas fa-redo"></i> Reset
-                                            </span>
-                                        </button>
-                                    </div>
-                                    
-                                    <style>
-                                        .modern-reset-btn::before {
-                                            content: '';
-                                            position: absolute;
-                                            top: 50%;
-                                            left: 50%;
-                                            width: 0;
-                                            height: 0;
-                                            border-radius: 50%;
-                                            background: rgba(255, 255, 255, 0.3);
-                                            transform: translate(-50%, -50%);
-                                            transition: width 0.6s, height 0.6s;
-                                        }
-                                        
-                                        .modern-reset-btn:hover::before {
-                                            width: 300px;
-                                            height: 300px;
-                                        }
-                                        
-                                        .modern-reset-btn:hover {
-                                            transform: translateY(-2px);
-                                            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4) !important;
-                                        }
-                                        
-                                        .modern-reset-btn:active {
-                                            transform: translateY(0px);
-                                            box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3) !important;
-                                        }
-                                    </style>
                                 </div>
+
+                                <!-- Modern Terapkan & Reset Buttons -->
+                                <div style="display: flex; gap: 8px; margin-top: 12px; width: 100%;">
+                                    <button id="applyFiltersBtn" onclick="applyInvoiceFilters()" disabled style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: not-allowed; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; opacity: 0.5;">
+                                        <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-check"></i> Terapkan
+                                        </span>
+                                    </button>
+                                    <button id="resetBtn" onclick="resetInvoiceFilters()" class="modern-reset-btn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: not-allowed; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3); position: relative; overflow: hidden; opacity: 0.5; display: disabled;" disabled>
+                                        <span style="position: relative; z-index: 1; display: flex; align-items: center; gap: 6px;">
+                                            <i class="fas fa-redo"></i> Reset
+                                        </span>
+                                    </button>
+                                </div>
+                                
+                                <style>
+                                    .modern-reset-btn::before {
+                                        content: '';
+                                        position: absolute;
+                                        top: 50%;
+                                        left: 50%;
+                                        width: 0;
+                                        height: 0;
+                                        border-radius: 50%;
+                                        background: rgba(255, 255, 255, 0.3);
+                                        transform: translate(-50%, -50%);
+                                        transition: width 0.6s, height 0.6s;
+                                    }
+                                    
+                                    .modern-reset-btn:hover::before {
+                                        width: 300px;
+                                        height: 300px;
+                                    }
+                                    
+                                    .modern-reset-btn:hover {
+                                        transform: translateY(-2px);
+                                        box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4) !important;
+                                    }
+                                    
+                                    .modern-reset-btn:active {
+                                        transform: translateY(0px);
+                                        box-shadow: 0 2px 8px rgba(245, 87, 108, 0.3) !important;
+                                    }
+                                </style>
                             </div>
 
                             <!-- Modern Table Section with Enhanced Design -->
