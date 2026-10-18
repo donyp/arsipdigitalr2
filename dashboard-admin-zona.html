@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="css/color-vars.css">
+    <link rel="stylesheet" href="css/unified-header.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
@@ -2039,6 +2040,8 @@
     <script src="js/session-status-checker.js"></script>
     <script src="js/utils.js?t=1790610773"></script>
     <script src="js/sidebar.js"></script>
+    <script src="js/unified-header.js"></script>
+    <script src="js/announcement-notification.js"></script>
 
     <script>
         // ============================================
@@ -3358,6 +3361,22 @@
                     if (zoneNameEl) zoneNameEl.textContent = 'Admin';
                     return;
                 }
+
+                // Initialize header with notification button for admin zonas
+                const existingHeader = document.getElementById('unified-header');
+                if (existingHeader) {
+                    existingHeader.remove();
+                }
+                
+                const customBtns = [
+                    {
+                        title: 'Notifikasi Pengumuman',
+                        icon: 'fas fa-envelope',
+                        onclick: "openAnnouncementNotifications()"
+                    }
+                ];
+                
+                initializeUnifiedHeader({ customButtons: customBtns });
 
                 let zonaName = 'Admin';
                 if (currentUser.zonas?.nama) {

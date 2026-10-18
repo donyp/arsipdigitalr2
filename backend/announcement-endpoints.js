@@ -8,28 +8,28 @@ module.exports = (app, db, verifyToken) => {
             const userRole = req.user.role;
             const userZonaId = req.user.zona_id;
 
-            let query = `
+            const query = `
                 SELECT a.*, 
                        COUNT(CASE WHEN ar.is_read = FALSE THEN 1 END) as unread_count,
                        CASE WHEN ar2.is_read = TRUE THEN 1 ELSE 0 END as current_user_read
                 FROM announcements a
                 LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id 
-                LEFT JOIN announcement_reads ar2 ON a.id = ar2.announcement_id AND ar2.user_id = ?
+                LEFT JOIN announcement_reads ar2 ON a.id = ar2.announcement_id AND ar2.user_id = $1
                 WHERE a.is_active = TRUE
                 AND (
                     a.recipient_type = 'all_users'
-                    OR (a.recipient_type = 'all_zonas' AND ? > 0)
+                    OR (a.recipient_type = 'all_zonas' AND $2 IS NOT NULL)
                     OR (a.recipient_type = 'specific_users' AND EXISTS (
                         SELECT 1 FROM announcement_recipients 
                         WHERE announcement_id = a.id 
                         AND recipient_type = 'user' 
-                        AND recipient_id = ?
+                        AND recipient_id = $1
                     ))
                     OR (a.recipient_type = 'specific_zonas' AND EXISTS (
                         SELECT 1 FROM announcement_recipients 
                         WHERE announcement_id = a.id 
                         AND recipient_type = 'zona' 
-                        AND recipient_id = ?
+                        AND recipient_id::text = $2::text
                     ))
                 )
                 GROUP BY a.id
@@ -37,12 +37,12 @@ module.exports = (app, db, verifyToken) => {
                 LIMIT 50
             `;
 
-            db.query(query, [userId, userZonaId, userId, userZonaId], (err, results) => {
+            db.query(query, [userId, userZonaId], (err, results) => {
                 if (err) {
                     console.error('Error fetching announcements:', err);
                     return res.status(500).json({ error: 'Failed to fetch announcements' });
                 }
-                res.json({ announcements: results });
+                res.json({ announcements: results.rows || [] });
             });
         } catch (error) {
             console.error('Error:', error);
@@ -57,25 +57,25 @@ module.exports = (app, db, verifyToken) => {
             const userId = req.user.id;
 
             db.query(
-                'SELECT * FROM announcements WHERE id = ? AND is_active = TRUE',
+                'SELECT * FROM announcements WHERE id = $1 AND is_active = TRUE',
                 [announcementId],
-                (err, results) => {
-                    if (err || results.length === 0) {
+                (err, result) => {
+                    if (err || !result.rows || result.rows.length === 0) {
                         return res.status(404).json({ error: 'Announcement not found' });
                     }
 
                     // Mark as read
                     db.query(
                         `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at)
-                         VALUES (?, ?, TRUE, NOW())
-                         ON DUPLICATE KEY UPDATE is_read = TRUE, read_at = NOW()`,
+                         VALUES ($1, $2, TRUE, NOW())
+                         ON CONFLICT (announcement_id, user_id) DO UPDATE SET is_read = TRUE, read_at = NOW()`,
                         [announcementId, userId],
                         (err) => {
                             if (err) console.error('Error marking as read:', err);
                         }
                     );
 
-                    res.json({ announcement: results[0] });
+                    res.json({ announcement: result.rows[0] });
                 }
             );
         } catch (error) {
@@ -100,7 +100,7 @@ module.exports = (app, db, verifyToken) => {
             // Insert announcement
             db.query(
                 `INSERT INTO announcements (title, content, announcement_type, recipient_type, created_by)
-                 VALUES (?, ?, ?, ?, ?)`,
+                 VALUES ($1, $2, $3, $4, $5) RETURNING id`,
                 [title, content, announcement_type, recipient_type, req.user.id],
                 async (err, result) => {
                     if (err) {
@@ -108,26 +108,25 @@ module.exports = (app, db, verifyToken) => {
                         return res.status(500).json({ error: 'Failed to create announcement' });
                     }
 
-                    const announcementId = result.insertId;
+                    const announcementId = result.rows[0].id;
 
                     // Insert recipients if specific users/zonas
                     if (recipient_type === 'specific_users' || recipient_type === 'specific_zonas') {
                         if (recipients && recipients.length > 0) {
                             const recipientType = recipient_type === 'specific_users' ? 'user' : 'zona';
-                            const recipientValues = recipients.map(id => [announcementId, recipientType, id]);
-
-                            db.query(
-                                'INSERT INTO announcement_recipients (announcement_id, recipient_type, recipient_id) VALUES ?',
-                                [recipientValues],
-                                (err) => {
-                                    if (err) console.error('Error inserting recipients:', err);
-                                }
-                            );
+                            const values = recipients.map((id, idx) => 
+                                `(${announcementId}, '${recipientType}', $${idx + 1})`
+                            ).join(',');
+                            
+                            const query = `INSERT INTO announcement_recipients (announcement_id, recipient_type, recipient_id) VALUES ${values}`;
+                            db.query(query, recipients, (err) => {
+                                if (err) console.error('Error inserting recipients:', err);
+                            });
                         }
                     }
 
                     // Create read records for all eligible users
-                    createReadRecords(announcementId, recipient_type, recipients);
+                    createReadRecords(announcementId, recipient_type, recipients, db, req.user.id);
 
                     res.json({ id: announcementId, message: 'Announcement created successfully' });
                 }
@@ -148,7 +147,7 @@ module.exports = (app, db, verifyToken) => {
             const { title, content, announcement_type, is_active } = req.body;
 
             db.query(
-                `UPDATE announcements SET title = ?, content = ?, announcement_type = ?, is_active = ? WHERE id = ?`,
+                `UPDATE announcements SET title = $1, content = $2, announcement_type = $3, is_active = $4, updated_at = NOW() WHERE id = $5`,
                 [title, content, announcement_type, is_active, req.params.id],
                 (err) => {
                     if (err) {
@@ -173,33 +172,33 @@ module.exports = (app, db, verifyToken) => {
             const query = `
                 SELECT COUNT(DISTINCT a.id) as unread_count
                 FROM announcements a
-                LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id AND ar.user_id = ?
+                LEFT JOIN announcement_reads ar ON a.id = ar.announcement_id AND ar.user_id = $1
                 WHERE a.is_active = TRUE
                 AND (ar.is_read IS NULL OR ar.is_read = FALSE)
                 AND (
                     a.recipient_type = 'all_users'
-                    OR (a.recipient_type = 'all_zonas' AND ? > 0)
+                    OR (a.recipient_type = 'all_zonas' AND $2 IS NOT NULL)
                     OR (a.recipient_type = 'specific_users' AND EXISTS (
                         SELECT 1 FROM announcement_recipients 
                         WHERE announcement_id = a.id 
                         AND recipient_type = 'user' 
-                        AND recipient_id = ?
+                        AND recipient_id = $1
                     ))
                     OR (a.recipient_type = 'specific_zonas' AND EXISTS (
                         SELECT 1 FROM announcement_recipients 
                         WHERE announcement_id = a.id 
                         AND recipient_type = 'zona' 
-                        AND recipient_id = ?
+                        AND recipient_id::text = $2::text
                     ))
                 )
             `;
 
-            db.query(query, [userId, userZonaId, userId, userZonaId], (err, results) => {
+            db.query(query, [userId, userZonaId], (err, result) => {
                 if (err) {
                     console.error('Error fetching unread count:', err);
                     return res.status(500).json({ error: 'Failed to fetch unread count' });
                 }
-                res.json({ unread_count: results[0].unread_count });
+                res.json({ unread_count: parseInt(result.rows[0].unread_count) });
             });
         } catch (error) {
             console.error('Error:', error);
@@ -209,37 +208,34 @@ module.exports = (app, db, verifyToken) => {
 };
 
 // Helper function to create read records
-function createReadRecords(announcementId, recipientType, recipients, db) {
+function createReadRecords(announcementId, recipientType, recipients, db, createdById) {
     let userIds = [];
 
     if (recipientType === 'all_users') {
-        db.query('SELECT id FROM users WHERE is_active = TRUE', (err, users) => {
-            if (!err && users) {
-                userIds = users.map(u => [announcementId, u.id, FALSE, null]);
-                insertReadRecords(announcementId, userIds, db);
+        db.query('SELECT id FROM users WHERE is_active = TRUE', (err, result) => {
+            if (!err && result.rows) {
+                const values = result.rows.map((u, idx) => `(${announcementId}, $${idx + 1}, FALSE, NULL)`).join(',');
+                const query = `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at) VALUES ${values} ON CONFLICT DO NOTHING`;
+                db.query(query, result.rows.map(u => u.id), (err) => {
+                    if (err) console.error('Error creating read records:', err);
+                });
             }
         });
     } else if (recipientType === 'specific_users' && recipients) {
-        userIds = recipients.map(id => [announcementId, id, FALSE, null]);
-        insertReadRecords(announcementId, userIds, db);
+        const values = recipients.map((id, idx) => `(${announcementId}, $${idx + 1}, FALSE, NULL)`).join(',');
+        const query = `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at) VALUES ${values} ON CONFLICT DO NOTHING`;
+        db.query(query, recipients, (err) => {
+            if (err) console.error('Error creating read records:', err);
+        });
     } else if (recipientType === 'all_zonas') {
-        db.query('SELECT id FROM users WHERE zona_id > 0 AND is_active = TRUE', (err, users) => {
-            if (!err && users) {
-                userIds = users.map(u => [announcementId, u.id, FALSE, null]);
-                insertReadRecords(announcementId, userIds, db);
+        db.query('SELECT id FROM users WHERE zona_id IS NOT NULL AND is_active = TRUE', (err, result) => {
+            if (!err && result.rows) {
+                const values = result.rows.map((u, idx) => `(${announcementId}, $${idx + 1}, FALSE, NULL)`).join(',');
+                const query = `INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at) VALUES ${values} ON CONFLICT DO NOTHING`;
+                db.query(query, result.rows.map(u => u.id), (err) => {
+                    if (err) console.error('Error creating read records:', err);
+                });
             }
         });
-    }
-}
-
-function insertReadRecords(announcementId, userIds, db) {
-    if (userIds.length > 0) {
-        db.query(
-            'INSERT IGNORE INTO announcement_reads (announcement_id, user_id, is_read, read_at) VALUES ?',
-            [userIds],
-            (err) => {
-                if (err) console.error('Error creating read records:', err);
-            }
-        );
     }
 }

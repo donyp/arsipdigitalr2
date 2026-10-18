@@ -516,6 +516,11 @@ class AnnouncementNotification {
 // Initialize notification system
 const announcementNotification = new AnnouncementNotification();
 
+// Global function to open notifications (called from header button)
+function openAnnouncementNotifications() {
+    announcementNotification.toggleNotificationPopup();
+}
+
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {

@@ -107,6 +107,7 @@ const BackupManager = require('./backup-manager');
 const registerLoggingEndpoints = require('./logging-endpoints');
 const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
+const registerAnnouncementEndpoints = require('./announcement-endpoints');
 const AuditLogger = require('./audit-logger');
 const { initializeWhatsApp, registerWhatsAppEndpoints } = require('./whatsapp-endpoints');
 const { registerZonaEndpoints } = require('./whatsapp-zona-endpoints');
@@ -727,6 +728,11 @@ app.get('/backup', (req, res) => {
 // Admin Zona Dashboard
 app.get('/zona/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'dashboard-admin-zona.html'));
+});
+
+// Announcement Management (Moderator)
+app.get('/pengumuman', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'pengumuman.html'));
 });
 
 // ============================================================
@@ -1536,6 +1542,16 @@ console.log('[INIT] Audit Logging endpoints registered ✅');
 console.log('  ✓ Audit log retrieval with filtering');
 console.log('  ✓ Suspicious activity detection');
 console.log('  ✓ CSV export for compliance');
+
+// ============================================================
+// ANNOUNCEMENT SYSTEM ENDPOINTS
+// ============================================================
+console.log('[INIT] Registering Announcement System endpoints...');
+registerAnnouncementEndpoints(app, supabase, authenticateToken, authorizeRole);
+console.log('[INIT] Announcement System endpoints registered ✅');
+console.log('  ✓ Create & manage announcements');
+console.log('  ✓ Recipient targeting (users, zonas)');
+console.log('  ✓ Unread tracking and notifications');
 
 // ============================================================
 // INVOICE SYSTEM ENDPOINTS (Phase 3 Features)
