@@ -1749,7 +1749,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, username, password, created_at, zonas(id, nama, kode)')
+            .select('id, email, name, role, zona_id, toko_id, is_active, permissions, username, created_at, zonas(id, nama, kode)')
             .eq('id', req.user.userId)
             .single();
 
@@ -1791,6 +1791,26 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
     } catch (err) {
         console.error('[LOGOUT] Error:', err.message);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/auth/me/password — get current user's password (for reveal feature)
+app.get('/api/auth/me/password', authenticateToken, async (req, res) => {
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('password')
+            .eq('id', req.user.userId)
+            .single();
+
+        if (error || !user) {
+            console.error('[Auth /me/password] Error fetching password:', error);
+            return res.status(404).json({ error: 'User tidak ditemukan.' });
+        }
+
+        res.json({ password: user.password });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error.' });
     }
 });
 

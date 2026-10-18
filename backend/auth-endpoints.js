@@ -113,7 +113,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             // Get user by username
             const { data: users, error: fetchError } = await supabase
                 .from('users')
-                .select('id, username, email, password_hash, role, zona_id')
+                .select('id, username, email, password_hash, role, zona_id, is_active')
                 .eq('username', username)
                 .single();
 
@@ -234,7 +234,8 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                     id: users.id,
                     username: users.username,
                     email: users.email,
-                    role: users.role || 'user'
+                    role: users.role || 'user',
+                    is_active: users.is_active
                 },
                 maintenance: {
                     isActive: maintenance.isActive,

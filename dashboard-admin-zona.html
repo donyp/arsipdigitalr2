@@ -4503,15 +4503,15 @@
             // Check if currently showing dots (hidden state)
             if (currentText === '••••••••') {
                 // Reveal password - fetch actual password from backend
-                fetch('/api/auth/me', {
+                fetch('/api/auth/me/password', {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
                     }
                 })
                     .then(res => res.json())
                     .then(data => {
-                        if (data.user && data.user.password) {
-                            profilePasswordDiv.textContent = data.user.password;
+                        if (data.password) {
+                            profilePasswordDiv.textContent = data.password;
                             profilePasswordDiv.style.fontFamily = 'monospace';
                             toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
                         }
