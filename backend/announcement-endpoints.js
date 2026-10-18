@@ -122,13 +122,15 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 await supabase.from('announcement_recipients').insert(recipientRecords);
             }
 
-            // Create read records
-            await createReadRecords(announcementId, recipient_type, recipients, supabase);
+            // Create read records (don't await, let it happen in background)
+            createReadRecords(announcementId, recipient_type, recipients, supabase).catch(err => 
+                console.error('Error creating read records:', err)
+            );
 
             res.json({ id: announcementId, message: 'Announcement created successfully' });
         } catch (error) {
             console.error('Error:', error);
-            res.status(500).json({ error: 'Server error' });
+            res.status(500).json({ error: error.message || 'Server error' });
         }
     });
 
@@ -224,10 +226,15 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
 async function createReadRecords(announcementId, recipientType, recipients, supabase) {
     try {
         if (recipientType === 'all_users') {
-            const { data: users } = await supabase
+            const { data: users, error: usersError } = await supabase
                 .from('users')
                 .select('id')
                 .eq('is_active', true);
+
+            if (usersError) {
+                console.error('Error fetching users for read records:', usersError);
+                return;
+            }
 
             if (users && users.length > 0) {
                 const readRecords = users.map(u => ({
@@ -236,22 +243,41 @@ async function createReadRecords(announcementId, recipientType, recipients, supa
                     is_read: false,
                     read_at: null
                 }));
-                await supabase.from('announcement_reads').insert(readRecords);
+
+                const { error: insertError } = await supabase
+                    .from('announcement_reads')
+                    .insert(readRecords);
+                
+                if (insertError) {
+                    console.error('Error inserting read records for all_users:', insertError);
+                }
             }
-        } else if (recipientType === 'specific_users' && recipients) {
+        } else if (recipientType === 'specific_users' && recipients && recipients.length > 0) {
             const readRecords = recipients.map(id => ({
                 announcement_id: announcementId,
                 user_id: id,
                 is_read: false,
                 read_at: null
             }));
-            await supabase.from('announcement_reads').insert(readRecords);
+
+            const { error: insertError } = await supabase
+                .from('announcement_reads')
+                .insert(readRecords);
+            
+            if (insertError) {
+                console.error('Error inserting read records for specific_users:', insertError);
+            }
         } else if (recipientType === 'all_zonas') {
-            const { data: zonaUsers } = await supabase
+            const { data: zonaUsers, error: zonaError } = await supabase
                 .from('users')
                 .select('id')
                 .not('zona_id', 'is', null)
                 .eq('is_active', true);
+
+            if (zonaError) {
+                console.error('Error fetching zona users for read records:', zonaError);
+                return;
+            }
 
             if (zonaUsers && zonaUsers.length > 0) {
                 const readRecords = zonaUsers.map(u => ({
@@ -260,10 +286,45 @@ async function createReadRecords(announcementId, recipientType, recipients, supa
                     is_read: false,
                     read_at: null
                 }));
-                await supabase.from('announcement_reads').insert(readRecords);
+
+                const { error: insertError } = await supabase
+                    .from('announcement_reads')
+                    .insert(readRecords);
+                
+                if (insertError) {
+                    console.error('Error inserting read records for all_zonas:', insertError);
+                }
+            }
+        } else if (recipientType === 'specific_zonas' && recipients && recipients.length > 0) {
+            const { data: zonaUsers, error: zonaError } = await supabase
+                .from('users')
+                .select('id')
+                .in('zona_id', recipients)
+                .eq('is_active', true);
+
+            if (zonaError) {
+                console.error('Error fetching specific zona users:', zonaError);
+                return;
+            }
+
+            if (zonaUsers && zonaUsers.length > 0) {
+                const readRecords = zonaUsers.map(u => ({
+                    announcement_id: announcementId,
+                    user_id: u.id,
+                    is_read: false,
+                    read_at: null
+                }));
+
+                const { error: insertError } = await supabase
+                    .from('announcement_reads')
+                    .insert(readRecords);
+                
+                if (insertError) {
+                    console.error('Error inserting read records for specific_zonas:', insertError);
+                }
             }
         }
     } catch (error) {
-        console.error('Error creating read records:', error);
+        console.error('Error in createReadRecords:', error);
     }
 }
