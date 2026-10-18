@@ -533,17 +533,35 @@
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
-            await initAuth();
+            console.log('[Pengumuman] Page loading...');
             
-            // Check if user is moderator or super_admin
-            if (!currentUser || (currentUser.role !== 'moderator' && currentUser.role !== 'super_admin')) {
-                window.location.href = '/dashboard';
-                return;
-            }
+            try {
+                await initAuth();
+                console.log('[Pengumuman] Auth initialized, currentUser:', currentUser?.id);
+                
+                // Check if user is moderator or super_admin
+                if (!currentUser || (currentUser.role !== 'moderator' && currentUser.role !== 'super_admin')) {
+                    console.warn('[Pengumuman] Unauthorized access, redirecting...');
+                    window.location.href = '/dashboard';
+                    return;
+                }
 
-            // Load initial data
-            loadRecentAnnouncements();
-            loadAnnouncementHistory();
+                console.log('[Pengumuman] Loading initial data...');
+                // Load initial data with timeout to prevent hanging
+                const timeout = setTimeout(() => {
+                    console.error('[Pengumuman] Loading timeout - page took too long');
+                }, 30000);
+
+                await Promise.all([
+                    loadRecentAnnouncements().catch(e => console.error('Error loading recent:', e)),
+                    loadAnnouncementHistory().catch(e => console.error('Error loading history:', e))
+                ]);
+
+                clearTimeout(timeout);
+                console.log('[Pengumuman] Page loaded successfully');
+            } catch (error) {
+                console.error('[Pengumuman] Error during initialization:', error);
+            }
         });
 
         // Format text in editor
@@ -721,15 +739,16 @@
                 const data = await response.json();
                 const recentDiv = document.getElementById('recentAnnouncements');
                 
-                if (data.announcements.length === 0) {
+                if (!data.announcements || data.announcements.length === 0) {
                     recentDiv.innerHTML = '<div class="empty-state">Belum ada pengumuman</div>';
                     return;
                 }
 
-                recentDiv.innerHTML = data.announcements.slice(0, 5).map(ann => `
+                const recent = data.announcements.slice(0, 5);
+                recentDiv.innerHTML = recent.map(ann => `
                     <div class="announcement-item">
                         <div>
-                            <div class="announcement-item-title">${ann.title}</div>
+                            <div class="announcement-item-title">${ann.title || 'Tanpa Judul'}</div>
                             <div class="announcement-item-date">${new Date(ann.created_at).toLocaleDateString('id-ID')}</div>
                         </div>
                     </div>
@@ -752,8 +771,14 @@
                 const data = await response.json();
                 const historyDiv = document.getElementById('announcementHistory');
                 
-                // Filter to show only announcements created by current user (moderator)
-                const myAnnouncements = data.announcements.filter(a => a.created_by === currentUser.id);
+                // Filter to show only announcements created by current user
+                const myAnnouncements = data.announcements && data.announcements.length > 0 
+                    ? data.announcements.filter(a => {
+                        // Check if currentUser exists and compare IDs
+                        if (!currentUser || !currentUser.id) return false;
+                        return a.created_by === currentUser.id;
+                    })
+                    : [];
                 
                 if (myAnnouncements.length === 0) {
                     historyDiv.innerHTML = '<div class="empty-state">Belum ada pengumuman yang dikirim</div>';
@@ -761,19 +786,20 @@
                 }
 
                 historyDiv.innerHTML = myAnnouncements.map((ann, idx) => {
-                    const badgeClass = `badge badge-${ann.announcement_type.toLowerCase()}`;
+                    const badgeClass = `badge badge-${(ann.announcement_type || 'Informasi').toLowerCase()}`;
+                    const createdDate = new Date(ann.created_at).toLocaleDateString('id-ID');
                     return `
                         <div class="announcement-card" onclick="toggleAnnouncement(this)">
                             <div class="announcement-card-header">
-                                <div class="announcement-card-title">${ann.title}</div>
+                                <div class="announcement-card-title">${ann.title || 'Tanpa Judul'}</div>
                                 <i class="fas fa-chevron-down" style="transition: transform 0.3s;"></i>
                             </div>
                             <div class="announcement-card-meta">
-                                <span class="${badgeClass}">${ann.announcement_type}</span>
-                                <span style="font-size: 12px; color: var(--color-text-secondary);">${new Date(ann.created_at).toLocaleDateString('id-ID')}</span>
+                                <span class="${badgeClass}">${ann.announcement_type || 'Informasi'}</span>
+                                <span style="font-size: 12px; color: var(--color-text-secondary);">${createdDate}</span>
                             </div>
                             <div class="announcement-card-content">
-                                ${ann.content}
+                                ${ann.content || '(kosong)'}
                             </div>
                         </div>
                     `;
