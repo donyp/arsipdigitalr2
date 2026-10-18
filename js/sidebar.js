@@ -203,15 +203,24 @@
             return;
         }
 
-        // Check if sidebar already rendered - if so, just update active states
-        if (sidebar.getAttribute('data-rendered') === 'true') {
-            console.log('[SIDEBAR] Sidebar already rendered, updating active states only');
-            updateActiveMenuItem();
-            return;
-        }
-
         // Get dark mode state
         const isDarkMode = localStorage.getItem('dark_mode_enabled') === 'true';
+        
+        // Check if sidebar already rendered - if so, check if we need to re-render for dark mode change
+        if (sidebar.getAttribute('data-rendered') === 'true') {
+            const currentDarkMode = sidebar.getAttribute('data-dark-mode') === 'true';
+            if (currentDarkMode === isDarkMode) {
+                // Dark mode state hasn't changed, just update active states
+                console.log('[SIDEBAR] Sidebar already rendered, updating active states only');
+                updateActiveMenuItem();
+                return;
+            } else {
+                // Dark mode state changed, need to re-render with new colors
+                console.log('[SIDEBAR] Dark mode changed, re-rendering sidebar');
+                sidebar.removeAttribute('data-rendered');
+            }
+        }
+
         const colors = isDarkMode ? {
             bgColor: '#0f172a',
             textColor: '#f0f4f8',
@@ -323,6 +332,7 @@
         
         sidebar.innerHTML = sidebarHTML;
         sidebar.setAttribute('data-rendered', 'true');
+        sidebar.setAttribute('data-dark-mode', String(isDarkMode));
 
         // Log sidebar container width for verification
         const sidebarContainer = sidebar.querySelector('.sidebar-container');
