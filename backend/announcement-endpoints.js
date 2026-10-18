@@ -82,12 +82,19 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
     });
 
     // POST: Create announcement (MODERATOR only)
-    app.post('/api/announcements', [verifyToken, authorizeRole('moderator', 'super_admin')], async (req, res) => {
+    app.post('/api/announcements', verifyToken, async (req, res) => {
         try {
+            // Check authorization
+            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin') {
+                return res.status(403).json({ error: 'Only moderators can create announcements' });
+            }
+
             const { title, content, announcement_type, recipient_type, recipients } = req.body;
 
+            console.log('[Announcements] Creating announcement:', { title, announcement_type, recipient_type, recipientCount: recipients?.length });
+
             if (!title || !content || !announcement_type) {
-                return res.status(400).json({ error: 'Missing required fields' });
+                return res.status(400).json({ error: 'Missing required fields: title, content, announcement_type' });
             }
 
             const { data, error } = await supabase
@@ -104,11 +111,17 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 .maybeSingle();
 
             if (error) {
-                console.error('Error creating announcement:', error);
-                return res.status(500).json({ error: 'Failed to create announcement' });
+                console.error('[Announcements] Error creating announcement:', error);
+                return res.status(500).json({ error: 'Failed to create announcement: ' + error.message });
+            }
+
+            if (!data) {
+                console.error('[Announcements] No data returned from insert');
+                return res.status(500).json({ error: 'Failed to create announcement: no data returned' });
             }
 
             const announcementId = data.id;
+            console.log('[Announcements] Announcement created with ID:', announcementId);
 
             // Insert recipients if specific
             if ((recipient_type === 'specific_users' || recipient_type === 'specific_zonas') && recipients && recipients.length > 0) {
@@ -119,24 +132,36 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                     recipient_id: id
                 }));
 
-                await supabase.from('announcement_recipients').insert(recipientRecords);
+                console.log('[Announcements] Inserting recipients:', recipientRecords.length);
+                const { error: recipientError } = await supabase
+                    .from('announcement_recipients')
+                    .insert(recipientRecords);
+
+                if (recipientError) {
+                    console.error('[Announcements] Error inserting recipients:', recipientError);
+                }
             }
 
             // Create read records (don't await, let it happen in background)
             createReadRecords(announcementId, recipient_type, recipients, supabase).catch(err => 
-                console.error('Error creating read records:', err)
+                console.error('[Announcements] Error creating read records:', err)
             );
 
+            console.log('[Announcements] Announcement sent successfully');
             res.json({ id: announcementId, message: 'Announcement created successfully' });
         } catch (error) {
-            console.error('Error:', error);
+            console.error('[Announcements] Unexpected error:', error);
             res.status(500).json({ error: error.message || 'Server error' });
         }
     });
 
     // PUT: Update announcement (MODERATOR only)
-    app.put('/api/announcements/:id', [verifyToken, authorizeRole('moderator', 'super_admin')], async (req, res) => {
+    app.put('/api/announcements/:id', verifyToken, async (req, res) => {
         try {
+            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin') {
+                return res.status(403).json({ error: 'Only moderators can update announcements' });
+            }
+
             const { title, content, announcement_type, is_active } = req.body;
 
             const { error } = await supabase
@@ -151,33 +176,37 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 .eq('id', req.params.id);
 
             if (error) {
-                console.error('Error updating announcement:', error);
+                console.error('[Announcements] Error updating announcement:', error);
                 return res.status(500).json({ error: 'Failed to update announcement' });
             }
 
             res.json({ message: 'Announcement updated successfully' });
         } catch (error) {
-            console.error('Error:', error);
+            console.error('[Announcements] Error:', error);
             res.status(500).json({ error: 'Server error' });
         }
     });
 
     // DELETE: Delete announcement (MODERATOR only)
-    app.delete('/api/announcements/:id', [verifyToken, authorizeRole('moderator', 'super_admin')], async (req, res) => {
+    app.delete('/api/announcements/:id', verifyToken, async (req, res) => {
         try {
+            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin') {
+                return res.status(403).json({ error: 'Only moderators can delete announcements' });
+            }
+
             const { error } = await supabase
                 .from('announcements')
                 .update({ is_active: false })
                 .eq('id', req.params.id);
 
             if (error) {
-                console.error('Error deleting announcement:', error);
+                console.error('[Announcements] Error deleting announcement:', error);
                 return res.status(500).json({ error: 'Failed to delete announcement' });
             }
 
             res.json({ message: 'Announcement deleted successfully' });
         } catch (error) {
-            console.error('Error:', error);
+            console.error('[Announcements] Error:', error);
             res.status(500).json({ error: 'Server error' });
         }
     });
