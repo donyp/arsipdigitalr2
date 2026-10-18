@@ -553,7 +553,7 @@
 
         /* Explicitly fix the invoice header h2 */
         html[data-dark-mode="true"] #invoice-embed h2,
-        html[data-dark-mode="true"] [style*="?? Daftar File Invoice"] {
+        html[data-dark-mode="true"] [style*="📁 Daftar File Invoice"] {
             color: var(--color-text-primary) !important;
         }
 
@@ -1935,7 +1935,7 @@
                         class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap"
                         style="background: #f3f4f6; color: #6b7280; border: none; cursor: pointer;"
                         title="Toggle dark/light mode">
-                        <span id="dark-mode-icon">??</span>
+                        <span id="dark-mode-icon">🌙</span>
                         <span id="dark-mode-label" class="hidden sm:inline">Dark Mode</span>
                     </button>
                     
@@ -2063,7 +2063,7 @@
                         <!-- Invoice Header -->
                         <div style="padding: 15px 10px; border-bottom: 1px solid var(--color-border);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                                <h2 style="font-size: 24px; font-weight: 700; color: white; margin: 0;" id="invoice-title-heading" class="invoice-title-heading">?? Daftar File Invoice</h2>
+                                <h2 style="font-size: 24px; font-weight: 700; color: white; margin: 0;" id="invoice-title-heading" class="invoice-title-heading">📁 Daftar File Invoice</h2>
                             </div>
 
                             <!-- Modern Stats Cards with Glassmorphism & Animations -->
@@ -3116,9 +3116,9 @@
                     const checkmark = option.querySelector('.checkmark');
                     if (!checkmark) return;
                     
-                    // Set checkmark to '?' only for selected items, empty for others
+                    // Set checkmark to '✓' only for selected items, empty for others
                     if (option.classList.contains('selected')) {
-                        checkmark.textContent = '?';
+                        checkmark.textContent = '✓';
                     } else {
                         checkmark.textContent = '';
                     }

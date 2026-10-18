@@ -447,14 +447,14 @@
                 <h1 class="left-heading">Sistem Arsip Digital</h1>
 
             </div>
-            <div class="left-footer">� <span id="currentYear">2026</span> PT Garuda Gemilang Indonesia. All rights reserved.</div>
+            <div class="left-footer">� <span id="currentYear">2026</span> PT Garuda Gemilang Indonesia. All rights reserved.</div>
         </div>
 
         <!-- Right Side -->
         <div class="right-section">
             <!-- Dark Mode Toggle -->
             <button id="dark-mode-btn" class="dark-mode-toggle" title="Toggle dark mode" onclick="toggleDarkMode()">
-                <span id="theme-icon">??</span>
+                <span id="theme-icon">🌙</span>
             </button>
             
             <div class="form-container">
@@ -761,7 +761,7 @@
             const isDark = localStorage.getItem('dark_mode_enabled') === 'true';
             const icon = document.getElementById('theme-icon');
             if (icon) {
-                icon.textContent = isDark ? '??' : '??';
+                icon.textContent = isDark ? '☀️' : '🌙';
             }
         }
         
