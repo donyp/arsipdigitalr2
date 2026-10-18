@@ -581,9 +581,17 @@
                 });
                 if (!response.ok) throw new Error('Failed to load users');
                 
-                const data = await response.json();
+                const result = await response.json();
+                // Handle both array and object response formats
+                const data = Array.isArray(result) ? result : (result.users || result.data || []);
+                
+                if (data.length === 0) {
+                    document.getElementById('recipientList').innerHTML = '<div class="empty-state">Tidak ada pengguna tersedia</div>';
+                    return;
+                }
+
                 const list = document.getElementById('recipientList');
-                list.innerHTML = data.users.map(u => `
+                list.innerHTML = data.map(u => `
                     <div style="display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--color-border);">
                         <input type="checkbox" id="user-${u.id}" value="${u.id}" class="recipient-checkbox" 
                                style="width: 16px; height: 16px; cursor: pointer; margin-right: 8px;">
@@ -610,7 +618,15 @@
                 });
                 if (!response.ok) throw new Error('Failed to load zonas');
                 
-                const data = await response.json();
+                const result = await response.json();
+                // Handle both array and object response formats
+                const data = Array.isArray(result) ? result : (result.zonas || result.data || []);
+                
+                if (data.length === 0) {
+                    document.getElementById('recipientList').innerHTML = '<div class="empty-state">Tidak ada zona tersedia</div>';
+                    return;
+                }
+
                 const list = document.getElementById('recipientList');
                 list.innerHTML = data.map(z => `
                     <div style="display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--color-border);">
