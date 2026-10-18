@@ -795,11 +795,11 @@
                     const badgeClass = `badge badge-${(ann.announcement_type || 'Informasi').toLowerCase()}`;
                     const createdDate = new Date(ann.created_at).toLocaleDateString('id-ID');
                     return `
-                        <div class="announcement-card" onclick="toggleAnnouncement(this)">
+                        <div class="announcement-card" onclick="toggleAnnouncement(this)" data-id="${ann.id}" data-title="${ann.title.replace(/"/g, '&quot;')}" data-type="${ann.announcement_type}" data-content="${btoa(ann.content)}">
                             <div class="announcement-card-header">
                                 <div class="announcement-card-title">${ann.title || 'Tanpa Judul'}</div>
                                 <div style="display: flex; gap: 8px; align-items: center;">
-                                    <button class="btn-action-small btn-edit" onclick="event.stopPropagation(); editAnnouncement(${ann.id}, '${ann.title}', '${ann.announcement_type}', \`${ann.content}\`)" title="Edit">
+                                    <button class="btn-action-small btn-edit" onclick="event.stopPropagation(); editAnnouncementFromCard(this)" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                     <button class="btn-action-small btn-delete" onclick="event.stopPropagation(); deleteAnnouncement(${ann.id})" title="Hapus">
@@ -834,7 +834,14 @@
         }
 
         // Edit announcement
-        function editAnnouncement(id, title, type, content) {
+        function editAnnouncementFromCard(button) {
+            const card = button.closest('.announcement-card');
+            const id = card.getAttribute('data-id');
+            const title = card.getAttribute('data-title');
+            const type = card.getAttribute('data-type');
+            const contentEncoded = card.getAttribute('data-content');
+            const content = atob(contentEncoded); // Decode base64
+            
             // Pre-fill form with existing data
             document.getElementById('announcementTitle').value = title;
             document.getElementById('announcementType').value = type;
