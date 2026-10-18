@@ -192,12 +192,20 @@ class AnnouncementNotification {
             }
 
             .announcement-item-type {
-                display: inline-block;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
                 font-size: 11px;
                 font-weight: 600;
                 padding: 2px 8px;
                 border-radius: 4px;
                 margin-bottom: 6px;
+            }
+
+            .announcement-item-type svg {
+                width: 14px;
+                height: 14px;
+                flex-shrink: 0;
             }
 
             .announcement-item-type.Informasi {
@@ -218,6 +226,26 @@ class AnnouncementNotification {
             .announcement-item-type.Maintenance {
                 background: #dcfce7;
                 color: #15803d;
+            }
+
+            html[data-dark-mode="true"] .announcement-item-type.Informasi {
+                background: #1e3a8a;
+                color: #93c5fd;
+            }
+
+            html[data-dark-mode="true"] .announcement-item-type.Peringatan {
+                background: #78350f;
+                color: #fcd34d;
+            }
+
+            html[data-dark-mode="true"] .announcement-item-type.Penting {
+                background: #7f1d1d;
+                color: #fca5a5;
+            }
+
+            html[data-dark-mode="true"] .announcement-item-type.Maintenance {
+                background: #15803d;
+                color: #86efac;
             }
 
             .announcement-item-date {
@@ -443,6 +471,16 @@ class AnnouncementNotification {
         }
     }
 
+    getTypeIcon(type) {
+        const icons = {
+            'Informasi': '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;"><circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2"/><circle cx="12" cy="12" r="1" fill="currentColor"/><path d="M12 7v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+            'Peringatan': '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" fill="currentColor"/></svg>',
+            'Penting': '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>',
+            'Maintenance': '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 14px;"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.37-.29-.59-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.37-2.65c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.37 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.48-.02-.59.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.37.29.59.22l2.49-1c.52.4 1.08.73 1.69.98l.37 2.65c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.37-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.48.02.59-.22l2 3.46c.12.22.07.49-.12.64l-2.11 1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" fill="currentColor"/></svg>'
+        };
+        return icons[type] || icons['Informasi'];
+    }
+
     async loadAnnouncements() {
         const token = localStorage.getItem('jwt_token');
         const list = document.getElementById('announcementList');
@@ -469,12 +507,13 @@ class AnnouncementNotification {
             list.innerHTML = this.announcements.map((ann, index) => {
                 const isRead = ann.current_user_read;
                 const date = new Date(ann.created_at).toLocaleDateString('id-ID');
+                const typeIcon = this.getTypeIcon(ann.announcement_type);
                 return `
                     <div class="announcement-item ${!isRead ? 'unread' : ''}" onclick="announcementNotification.showDetail(${index})">
                         ${!isRead ? '<div class="announcement-unread-dot"></div>' : ''}
                         <div class="announcement-item-content">
                             <div class="announcement-item-title">${ann.title}</div>
-                            <span class="announcement-item-type ${ann.announcement_type}">${ann.announcement_type}</span>
+                            <span class="announcement-item-type ${ann.announcement_type}">${typeIcon}${ann.announcement_type}</span>
                             <div class="announcement-item-date">Di release Pada: ${date}</div>
                         </div>
                     </div>
@@ -491,8 +530,11 @@ class AnnouncementNotification {
         if (!ann) return;
 
         document.getElementById('detailTitle').textContent = ann.title;
-        document.getElementById('detailType').textContent = ann.announcement_type;
-        document.getElementById('detailType').className = `announcement-item-type ${ann.announcement_type}`;
+        
+        const typeIcon = this.getTypeIcon(ann.announcement_type);
+        const detailType = document.getElementById('detailType');
+        detailType.innerHTML = `${typeIcon}${ann.announcement_type}`;
+        detailType.className = `announcement-item-type ${ann.announcement_type}`;
         
         // Format date with time in WIB timezone
         const createdDate = new Date(ann.created_at);
