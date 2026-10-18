@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <link rel="stylesheet" href="css/color-vars.css">
     
     <!-- DARK MODE - Apply immediately to prevent flash -->
@@ -541,6 +542,8 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="js/config.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
@@ -697,7 +700,7 @@
             const token = localStorage.getItem('jwt_token');
 
             if (!title || !content.trim()) {
-                alert('Judul dan konten pengumuman harus diisi');
+                toastr.warning('Judul dan konten pengumuman harus diisi', 'Perhatian');
                 return;
             }
 
@@ -744,13 +747,14 @@
                     throw new Error(error.error || 'Failed to submit announcement');
                 }
 
-                alert(announcementId ? 'Pengumuman berhasil diupdate!' : 'Pengumuman berhasil dikirim!');
+                const successMsg = announcementId ? 'Pengumuman berhasil diupdate!' : 'Pengumuman berhasil dikirim!';
+                toastr.success(successMsg, 'Sukses');
                 resetForm();
                 window.editingAnnouncementId = null;
                 loadAnnouncementHistory();
             } catch (error) {
                 console.error('Error:', error);
-                alert('Gagal mengirim pengumuman: ' + error.message);
+                toastr.error('Gagal mengirim pengumuman: ' + error.message, 'Error');
             }
         }
 
@@ -852,12 +856,23 @@
             
             // Store the ID for update
             window.editingAnnouncementId = id;
-            alert('Form sudah diisi dengan data pengumuman. Ubah konten lalu klik "Kirim Pengumuman" untuk update.');
+            toastr.info('Form sudah diisi dengan data pengumuman. Ubah konten lalu klik "Kirim Pengumuman" untuk update.', 'Edit Mode');
         }
 
         // Delete announcement
         async function deleteAnnouncement(id) {
-            if (!confirm('Yakin ingin menghapus pengumuman ini? Semua user akan tidak bisa melihat pengumuman ini.')) {
+            const result = await Swal.fire({
+                title: 'Yakin ingin menghapus?',
+                text: 'Semua user akan tidak bisa melihat pengumuman ini.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280'
+            });
+
+            if (!result.isConfirmed) {
                 return;
             }
 
@@ -876,11 +891,11 @@
                     throw new Error(error.error || 'Gagal menghapus pengumuman');
                 }
 
-                alert('Pengumuman berhasil dihapus!');
+                toastr.success('Pengumuman berhasil dihapus!', 'Sukses');
                 loadAnnouncementHistory();
             } catch (error) {
                 console.error('Error:', error);
-                alert('Gagal menghapus pengumuman: ' + error.message);
+                toastr.error('Gagal menghapus pengumuman: ' + error.message, 'Error');
             }
         }
     </script>
