@@ -370,8 +370,10 @@ function showMaintenanceAccessDenied(userRole, debugInfo) {
 // Auto-initialize if DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Only init if not already present
-        if (!document.getElementById('unified-header')) {
+        // Only init if not already present AND not on admin zona dashboard
+        const isAdminZonaDashboard = window.location.pathname === '/dashboard-admin-zona' || 
+                                     document.body.className.includes('admin-zona-dashboard');
+        if (!document.getElementById('unified-header') && !isAdminZonaDashboard) {
             initializeUnifiedHeader();
         }
         
@@ -390,7 +392,10 @@ if (document.readyState === 'loading') {
         observer.observe(document.documentElement, { attributes: true });
     });
 } else {
-    if (!document.getElementById('unified-header')) {
+    // Only init if not already present AND not on admin zona dashboard
+    const isAdminZonaDashboard = window.location.pathname === '/dashboard-admin-zona' || 
+                                 document.body.className.includes('admin-zona-dashboard');
+    if (!document.getElementById('unified-header') && !isAdminZonaDashboard) {
         initializeUnifiedHeader();
     }
     
