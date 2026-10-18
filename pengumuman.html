@@ -625,6 +625,17 @@
     <script>
         let selectedRecipients = [];
 
+        // Safe toastr wrapper with fallback
+        function showNotification(type, message, title = '') {
+            if (typeof toastr !== 'undefined' && toastr[type]) {
+                toastr[type](message, title);
+            } else {
+                // Fallback to console and alert
+                console.warn(`[${type.toUpperCase()}] ${title}: ${message}`);
+                if (type === 'error') alert(`Error: ${message}`);
+            }
+        }
+
         // Get announcement type icon SVG
         function getAnnouncementTypeIcon(type) {
             const typeMap = {
@@ -784,7 +795,7 @@
             const token = localStorage.getItem('jwt_token');
 
             if (!title || !content.trim()) {
-                toastr.warning('Judul dan konten pengumuman harus diisi', 'Perhatian');
+                showNotification('warning', 'Judul dan konten pengumuman harus diisi', 'Perhatian');
                 return;
             }
 
@@ -832,13 +843,13 @@
                 }
 
                 const successMsg = announcementId ? 'Pengumuman berhasil diupdate!' : 'Pengumuman berhasil dikirim!';
-                toastr.success(successMsg, 'Sukses');
+                showNotification('success', successMsg, 'Sukses');
                 resetForm();
                 window.editingAnnouncementId = null;
                 loadAnnouncementHistory();
             } catch (error) {
                 console.error('Error:', error);
-                toastr.error('Gagal mengirim pengumuman: ' + error.message, 'Error');
+                showNotification('error', 'Gagal mengirim pengumuman: ' + error.message, 'Error');
             }
         }
 
@@ -946,7 +957,7 @@
             
             // Store the ID for update
             window.editingAnnouncementId = id;
-            toastr.info('Form sudah diisi dengan data pengumuman. Ubah konten lalu klik "Kirim Pengumuman" untuk update.', 'Edit Mode');
+            showNotification('info', 'Form sudah diisi dengan data pengumuman. Ubah konten lalu klik "Kirim Pengumuman" untuk update.', 'Edit Mode');
         }
 
         // Delete announcement
@@ -981,11 +992,11 @@
                     throw new Error(error.error || 'Gagal menghapus pengumuman');
                 }
 
-                toastr.success('Pengumuman berhasil dihapus!', 'Sukses');
+                showNotification('success', 'Pengumuman berhasil dihapus!', 'Sukses');
                 loadAnnouncementHistory();
             } catch (error) {
                 console.error('Error:', error);
-                toastr.error('Gagal menghapus pengumuman: ' + error.message, 'Error');
+                showNotification('error', 'Gagal menghapus pengumuman: ' + error.message, 'Error');
             }
         }
     </script>
