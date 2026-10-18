@@ -99,10 +99,15 @@
         }
         
         .header {
-            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+            background: var(--color-bg-secondary);
             border-bottom: 1px solid var(--color-border);
             padding: 20px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        html[data-dark-mode="true"] .header {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border-bottom-color: var(--color-border-dark);
         }
         
         .container {
@@ -190,18 +195,18 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+            transition: all 0.2s;
         }
         
-        .priority-low { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
-        .priority-medium { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #92400e; }
-        .priority-high { background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%); color: #991b1b; }
-        .priority-urgent { background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%); color: #5b21b6; }
+        .priority-low { background: #dbeafe; color: #1e40af; }
+        .priority-medium { background: #fef3c7; color: #92400e; }
+        .priority-high { background: #fee2e2; color: #991b1b; }
+        .priority-urgent { background: #ede9fe; color: #5b21b6; }
         
         .priority-badge:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.12);
         }
         
         .main-layout {
@@ -259,15 +264,15 @@
             font-weight: 700;
             color: white;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
         .message-avatar.support {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            background: #4f46e5;
         }
         
         .message-avatar.customer {
-            background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+            background: #10b981;
         }
         
         .message-content {
@@ -294,17 +299,17 @@
             display: inline-block;
             font-size: 10px;
             font-weight: 700;
-            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+            background: #f0f4ff;
             color: #4f46e5;
             padding: 3px 9px;
             border-radius: 4px;
             text-transform: uppercase;
             letter-spacing: 0.3px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
         .message-role.anda {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            background: #4f46e5;
             color: white;
         }
         
@@ -333,7 +338,7 @@
             align-items: center;
             gap: 8px;
             padding: 8px 12px;
-            background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, rgba(79, 70, 229, 0.05) 100%);
+            background: var(--color-bg-tertiary);
             border: 1px solid var(--color-border);
             border-radius: 8px;
             font-size: 12px;
@@ -344,7 +349,7 @@
         
         .attachment-item:hover {
             border-color: var(--color-accent);
-            background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, rgba(79, 70, 229, 0.1) 100%);
+            background: rgba(79, 70, 229, 0.05);
         }
         
         .attachment-icon {
@@ -363,14 +368,19 @@
         }
         
         .sidebar {
-            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+            background: var(--color-bg-secondary);
             border-radius: 12px;
             padding: 24px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             height: fit-content;
             border: 1px solid var(--color-border);
             position: sticky;
             top: 24px;
+        }
+        
+        html[data-dark-mode="true"] .sidebar {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border-color: var(--color-border-dark);
         }
         
         .sidebar-title {
@@ -382,10 +392,6 @@
             margin-bottom: 16px;
             padding-bottom: 12px;
             border-bottom: 2px solid var(--color-accent);
-            background: linear-gradient(90deg, var(--color-accent) 0%, transparent 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
         
         .sidebar-item {
@@ -539,24 +545,36 @@
             align-items: center;
             gap: 8px;
             padding: 10px 20px;
-            background: linear-gradient(135deg, var(--color-accent) 0%, #c0392b 100%);
+            background: #667eea;
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
         }
 
         .btn-send:hover:not(:disabled) {
+            background: #5568d3;
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
         }
 
         .btn-send:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+        }
+        
+        html[data-dark-mode="true"] .btn-send {
+            background: #5568d3;
+            box-shadow: 0 2px 6px rgba(85, 104, 211, 0.3);
+        }
+        
+        html[data-dark-mode="true"] .btn-send:hover:not(:disabled) {
+            background: #4557c2;
+            box-shadow: 0 4px 12px rgba(85, 104, 211, 0.4);
         }
 
         #replyStatus.loading::before {
