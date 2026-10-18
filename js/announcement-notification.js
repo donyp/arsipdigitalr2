@@ -504,7 +504,27 @@ class AnnouncementNotification {
         document.getElementById('detailContent').innerHTML = `${ann.content}`;
 
         document.getElementById('announcementDetailModal').classList.remove('hidden');
-        this.loadUnreadCount(); // Update unread count
+        
+        // Mark as read by calling the API (this will reload the list)
+        this.markAsRead(ann.id);
+    }
+
+    async markAsRead(announcementId) {
+        try {
+            const token = localStorage.getItem('jwt_token');
+            const response = await fetch(`/api/announcements/${announcementId}`, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                console.log('Announcement marked as read:', announcementId);
+                // Reload announcements to update read status
+                await this.loadAnnouncements();
+                await this.loadUnreadCount();
+            }
+        } catch (err) {
+            console.warn('Could not mark announcement as read:', err.message);
+        }
     }
 
     closeDetailModal() {
