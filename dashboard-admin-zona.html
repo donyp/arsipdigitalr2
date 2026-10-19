@@ -3508,6 +3508,13 @@
                 
                 const welcomeNameEl = document.getElementById('welcome-name');
                 if (welcomeNameEl) welcomeNameEl.textContent = `Selamat ${greeting}, ${username} 👋`;
+                
+                // Also update unified header .user-name (if it exists)
+                const unifiedUserEl = document.querySelector('.user-name');
+                if (unifiedUserEl) {
+                    unifiedUserEl.textContent = username;
+                    console.log('[Admin Zone] Updated unified header .user-name to:', username);
+                }
 
                 const welcomeInfoEl = document.getElementById('welcome-info');
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
@@ -3646,7 +3653,15 @@
                     } else if (hour >= 18 || hour < 5) {
                         greeting = 'malam';
                     }
-                    welcomeNameEl.textContent = `Selamat ${greeting}, User 👋`;
+                    // On error, use cached username or let unified-header handle it
+                    const cachedUsername = localStorage.getItem('user_name') || 'User';
+                    welcomeNameEl.textContent = `Selamat ${greeting}, ${cachedUsername} 👋`;
+                    
+                    // Also ensure unified header has the right name
+                    const unifiedUserEl = document.querySelector('.user-name');
+                    if (unifiedUserEl && unifiedUserEl.textContent === 'User') {
+                        unifiedUserEl.textContent = cachedUsername;
+                    }
                 }
             }
         });

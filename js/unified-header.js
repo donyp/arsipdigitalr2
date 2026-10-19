@@ -199,7 +199,6 @@ function updateGreeting(hours) {
 }
 
 function loadUserGreeting() {
-function loadUserGreeting() {
     try {
         // Set user name in unified header (both .user-name span and dashboard greeting)
         const userEl = document.querySelector('.user-name');
@@ -261,7 +260,6 @@ function loadUserGreeting() {
     } catch (err) {
         console.warn('Could not load user greeting:', err);
     }
-}
 }
 
 function updateDarkModeIcon() {
