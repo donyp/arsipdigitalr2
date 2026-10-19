@@ -1646,24 +1646,6 @@
 
     <!-- Announcement Heartbeat Animation with Double Pulse -->
     <style>
-        @keyframes announcementHeartbeat {
-            0% {
-                opacity: 1 !important;
-            }
-            25% {
-                opacity: 0.3 !important;
-            }
-            50% {
-                opacity: 1 !important;
-            }
-            75% {
-                opacity: 0.3 !important;
-            }
-            100% {
-                opacity: 1 !important;
-            }
-        }
-
         div.announcement-item.unread > div.announcement-unread-dot {
             width: 8px !important;
             height: 8px !important;
@@ -1671,7 +1653,47 @@
             margin-left: 4px !important;
             border-radius: 50% !important;
             display: block !important;
-            animation: announcementHeartbeat 1.2s ease-in-out infinite !important;
+        }
+
+        /* Scrollbar styling to match theme */
+        .announcement-modal-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .announcement-modal-list::-webkit-scrollbar-track {
+            background: var(--color-bg-tertiary, #f3f4f6);
+        }
+
+        .announcement-modal-list::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        .announcement-modal-list::-webkit-scrollbar-thumb:hover {
+            background: #5568d3;
+        }
+
+        /* Firefox scrollbar */
+        .announcement-modal-list {
+            scrollbar-color: #667eea var(--color-bg-tertiary, #f3f4f6);
+            scrollbar-width: thin;
+        }
+
+        /* Dark mode scrollbar */
+        html[data-dark-mode="true"] .announcement-modal-list::-webkit-scrollbar-track {
+            background: var(--color-bg-tertiary, #334155);
+        }
+
+        html[data-dark-mode="true"] .announcement-modal-list::-webkit-scrollbar-thumb {
+            background: #667eea;
+        }
+
+        html[data-dark-mode="true"] .announcement-modal-list::-webkit-scrollbar-thumb:hover {
+            background: #7c8eff;
+        }
+
+        html[data-dark-mode="true"] .announcement-modal-list {
+            scrollbar-color: #667eea var(--color-bg-tertiary, #334155);
         }
     </style>
 
