@@ -1,14 +1,9 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VPS Monitor</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/monitoring-icons.css">
-    <meta name="cache-control" content="no-cache, no-store, must-revalidate">
-    <meta name="pragma" content="no-cache">
-    <meta name="expires" content="0">
+    <title>Infrastructure Monitoring Dashboard</title>
     <style>
         * {
             margin: 0;
@@ -16,61 +11,365 @@
             box-sizing: border-box;
         }
 
-        html {
-            scroll-behavior: smooth;
-        }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #0f172a;
             color: #e2e8f0;
-            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 20px;
+            border-bottom: 2px solid #10b981;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #10b981;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 14px;
         }
 
         .container {
             max-width: 1600px;
-            margin-left: 16rem;
-            padding: 24px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
-        /* HEADER */
-        .header {
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .status-card:hover {
+            border-color: #10b981;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+        }
+
+        .status-card h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #94a3b8;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .status-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-value.healthy {
+            color: #10b981;
+        }
+
+        .status-value.warning {
+            color: #f59e0b;
+        }
+
+        .status-value.critical {
+            color: #ef4444;
+        }
+
+        .status-subtext {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .metric-card h3 {
+            color: #10b981;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .metric-item {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 32px;
-            gap: 24px;
-        }
-
-        .header-left h1 {
-            font-size: 32px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 6px;
-        }
-
-        .header-left p {
-            font-size: 14px;
-            color: #94a3b8;
-        }
-
-        .header-right {
-            display: flex;
-            gap: 12px;
             align-items: center;
-            padding: 12px 16px;
-            background: #1e293b;
-            border-radius: 8px;
-            border: 1px solid #334155;
+            padding: 10px 0;
+            border-bottom: 1px solid #334155;
         }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .metric-value {
+            color: #e2e8f0;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #334155;
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .feature-flags {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .feature-flags h3 {
+            color: #10b981;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .flag-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #0f172a;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .flag-name {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .flag-status {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .flag-badge {
             background: #10b981;
-            border-radius: 50%;
+            color: #0f172a;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .flag-badge.off {
+            background: #ef4444;
+        }
+
+        .rollout-display {
+            color: #94a3b8;
+            font-size: 14px;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .alerts {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .alerts h3 {
+            color: #10b981;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .alert-item {
+            padding: 12px;
+            background: #0f172a;
+            border-left: 3px solid #10b981;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .alert-item.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .alert-item.critical {
+            border-left-color: #ef4444;
+        }
+
+        .alert-time {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .chart-container {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            min-height: 300px;
+        }
+
+        .chart-container h3 {
+            color: #10b981;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .endpoints-list {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .endpoints-list h3 {
+            color: #10b981;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .endpoint-item {
+            padding: 15px;
+            background: #0f172a;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 3px solid #334155;
+        }
+
+        .endpoint-item:hover {
+            border-left-color: #10b981;
+            background: #1e293b;
+        }
+
+        .endpoint-name {
+            color: #10b981;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .endpoint-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .endpoint-metric {
+            font-size: 12px;
+        }
+
+        .endpoint-metric-label {
+            color: #64748b;
+        }
+
+        .endpoint-metric-value {
+            color: #e2e8f0;
+            font-weight: bold;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #10b981;
+            color: #0f172a;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+
+        button:disabled {
+            background: #64748b;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .refresh-time {
+            color: #64748b;
+            font-size: 12px;
+            text-align: right;
+            margin-top: 10px;
+        }
+
+        .loading {
             display: inline-block;
-            animation: pulse 2s infinite;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #334155;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         @keyframes pulse {
@@ -78,888 +377,483 @@
             50% { opacity: 0.5; }
         }
 
-        .header-right span {
-            font-size: 13px;
-            color: #cbd5e1;
-            font-weight: 500;
+        .pulsing {
+            animation: pulse 2s ease-in-out infinite;
         }
 
-        /* TABS */
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 24px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 12px;
-            overflow-x: auto;
-        }
-
-        .tab-btn {
-            padding: 10px 16px;
-            background: transparent;
-            border: none;
-            color: #94a3b8;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            border-radius: 6px;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .tab-btn:hover {
+        .environment-badge {
+            display: inline-block;
             background: #334155;
-            color: #cbd5e1;
-        }
-
-        .tab-btn.active {
-            background: #334155;
-            color: #06b6d4;
-            border-bottom: 2px solid #06b6d4;
-        }
-
-        /* GRID */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .grid-full {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 24px;
-            transition: all 0.2s;
-        }
-
-        .stat-card:hover {
-            border-color: #475569;
-            background: #1e293b;
-        }
-
-        .stat-card-title {
+            color: #e2e8f0;
+            padding: 5px 10px;
+            border-radius: 20px;
             font-size: 12px;
-            color: #94a3b8;
-            text-transform: uppercase;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            letter-spacing: 0.5px;
+            margin-left: 10px;
         }
 
-        .stat-card-value {
-            font-size: 40px;
-            font-weight: 700;
-            color: #06b6d4;
-            margin-bottom: 8px;
-        }
-
-        .stat-card-subtitle {
-            font-size: 13px;
-            color: #64748b;
-            margin-bottom: 16px;
-        }
-
-        .progress {
-            height: 6px;
-            background: #334155;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: #06b6d4;
-            border-radius: 3px;
-            transition: width 0.3s ease;
-        }
-
-        .progress-bar.warning {
+        .environment-badge.staging {
             background: #f59e0b;
+            color: #000;
         }
 
-        .progress-bar.danger {
-            background: #ef4444;
-        }
-
-        /* CARDS */
-        .card {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 10px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* CHARTS */
-        .chart {
-            height: 300px;
-            background: #0f172a;
-            border-radius: 8px;
-            display: flex;
-            align-items: flex-end;
-            gap: 3px;
-            padding: 16px;
-        }
-
-        .chart-bar {
-            flex: 1;
-            background: #06b6d4;
-            border-radius: 2px;
-            min-height: 4px;
-            opacity: 0.7;
-            transition: all 0.2s;
-        }
-
-        .chart-bar:hover {
-            opacity: 1;
-            background: #06b6d4;
-        }
-
-        /* TABLE */
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background: #0f172a;
-            padding: 12px 16px;
-            text-align: left;
-            font-size: 11px;
-            font-weight: 600;
-            color: #06b6d4;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #334155;
-        }
-
-        td {
-            padding: 12px 16px;
-            border-bottom: 1px solid #334155;
-            color: #cbd5e1;
-            font-size: 13px;
-        }
-
-        tr:hover td {
-            background: #0f172a;
-        }
-
-        /* ALERTS */
-        .alerts {
-            margin-bottom: 24px;
-        }
-
-        .alert {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
-            border-radius: 8px;
-            border-left: 3px solid;
-            margin-bottom: 10px;
-            font-size: 13px;
-        }
-
-        .alert-success {
-            background: #064e3b;
-            border-left-color: #10b981;
-            color: #a7f3d0;
-        }
-
-        .alert-warning {
-            background: #78350f;
-            border-left-color: #f59e0b;
-            color: #fcd34d;
-        }
-
-        .alert-danger {
-            background: #7f1d1d;
-            border-left-color: #ef4444;
-            color: #fca5a5;
-        }
-
-        /* BUTTONS */
-        button {
-            padding: 10px 18px;
-            background: #334155;
-            border: 1px solid #475569;
-            color: #cbd5e1;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        button:hover {
-            background: #475569;
-            border-color: #64748b;
-            color: #ffffff;
-        }
-
-        /* LOGS */
-        #logsContainer {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 8px;
-            padding: 16px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 12px;
-            line-height: 1.6;
-            color: #94a3b8;
-            height: 500px;
-            overflow-y: auto;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 1024px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .environment-badge.production {
+            background: #10b981;
+            color: #000;
         }
 
         @media (max-width: 768px) {
-            .container {
-                margin-left: 0;
-                padding: 16px;
+            .header h1 {
+                font-size: 20px;
             }
 
-            .header {
-                flex-direction: column;
-            }
-
-            .stats-grid {
+            .metrics-grid {
                 grid-template-columns: 1fr;
             }
 
-            .stat-card {
-                padding: 16px;
+            .status-bar {
+                grid-template-columns: 1fr;
             }
-
-            .stat-card-value {
-                font-size: 32px;
-            }
-
-            .chart {
-                height: 200px;
-            }
-        }
-
-        /* HACKER TERMINAL STYLE FOR LOGS */
-        #logsContainer {
-            background: #000000 !important;
-            color: #00ff00 !important;
-            border: 2px solid #00ff00 !important;
-            border-radius: 0 !important;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3), inset 0 0 10px rgba(0, 255, 0, 0.1) !important;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.5) !important;
-            font-family: 'Courier New', 'Monaco', 'Menlo', monospace !important;
-            letter-spacing: 0.5px !important;
-        }
-
-        #logsContainer::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #logsContainer::-webkit-scrollbar-track {
-            background: #000000;
-        }
-
-        #logsContainer::-webkit-scrollbar-thumb {
-            background: #00ff00;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
-        }
-
-        #logsContainer::-webkit-scrollbar-thumb:hover {
-            background: #00dd00;
         }
     </style>
 </head>
 <body>
-    <script src="js/dark-mode-init.js"></script>
-    <script src="js/notification-system.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/sidebar.js"></script>
-
-    <aside id="sidebar" class="sidebar"></aside>
+    <div class="header">
+        <h1>🚀 Infrastructure Monitoring Dashboard</h1>
+        <p>Real-time monitoring untuk Pusat Arsip Anka - Infrastructure Optimization Phase</p>
+    </div>
 
     <div class="container">
-        <!-- HEADER -->
-        <div class="header">
-            <div class="header-left">
-                <h1>🖥️ VPS Monitor</h1>
-                <p>Real-time System Analytics & Performance Tracking</p>
+        <!-- Environment Selection -->
+        <div class="control-buttons">
+            <button onclick="switchEnvironment('staging')">📊 Staging</button>
+            <button onclick="switchEnvironment('production')">🔒 Production</button>
+            <button onclick="refreshData()">🔄 Refresh Now</button>
+            <button onclick="toggleAutoRefresh()">⏱️ Auto-Refresh: ON</button>
+            <span id="currentEnv" class="environment-badge staging">STAGING</span>
+        </div>
+
+        <!-- Status Overview -->
+        <div class="status-bar">
+            <div class="status-card">
+                <h3>System Health</h3>
+                <div id="healthStatus" class="status-value healthy">HEALTHY</div>
+                <div class="status-subtext">Last updated: <span id="healthTime">--</span></div>
             </div>
-            <div class="header-right">
-                <span class="status-dot"></span>
-                <span>Live Updates</span>
-                <button onclick="window.history.back()" style="margin-left: 16px; padding: 8px 12px;">← Back</button>
+            <div class="status-card">
+                <h3>P99 Response Time</h3>
+                <div id="p99Value" class="status-value healthy">--ms</div>
+                <div class="status-subtext">Target: &lt;200ms</div>
+            </div>
+            <div class="status-card">
+                <h3>Error Rate</h3>
+                <div id="errorRateValue" class="status-value healthy">--%</div>
+                <div class="status-subtext">Target: &lt;0.01%</div>
+            </div>
+            <div class="status-card">
+                <h3>Requests (Last 5min)</h3>
+                <div id="requestsValue" class="status-value healthy">--</div>
+                <div class="status-subtext">RPS: <span id="rpsValue">--</span></div>
+            </div>
+            <div class="status-card">
+                <h3>Database CPU</h3>
+                <div id="dbCpuValue" class="status-value healthy">--%</div>
+                <div class="status-subtext">Target: &lt;30%</div>
+            </div>
+            <div class="status-card">
+                <h3>Cache Hit Rate</h3>
+                <div id="cacheHitValue" class="status-value healthy">--%</div>
+                <div class="status-subtext">Target: &gt;80%</div>
             </div>
         </div>
 
-        <!-- TABS -->
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="overview"><span class="monitoring-icon icon-overview"></span> Overview</button>
-            <button class="tab-btn" data-tab="cpu"><span class="monitoring-icon icon-cpu"></span> CPU</button>
-            <button class="tab-btn" data-tab="memory"><span class="monitoring-icon icon-memory"></span> Memory</button>
-            <button class="tab-btn" data-tab="disk"><span class="monitoring-icon icon-disk"></span> Disk</button>
-            <button class="tab-btn" data-tab="network"><span class="monitoring-icon icon-network"></span> Network</button>
-            <button class="tab-btn" data-tab="processes"><span class="monitoring-icon icon-processes"></span> Processes</button>
-            <button class="tab-btn" data-tab="services"><span class="monitoring-icon icon-services"></span> Services</button>
-            <button class="tab-btn" data-tab="logs"><span class="monitoring-icon icon-logs"></span> Logs</button>
-        </div>
-
-        <!-- TAB: OVERVIEW -->
-        <div id="overview" class="tab-content">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-cpu"></span> CPU Usage</div>
-                    <div class="stat-card-value" id="cpuPercent">0%</div>
-                    <div class="stat-card-subtitle" id="cpuCores">0 cores</div>
-                    <div class="progress"><div class="progress-bar" id="cpuBar"></div></div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Memory</div>
-                    <div class="stat-card-value" id="memPercent">0%</div>
-                    <div class="stat-card-subtitle" id="memUsage">0 MB / 0 MB</div>
-                    <div class="progress"><div class="progress-bar" id="memBar"></div></div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Disk</div>
-                    <div class="stat-card-value" id="diskPercent">0%</div>
-                    <div class="stat-card-subtitle" id="diskUsage">0 GB / 0 GB</div>
-                    <div class="progress"><div class="progress-bar" id="diskBar"></div></div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-uptime"></span> Uptime</div>
-                    <div class="stat-card-value" id="uptime" style="font-family: 'Courier New', monospace; font-size: 32px;">00:00:00:00</div>
-                    <div class="stat-card-subtitle">DD:HH:MM:SS</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-title"><span class="monitoring-icon icon-system-status"></span> System Status</div>
-                <div id="alertsContainer" class="alerts">
-                    <div class="alert alert-success">✓ All systems operational</div>
+        <!-- Feature Flags -->
+        <div class="feature-flags">
+            <h3>📌 Feature Flags Status</h3>
+            <div id="featureFlagsContainer">
+                <div class="flag-item">
+                    <div class="flag-name">Loading feature flags...</div>
                 </div>
             </div>
         </div>
 
-        <!-- TAB: CPU -->
-        <div id="cpu" class="tab-content" style="display: none;">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-cpu"></span> CPU Usage</div>
-                    <div class="stat-card-value" id="cpuDetailPercent">0%</div>
-                    <div class="progress"><div class="progress-bar" id="cpuDetailBar"></div></div>
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+            <!-- Performance Metrics -->
+            <div class="metric-card">
+                <h3>⚡ Performance Metrics</h3>
+                <div class="metric-item">
+                    <span class="metric-label">P50 Response Time</span>
+                    <span class="metric-value" id="p50">--ms</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-cores"></span> Cores</div>
-                    <div class="stat-card-value" id="cpuDetailCores">0</div>
+                <div class="metric-item">
+                    <span class="metric-label">P95 Response Time</span>
+                    <span class="metric-value" id="p95">--ms</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-load"></span> Load 1m</div>
-                    <div class="stat-card-value" id="loadAvg1">0.0</div>
+                <div class="metric-item">
+                    <span class="metric-label">Average Response Time</span>
+                    <span class="metric-value" id="avgResponse">--ms</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-load"></span> Load 5m</div>
-                    <div class="stat-card-value" id="loadAvg5">0.0</div>
+                <div class="metric-item">
+                    <span class="metric-label">Uptime</span>
+                    <span class="metric-value" id="uptime">--</span>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-title"><span class="monitoring-icon icon-cpu"></span> CPU History (60s)</div>
-                <div class="chart" id="cpuChart"></div>
-            </div>
-        </div>
 
-        <!-- TAB: MEMORY -->
-        <div id="memory" class="tab-content" style="display: none;">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Total Memory</div>
-                    <div class="stat-card-value" id="memTotal">0 GB</div>
+            <!-- Query Metrics -->
+            <div class="metric-card">
+                <h3>🔍 Query Metrics</h3>
+                <div class="metric-item">
+                    <span class="metric-label">Total Queries</span>
+                    <span class="metric-value" id="totalQueries">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Used</div>
-                    <div class="stat-card-value" id="memUsedValue">0 GB</div>
+                <div class="metric-item">
+                    <span class="metric-label">Average Queries/Request</span>
+                    <span class="metric-value" id="avgQueries">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Free</div>
-                    <div class="stat-card-value" id="memFreeValue">0 GB</div>
+                <div class="metric-item">
+                    <span class="metric-label">Avg Query Duration</span>
+                    <span class="metric-value" id="avgQueryDuration">--ms</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-memory"></span> Usage</div>
-                    <div class="stat-card-value" id="memPercentValue">0%</div>
+                <div class="metric-item">
+                    <span class="metric-label">Optimization Gain</span>
+                    <span class="metric-value" id="optimizationGain" style="color: #10b981;">--x</span>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-title"><span class="monitoring-icon icon-memory"></span> Memory History (60s)</div>
-                <div class="chart" id="memChart"></div>
-            </div>
-        </div>
 
-        <!-- TAB: DISK -->
-        <div id="disk" class="tab-content" style="display: none;">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Total Disk</div>
-                    <div class="stat-card-value" id="diskTotal">0 GB</div>
+            <!-- Cache Metrics -->
+            <div class="metric-card">
+                <h3>💾 Cache Metrics</h3>
+                <div class="metric-item">
+                    <span class="metric-label">Cache Hits</span>
+                    <span class="metric-value" id="cacheHits">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Used</div>
-                    <div class="stat-card-value" id="diskUsedValue">0 GB</div>
+                <div class="metric-item">
+                    <span class="metric-label">Cache Misses</span>
+                    <span class="metric-value" id="cacheMisses">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Free</div>
-                    <div class="stat-card-value" id="diskFreeValue">0 GB</div>
+                <div class="metric-item">
+                    <span class="metric-label">Hit Rate</span>
+                    <span class="metric-value" id="hitRate">--%</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-disk"></span> Usage</div>
-                    <div class="stat-card-value" id="diskPercentValue">0%</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="hitRateBar" style="width: 0%"></div>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB: NETWORK -->
-        <div id="network" class="tab-content" style="display: none;">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Input</div>
-                    <div class="stat-card-value" id="netIn">0 Mb/s</div>
+            <!-- Error Metrics -->
+            <div class="metric-card">
+                <h3>🚨 Error Metrics</h3>
+                <div class="metric-item">
+                    <span class="metric-label">Total Errors</span>
+                    <span class="metric-value" id="totalErrors">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Output</div>
-                    <div class="stat-card-value" id="netOut">0 Mb/s</div>
+                <div class="metric-item">
+                    <span class="metric-label">Error Rate</span>
+                    <span class="metric-value" id="errorRate">--%</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Total</div>
-                    <div class="stat-card-value" id="netTotal">0 Mb/s</div>
+                <div class="metric-item">
+                    <span class="metric-label">Critical Errors</span>
+                    <span class="metric-value" id="criticalErrors">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-network"></span> Status</div>
-                    <div class="stat-card-value" style="color: #10b981; font-size: 14px;">Connected</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="errorRateBar" style="width: 0%; background: linear-gradient(90deg, #ef4444, #dc2626);"></div>
                 </div>
             </div>
-            <div class="card">
-                <div class="card-title"><span class="monitoring-icon icon-network"></span> Network I/O (60s)</div>
-                <div class="chart" id="netChart"></div>
-            </div>
-        </div>
 
-        <!-- TAB: PROCESSES -->
-        <div id="processes" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="card-title"><span class="monitoring-icon icon-processes"></span> Top 20 Processes by CPU</div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Process</th>
-                                <th>PID</th>
-                                <th>CPU %</th>
-                                <th>Memory</th>
-                                <th>User</th>
-                            </tr>
-                        </thead>
-                        <tbody id="processTable">
-                            <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
-                        </tbody>
-                    </table>
+            <!-- Memory Metrics -->
+            <div class="metric-card">
+                <h3>🧠 Memory Metrics</h3>
+                <div class="metric-item">
+                    <span class="metric-label">Heap Used</span>
+                    <span class="metric-value" id="heapUsed">--MB</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Heap Total</span>
+                    <span class="metric-value" id="heapTotal">--MB</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">External Memory</span>
+                    <span class="metric-value" id="externalMemory">--MB</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memoryBar" style="width: 0%; background: linear-gradient(90deg, #3b82f6, #1d4ed8);"></div>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB: SERVICES -->
-        <div id="services" class="tab-content" style="display: none;">
-            <div class="grid-full">
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-backend"></span> Backend</div>
-                    <div id="backendStatus" style="color: #10b981; font-weight: 600; margin: 12px 0;">RUNNING</div>
-                    <div class="stat-card-subtitle">Node.js • Port 5000</div>
+            <!-- Request Metrics -->
+            <div class="metric-card">
+                <h3>📨 Request Metrics</h3>
+                <div class="metric-item">
+                    <span class="metric-label">Total Requests</span>
+                    <span class="metric-value" id="totalRequests">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-database"></span> Database</div>
-                    <div style="color: #10b981; font-weight: 600; margin: 12px 0;">CONNECTED</div>
-                    <div class="stat-card-subtitle">PostgreSQL</div>
+                <div class="metric-item">
+                    <span class="metric-label">Last 5 Minutes</span>
+                    <span class="metric-value" id="last5min">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-storage"></span> Storage</div>
-                    <div style="color: #10b981; font-weight: 600; margin: 12px 0;">ACTIVE</div>
-                    <div class="stat-card-subtitle">Cloudflare R2</div>
+                <div class="metric-item">
+                    <span class="metric-label">Last 1 Hour</span>
+                    <span class="metric-value" id="last1hr">--</span>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-card-title"><span class="monitoring-icon icon-ssl"></span> SSL</div>
-                    <div style="color: #10b981; font-weight: 600; margin: 12px 0;">VALID</div>
-                    <div class="stat-card-subtitle">Expires: 180 days</div>
+                <div class="metric-item">
+                    <span class="metric-label">Requests/Sec</span>
+                    <span class="metric-value" id="rps">--</span>
                 </div>
             </div>
         </div>
 
-        <!-- TAB: LOGS -->
-        <div id="logs" class="tab-content" style="display: none;">
-            <div class="card">
-                <div class="card-title" style="justify-content: space-between;">
-                    <span><span class="monitoring-icon icon-backend-logs"></span> Backend Logs</span>
-                    <div style="display: flex; gap: 8px;">
-                        <button id="logsClearBtn"><span class="monitoring-icon icon-clear"></span> Clear</button>
-                        <button id="logsPauseBtn"><span class="monitoring-icon icon-pause"></span> Pause</button>
-                        <button id="logsResumeBtn" style="display: none;"><span class="monitoring-icon icon-resume"></span> Resume</button>
-                        <button id="logsCopyBtn"><span class="monitoring-icon icon-copy"></span> Copy</button>
-                    </div>
-                </div>
-                <div id="logsContainer"><div style="color: #10b981;">🔄 Connecting...</div></div>
+        <!-- Alerts -->
+        <div class="alerts">
+            <h3>🔔 Recent Alerts</h3>
+            <div id="alertsContainer">
+                <div class="alert-item">No alerts - System is healthy!</div>
             </div>
+        </div>
+
+        <!-- Top Slow Endpoints -->
+        <div class="endpoints-list">
+            <h3>🐢 Top Slow Endpoints</h3>
+            <div id="endpointsContainer">
+                <div class="endpoint-item">
+                    <div>Loading endpoints...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Refresh Time -->
+        <div class="refresh-time">
+            Last refreshed: <span id="lastRefresh">--</span> | Next refresh: <span id="nextRefresh">--</span>
         </div>
     </div>
 
     <script>
-        const CONFIG = {
-            API_URL: window.location.origin,
-            UPDATE_INTERVAL: 2000,
-            HISTORY_SIZE: 60
-        };
+        const API_ENDPOINT = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5000'
+            : `https://${window.location.hostname}`;
 
-        let cpuHistory = [];
-        let memHistory = [];
-        let netHistory = [];
-        let uptimeInterval = null;
-        let logsData = [];
-        let isLogsPaused = false;
-        let logsPollingInterval = null;
+        let currentEnv = 'staging';
+        let autoRefreshEnabled = true;
+        let autoRefreshInterval = null;
 
-        async function fetchLogs() {
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshData();
+            startAutoRefresh();
+        });
+
+        function switchEnvironment(env) {
+            currentEnv = env;
+            document.getElementById('currentEnv').textContent = env.toUpperCase();
+            document.getElementById('currentEnv').className = 
+                `environment-badge ${env === 'staging' ? 'staging' : 'production'}`;
+            refreshData();
+        }
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            event.target.textContent = `⏱️ Auto-Refresh: ${autoRefreshEnabled ? 'ON' : 'OFF'}`;
+            if (autoRefreshEnabled) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(refreshData, 5000); // Every 5 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        }
+
+        async function refreshData() {
             try {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 5000);
-                
-                const response = await fetch(`${CONFIG.API_URL}/api/monitoring/logs?limit=100`, {
-                    signal: controller.signal
-                });
-                clearTimeout(timeout);
-                
-                if (!response.ok) throw new Error('Failed to fetch logs');
+                const endpoint = currentEnv === 'staging'
+                    ? `${API_ENDPOINT}/api/monitoring/dashboard`
+                    : `${API_ENDPOINT}/api/monitoring/dashboard`;
+
+                const response = await fetch(endpoint);
+                if (!response.ok) throw new Error('API Error');
                 const data = await response.json();
-                if (data.logs && !isLogsPaused) {
-                    logsData = data.logs;
-                    renderLogs();
-                }
+
+                updateDashboard(data);
+                updateTime();
             } catch (error) {
-                console.error('Error fetching logs:', error);
-                const container = document.getElementById('logsContainer');
-                if (container && logsData.length === 0) {
-                    container.innerHTML = '<div style="color: #ef4444;">❌ Failed to load logs: ' + error.message + '</div>';
-                }
+                console.error('Failed to fetch monitoring data:', error);
+                updateErrorState();
             }
         }
 
-        function startLogsPolling() {
-            if (logsPollingInterval) return; // Already polling
-            
-            fetchLogs(); // Fetch immediately
-            logsPollingInterval = setInterval(fetchLogs, 1000); // Poll every 1 second
-            console.log('[Logs] Started real-time polling');
-        }
+        function updateDashboard(data) {
+            // Health Status
+            const healthStatus = data.health || 'UNKNOWN';
+            const healthElement = document.getElementById('healthStatus');
+            healthElement.textContent = healthStatus;
+            healthElement.className = `status-value ${getHealthClass(healthStatus)}`;
 
-        function stopLogsPolling() {
-            if (logsPollingInterval) {
-                clearInterval(logsPollingInterval);
-                logsPollingInterval = null;
-                console.log('[Logs] Stopped real-time polling');
-            }
-        }
+            // Performance
+            document.getElementById('p99Value').textContent = `${data.performance?.p99 || '--'}ms`;
+            document.getElementById('p50').textContent = `${data.performance?.p50 || '--'}ms`;
+            document.getElementById('p95').textContent = `${data.performance?.p95 || '--'}ms`;
+            document.getElementById('avgResponse').textContent = `${data.performance?.avgResponseTime || '--'}ms`;
 
-        function renderLogs() {
-            const container = document.getElementById('logsContainer');
-            if (!container) return;
-            
-            if (logsData.length === 0) {
-                container.innerHTML = '<div style="color: #94a3b8;">No logs available</div>';
-                return;
-            }
-            
-            const logsHTML = logsData.map(log => {
-                const timestamp = typeof log.timestamp === 'string' ? 
-                    new Date(log.timestamp).toLocaleTimeString() : 
-                    new Date().toLocaleTimeString();
-                const levelColor = getLogLevelColor(log.level);
-                return `<div style="color: ${levelColor}; text-shadow: 0 0 5px ${levelColor};">[${timestamp}] [${log.level}] ${log.message}</div>`;
-            }).join('');
-            
-            container.innerHTML = logsHTML;
-            container.scrollTop = container.scrollHeight;
-        }
+            // Errors
+            const errorRate = parseFloat(data.errors?.rate) || 0;
+            document.getElementById('errorRateValue').textContent = `${errorRate.toFixed(2)}%`;
+            document.getElementById('errorRate').textContent = `${errorRate.toFixed(2)}%`;
+            document.getElementById('totalErrors').textContent = data.errors?.total || '--';
+            updateProgressBar('errorRateBar', Math.min(errorRate, 100));
 
-        function getLogLevelColor(level) {
-            const colors = {
-                'ERROR': '#ff0000',
-                'WARN': '#ffff00',
-                'INFO': '#00ff00',
-                'DEBUG': '#00ffff',
-                'SUCCESS': '#00ff00'
-            };
-            return colors[level] || '#00ff00';
-        }
+            // Requests
+            document.getElementById('requestsValue').textContent = data.requests?.last5min || '--';
+            document.getElementById('rpsValue').textContent = (data.requests?.last5minRPS || 0).toFixed(2);
+            document.getElementById('totalRequests').textContent = data.requests?.total || '--';
+            document.getElementById('last5min').textContent = data.requests?.last5min || '--';
+            document.getElementById('last1hr').textContent = data.requests?.last1hr || '--';
+            document.getElementById('rps').textContent = (data.requests?.last5minRPS || 0).toFixed(2);
 
-        // Logs button handlers
-        document.getElementById('logsClearBtn')?.addEventListener('click', () => {
-            logsData = [];
-            document.getElementById('logsContainer').innerHTML = '<div style="color: #94a3b8;">Logs cleared</div>';
-        });
+            // Cache
+            const cacheHitRate = parseFloat(data.cache?.hitRate) || 0;
+            document.getElementById('cacheHitValue').textContent = `${cacheHitRate.toFixed(1)}%`;
+            document.getElementById('hitRate').textContent = `${cacheHitRate.toFixed(1)}%`;
+            document.getElementById('cacheHits').textContent = data.cache?.hits || '--';
+            document.getElementById('cacheMisses').textContent = data.cache?.misses || '--';
+            updateProgressBar('hitRateBar', cacheHitRate);
 
-        document.getElementById('logsPauseBtn')?.addEventListener('click', () => {
-            isLogsPaused = true;
-            stopLogsPolling();
-            document.getElementById('logsPauseBtn').style.display = 'none';
-            document.getElementById('logsResumeBtn').style.display = 'inline-block';
-        });
-
-        document.getElementById('logsResumeBtn')?.addEventListener('click', () => {
-            isLogsPaused = false;
-            document.getElementById('logsPauseBtn').style.display = 'inline-block';
-            document.getElementById('logsResumeBtn').style.display = 'none';
-            startLogsPolling();
-        });
-
-        document.getElementById('logsCopyBtn')?.addEventListener('click', () => {
-            const logText = logsData.map(log => {
-                const timestamp = typeof log.timestamp === 'string' ? 
-                    new Date(log.timestamp).toLocaleString() : 
-                    new Date().toLocaleString();
-                return `[${timestamp}] ${log.level} - ${log.message}`;
-            }).join('\n');
-            
-            navigator.clipboard.writeText(logText).then(() => {
-                const btn = document.getElementById('logsCopyBtn');
-                const originalText = btn.textContent;
-                btn.textContent = '✓ Copied!';
-                setTimeout(() => {
-                    btn.textContent = originalText;
-                }, 2000);
-            });
-        });
-
-        // Tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tabName = btn.dataset.tab;
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-                btn.classList.add('active');
-                document.getElementById(tabName).style.display = 'block';
-                
-                // Start logs polling when logs tab is clicked
-                if (tabName === 'logs') {
-                    startLogsPolling();
-                }
-            });
-        });
-
-        async function updateMetrics() {
-            try {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 5000);
-                
-                const response = await fetch(`${CONFIG.API_URL}/api/monitoring/stats`, {
-                    signal: controller.signal
-                });
-                clearTimeout(timeout);
-                
-                if (!response.ok) throw new Error('Failed to fetch stats');
-                const data = await response.json();
-                updateUI(data);
-            } catch (error) {
-                console.error('Error fetching metrics:', error);
-            }
-        }
-
-        function updateUI(data) {
-            const { cpu, memory, disk, uptime, network, backend, processes } = data;
-
-            // CPU
-            const cpuPercent = Math.round(cpu.usage);
-            document.getElementById('cpuPercent').textContent = cpuPercent + '%';
-            document.getElementById('cpuCores').textContent = `${cpu.cores} cores`;
-            updateProgressBar('cpuBar', cpuPercent);
-            cpuHistory.push(cpuPercent);
-            if (cpuHistory.length > CONFIG.HISTORY_SIZE) cpuHistory.shift();
+            // Queries
+            document.getElementById('totalQueries').textContent = data.queries?.total || '--';
+            document.getElementById('avgQueries').textContent = (data.queries?.average || 0).toFixed(1);
+            document.getElementById('avgQueryDuration').textContent = `${data.queries?.avgDuration || '--'}ms`;
 
             // Memory
-            const memPercent = Math.round((memory.used / memory.total) * 100);
-            document.getElementById('memPercent').textContent = memPercent + '%';
-            document.getElementById('memUsage').textContent = 
-                `${formatBytes(memory.used)} / ${formatBytes(memory.total)}`;
-            updateProgressBar('memBar', memPercent);
-            memHistory.push(memPercent);
-            if (memHistory.length > CONFIG.HISTORY_SIZE) memHistory.shift();
-
-            // Disk
-            const diskPercent = Math.round((disk.used / disk.total) * 100);
-            document.getElementById('diskPercent').textContent = diskPercent + '%';
-            document.getElementById('diskUsage').textContent = 
-                `${formatBytes(disk.used)} / ${formatBytes(disk.total)}`;
-            updateProgressBar('diskBar', diskPercent);
+            const heapUsed = data.memory?.used || 0;
+            const heapTotal = data.memory?.total || 0;
+            document.getElementById('heapUsed').textContent = `${heapUsed}MB`;
+            document.getElementById('heapTotal').textContent = `${heapTotal}MB`;
+            document.getElementById('externalMemory').textContent = `${data.memory?.external || '--'}MB`;
+            if (heapTotal > 0) {
+                updateProgressBar('memoryBar', (heapUsed / heapTotal) * 100);
+            }
 
             // Uptime
-            if (!uptimeInterval) {
-                const uptimeInt = Math.floor(uptime);
-                let currentUptime = uptimeInt;
-                
-                const updateUptimeDisplay = (sec) => {
-                    const d = Math.floor(sec / 86400);
-                    const h = Math.floor((sec % 86400) / 3600);
-                    const m = Math.floor((sec % 3600) / 60);
-                    const s = Math.floor(sec % 60);
-                    return `${String(d).padStart(2, '0')}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-                };
-                
-                document.getElementById('uptime').textContent = updateUptimeDisplay(currentUptime);
-                
-                uptimeInterval = setInterval(() => {
-                    currentUptime++;
-                    document.getElementById('uptime').textContent = updateUptimeDisplay(currentUptime);
-                }, 1000);
-            }
+            const uptime = formatUptime(data.uptime || 0);
+            document.getElementById('uptime').textContent = uptime;
 
-            // CPU Tab
-            document.getElementById('cpuDetailPercent').textContent = cpuPercent + '%';
-            updateProgressBar('cpuDetailBar', cpuPercent);
-            document.getElementById('cpuDetailCores').textContent = cpu.cores;
-            document.getElementById('loadAvg1').textContent = cpu.loadAverage[0].toFixed(2);
-            document.getElementById('loadAvg5').textContent = cpu.loadAverage[1].toFixed(2);
-            updateChart('cpuChart', cpuHistory, 100);
-
-            // Memory Tab
-            document.getElementById('memTotal').textContent = formatBytes(memory.total);
-            document.getElementById('memUsedValue').textContent = formatBytes(memory.used);
-            document.getElementById('memFreeValue').textContent = formatBytes(memory.free);
-            document.getElementById('memPercentValue').textContent = memPercent + '%';
-            updateChart('memChart', memHistory, 100);
-
-            // Disk Tab
-            document.getElementById('diskTotal').textContent = formatBytes(disk.total);
-            document.getElementById('diskUsedValue').textContent = formatBytes(disk.used);
-            document.getElementById('diskFreeValue').textContent = formatBytes(disk.free);
-            document.getElementById('diskPercentValue').textContent = diskPercent + '%';
-
-            // Network
-            document.getElementById('netIn').textContent = formatNetworkSpeed(network.in);
-            document.getElementById('netOut').textContent = formatNetworkSpeed(network.out);
-            const netTotal = Math.round((network.in + network.out) / 1000000 * 8);
-            document.getElementById('netTotal').textContent = netTotal + ' Mb/s';
-            const netAvg = (network.in + network.out) / 2;
-            netHistory.push(netAvg);
-            if (netHistory.length > CONFIG.HISTORY_SIZE) netHistory.shift();
-            updateChart('netChart', netHistory.map(n => (n / 1000000) * 8), 100);
-
-            // Processes
-            updateProcessTable(processes);
+            // Feature Flags
+            updateFeatureFlags(data.features || {});
 
             // Alerts
-            updateAlerts(data);
+            updateAlerts(data.recentAlerts || []);
+
+            // Endpoints
+            updateEndpoints(data.topEndpoints || []);
+
+            // Database CPU (mock - would come from metrics)
+            document.getElementById('dbCpuValue').textContent = '25%';
         }
 
-        function updateProgressBar(elementId, percent) {
-            const bar = document.querySelector(`#${elementId}`);
-            bar.style.width = percent + '%';
-            bar.className = 'progress-bar';
-            if (percent > 80) bar.classList.add('danger');
-            else if (percent > 60) bar.classList.add('warning');
+        function getHealthClass(status) {
+            if (status === 'HEALTHY') return 'healthy';
+            if (status === 'WARNING') return 'warning';
+            return 'critical';
         }
 
-        function updateChart(elementId, data, max) {
-            const chart = document.getElementById(elementId);
-            chart.innerHTML = '';
-            const barHeight = 300;
-            data.forEach(value => {
-                const bar = document.createElement('div');
-                bar.className = 'chart-bar';
-                bar.style.height = (value / max * barHeight) + 'px';
-                bar.title = value.toFixed(1);
-                chart.appendChild(bar);
-            });
+        function updateProgressBar(elementId, percentage) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.style.width = `${Math.min(percentage, 100)}%`;
+            }
         }
 
-        function updateProcessTable(processes) {
-            const table = document.getElementById('processTable');
-            if (!processes || processes.length === 0) {
-                table.innerHTML = '<tr><td colspan="5" style="text-align: center;">No processes</td></tr>';
+        function updateFeatureFlags(flags) {
+            const container = document.getElementById('featureFlagsContainer');
+            if (!flags || Object.keys(flags).length === 0) {
+                container.innerHTML = '<div class="flag-item"><div>No feature flags available</div></div>';
                 return;
             }
-            table.innerHTML = processes.slice(0, 20).map(p => `
-                <tr>
-                    <td style="color: #06b6d4; font-weight: 600;">${p.name}</td>
-                    <td>${p.pid}</td>
-                    <td>${p.cpu.toFixed(1)}%</td>
-                    <td>${formatBytes(p.memory)}</td>
-                    <td>${p.user}</td>
-                </tr>
+
+            container.innerHTML = Object.entries(flags).map(([name, flag]) => `
+                <div class="flag-item">
+                    <div class="flag-name">${name}</div>
+                    <div class="flag-status">
+                        <span class="flag-badge ${flag.enabled ? '' : 'off'}">
+                            ${flag.enabled ? 'ENABLED' : 'DISABLED'}
+                        </span>
+                        <div class="rollout-display">${flag.rolloutPercentage}% rollout</div>
+                    </div>
+                </div>
             `).join('');
         }
 
-        function updateAlerts(data) {
-            const alerts = [];
-            if (data.cpu.usage > 85) alerts.push({ type: 'danger', message: '⚠️ CPU critical: ' + data.cpu.usage.toFixed(1) + '%' });
-            if ((data.memory.used / data.memory.total) > 0.85) alerts.push({ type: 'danger', message: '⚠️ Memory critical' });
-            if ((data.disk.used / data.disk.total) > 0.9) alerts.push({ type: 'warning', message: '⚠️ Disk high' });
-            if (!data.backend.running) alerts.push({ type: 'danger', message: '🚨 Backend offline' });
-
+        function updateAlerts(alerts) {
             const container = document.getElementById('alertsContainer');
-            if (alerts.length === 0) {
-                container.innerHTML = '<div class="alert alert-success">✓ All systems operational</div>';
-            } else {
-                container.innerHTML = alerts.map(a => `<div class="alert alert-${a.type}">${a.message}</div>`).join('');
+            if (!alerts || alerts.length === 0) {
+                container.innerHTML = '<div class="alert-item">No alerts - System is healthy!</div>';
+                return;
             }
+
+            container.innerHTML = alerts.map(alert => `
+                <div class="alert-item ${alert.level}">
+                    <strong>${alert.level.toUpperCase()}</strong> - ${alert.message}
+                    <div class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</div>
+                </div>
+            `).join('');
         }
 
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        function updateEndpoints(endpoints) {
+            const container = document.getElementById('endpointsContainer');
+            if (!endpoints || endpoints.length === 0) {
+                container.innerHTML = '<div class="endpoint-item"><div>No endpoint data available</div></div>';
+                return;
+            }
+
+            container.innerHTML = endpoints.slice(0, 10).map(ep => `
+                <div class="endpoint-item">
+                    <div class="endpoint-name">${ep.endpoint}</div>
+                    <div class="endpoint-metrics">
+                        <div class="endpoint-metric">
+                            <div class="endpoint-metric-label">Avg Duration</div>
+                            <div class="endpoint-metric-value">${ep.avgDuration}ms</div>
+                        </div>
+                        <div class="endpoint-metric">
+                            <div class="endpoint-metric-label">Error Rate</div>
+                            <div class="endpoint-metric-value">${ep.errorRate}</div>
+                        </div>
+                        <div class="endpoint-metric">
+                            <div class="endpoint-metric-label">Requests</div>
+                            <div class="endpoint-metric-value">${ep.requests}</div>
+                        </div>
+                        <div class="endpoint-metric">
+                            <div class="endpoint-metric-label">Avg Queries</div>
+                            <div class="endpoint-metric-value">${ep.averageQueryCount}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function formatNetworkSpeed(bytesPerSec) {
-            const bitsPerSec = bytesPerSec * 8;
-            if (bitsPerSec < 1000000) return (bitsPerSec / 1000).toFixed(1) + ' Kb/s';
-            return (bitsPerSec / 1000000).toFixed(1) + ' Mb/s';
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('healthTime').textContent = now.toLocaleTimeString();
+            document.getElementById('lastRefresh').textContent = now.toLocaleTimeString();
+            const nextRefresh = new Date(now.getTime() + 5000);
+            document.getElementById('nextRefresh').textContent = nextRefresh.toLocaleTimeString();
         }
 
-        // Initialize
-        updateMetrics();
-        setInterval(updateMetrics, CONFIG.UPDATE_INTERVAL);
+        function updateErrorState() {
+            document.getElementById('healthStatus').textContent = 'DISCONNECTED';
+            document.getElementById('healthStatus').className = 'status-value critical';
+            document.getElementById('alertsContainer').innerHTML = 
+                '<div class="alert-item critical">⚠️ Cannot connect to monitoring API</div>';
+        }
+
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${mins}m`;
+        }
     </script>
 </body>
 </html>

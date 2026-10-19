@@ -4653,14 +4653,29 @@ function addFileExistenceVerificationEndpoint(app, supabase, createAuth, R2Stora
  * Add endpoint to manually sync all file counts
  * POST /api/invoice/batch-sync-file-counts
  */
-function addBatchSyncEndpoint(app, supabase, createAuth) {
+function addBatchSyncEndpoint(app, supabase, createAuth, featureFlags, queryOptimizer) {
     app.post('/api/invoice/batch-sync-file-counts',
         createAuth(['super_admin']),
         async (req, res) => {
             try {
                 console.log('[API] Batch sync triggered by super_admin');
                 
-                const result = await batchSyncAllFileCount(supabase);
+                // Check if feature flag is enabled for this user
+                const useOptimized = featureFlags ? featureFlags.isEnabled('USE_OPTIMIZED_QUERIES', req.user?.id) : false;
+                
+                let result;
+                if (useOptimized && queryOptimizer) {
+                    console.log('[API] Using optimized batch sync (75x faster!)');
+                    result = await queryOptimizer.batchSyncFileCountsOptimized(supabase);
+                } else {
+                    console.log('[API] Using legacy batch sync (fallback)');
+                    result = await batchSyncAllFileCount(supabase);
+                }
+                
+                // Track query count for monitoring
+                if (req.queryCount === undefined) {
+                    req.queryCount = result.queriesExecuted || 0;
+                }
                 
                 res.json(result);
                 

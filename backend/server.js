@@ -156,6 +156,37 @@ function collectFilteredStderr(rcloneProcess) {
 // Initialize Secret Manager client (if on Cloud Run)
 initializeSecretManager();
 
+// ============================================================
+// INFRASTRUCTURE MONITORING & FEATURE FLAGS - IMPORTS ONLY (NEW)
+// Will be initialized after Supabase client is created
+// ============================================================
+
+const QueryOptimizer = require('./query-optimizer');
+const featureFlags = require('./feature-flags');
+const PerformanceMonitor = require('./performance-monitor');
+const registerMonitoringEndpoints = require('./monitoring-endpoints');
+const registerPhase34Endpoints = require('./phase-3-4-endpoints'); // Phase 3-4 (NEW)
+
+// Phase 3: Idempotency Keys (NEW)
+const IdempotencyMiddleware = require('./idempotency-middleware');
+let idempotencyMiddleware; // Will be initialized after Supabase
+
+// Phase 4: Redis Caching (NEW)
+const { RedisCache, CacheKeys } = require('./redis-cache');
+let cacheLayer; // Will be initialized after Redis connection
+let redisClient; // Will be initialized
+
+// Initialize performance monitor (can do now, no dependencies)
+const performanceMonitor = new PerformanceMonitor({
+    responseTimeP99: 500,  // Alert if P99 > 500ms
+    errorRate: 0.01,       // Alert if error rate > 1%
+    cacheHitRate: 0.80,    // Alert if cache hit rate < 80%
+    queryCount: 5          // Alert if avg queries > 5
+});
+
+// QueryOptimizer initialization moved to AFTER supabase client creation
+let queryOptimizer; // Will be initialized later
+
 const app = express();
 const DEFAULT_PORT = 5000;
 
@@ -245,6 +276,49 @@ app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // ============================================================
+// REQUEST TIMING MIDDLEWARE (for performance tracking) (NEW)
+// ============================================================
+
+app.use((req, res, next) => {
+    const startTime = Date.now();
+
+    // Intercept response
+    const originalJson = res.json;
+    res.json = function(data) {
+        const duration = Date.now() - startTime;
+        const statusCode = res.statusCode;
+        let queryCount = 0;
+
+        // Get query count from request context (if available)
+        if (req.queryCount) {
+            queryCount = req.queryCount;
+        }
+
+        // Record metrics
+        performanceMonitor.recordRequest(req.path, duration, statusCode, queryCount);
+
+        // Log slow requests
+        if (duration > 500) {
+            console.log(`[SLOW] ${req.method} ${req.path} took ${duration}ms`);
+        }
+
+        // Call original json
+        return originalJson.call(this, data);
+    };
+
+    next();
+});
+
+// ============================================================
+// Phase 3: IDEMPOTENCY MIDDLEWARE (for duplicate prevention) (NEW)
+// ============================================================
+
+// Phase 3-4 middleware will be registered AFTER initialization
+
+
+// Phase 4: Cache already injected in Phase 3-4 middleware section above
+
+// ============================================================
 // Request Timeout Middleware - Prevent hanging requests
 // from monopolizing connections during batch processing
 // ============================================================
@@ -259,6 +333,17 @@ app.use((req, res, next) => {
     });
     next();
 });
+
+// ============================================================
+// REGISTER MONITORING ENDPOINTS (NEW)
+// ============================================================
+
+registerMonitoringEndpoints(app, performanceMonitor);
+
+console.log('[BOOT] ✅ Monitoring endpoints registered');
+console.log('[BOOT] ✅ Dashboard available at: /monitoring.html');
+
+// Phase 3-4 endpoints will be registered AFTER initialization (see line ~1250)
 
 // ============================================================
 // SECURITY: HTTPS Enforcement (redirect HTTP → HTTPS)
@@ -1088,6 +1173,94 @@ const supabase = createClient(
 // Initialize Audit Logger
 const auditLogger = new AuditLogger(supabase);
 
+// ============================================================
+// Initialize Query Optimizer (after Supabase client ready)
+// ============================================================
+queryOptimizer = new QueryOptimizer(supabase);
+
+// ============================================================
+// Phase 3: Initialize Idempotency Middleware (NEW)
+// ============================================================
+idempotencyMiddleware = new IdempotencyMiddleware(supabase);
+console.log('[BOOT] ✅ Idempotency protection enabled');
+
+// Cleanup job - runs daily
+setInterval(() => {
+    idempotencyMiddleware.cleanupExpired();
+}, 24 * 60 * 60 * 1000);
+
+// ============================================================
+// Phase 4: Initialize Redis Cache (NEW)
+// ============================================================
+(async () => {
+    try {
+        const redis = require('redis');
+        
+        redisClient = redis.createClient({
+            host: process.env.REDIS_HOST || 'localhost',
+            port: process.env.REDIS_PORT || 6379,
+            password: process.env.REDIS_PASSWORD,
+            socket: {
+                reconnectStrategy: (retries) => Math.min(retries * 50, 500),
+                connectTimeout: 5000
+            }
+        });
+
+        // Don't log connection errors - handled by try/catch
+        // Only log critical errors if needed for production debugging
+        redisClient.on('connect', () => console.log('[Redis] ✅ Connected'));
+        redisClient.on('ready', () => console.log('[Redis] ✅ Ready'));
+
+        await redisClient.connect();
+
+        // Initialize cache layer
+        cacheLayer = new RedisCache(redisClient, {
+            ttl: 3600, // 1 hour
+            maxMemoryItems: 1000,
+            enableStats: true
+        });
+
+        console.log('[BOOT] ✅ Redis caching layer initialized');
+
+    } catch (error) {
+        console.error('[Redis] Failed to initialize:', error.message);
+        console.log('[Redis] ⚠️  Continuing without Redis (degraded mode)');
+        // Continue without Redis - graceful fallback
+    }
+})();
+
+// ============================================================
+// Phase 4: Initialize Cache Helper (NEW)
+// ============================================================
+
+const CacheHelper = require('./cache-helpers');
+const cacheHelper = new CacheHelper(cacheLayer);
+
+// ============================================================
+// REGISTER PHASE 3-4 MIDDLEWARE & ENDPOINTS (NEW) - After initialization
+// ============================================================
+
+// Register idempotency middleware
+if (idempotencyMiddleware) {
+    app.use(idempotencyMiddleware.middleware());
+}
+
+// Register cache helper to request
+app.use((req, res, next) => {
+    req.cacheHelper = cacheHelper;
+    req.cache = cacheLayer;
+    next();
+});
+
+// Register endpoints
+if (idempotencyMiddleware || cacheLayer) {
+    registerPhase34Endpoints(app, idempotencyMiddleware, cacheLayer);
+}
+
+console.log('[BOOT] ✅ Performance monitoring initialized');
+console.log('[BOOT] ✅ Feature flags initialized');
+console.log('[BOOT] ✅ Query optimizer ready');
+
 // Multer config (memory storage for streaming to Rclone)
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -1457,7 +1630,6 @@ console.log('[INIT] Registering Phase 2 feature endpoints...');
 const faqEndpoints = require('./faq-endpoints');
 const notificationEndpoints = require('./notification-endpoints');
 const { registerInvoiceEndpoints, addFileExistenceVerificationEndpoint, addClearFileEndpoint, addBatchSyncEndpoint, addManualSyncEndpoint } = require('./invoice-endpoints');
-const { registerMonitoringEndpoints } = require('./monitoring-endpoints');
 
 // Create auth factory for session endpoints
 const createAuth = (allowedRoles = null) => {
@@ -1478,8 +1650,9 @@ const pdfToCsvEndpoints = require('./pdf-to-csv-endpoints');
 app.use('/api', faqEndpoints);
 app.use('/api', notificationEndpoints);
 
-// Register monitoring endpoints
-registerMonitoringEndpoints(app, authenticateToken);
+// ============================================================
+// Phase 2 Feature Endpoints (FAQ, etc)
+// ============================================================
 renameFakturEndpoints(app, supabase);
 pdfToCsvEndpoints(app, authenticateToken);
 console.log('[INIT] Phase 2 feature endpoints registered ✅');
@@ -1566,7 +1739,7 @@ const createInvoiceAuth = (allowedRoles = null) => {
 };
 registerInvoiceEndpoints(app, supabase, createInvoiceAuth, R2Storage);
 addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, R2Storage);
-addBatchSyncEndpoint(app, supabase, createInvoiceAuth);
+addBatchSyncEndpoint(app, supabase, createInvoiceAuth, featureFlags, queryOptimizer);
 addClearFileEndpoint(app, supabase, createInvoiceAuth);
 addFakturPajakRenameEndpoints(app, supabase, createInvoiceAuth);
 console.log('[INIT] Invoice System endpoints registered ✅');

@@ -1,316 +1,234 @@
-// ============================================================
-// VPS System Monitoring Endpoints
-// Real-time system metrics, process monitoring, and alerts
-// ============================================================
-
-const os = require('os');
-const fs = require('fs');
-const { execSync } = require('child_process');
-
 /**
- * Format bytes to human readable format
+ * Monitoring Endpoints
+ * Expose performance metrics and feature flags via REST API
+ * 
+ * Endpoints:
+ * - GET /api/monitoring/health - System health status
+ * - GET /api/monitoring/metrics - Performance metrics summary
+ * - GET /api/monitoring/endpoints - Per-endpoint metrics
+ * - GET /api/monitoring/alerts - Recent alerts
+ * - GET /api/features - Current feature flag status
+ * - POST /api/features/:flag/rollout - Update feature flag rollout
  */
-function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-}
 
-/**
- * Get CPU usage percentage
- */
-function getCPUUsage() {
-    const cpus = os.cpus();
-    let totalIdle = 0;
-    let totalTick = 0;
+const featureFlags = require('./feature-flags');
 
-    cpus.forEach(cpu => {
-        for (type in cpu.times) {
-            totalTick += cpu.times[type];
-        }
-        totalIdle += cpu.times.idle;
-    });
-
-    const idle = totalIdle / cpus.length;
-    const total = totalTick / cpus.length;
-    const usage = 100 - ~~(100 * idle / total);
-
-    return {
-        usage: usage,
-        cores: cpus.length,
-        loadAverage: os.loadavg()
-    };
-}
-
-/**
- * Get memory usage
- */
-function getMemoryUsage() {
-    const total = os.totalmem();
-    const free = os.freemem();
-    const used = total - free;
-
-    return {
-        total: total,
-        used: used,
-        free: free,
-        percentage: (used / total) * 100
-    };
-}
-
-/**
- * Get disk usage (root partition)
- */
-function getDiskUsage() {
-    try {
-        let output;
-        if (process.platform === 'linux') {
-            output = execSync('df -B1 / | tail -1').toString();
-            const parts = output.trim().split(/\s+/);
-            return {
-                total: parseInt(parts[1]),
-                used: parseInt(parts[2]),
-                free: parseInt(parts[3]),
-                percentage: parseInt(parts[4])
-            };
-        } else {
-            // Fallback for non-Linux systems
-            return {
-                total: 1099511627776, // 1TB fallback
-                used: 549755813888,   // 500GB fallback
-                free: 549755813888,
-                percentage: 50
-            };
-        }
-    } catch (error) {
-        console.error('Error getting disk usage:', error);
-        return {
-            total: 0,
-            used: 0,
-            free: 0,
-            percentage: 0
-        };
-    }
-}
-
-/**
- * Get system uptime in seconds
- */
-function getUptime() {
-    return os.uptime();
-}
-
-/**
- * Get network statistics
- */
-function getNetworkStats() {
-    try {
-        if (process.platform === 'linux') {
-            const stats = fs.readFileSync('/proc/net/dev', 'utf8');
-            const lines = stats.split('\n');
-            let totalIn = 0;
-            let totalOut = 0;
-
-            lines.forEach(line => {
-                if (!line.includes('face') && !line.includes('lo') && line.trim()) {
-                    const parts = line.trim().split(/\s+/);
-                    if (parts.length > 9) {
-                        totalIn += parseInt(parts[1]) || 0;
-                        totalOut += parseInt(parts[9]) || 0;
-                    }
-                }
-            });
-
-            // Rough bytes per second estimation
-            return {
-                in: totalIn / 1000, // Convert to approximate Mbps
-                out: totalOut / 1000
-            };
-        }
-        return { in: 0, out: 0 };
-    } catch (error) {
-        return { in: 0, out: 0 };
-    }
-}
-
-/**
- * Get top processes by CPU usage
- */
-function getTopProcesses() {
-    try {
-        if (process.platform === 'linux') {
-            const output = execSync('ps aux --sort=-%cpu | head -11').toString();
-            const lines = output.split('\n').slice(1);
-
-            return lines.map(line => {
-                const parts = line.trim().split(/\s+/);
-                if (parts.length > 10) {
-                    return {
-                        user: parts[0],
-                        pid: parts[1],
-                        cpu: parseFloat(parts[2]) || 0,
-                        memory: parseInt(parts[5]) * 1024, // Convert KB to bytes
-                        name: parts.slice(10).join(' ').substring(0, 50)
-                    };
-                }
-            }).filter(Boolean);
-        }
-        return [];
-    } catch (error) {
-        console.error('Error getting processes:', error);
-        return [];
-    }
-}
-
-/**
- * Check backend service status
- */
-function getBackendStatus() {
-    try {
-        const nodeProcs = execSync('pgrep -f "node.*server.js" || true').toString().trim();
-        const running = nodeProcs.length > 0;
-
-        return {
-            running: running,
-            port: 5000,
-            uptime: running ? '✓ Running' : '✗ Offline'
-        };
-    } catch (error) {
-        return {
-            running: false,
-            port: 5000,
-            uptime: 'Error checking status'
-        };
-    }
-}
-
-/**
- * Register monitoring endpoints
- */
-function registerMonitoringEndpoints(app, auth) {
-    // Public endpoint for frontend (no auth required for now)
-    app.get('/api/monitoring/stats', async (req, res) => {
-        try {
-            const stats = {
-                cpu: getCPUUsage(),
-                memory: getMemoryUsage(),
-                disk: getDiskUsage(),
-                uptime: getUptime(),
-                network: getNetworkStats(),
-                backend: getBackendStatus(),
-                processes: getTopProcesses(),
-                timestamp: new Date().toISOString()
-            };
-
-            res.json(stats);
-        } catch (error) {
-            console.error('[Monitoring] Error collecting stats:', error);
-            res.status(500).json({
-                error: 'Failed to collect system stats',
-                details: error.message
-            });
-        }
-    });
-
-    // Detailed CPU info endpoint
-    app.get('/api/monitoring/cpu', (req, res) => {
-        const cpuInfo = {
-            usage: getCPUUsage(),
-            cores: os.cpus(),
-            model: os.cpus()[0]?.model || 'Unknown'
-        };
-        res.json(cpuInfo);
-    });
-
-    // Detailed memory info endpoint
-    app.get('/api/monitoring/memory', (req, res) => {
-        res.json({
-            ...getMemoryUsage(),
-            loadAverage: os.loadavg()
+function registerMonitoringEndpoints(app, performanceMonitor) {
+    // Public health check (no auth required)
+    app.get('/health', (req, res) => {
+        res.json({ 
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
         });
     });
 
-    // Detailed disk info endpoint
-    app.get('/api/monitoring/disk', (req, res) => {
-        res.json(getDiskUsage());
-    });
-
-    // Real-time storage stats endpoint
-    app.get('/api/monitoring/storage', (req, res) => {
-        try {
-            const diskUsage = getDiskUsage();
-            const storageStats = {
-                capacity: diskUsage.total,
-                used: diskUsage.used,
-                free: diskUsage.free,
-                percentage: diskUsage.percentage,
-                formattedCapacity: formatBytes(diskUsage.total),
-                formattedUsed: formatBytes(diskUsage.used),
-                formattedFree: formatBytes(diskUsage.free),
-                timestamp: new Date().toISOString(),
-                updated: new Date().toLocaleTimeString()
-            };
-            res.json(storageStats);
-        } catch (error) {
-            console.error('[Monitoring] Error fetching storage stats:', error);
-            res.status(500).json({
-                error: 'Failed to fetch storage stats',
-                details: error.message
-            });
-        }
-    });
-
-    // Top processes endpoint
-    app.get('/api/monitoring/processes', (req, res) => {
-        const limit = parseInt(req.query.limit) || 10;
-        const processes = getTopProcesses();
-        res.json(processes.slice(0, limit));
-    });
-
-    // Backend health check
+    // Health status with metrics
     app.get('/api/monitoring/health', (req, res) => {
+        const summary = performanceMonitor.getSummary();
         res.json({
-            status: 'ok',
+            health: summary.health,
+            timestamp: summary.timestamp,
             uptime: process.uptime(),
+            requests: summary.requests,
+            performance: summary.performance,
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+            }
+        });
+    });
+
+    // Full metrics summary
+    app.get('/api/monitoring/metrics', (req, res) => {
+        const summary = performanceMonitor.getSummary();
+        res.json(summary);
+    });
+
+    // Per-endpoint metrics
+    app.get('/api/monitoring/endpoints', (req, res) => {
+        const metrics = performanceMonitor.getAllEndpointMetrics();
+        
+        // Sort by average duration (slowest first)
+        const sorted = Object.values(metrics)
+            .sort((a, b) => parseFloat(b.avgDuration) - parseFloat(a.avgDuration));
+
+        res.json({
+            endpoints: sorted,
+            total: Object.keys(metrics).length
+        });
+    });
+
+    // Recent alerts
+    app.get('/api/monitoring/alerts', (req, res) => {
+        const limit = parseInt(req.query.limit) || 50;
+        const level = req.query.level;  // 'info', 'warning', 'critical'
+
+        let alerts = performanceMonitor.alerts;
+
+        if (level) {
+            alerts = alerts.filter(a => a.level === level);
+        }
+
+        res.json({
+            alerts: alerts.slice(-limit),
+            total: performanceMonitor.alerts.length
+        });
+    });
+
+    // Feature flags status
+    app.get('/api/features', (req, res) => {
+        const flags = featureFlags.getAllFlags();
+        res.json({
+            flags,
             timestamp: new Date().toISOString()
         });
     });
 
-    // Get backend logs (real-time tail)
-    app.get('/api/monitoring/logs', (req, res) => {
-        try {
-            const limit = parseInt(req.query.limit) || 100;
-            
-            // Return in-memory logs buffer
-            // Note: In production, this could read from a log file instead
-            const logs = global.backendLogs || [];
-            
-            res.json({
-                logs: logs.slice(-limit),
-                total: logs.length,
-                timestamp: new Date().toISOString()
-            });
-        } catch (error) {
-            console.error('[Monitoring] Error fetching logs:', error);
-            res.status(500).json({
-                error: 'Failed to fetch logs',
-                details: error.message
+    // Get specific feature flag status
+    app.get('/api/features/:flagName', (req, res) => {
+        const { flagName } = req.params;
+        const flags = featureFlags.getAllFlags();
+
+        if (!flags[flagName]) {
+            return res.status(404).json({
+                error: `Feature flag '${flagName}' not found`
             });
         }
+
+        res.json({
+            flag: flagName,
+            ...flags[flagName],
+            timestamp: new Date().toISOString()
+        });
     });
 
-    console.log('[Monitoring] Endpoints registered successfully');
+    // Update feature flag rollout (admin only)
+    app.post('/api/features/:flagName/rollout', async (req, res) => {
+        // Check authentication (basic check, enhance with proper auth)
+        if (process.env.NODE_ENV === 'production') {
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+        }
+
+        const { flagName } = req.params;
+        const { percentage } = req.body;
+
+        if (percentage === undefined) {
+            return res.status(400).json({
+                error: 'Missing percentage parameter'
+            });
+        }
+
+        if (percentage < 0 || percentage > 100) {
+            return res.status(400).json({
+                error: 'Percentage must be between 0 and 100'
+            });
+        }
+
+        const success = featureFlags.setRolloutPercentage(flagName, percentage);
+
+        if (!success) {
+            return res.status(404).json({
+                error: `Feature flag '${flagName}' not found`
+            });
+        }
+
+        res.json({
+            flag: flagName,
+            percentage,
+            timestamp: new Date().toISOString(),
+            message: `Rollout updated to ${percentage}%`
+        });
+    });
+
+    // Enable/disable feature flag (admin only)
+    app.post('/api/features/:flagName/toggle', async (req, res) => {
+        if (process.env.NODE_ENV === 'production') {
+            const authHeader = req.headers.authorization;
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+        }
+
+        const { flagName } = req.params;
+        const { enabled } = req.body;
+
+        if (enabled === undefined) {
+            return res.status(400).json({
+                error: 'Missing enabled parameter (true/false)'
+            });
+        }
+
+        const success = featureFlags.setEnabled(flagName, enabled);
+
+        if (!success) {
+            return res.status(404).json({
+                error: `Feature flag '${flagName}' not found`
+            });
+        }
+
+        res.json({
+            flag: flagName,
+            enabled,
+            timestamp: new Date().toISOString(),
+            message: `Feature flag ${enabled ? 'enabled' : 'disabled'}`
+        });
+    });
+
+    // Feature flag rollout history
+    app.get('/api/features/history/:flagName', (req, res) => {
+        const { flagName } = req.params;
+        const limit = parseInt(req.query.limit) || 50;
+
+        const flags = featureFlags.getAllFlags();
+        if (!flags[flagName]) {
+            return res.status(404).json({
+                error: `Feature flag '${flagName}' not found`
+            });
+        }
+
+        const history = featureFlags.getHistory(limit);
+        const flagHistory = history.filter(h => h.flag === flagName);
+
+        res.json({
+            flag: flagName,
+            history: flagHistory,
+            total: flagHistory.length
+        });
+    });
+
+    // Dashboard endpoint (combines all metrics)
+    app.get('/api/monitoring/dashboard', (req, res) => {
+        const summary = performanceMonitor.getSummary();
+        const flags = featureFlags.getAllFlags();
+        const endpointMetrics = performanceMonitor.getAllEndpointMetrics();
+
+        res.json({
+            timestamp: new Date().toISOString(),
+            health: summary.health,
+            uptime: process.uptime(),
+            requests: summary.requests,
+            performance: summary.performance,
+            queries: summary.queries,
+            cache: summary.cache,
+            errors: summary.errors,
+            features: flags,
+            topEndpoints: Object.values(endpointMetrics)
+                .sort((a, b) => parseFloat(b.avgDuration) - parseFloat(a.avgDuration))
+                .slice(0, 10),
+            recentAlerts: summary.alerts.slice(-10),
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+                external: Math.round(process.memoryUsage().external / 1024 / 1024)
+            }
+        });
+    });
+
+    console.log('[Monitoring] ✅ Monitoring endpoints registered');
 }
 
-module.exports = {
-    registerMonitoringEndpoints,
-    getCPUUsage,
-    getMemoryUsage,
-    getDiskUsage,
-    getUptime,
-    getNetworkStats,
-    getTopProcesses,
-    getBackendStatus
-};
+module.exports = registerMonitoringEndpoints;

@@ -114,36 +114,35 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
             const userId = req.user.id;
             const userZonaId = req.user.zona_id;
 
+            // Get announcements with read status in ONE query using LEFT JOIN
             const { data, error } = await supabase
                 .from('announcements')
-                .select('*')
+                .select(`
+                    *,
+                    announcement_reads!left(is_read)
+                `)
                 .eq('is_active', true)
+                .eq('announcement_reads.user_id', userId)
                 .order('created_at', { ascending: false })
                 .limit(50);
 
             if (error) throw error;
 
-            // Filter based on recipient type
-            const filtered = data.filter(a => {
-                if (a.recipient_type === 'all_users') return true;
-                if (a.recipient_type === 'all_zonas' && userZonaId) return true;
-                return false;
-            });
-
-            // Get read status
-            const announcements = await Promise.all(filtered.map(async (a) => {
-                const { data: reads } = await supabase
-                    .from('announcement_reads')
-                    .select('is_read')
-                    .eq('announcement_id', a.id)
-                    .eq('user_id', userId)
-                    .maybeSingle();
-                
-                return {
+            // Filter based on recipient type and flatten read status
+            const announcements = data
+                .filter(a => {
+                    if (a.recipient_type === 'all_users') return true;
+                    if (a.recipient_type === 'all_zonas' && userZonaId) return true;
+                    return false;
+                })
+                .map(a => ({
                     ...a,
-                    current_user_read: reads?.is_read || false
-                };
-            }));
+                    current_user_read: a.announcement_reads && a.announcement_reads.length > 0 
+                        ? a.announcement_reads[0].is_read 
+                        : false,
+                    // Remove the nested array from response
+                    announcement_reads: undefined
+                }));
 
             res.json({ announcements });
         } catch (error) {
