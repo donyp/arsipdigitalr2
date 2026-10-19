@@ -177,29 +177,29 @@ class AnnouncementNotification {
                 border-radius: 50%;
                 flex-shrink: 0;
                 margin-top: 4px;
-                animation: heartbeat 1.5s ease-in-out infinite;
+                animation: heartbeat 1.5s ease-in-out infinite !important;
             }
 
             @keyframes heartbeat {
                 0%, 100% {
-                    transform: scale(1);
-                    opacity: 1;
+                    transform: scale(1) !important;
+                    opacity: 1 !important;
                 }
                 20% {
-                    transform: scale(1.2);
-                    opacity: 0.95;
+                    transform: scale(1.2) !important;
+                    opacity: 0.95 !important;
                 }
                 40% {
-                    transform: scale(1);
-                    opacity: 1;
+                    transform: scale(1) !important;
+                    opacity: 1 !important;
                 }
                 50% {
-                    transform: scale(1.15);
-                    opacity: 0.9;
+                    transform: scale(1.15) !important;
+                    opacity: 0.9 !important;
                 }
                 60% {
-                    transform: scale(1);
-                    opacity: 1;
+                    transform: scale(1) !important;
+                    opacity: 1 !important;
                 }
             }
 
