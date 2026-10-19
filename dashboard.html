@@ -2082,7 +2082,13 @@
                                                         console.log('[Dashboard Greeting] parsed.name:', parsed.name);
                                                         console.log('[Dashboard Greeting] parsed.email:', parsed.email);
                                                         
-                                                        userName = parsed.username || parsed.name || parsed.email || 'User';
+                                                        // IMPORTANT: Use username field, not name
+                                                        // The 'name' field might be NULL or incorrect
+                                                        if (parsed.username) {
+                                                            userName = parsed.username;
+                                                        } else {
+                                                            userName = parsed.name || parsed.email || 'User';
+                                                        }
                                                         console.log('[Dashboard Greeting] Username extracted:', userName);
                                                     } catch (e) {
                                                         console.warn('Could not parse user:', e);
@@ -2107,6 +2113,13 @@
                                                     console.log('[Dashboard Greeting] ✅ Element updated successfully');
                                                 } else {
                                                     console.error('[Dashboard Greeting] ❌ Element not found!');
+                                                }
+                                                
+                                                // Also update unified-header if it exists
+                                                const unifiedUserEl = document.querySelector('.user-name');
+                                                if (unifiedUserEl) {
+                                                    unifiedUserEl.textContent = userName;
+                                                    console.log('[Dashboard Greeting] Also updated unified-header .user-name to:', userName);
                                                 }
                                             } catch (err) {
                                                 console.error('Greeting init error:', err);

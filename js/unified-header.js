@@ -224,8 +224,18 @@ function loadUserGreeting() {
                 try {
                     const parsed = JSON.parse(userObj);
                     console.log('[loadUserGreeting] parsed user:', parsed);
-                    userName = parsed.username || parsed.name || parsed.email || 'User';
-                    console.log('[loadUserGreeting] extracted username:', userName);
+                    console.log('[loadUserGreeting] parsed.username:', parsed.username);
+                    console.log('[loadUserGreeting] parsed.role:', parsed.role);
+                    
+                    // Use username field - this is the actual login username
+                    // NOT the 'name' field which might be NULL
+                    if (parsed.username) {
+                        userName = parsed.username;
+                        console.log('[loadUserGreeting] Using username from user object:', userName);
+                    } else {
+                        userName = parsed.name || parsed.email || 'User';
+                        console.log('[loadUserGreeting] No username field, using fallback:', userName);
+                    }
                 } catch (e) {
                     console.warn('Could not parse user object:', e);
                 }
