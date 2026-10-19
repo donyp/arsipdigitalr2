@@ -21,9 +21,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-VPS_USER="root"
-VPS_IP="your-vps-ip"
-DEPLOY_PATH="/root/arsipcloudflre"
+VPS_USER="deploy"
+VPS_IP="api"  # atau IP address anda
+DEPLOY_PATH="~/apps/arsipdigitalr2"  # Sesuai path anda
 REPO="origin/master"
 APP_NAME="arsip-backend"
 
