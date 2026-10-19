@@ -2082,12 +2082,13 @@
                                                         console.log('[Dashboard Greeting] parsed.name:', parsed.name);
                                                         console.log('[Dashboard Greeting] parsed.email:', parsed.email);
                                                         
-                                                        // IMPORTANT: Use username field, not name
-                                                        // The 'name' field might be NULL or incorrect
-                                                        if (parsed.username) {
-                                                            userName = parsed.username;
+                                                        // IMPORTANT: Use name field (real name), not username (login name)
+                                                        // The 'name' field contains real names (Andi, Arif, Asep, Doni)
+                                                        // The 'username' field contains login usernames (adminandi, adminarif, etc)
+                                                        if (parsed.name) {
+                                                            userName = parsed.name;
                                                         } else {
-                                                            userName = parsed.name || parsed.email || 'User';
+                                                            userName = parsed.username || parsed.email || 'User';
                                                         }
                                                         console.log('[Dashboard Greeting] Username extracted:', userName);
                                                     } catch (e) {

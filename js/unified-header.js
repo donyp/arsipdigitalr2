@@ -227,14 +227,18 @@ function loadUserGreeting() {
                     console.log('[loadUserGreeting] parsed.username:', parsed.username);
                     console.log('[loadUserGreeting] parsed.role:', parsed.role);
                     
-                    // Use username field - this is the actual login username
-                    // NOT the 'name' field which might be NULL
-                    if (parsed.username) {
+                    // Use name field (real name) first, not username (login name)
+                    // name = "Andi", "Arif", "Doni" (real names)
+                    // username = "adminandi", "adminarif", "moderator" (login usernames)
+                    if (parsed.name) {
+                        userName = parsed.name;
+                        console.log('[loadUserGreeting] Using name from user object:', userName);
+                    } else if (parsed.username) {
                         userName = parsed.username;
-                        console.log('[loadUserGreeting] Using username from user object:', userName);
+                        console.log('[loadUserGreeting] Fallback to username:', userName);
                     } else {
-                        userName = parsed.name || parsed.email || 'User';
-                        console.log('[loadUserGreeting] No username field, using fallback:', userName);
+                        userName = parsed.email || 'User';
+                        console.log('[loadUserGreeting] Fallback to email/User:', userName);
                     }
                 } catch (e) {
                     console.warn('Could not parse user object:', e);
