@@ -1804,7 +1804,7 @@
                             <button class="btn-action btn-notification-action" id="announcementNotifBtn" onclick="openAnnouncementNotifications()" title="Notifikasi Pengumuman" style="width: 44px; height: 44px; padding: 10px;">
                                 <i class="fas fa-bell"></i>
                             </button>
-                            <span class="notification-badge" id="announcementBadge">0</span>
+                            <span class="notification-badge" id="announcementBadge" data-badge-admin-zona="true">0</span>
                         </div>
                         <button class="btn-action btn-logout-action" onclick="logout()" title="Logout">
                             <i class="fas fa-sign-out-alt"></i>
@@ -3474,14 +3474,14 @@
                         const unreadData = await unreadResponse.json();
                         console.log('[Admin Zone] Unread count data:', unreadData);
                         
-                        const badge = document.getElementById('announcementBadge');
+                        const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
                         console.log('[Admin Zone] Badge element found:', !!badge);
                         console.log('[Admin Zone] Badge element ID:', badge?.id);
                         console.log('[Admin Zone] Badge parent:', badge?.parentElement);
                         console.log('[Admin Zone] Badge parent class:', badge?.parentElement?.className);
-                        console.log('[Admin Zone] All badges on page:', document.querySelectorAll('[id*="announcementBadge"]').length);
+                        console.log('[Admin Zone] All badges with announcementBadge ID:', document.querySelectorAll('[id*="announcementBadge"]').length);
                         document.querySelectorAll('[id*="announcementBadge"]').forEach((b, i) => {
-                            console.log(`[Admin Zone] Badge ${i}:`, b, 'text:', b.textContent, 'parent:', b.parentElement?.className);
+                            console.log(`[Admin Zone] Badge ${i}:`, b, 'text:', b.textContent, 'parent:', b.parentElement?.className, 'data attr:', b.getAttribute('data-badge-admin-zona'));
                         });
                         
                         if (badge && unreadData.unread_count > 0) {
