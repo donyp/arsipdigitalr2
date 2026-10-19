@@ -506,21 +506,23 @@
         }
 
         .notification-badge {
-            position: relative;
-            display: inline-flex;
-            background: #ef4444;
-            color: white;
-            font-size: 10px;
-            font-weight: 700;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            align-items: center;
-            justify-content: center;
-            line-height: 1;
-            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
-            border: 2px solid white;
-            vertical-align: top;
+            position: relative !important;
+            display: inline-flex !important;
+            background: #ef4444 !important;
+            color: white !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            width: 20px !important;
+            height: 20px !important;
+            border-radius: 50% !important;
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4) !important;
+            border: 2px solid white !important;
+            vertical-align: top !important;
+            margin-left: -8px !important;
+            flex-shrink: 0 !important;
         }
 
         /* PROFILE MODAL */
@@ -3465,7 +3467,8 @@
                         if (badge && unreadData.unread_count > 0) {
                             const displayCount = unreadData.unread_count > 99 ? '99+' : unreadData.unread_count;
                             badge.textContent = displayCount;
-                            badge.style.display = 'inline-flex';
+                            badge.style.display = 'inline-flex !important';
+                            badge.style.setProperty('display', 'inline-flex', 'important');
                             console.log('[Admin Zone] Badge displayed with count:', displayCount);
                         } else if (badge) {
                             badge.style.display = 'none';
@@ -3490,7 +3493,7 @@
                                 if (data.unread_count > 0) {
                                     const displayCount = data.unread_count > 99 ? '99+' : data.unread_count;
                                     badge.textContent = displayCount;
-                                    badge.style.display = 'inline-flex';
+                                    badge.style.setProperty('display', 'inline-flex', 'important');
                                 } else {
                                     badge.style.display = 'none';
                                 }
