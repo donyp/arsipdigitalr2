@@ -32,6 +32,9 @@ const { logSecurityEvent, logWarning, logInfo, logDebug, logAudit, isDebugMode }
 global.backendLogs = [];
 const MAX_LOG_BUFFER = 500; // Keep last 500 logs
 
+// Check if we should log to Supabase (disable in production to save quota)
+const ENABLE_VERBOSE_LOGGING = process.env.ENABLE_VERBOSE_LOGGING !== 'false' && process.env.NODE_ENV !== 'production';
+
 // Intercept console.log untuk capture di monitoring
 const originalLog = console.log;
 const originalError = console.error;
@@ -56,22 +59,30 @@ function addLogToBuffer(level, args) {
 }
 
 console.log = function(...args) {
-    originalLog.apply(console, args);
+    // Only log to output if not in production or verbose logging is enabled
+    if (ENABLE_VERBOSE_LOGGING) {
+        originalLog.apply(console, args);
+    }
+    // Always add to buffer for local monitoring
     addLogToBuffer('INFO', args);
 };
 
 console.error = function(...args) {
+    // Always log errors
     originalError.apply(console, args);
     addLogToBuffer('ERROR', args);
 };
 
 console.warn = function(...args) {
+    // Always log warnings
     originalWarn.apply(console, args);
     addLogToBuffer('WARN', args);
 };
 
 console.info = function(...args) {
-    originalInfo.apply(console, args);
+    if (ENABLE_VERBOSE_LOGGING) {
+        originalInfo.apply(console, args);
+    }
     addLogToBuffer('INFO', args);
 };
 
