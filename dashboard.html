@@ -2071,17 +2071,24 @@
                                                 
                                                 // Try user object first
                                                 const userObj = localStorage.getItem('user');
-                                                console.log('[Dashboard Greeting] localStorage.user:', userObj ? userObj.substring(0, 100) : 'NOT FOUND');
+                                                console.log('[Dashboard Greeting] localStorage.user raw:', userObj);
                                                 
                                                 if (userObj) {
                                                     try {
                                                         const parsed = JSON.parse(userObj);
                                                         console.log('[Dashboard Greeting] Parsed user object:', parsed);
+                                                        console.log('[Dashboard Greeting] parsed.username:', parsed.username);
+                                                        console.log('[Dashboard Greeting] parsed.role:', parsed.role);
+                                                        console.log('[Dashboard Greeting] parsed.name:', parsed.name);
+                                                        console.log('[Dashboard Greeting] parsed.email:', parsed.email);
+                                                        
                                                         userName = parsed.username || parsed.name || parsed.email || 'User';
                                                         console.log('[Dashboard Greeting] Username extracted:', userName);
                                                     } catch (e) {
                                                         console.warn('Could not parse user:', e);
                                                     }
+                                                } else {
+                                                    console.log('[Dashboard Greeting] localStorage.user NOT FOUND');
                                                 }
                                                 
                                                 // Try simple user_name

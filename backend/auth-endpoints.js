@@ -227,6 +227,13 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 console.error('[Auth] Session record exception:', sessionErr.message, sessionErr.stack);
             }
 
+            console.log('[Auth] 🔐 Login successful for user:', {
+                id: users.id,
+                username: users.username,
+                email: users.email,
+                role: users.role
+            });
+
             return res.json({
                 success: true,
                 message: 'Login berhasil',
