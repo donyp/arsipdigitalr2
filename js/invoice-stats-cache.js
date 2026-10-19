@@ -125,5 +125,3 @@ class InvoiceStatsCache {
 
 // Global instance
 window.invoiceStatsCache = new InvoiceStatsCache();
-
-export default InvoiceStatsCache;
