@@ -177,6 +177,30 @@ class AnnouncementNotification {
                 border-radius: 50%;
                 flex-shrink: 0;
                 margin-top: 4px;
+                animation: heartbeat 1.5s ease-in-out infinite;
+            }
+
+            @keyframes heartbeat {
+                0%, 100% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                20% {
+                    transform: scale(1.2);
+                    opacity: 0.95;
+                }
+                40% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+                50% {
+                    transform: scale(1.15);
+                    opacity: 0.9;
+                }
+                60% {
+                    transform: scale(1);
+                    opacity: 1;
+                }
             }
 
             .announcement-item-content {
