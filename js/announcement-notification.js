@@ -178,19 +178,6 @@ class AnnouncementNotification {
                 flex-shrink: 0;
                 margin-top: 4px;
                 transform-origin: center center;
-                box-shadow: 0 0 6px #667eea;
-                animation: heartbeat 1.2s ease-in-out infinite;
-            }
-
-            @keyframes heartbeat {
-                0%, 100% {
-                    transform: scale(1);
-                    box-shadow: 0 0 6px #667eea;
-                }
-                50% {
-                    transform: scale(1.5);
-                    box-shadow: 0 0 12px #667eea, 0 0 20px rgba(102, 126, 234, 0.4);
-                }
             }
 
             .announcement-item-content {
@@ -534,13 +521,6 @@ class AnnouncementNotification {
                     </div>
                 `;
             }).join('');
-
-            // Debug: Check if dots exist
-            const dots = document.querySelectorAll('.announcement-unread-dot');
-            console.log('[Announcement] Unread dots found:', dots.length);
-            dots.forEach((dot, i) => {
-                console.log(`[Announcement] Dot ${i}:`, dot, 'computed style:', window.getComputedStyle(dot).animation);
-            });
 
             // Refresh badge count after loading announcements
             await this.loadUnreadCount();
