@@ -507,16 +507,21 @@
 
         .notification-badge {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: -6px;
+            right: -6px;
             background: #ef4444;
             color: white;
-            font-size: 10px;
-            font-weight: 600;
-            padding: 2px 6px;
-            border-radius: 10px;
-            min-width: 20px;
-            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+            border: 2px solid white;
         }
 
         /* PROFILE MODAL */
@@ -3450,8 +3455,10 @@
                         const unreadData = await unreadResponse.json();
                         const badge = document.getElementById('announcementBadge');
                         if (badge && unreadData.unread_count > 0) {
-                            badge.textContent = unreadData.unread_count;
-                            badge.style.display = 'block';
+                            badge.textContent = unreadData.unread_count > 99 ? '99+' : unreadData.unread_count;
+                            badge.style.display = 'flex';
+                        } else if (badge) {
+                            badge.style.display = 'none';
                         }
                     }
                 } catch (err) {
@@ -3471,7 +3478,7 @@
                             if (badge) {
                                 if (data.unread_count > 0) {
                                     badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
-                                    badge.style.display = 'block';
+                                    badge.style.display = 'flex';
                                 } else {
                                     badge.style.display = 'none';
                                 }
