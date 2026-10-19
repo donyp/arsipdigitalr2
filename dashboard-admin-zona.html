@@ -3489,15 +3489,13 @@
                             badge.textContent = displayCount;
                             console.log('[Admin Zone] Badge textContent is now:', badge.textContent);
                             console.log('[Admin Zone] Badge innerHTML:', badge.innerHTML);
-                            console.log('[Admin Zone] Badge computed style:', window.getComputedStyle(badge).cssText);
-                            console.log('[Admin Zone] Badge color:', window.getComputedStyle(badge).color);
-                            console.log('[Admin Zone] Badge background:', window.getComputedStyle(badge).backgroundColor);
                             badge.style.display = 'inline-flex !important';
                             badge.style.setProperty('display', 'inline-flex', 'important');
                             console.log('[Admin Zone] Badge displayed with count:', displayCount);
                         } else if (badge) {
                             console.log('[Admin Zone] Badge exists but unread_count is:', unreadData.unread_count);
-                            badge.style.display = 'none';
+                            badge.style.display = 'none !important';
+                            badge.style.setProperty('display', 'none', 'important');
                             console.log('[Admin Zone] Badge hidden (no unread)');
                         }
                     }
