@@ -3487,8 +3487,8 @@
                     greeting = 'malam';
                 }
                 
-                // Get username (use username field, fallback to name or 'User')
-                let username = currentUser.username || currentUser.name || 'User';
+                // Get username (fallback to name or 'User')
+                let username = currentUser.name || 'User';
                 
                 // Extract zona number from username if it contains "Zona" pattern
                 // e.g., "Admin Zona 01" -> extract "01" and format as "1"
