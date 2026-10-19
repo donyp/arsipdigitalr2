@@ -177,29 +177,25 @@ class AnnouncementNotification {
                 border-radius: 50%;
                 flex-shrink: 0;
                 margin-top: 4px;
-                animation: heartbeat 1.5s ease-in-out infinite !important;
+                transform-origin: center center;
+                animation: heartbeat 1.5s ease-in-out infinite;
             }
 
             @keyframes heartbeat {
-                0%, 100% {
-                    transform: scale(1) !important;
-                    opacity: 1 !important;
+                0% {
+                    transform: scale(1);
                 }
-                20% {
-                    transform: scale(1.2) !important;
-                    opacity: 0.95 !important;
-                }
-                40% {
-                    transform: scale(1) !important;
-                    opacity: 1 !important;
+                25% {
+                    transform: scale(1.3);
                 }
                 50% {
-                    transform: scale(1.15) !important;
-                    opacity: 0.9 !important;
+                    transform: scale(1);
                 }
-                60% {
-                    transform: scale(1) !important;
-                    opacity: 1 !important;
+                75% {
+                    transform: scale(1.2);
+                }
+                100% {
+                    transform: scale(1);
                 }
             }
 
@@ -544,6 +540,13 @@ class AnnouncementNotification {
                     </div>
                 `;
             }).join('');
+
+            // Debug: Check if dots exist
+            const dots = document.querySelectorAll('.announcement-unread-dot');
+            console.log('[Announcement] Unread dots found:', dots.length);
+            dots.forEach((dot, i) => {
+                console.log(`[Announcement] Dot ${i}:`, dot, 'computed style:', window.getComputedStyle(dot).animation);
+            });
 
             // Refresh badge count after loading announcements
             await this.loadUnreadCount();
