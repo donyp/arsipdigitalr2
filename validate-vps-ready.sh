@@ -182,21 +182,22 @@ fi
 # 10. Check Repository
 # ============================================================
 echo -e "${YELLOW}[10] Checking Repository...${NC}"
-if [ -d "/root/arsipcloudflre/.git" ]; then
-    check_pass "Repository exists at /root/arsipcloudflre"
-    CURRENT_BRANCH=$(cd /root/arsipcloudflre && git branch --show-current 2>/dev/null)
+APP_DIR="$HOME/apps/arsipdigitalr2"
+if [ -d "$APP_DIR/.git" ]; then
+    check_pass "Repository exists at $APP_DIR"
+    CURRENT_BRANCH=$(cd "$APP_DIR" && git branch --show-current 2>/dev/null)
     check_pass "Current branch: $CURRENT_BRANCH"
 else
-    check_warning "Repository not found at /root/arsipcloudflre"
+    check_warning "Repository not found at $APP_DIR"
 fi
 
 # ============================================================
 # 11. Check npm dependencies
 # ============================================================
 echo -e "${YELLOW}[11] Checking npm Dependencies...${NC}"
-if [ -d "/root/arsipcloudflre/backend/node_modules" ]; then
+if [ -d "$APP_DIR/backend/node_modules" ]; then
     check_pass "node_modules directory exists"
-    if grep -q "redis" /root/arsipcloudflre/backend/package.json; then
+    if grep -q "redis" "$APP_DIR/backend/package.json"; then
         check_pass "Redis package in dependencies"
     else
         check_fail "Redis package not in dependencies"
@@ -209,7 +210,7 @@ fi
 # 12. Check ecosystem.config.js
 # ============================================================
 echo -e "${YELLOW}[12] Checking PM2 Configuration...${NC}"
-if [ -f "/root/arsipcloudflre/ecosystem.config.js" ]; then
+if [ -f "$APP_DIR/ecosystem.config.js" ]; then
     check_pass "ecosystem.config.js found"
 else
     check_fail "ecosystem.config.js not found"
@@ -219,9 +220,9 @@ fi
 # 13. Check .env file
 # ============================================================
 echo -e "${YELLOW}[13] Checking Environment Configuration...${NC}"
-if [ -f "/root/arsipcloudflre/backend/.env" ]; then
+if [ -f "$APP_DIR/backend/.env" ]; then
     check_pass ".env file exists"
-    if grep -q "REDIS_PASSWORD" /root/arsipcloudflre/backend/.env; then
+    if grep -q "REDIS_PASSWORD" "$APP_DIR/backend/.env"; then
         check_pass "REDIS_PASSWORD configured"
     else
         check_fail "REDIS_PASSWORD not configured"
@@ -238,8 +239,8 @@ if redis-cli ping &> /dev/null; then
     REDIS_INFO=$(redis-cli info server | grep redis_version | cut -d: -f2)
     check_pass "Redis responding: $REDIS_INFO"
 else
-    if [ -f "/root/arsipcloudflre/backend/.env" ]; then
-        REDIS_PASSWORD=$(grep "REDIS_PASSWORD" /root/arsipcloudflre/backend/.env | cut -d= -f2)
+    if [ -f "$APP_DIR/backend/.env" ]; then
+        REDIS_PASSWORD=$(grep "REDIS_PASSWORD" "$APP_DIR/backend/.env" | cut -d= -f2)
         if [ -n "$REDIS_PASSWORD" ]; then
             if redis-cli -a "$REDIS_PASSWORD" ping &> /dev/null; then
                 check_pass "Redis responding with password"
