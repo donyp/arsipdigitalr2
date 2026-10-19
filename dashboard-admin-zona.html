@@ -3505,7 +3505,7 @@
                     console.error('[Admin Zone] Error loading announcement count:', err);
                 }
 
-                // Poll for announcement updates every 30 seconds
+                // Poll for announcement updates every 5 seconds (fast update)
                 setInterval(async () => {
                     try {
                         const token = localStorage.getItem('jwt_token');
@@ -3528,7 +3528,7 @@
                     } catch (err) {
                         console.error('[Admin Zone] Polling error:', err);
                     }
-                }, 30000);
+                }, 5000);
 
                 // Global function to update badge immediately (call this after marking announcement as read)
                 window.updateAnnouncementBadge = async function() {
