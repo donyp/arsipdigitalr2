@@ -567,6 +567,10 @@ class AnnouncementNotification {
                 // Reload announcements to update read status
                 await this.loadAnnouncements();
                 await this.loadUnreadCount();
+                // Update dashboard badge immediately
+                if (typeof window.updateAnnouncementBadge === 'function') {
+                    window.updateAnnouncementBadge();
+                }
             }
         } catch (err) {
             console.warn('Could not mark announcement as read:', err.message);

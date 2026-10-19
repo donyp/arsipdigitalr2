@@ -529,7 +529,6 @@
             justify-content: center !important;
             line-height: 1 !important;
             box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4) !important;
-            border: 2px solid white !important;
             flex-shrink: 0 !important;
             pointer-events: none !important;
             z-index: 10 !important;
@@ -3515,7 +3514,7 @@
                         });
                         if (response.ok) {
                             const data = await response.json();
-                            const badge = document.getElementById('announcementBadge');
+                            const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
                             if (badge) {
                                 if (data.unread_count > 0) {
                                     const displayCount = data.unread_count > 99 ? '99+' : data.unread_count;
@@ -3530,6 +3529,32 @@
                         console.error('[Admin Zone] Polling error:', err);
                     }
                 }, 30000);
+
+                // Global function to update badge immediately (call this after marking announcement as read)
+                window.updateAnnouncementBadge = async function() {
+                    try {
+                        const token = localStorage.getItem('jwt_token');
+                        const response = await fetch('/api/announcements/unread/count', {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
+                            if (badge) {
+                                if (data.unread_count > 0) {
+                                    const displayCount = data.unread_count > 99 ? '99+' : data.unread_count;
+                                    badge.textContent = displayCount;
+                                    badge.style.setProperty('display', 'inline-flex', 'important');
+                                } else {
+                                    badge.style.display = 'none';
+                                }
+                                console.log('[Admin Zone] Badge updated to:', data.unread_count);
+                            }
+                        }
+                    } catch (err) {
+                        console.error('[Admin Zone] Error updating badge:', err);
+                    }
+                };
 
                 // Load filter options only (DON'T load stats until user filters)
                 await loadFilterOptionsOnly();
