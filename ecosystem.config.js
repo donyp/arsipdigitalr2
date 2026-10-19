@@ -5,14 +5,14 @@
  * Usage:
  * - Start: pm2 start ecosystem.config.js
  * - Restart: pm2 restart ecosystem.config.js
- * - Logs: pm2 logs arsip-backend
+ * - Logs: pm2 logs arsipdigitalr2
  * - Monitor: pm2 monit
  */
 
 module.exports = {
   apps: [{
     // Application name
-    name: 'arsip-backend',
+    name: 'arsipdigitalr2',
     
     // Entry point
     script: './backend/server.js',
