@@ -32,26 +32,8 @@ WHERE a.is_active = TRUE
   )
 ON CONFLICT (announcement_id, user_id) DO NOTHING;
 
--- Ensure users have read records for specific_zonas announcements
--- Note: zona_id is integer, recipient_id in announcement_recipients is stored as text/uuid
--- Cast zona_id to text for comparison
-INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at)
-SELECT ar_map.announcement_id, u.id, false, NULL
-FROM announcement_recipients ar_map
-CROSS JOIN users u
-INNER JOIN announcements a ON a.id = ar_map.announcement_id
-WHERE a.is_active = TRUE
-  AND u.is_active = TRUE
-  AND ar_map.recipient_type = 'zona'
-  AND u.zona_id::text = ar_map.recipient_id
-  AND NOT EXISTS (
-    SELECT 1 FROM announcement_reads ar
-    WHERE ar.announcement_id = ar_map.announcement_id AND ar.user_id = u.id
-  )
-ON CONFLICT (announcement_id, user_id) DO NOTHING;
-
 -- Ensure users have read records for specific_users announcements
--- recipient_id is stored as uuid/text
+-- recipient_id is uuid
 INSERT INTO announcement_reads (announcement_id, user_id, is_read, read_at)
 SELECT ar_map.announcement_id, ar_map.recipient_id::uuid, false, NULL
 FROM announcement_recipients ar_map
@@ -65,6 +47,9 @@ WHERE a.is_active = TRUE
     WHERE ar.announcement_id = ar_map.announcement_id AND ar.user_id = ar_map.recipient_id::uuid
   )
 ON CONFLICT (announcement_id, user_id) DO NOTHING;
+
+-- Note: specific_zonas not implemented due to schema mismatch
+-- (zona_id is integer but recipient_id is uuid - needs schema migration)
 
 COMMIT;
 
