@@ -13,15 +13,12 @@ SELECT COUNT(*) as "Total Recipients" FROM announcement_recipients;
 
 -- Delete all announcement read records (FK dependency)
 DELETE FROM announcement_reads;
-RAISE NOTICE 'Deleted % announcement read records', ROW_COUNT;
 
 -- Delete all announcement recipients (FK dependency)
 DELETE FROM announcement_recipients;
-RAISE NOTICE 'Deleted % announcement recipients', ROW_COUNT;
 
 -- Delete all announcements
 DELETE FROM announcements;
-RAISE NOTICE 'Deleted % announcements', ROW_COUNT;
 
 -- Reset auto-increment if using sequences
 ALTER SEQUENCE announcements_id_seq RESTART WITH 1;
