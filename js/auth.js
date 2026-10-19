@@ -105,6 +105,11 @@ async function loginWithCredentials(email, password) {
     // Store JWT + user in localStorage
     API.setAuth(token, user);
 
+    // Load greeting with new user info
+    if (typeof loadUserGreeting === 'function') {
+        loadUserGreeting();
+    }
+
     // Store session ID for keep-alive
     if (sessionId) {
         if (typeof setSessionId === 'function') {

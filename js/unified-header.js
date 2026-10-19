@@ -200,14 +200,36 @@ function updateGreeting(hours) {
 
 function loadUserGreeting() {
     try {
-        // Get user name from token or localStorage
+        // Get user name from storage/token
         const userEl = document.querySelector('.user-name[data-user-name]');
         if (!userEl) return;
         
-        // Try to get from localStorage first
-        const userName = localStorage.getItem('user_name') || 
-                        sessionStorage.getItem('user_name') || 
-                        'User';
+        // Try to get from localStorage
+        let userName = 'User';
+        
+        // First try user_name (simple string)
+        const userNameDirect = localStorage.getItem('user_name');
+        if (userNameDirect) {
+            userName = userNameDirect;
+        }
+        // Then try user object (JSON)
+        else {
+            const userObj = localStorage.getItem('user');
+            if (userObj) {
+                try {
+                    const parsed = JSON.parse(userObj);
+                    userName = parsed.username || parsed.name || parsed.email || 'User';
+                } catch (e) {
+                    console.warn('Could not parse user object:', e);
+                }
+            }
+        }
+        
+        // Try sessionStorage as fallback
+        if (userName === 'User') {
+            const sessionUserName = sessionStorage.getItem('user_name');
+            if (sessionUserName) userName = sessionUserName;
+        }
         
         userEl.textContent = userName;
     } catch (err) {
