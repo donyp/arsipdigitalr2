@@ -178,24 +178,18 @@ class AnnouncementNotification {
                 flex-shrink: 0;
                 margin-top: 4px;
                 transform-origin: center center;
-                animation: heartbeat 1.5s ease-in-out infinite;
+                box-shadow: 0 0 6px #667eea;
+                animation: heartbeat 1.2s ease-in-out infinite;
             }
 
             @keyframes heartbeat {
-                0% {
+                0%, 100% {
                     transform: scale(1);
-                }
-                25% {
-                    transform: scale(1.3);
+                    box-shadow: 0 0 6px #667eea;
                 }
                 50% {
-                    transform: scale(1);
-                }
-                75% {
-                    transform: scale(1.2);
-                }
-                100% {
-                    transform: scale(1);
+                    transform: scale(1.5);
+                    box-shadow: 0 0 12px #667eea, 0 0 20px rgba(102, 126, 234, 0.4);
                 }
             }
 
