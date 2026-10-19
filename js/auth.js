@@ -258,9 +258,10 @@ function updateUserUI() {
 
     const roleLabel = getRoleLabel(currentUser);
 
-    // Update user name displays
+    // Update user name displays (use username from auth, fallback to name or email)
     document.querySelectorAll('[data-user-name]').forEach(el => {
-        el.textContent = currentUser.name || 'User';
+        const displayName = currentUser.username || currentUser.name || currentUser.email || 'User';
+        el.textContent = displayName;
     });
 
     // Update user name initials
