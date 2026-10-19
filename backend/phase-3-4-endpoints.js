@@ -121,14 +121,16 @@ function registerPhase34Endpoints(app, idempotencyMiddleware, cacheLayer) {
     // Health check including all phases
     app.get('/api/phases/health', async (req, res) => {
         try {
+            const featureFlags = require('./feature-flags');
             const phase3Health = idempotencyMiddleware ? 'ACTIVE' : 'INACTIVE';
             const phase4Health = cacheLayer ? 'ACTIVE' : 'INACTIVE';
+            const phase2Health = featureFlags.flags.USE_REVERSE_PROXY.enabled ? 'ACTIVE' : 'PENDING';
 
             res.json({
                 phase1: 'ACTIVE',     // Query optimization (deployed)
-                phase2: 'PENDING',    // Cloudflare/Reverse proxy (external, activate Wed)
-                phase3: phase3Health, // Idempotency Keys (ready)
-                phase4: phase4Health, // Redis Caching (ready)
+                phase2: phase2Health, // Cloudflare/Reverse proxy
+                phase3: phase3Health, // Idempotency Keys
+                phase4: phase4Health, // Redis Caching
                 performanceGain: {
                     phase1: '100x faster queries',
                     phase2: '5x faster (mobile)',
