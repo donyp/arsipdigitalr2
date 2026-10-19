@@ -358,6 +358,16 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
 
             console.log('[Announcements] Unread count check - userId:', userId, 'userZonaId:', userZonaId);
 
+            // Get ALL announcements (including inactive) to debug
+            const { data: allAnnouncements, error: allError } = await supabase
+                .from('announcements')
+                .select('id, recipient_type, is_active')
+                .order('id', { ascending: false });
+
+            if (!allError) {
+                console.log('[Announcements] ALL announcements in DB:', allAnnouncements);
+            }
+
             const { data: announcements, error } = await supabase
                 .from('announcements')
                 .select('id, recipient_type')
@@ -366,7 +376,12 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
             if (error) throw error;
 
             console.log('[Announcements] Total active announcements:', announcements?.length);
-            console.log('[Announcements] All announcements:', announcements);
+            console.log('[Announcements] Active announcements by type:', {
+                all_users: announcements.filter(a => a.recipient_type === 'all_users').length,
+                all_zonas: announcements.filter(a => a.recipient_type === 'all_zonas').length,
+                specific_users: announcements.filter(a => a.recipient_type === 'specific_users').length,
+                specific_zonas: announcements.filter(a => a.recipient_type === 'specific_zonas').length
+            });
 
             // Collect all eligible announcement IDs
             let eligibleIds = [];
@@ -376,7 +391,7 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 .filter(a => a.recipient_type === 'all_users')
                 .map(a => a.id);
             eligibleIds = eligibleIds.concat(allUsersIds);
-            console.log('[Announcements] All users announcements:', allUsersIds);
+            console.log('[Announcements] All users announcements:', allUsersIds.length);
 
             // Add all_zonas announcements if user has a zona
             if (userZonaId) {
@@ -384,7 +399,7 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                     .filter(a => a.recipient_type === 'all_zonas')
                     .map(a => a.id);
                 eligibleIds = eligibleIds.concat(allZonasIds);
-                console.log('[Announcements] All zonas announcements:', allZonasIds);
+                console.log('[Announcements] All zonas announcements:', allZonasIds.length);
 
                 // Add specific_zonas announcements for this user's zona
                 const specificZonaAnnouncements = announcements.filter(a => a.recipient_type === 'specific_zonas');
@@ -407,7 +422,7 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                     } else if (zoneRecipients) {
                         const zoneAnnouncementIds = zoneRecipients.map(r => r.announcement_id);
                         eligibleIds = eligibleIds.concat(zoneAnnouncementIds);
-                        console.log('[Announcements] Zone-specific announcements for zona', userZonaId, ':', zoneAnnouncementIds);
+                        console.log('[Announcements] Zone-specific announcements for zona', userZonaId, ':', zoneAnnouncementIds.length);
                     }
                 }
             }
@@ -423,16 +438,17 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
             // Count unread
             const { data: unread, error: countError } = await supabase
                 .from('announcement_reads')
-                .select('announcement_id')
+                .select('announcement_id, is_read')
                 .eq('user_id', userId)
-                .eq('is_read', false)
                 .in('announcement_id', eligibleIds);
 
             if (countError) throw countError;
 
-            console.log('[Announcements] Unread records:', unread);
+            console.log('[Announcements] All read records for user:', unread);
+            const unreadRecords = unread.filter(r => !r.is_read);
+            console.log('[Announcements] Unread records:', unreadRecords);
 
-            const unreadCount = unread?.length || 0;
+            const unreadCount = unreadRecords.length;
             console.log('[Announcements] Unread count result:', unreadCount);
             res.json({ unread_count: unreadCount });
         } catch (error) {
