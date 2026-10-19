@@ -114,6 +114,8 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
             const userId = req.user.id;
             const userZonaId = req.user.zona_id;
 
+            console.log('[Announcements] Fetching announcements - userId:', userId, 'userZonaId:', userZonaId);
+
             // Get announcements with read status in ONE query using LEFT JOIN
             const { data, error } = await supabase
                 .from('announcements')
@@ -128,25 +130,56 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
 
             if (error) throw error;
 
-            // Filter based on recipient type and flatten read status
-            const announcements = data
-                .filter(a => {
-                    if (a.recipient_type === 'all_users') return true;
-                    if (a.recipient_type === 'all_zonas' && userZonaId) return true;
-                    return false;
-                })
-                .map(a => ({
-                    ...a,
-                    current_user_read: a.announcement_reads && a.announcement_reads.length > 0 
-                        ? a.announcement_reads[0].is_read 
-                        : false,
-                    // Remove the nested array from response
-                    announcement_reads: undefined
-                }));
+            console.log('[Announcements] Total fetched announcements:', data?.length);
 
+            // First pass: Filter basic types and collect specific_zonas
+            let announcements = [];
+            const specificZonasAnnouncements = [];
+
+            for (const a of data) {
+                if (a.recipient_type === 'all_users') {
+                    console.log('[Announcements] Including all_users announcement:', a.id);
+                    announcements.push(a);
+                } else if (a.recipient_type === 'all_zonas' && userZonaId) {
+                    console.log('[Announcements] Including all_zonas announcement:', a.id);
+                    announcements.push(a);
+                } else if (a.recipient_type === 'specific_zonas') {
+                    console.log('[Announcements] Checking specific_zonas announcement:', a.id);
+                    specificZonasAnnouncements.push(a);
+                }
+            }
+
+            // Check which specific_zonas announcements are for this user's zona
+            if (specificZonasAnnouncements.length > 0 && userZonaId) {
+                const { data: recipients, error: recipientError } = await supabase
+                    .from('announcement_recipients')
+                    .select('announcement_id')
+                    .eq('recipient_type', 'zona')
+                    .eq('recipient_id', userZonaId)
+                    .in('announcement_id', specificZonasAnnouncements.map(a => a.id));
+
+                if (!recipientError && recipients) {
+                    const recipientIds = new Set(recipients.map(r => r.announcement_id));
+                    announcements = announcements.concat(
+                        specificZonasAnnouncements.filter(a => recipientIds.has(a.id))
+                    );
+                    console.log('[Announcements] Included specific_zonas for user zona:', recipients.length);
+                }
+            }
+
+            // Flatten read status
+            announcements = announcements.map(a => ({
+                ...a,
+                current_user_read: a.announcement_reads && a.announcement_reads.length > 0 
+                    ? a.announcement_reads[0].is_read 
+                    : false,
+                announcement_reads: undefined
+            }));
+
+            console.log('[Announcements] Final announcements count:', announcements.length);
             res.json({ announcements });
         } catch (error) {
-            console.error('Error fetching announcements:', error);
+            console.error('[Announcements] Error fetching announcements:', error);
             res.status(500).json({ error: 'Failed to fetch announcements' });
         }
     });
@@ -323,6 +356,8 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
             const userId = req.user.id;
             const userZonaId = req.user.zona_id;
 
+            console.log('[Announcements] Unread count check - userId:', userId, 'userZonaId:', userZonaId);
+
             const { data: announcements, error } = await supabase
                 .from('announcements')
                 .select('id, recipient_type')
@@ -330,12 +365,53 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
 
             if (error) throw error;
 
-            // Filter eligible announcements
-            const eligible = announcements.filter(a => 
-                a.recipient_type === 'all_users' || (a.recipient_type === 'all_zonas' && userZonaId)
-            );
+            console.log('[Announcements] Total active announcements:', announcements?.length);
 
-            if (eligible.length === 0) {
+            // Collect all eligible announcement IDs
+            let eligibleIds = [];
+
+            // Add all_users announcements
+            const allUsersIds = announcements
+                .filter(a => a.recipient_type === 'all_users')
+                .map(a => a.id);
+            eligibleIds = eligibleIds.concat(allUsersIds);
+            console.log('[Announcements] All users announcements:', allUsersIds.length);
+
+            // Add all_zonas announcements if user has a zona
+            if (userZonaId) {
+                const allZonasIds = announcements
+                    .filter(a => a.recipient_type === 'all_zonas')
+                    .map(a => a.id);
+                eligibleIds = eligibleIds.concat(allZonasIds);
+                console.log('[Announcements] All zonas announcements:', allZonasIds.length);
+
+                // Add specific_zonas announcements for this user's zona
+                const specificZonaAnnouncements = announcements.filter(a => a.recipient_type === 'specific_zonas');
+                
+                if (specificZonaAnnouncements.length > 0) {
+                    console.log('[Announcements] Checking specific_zonas announcements:', specificZonaAnnouncements.length);
+                    
+                    const { data: zoneRecipients, error: recipientError } = await supabase
+                        .from('announcement_recipients')
+                        .select('announcement_id')
+                        .eq('recipient_type', 'zona')
+                        .eq('recipient_id', userZonaId)
+                        .in('announcement_id', specificZonaAnnouncements.map(a => a.id));
+                    
+                    if (recipientError) {
+                        console.error('[Announcements] Error checking zone recipients:', recipientError);
+                    } else if (zoneRecipients) {
+                        const zoneAnnouncementIds = zoneRecipients.map(r => r.announcement_id);
+                        eligibleIds = eligibleIds.concat(zoneAnnouncementIds);
+                        console.log('[Announcements] Zone-specific announcements for zona', userZonaId, ':', zoneAnnouncementIds.length);
+                    }
+                }
+            }
+
+            console.log('[Announcements] Total eligible announcements:', eligibleIds.length);
+
+            if (eligibleIds.length === 0) {
+                console.log('[Announcements] No eligible announcements for user');
                 return res.json({ unread_count: 0 });
             }
 
@@ -345,13 +421,15 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 .select('announcement_id')
                 .eq('user_id', userId)
                 .eq('is_read', false)
-                .in('announcement_id', eligible.map(a => a.id));
+                .in('announcement_id', eligibleIds);
 
             if (countError) throw countError;
 
-            res.json({ unread_count: unread?.length || 0 });
+            const unreadCount = unread?.length || 0;
+            console.log('[Announcements] Unread count result:', unreadCount);
+            res.json({ unread_count: unreadCount });
         } catch (error) {
-            console.error('Error:', error);
+            console.error('[Announcements] Error checking unread count:', error);
             res.status(500).json({ error: 'Server error' });
         }
     });
