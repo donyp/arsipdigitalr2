@@ -3479,11 +3479,15 @@
                         
                         if (badge && unreadData.unread_count > 0) {
                             const displayCount = unreadData.unread_count > 99 ? '99+' : unreadData.unread_count;
+                            console.log('[Admin Zone] Setting badge textContent to:', displayCount, 'from:', unreadData.unread_count);
                             badge.textContent = displayCount;
+                            console.log('[Admin Zone] Badge textContent is now:', badge.textContent);
+                            console.log('[Admin Zone] Badge innerHTML:', badge.innerHTML);
                             badge.style.display = 'inline-flex !important';
                             badge.style.setProperty('display', 'inline-flex', 'important');
                             console.log('[Admin Zone] Badge displayed with count:', displayCount);
                         } else if (badge) {
+                            console.log('[Admin Zone] Badge exists but unread_count is:', unreadData.unread_count);
                             badge.style.display = 'none';
                             console.log('[Admin Zone] Badge hidden (no unread)');
                         }
