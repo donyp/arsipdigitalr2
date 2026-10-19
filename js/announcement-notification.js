@@ -442,9 +442,11 @@ class AnnouncementNotification {
         const popup = document.getElementById('announcementPopup');
         if (popup.classList.contains('hidden')) {
             popup.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
             this.loadAnnouncements();
         } else {
             popup.classList.add('hidden');
+            document.body.style.overflow = 'auto';
         }
     }
 
@@ -615,6 +617,7 @@ class AnnouncementNotification {
 
     closeDetailModal() {
         document.getElementById('announcementDetailModal').classList.add('hidden');
+        // Don't restore scroll here - let parent modal keep it locked
     }
 
     destroy() {
