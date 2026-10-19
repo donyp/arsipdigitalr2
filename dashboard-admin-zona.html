@@ -3519,7 +3519,8 @@
                                     badge.textContent = displayCount;
                                     badge.style.setProperty('display', 'inline-flex', 'important');
                                 } else {
-                                    badge.style.display = 'none';
+                                    badge.style.setProperty('display', 'none', 'important');
+                                    console.log('[Admin Zone] Badge hidden by polling - unread_count is 0');
                                 }
                             }
                         }
@@ -3529,7 +3530,7 @@
                 }, 5000);
 
                 // Global function to update badge immediately (call this after marking announcement as read)
-                window.updateAnnouncementBadge = async function() {
+                window.updateAnnouncementBadge = async function(retryCount = 0) {
                     try {
                         const token = localStorage.getItem('jwt_token');
                         const response = await fetch('/api/announcements/unread/count', {
@@ -3539,20 +3540,40 @@
                             const data = await response.json();
                             const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
                             if (badge) {
+                                console.log('[Admin Zone] updateAnnouncementBadge - unread_count:', data.unread_count);
                                 if (data.unread_count > 0) {
                                     const displayCount = data.unread_count > 99 ? '99+' : data.unread_count;
                                     badge.textContent = displayCount;
                                     badge.style.setProperty('display', 'inline-flex', 'important');
+                                    console.log('[Admin Zone] Badge updated to:', displayCount);
                                 } else {
-                                    badge.style.display = 'none';
+                                    badge.style.setProperty('display', 'none', 'important');
+                                    console.log('[Admin Zone] Badge hidden - unread_count is 0');
                                 }
-                                console.log('[Admin Zone] Badge updated to:', data.unread_count);
                             }
                         }
                     } catch (err) {
                         console.error('[Admin Zone] Error updating badge:', err);
                     }
                 };
+
+                // Call updateAnnouncementBadge immediately after marking announcement as read
+                // Retry aggressively for first 2 seconds to catch database updates
+                const triggerBadgeUpdate = () => {
+                    window.updateAnnouncementBadge();
+                    
+                    // Aggressive retry: call again after 300ms and 700ms
+                    setTimeout(() => {
+                        window.updateAnnouncementBadge();
+                    }, 300);
+                    
+                    setTimeout(() => {
+                        window.updateAnnouncementBadge();
+                    }, 700);
+                };
+
+                // Store this in window so we can call it from announcement-notification.js
+                window.triggerBadgeUpdate = triggerBadgeUpdate;
 
                 // Load filter options only (DON'T load stats until user filters)
                 await loadFilterOptionsOnly();
