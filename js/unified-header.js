@@ -199,6 +199,7 @@ function updateGreeting(hours) {
 }
 
 function loadUserGreeting() {
+function loadUserGreeting() {
     try {
         // Set user name in unified header (both .user-name span and dashboard greeting)
         const userEl = document.querySelector('.user-name');
@@ -250,9 +251,17 @@ function loadUserGreeting() {
         if (dashboardUserEl) {
             dashboardUserEl.textContent = userName;
         }
+        
+        // Retry after 500ms if still default (in case localStorage not ready yet)
+        if (userName === 'User') {
+            setTimeout(() => {
+                loadUserGreeting();
+            }, 500);
+        }
     } catch (err) {
         console.warn('Could not load user greeting:', err);
     }
+}
 }
 
 function updateDarkModeIcon() {
