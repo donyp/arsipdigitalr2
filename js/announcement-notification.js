@@ -567,8 +567,10 @@ class AnnouncementNotification {
                 // Reload announcements to update read status
                 await this.loadAnnouncements();
                 await this.loadUnreadCount();
-                // Update dashboard badge immediately
-                if (typeof window.updateAnnouncementBadge === 'function') {
+                // Update dashboard badge with aggressive retry
+                if (typeof window.triggerBadgeUpdate === 'function') {
+                    window.triggerBadgeUpdate();
+                } else if (typeof window.updateAnnouncementBadge === 'function') {
                     window.updateAnnouncementBadge();
                 }
             }
