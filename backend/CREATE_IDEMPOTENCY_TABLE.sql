@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.idempotent_requests (
     response_body JSONB NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    user_id BIGINT REFERENCES public.users(id) ON DELETE SET NULL
+    user_id UUID REFERENCES public.users(id) ON DELETE SET NULL
 );
 
 -- Index untuk fast lookup by idempotency_key
