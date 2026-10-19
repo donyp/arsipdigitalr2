@@ -356,32 +356,13 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
             const userId = req.user.id;
             const userZonaId = req.user.zona_id;
 
-            console.log('[Announcements] Unread count check - userId:', userId, 'userZonaId:', userZonaId);
-
-            // Get ALL announcements (including inactive) to debug
-            const { data: allAnnouncements, error: allError } = await supabase
-                .from('announcements')
-                .select('id, recipient_type, is_active')
-                .order('id', { ascending: false });
-
-            if (!allError) {
-                console.log('[Announcements] ALL announcements in DB:', allAnnouncements);
-            }
-
+            // Get active announcements
             const { data: announcements, error } = await supabase
                 .from('announcements')
                 .select('id, recipient_type')
                 .eq('is_active', true);
 
             if (error) throw error;
-
-            console.log('[Announcements] Total active announcements:', announcements?.length);
-            console.log('[Announcements] Active announcements by type:', {
-                all_users: announcements.filter(a => a.recipient_type === 'all_users').length,
-                all_zonas: announcements.filter(a => a.recipient_type === 'all_zonas').length,
-                specific_users: announcements.filter(a => a.recipient_type === 'specific_users').length,
-                specific_zonas: announcements.filter(a => a.recipient_type === 'specific_zonas').length
-            });
 
             // Collect all eligible announcement IDs
             let eligibleIds = [];
@@ -391,7 +372,6 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 .filter(a => a.recipient_type === 'all_users')
                 .map(a => a.id);
             eligibleIds = eligibleIds.concat(allUsersIds);
-            console.log('[Announcements] All users announcements:', allUsersIds.length);
 
             // Add all_zonas announcements if user has a zona
             if (userZonaId) {
@@ -399,15 +379,11 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                     .filter(a => a.recipient_type === 'all_zonas')
                     .map(a => a.id);
                 eligibleIds = eligibleIds.concat(allZonasIds);
-                console.log('[Announcements] All zonas announcements:', allZonasIds.length);
 
                 // Add specific_zonas announcements for this user's zona
                 const specificZonaAnnouncements = announcements.filter(a => a.recipient_type === 'specific_zonas');
-                console.log('[Announcements] Specific zones announcements found:', specificZonaAnnouncements.length);
                 
                 if (specificZonaAnnouncements.length > 0) {
-                    console.log('[Announcements] Checking specific_zonas announcements:', specificZonaAnnouncements);
-                    
                     const { data: zoneRecipients, error: recipientError } = await supabase
                         .from('announcement_recipients')
                         .select('announcement_id')
@@ -415,44 +391,212 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                         .eq('recipient_id', userZonaId)
                         .in('announcement_id', specificZonaAnnouncements.map(a => a.id));
                     
-                    console.log('[Announcements] Zone recipients query result:', zoneRecipients);
-                    
-                    if (recipientError) {
-                        console.error('[Announcements] Error checking zone recipients:', recipientError);
-                    } else if (zoneRecipients) {
+                    if (!recipientError && zoneRecipients) {
                         const zoneAnnouncementIds = zoneRecipients.map(r => r.announcement_id);
                         eligibleIds = eligibleIds.concat(zoneAnnouncementIds);
-                        console.log('[Announcements] Zone-specific announcements for zona', userZonaId, ':', zoneAnnouncementIds.length);
                     }
                 }
             }
 
-            console.log('[Announcements] Total eligible announcements:', eligibleIds.length);
-            console.log('[Announcements] Eligible IDs:', eligibleIds);
-
             if (eligibleIds.length === 0) {
-                console.log('[Announcements] No eligible announcements for user');
                 return res.json({ unread_count: 0 });
             }
 
-            // Count unread
+            // Count unread - announcements that don't have a read record OR are marked as unread
             const { data: unread, error: countError } = await supabase
                 .from('announcement_reads')
-                .select('announcement_id, is_read')
+                .select('announcement_id')
                 .eq('user_id', userId)
+                .eq('is_read', false)
                 .in('announcement_id', eligibleIds);
 
             if (countError) throw countError;
 
-            console.log('[Announcements] All read records for user:', unread);
-            const unreadRecords = unread.filter(r => !r.is_read);
-            console.log('[Announcements] Unread records:', unreadRecords);
-
-            const unreadCount = unreadRecords.length;
-            console.log('[Announcements] Unread count result:', unreadCount);
+            const unreadCount = unread?.length || 0;
             res.json({ unread_count: unreadCount });
         } catch (error) {
             console.error('[Announcements] Error checking unread count:', error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+
+    // POST: Reset all announcements to unread for current user (ADMIN only)
+    app.post('/api/announcements/reset-unread', verifyToken, async (req, res) => {
+        try {
+            // Check authorization - admin/moderator only
+            if (req.user.role !== 'moderator' && req.user.role !== 'super_admin') {
+                return res.status(403).json({ error: 'Only moderators can reset announcements' });
+            }
+
+            const userId = req.user.id;
+            const userZonaId = req.user.zona_id;
+
+            // Get active announcements
+            const { data: announcements, error } = await supabase
+                .from('announcements')
+                .select('id, recipient_type')
+                .eq('is_active', true);
+
+            if (error) throw error;
+
+            // Collect all eligible announcement IDs
+            let eligibleIds = [];
+
+            const allUsersIds = announcements
+                .filter(a => a.recipient_type === 'all_users')
+                .map(a => a.id);
+            eligibleIds = eligibleIds.concat(allUsersIds);
+
+            if (userZonaId) {
+                const allZonasIds = announcements
+                    .filter(a => a.recipient_type === 'all_zonas')
+                    .map(a => a.id);
+                eligibleIds = eligibleIds.concat(allZonasIds);
+
+                const specificZonaAnnouncements = announcements.filter(a => a.recipient_type === 'specific_zonas');
+                
+                if (specificZonaAnnouncements.length > 0) {
+                    const { data: zoneRecipients, error: recipientError } = await supabase
+                        .from('announcement_recipients')
+                        .select('announcement_id')
+                        .eq('recipient_type', 'zona')
+                        .eq('recipient_id', userZonaId)
+                        .in('announcement_id', specificZonaAnnouncements.map(a => a.id));
+                    
+                    if (!recipientError && zoneRecipients) {
+                        const zoneAnnouncementIds = zoneRecipients.map(r => r.announcement_id);
+                        eligibleIds = eligibleIds.concat(zoneAnnouncementIds);
+                    }
+                }
+            }
+
+            if (eligibleIds.length === 0) {
+                return res.json({ message: 'No announcements to reset', reset_count: 0 });
+            }
+
+            // For each announcement, create missing read records
+            for (const annId of eligibleIds) {
+                const { data: existingRead } = await supabase
+                    .from('announcement_reads')
+                    .select('id')
+                    .eq('announcement_id', annId)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                if (!existingRead) {
+                    // Create the record if it doesn't exist
+                    await supabase
+                        .from('announcement_reads')
+                        .insert({
+                            announcement_id: annId,
+                            user_id: userId,
+                            is_read: false,
+                            read_at: null
+                        });
+                }
+            }
+
+            console.log('[Announcements] Ensured read records exist for', eligibleIds.length, 'announcements for user:', userId);
+            res.json({ message: 'Announcement records ensured', ensured_count: eligibleIds.length });
+        } catch (error) {
+            console.error('[Announcements] Error resetting announcements:', error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+
+    // POST: Admin endpoint to fix all users' announcement read records
+    app.post('/api/announcements/fix-all-users', verifyToken, async (req, res) => {
+        try {
+            // Check authorization - super_admin only
+            if (req.user.role !== 'super_admin') {
+                return res.status(403).json({ error: 'Only super admins can fix announcement records' });
+            }
+
+            const { data: announcements, error: annError } = await supabase
+                .from('announcements')
+                .select('id, recipient_type')
+                .eq('is_active', true);
+
+            if (annError) throw annError;
+
+            const { data: users, error: usersError } = await supabase
+                .from('users')
+                .select('id, zona_id')
+                .eq('is_active', true);
+
+            if (usersError) throw usersError;
+
+            let createdCount = 0;
+
+            // For each user
+            for (const user of users) {
+                const userId = user.id;
+                const userZonaId = user.zona_id;
+
+                // Get eligible announcements for this user
+                let eligibleIds = [];
+
+                const allUsersIds = announcements
+                    .filter(a => a.recipient_type === 'all_users')
+                    .map(a => a.id);
+                eligibleIds = eligibleIds.concat(allUsersIds);
+
+                if (userZonaId) {
+                    const allZonasIds = announcements
+                        .filter(a => a.recipient_type === 'all_zonas')
+                        .map(a => a.id);
+                    eligibleIds = eligibleIds.concat(allZonasIds);
+
+                    const specificZonaAnnouncements = announcements.filter(a => a.recipient_type === 'specific_zonas');
+                    
+                    if (specificZonaAnnouncements.length > 0) {
+                        const { data: zoneRecipients } = await supabase
+                            .from('announcement_recipients')
+                            .select('announcement_id')
+                            .eq('recipient_type', 'zona')
+                            .eq('recipient_id', userZonaId)
+                            .in('announcement_id', specificZonaAnnouncements.map(a => a.id));
+                        
+                        if (zoneRecipients) {
+                            const zoneAnnouncementIds = zoneRecipients.map(r => r.announcement_id);
+                            eligibleIds = eligibleIds.concat(zoneAnnouncementIds);
+                        }
+                    }
+                }
+
+                // Get existing read records for this user
+                const { data: existingReads } = await supabase
+                    .from('announcement_reads')
+                    .select('announcement_id')
+                    .eq('user_id', userId)
+                    .in('announcement_id', eligibleIds);
+
+                const existingIds = new Set((existingReads || []).map(r => r.announcement_id));
+
+                // Create missing records
+                const missingIds = eligibleIds.filter(id => !existingIds.has(id));
+                if (missingIds.length > 0) {
+                    const readRecords = missingIds.map(id => ({
+                        announcement_id: id,
+                        user_id: userId,
+                        is_read: false,
+                        read_at: null
+                    }));
+
+                    const { error: insertError } = await supabase
+                        .from('announcement_reads')
+                        .insert(readRecords);
+
+                    if (!insertError) {
+                        createdCount += missingIds.length;
+                    }
+                }
+            }
+
+            console.log('[Announcements] Fixed announcement records - created', createdCount, 'missing read records');
+            res.json({ message: 'Fixed all announcement records', created_count: createdCount });
+        } catch (error) {
+            console.error('[Announcements] Error fixing announcement records:', error);
             res.status(500).json({ error: 'Server error' });
         }
     });
