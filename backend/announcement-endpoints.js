@@ -366,6 +366,7 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
             if (error) throw error;
 
             console.log('[Announcements] Total active announcements:', announcements?.length);
+            console.log('[Announcements] All announcements:', announcements);
 
             // Collect all eligible announcement IDs
             let eligibleIds = [];
@@ -375,7 +376,7 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 .filter(a => a.recipient_type === 'all_users')
                 .map(a => a.id);
             eligibleIds = eligibleIds.concat(allUsersIds);
-            console.log('[Announcements] All users announcements:', allUsersIds.length);
+            console.log('[Announcements] All users announcements:', allUsersIds);
 
             // Add all_zonas announcements if user has a zona
             if (userZonaId) {
@@ -383,13 +384,14 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                     .filter(a => a.recipient_type === 'all_zonas')
                     .map(a => a.id);
                 eligibleIds = eligibleIds.concat(allZonasIds);
-                console.log('[Announcements] All zonas announcements:', allZonasIds.length);
+                console.log('[Announcements] All zonas announcements:', allZonasIds);
 
                 // Add specific_zonas announcements for this user's zona
                 const specificZonaAnnouncements = announcements.filter(a => a.recipient_type === 'specific_zonas');
+                console.log('[Announcements] Specific zones announcements found:', specificZonaAnnouncements.length);
                 
                 if (specificZonaAnnouncements.length > 0) {
-                    console.log('[Announcements] Checking specific_zonas announcements:', specificZonaAnnouncements.length);
+                    console.log('[Announcements] Checking specific_zonas announcements:', specificZonaAnnouncements);
                     
                     const { data: zoneRecipients, error: recipientError } = await supabase
                         .from('announcement_recipients')
@@ -398,17 +400,20 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                         .eq('recipient_id', userZonaId)
                         .in('announcement_id', specificZonaAnnouncements.map(a => a.id));
                     
+                    console.log('[Announcements] Zone recipients query result:', zoneRecipients);
+                    
                     if (recipientError) {
                         console.error('[Announcements] Error checking zone recipients:', recipientError);
                     } else if (zoneRecipients) {
                         const zoneAnnouncementIds = zoneRecipients.map(r => r.announcement_id);
                         eligibleIds = eligibleIds.concat(zoneAnnouncementIds);
-                        console.log('[Announcements] Zone-specific announcements for zona', userZonaId, ':', zoneAnnouncementIds.length);
+                        console.log('[Announcements] Zone-specific announcements for zona', userZonaId, ':', zoneAnnouncementIds);
                     }
                 }
             }
 
             console.log('[Announcements] Total eligible announcements:', eligibleIds.length);
+            console.log('[Announcements] Eligible IDs:', eligibleIds);
 
             if (eligibleIds.length === 0) {
                 console.log('[Announcements] No eligible announcements for user');
@@ -424,6 +429,8 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
                 .in('announcement_id', eligibleIds);
 
             if (countError) throw countError;
+
+            console.log('[Announcements] Unread records:', unread);
 
             const unreadCount = unread?.length || 0;
             console.log('[Announcements] Unread count result:', unreadCount);
