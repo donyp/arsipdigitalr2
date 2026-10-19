@@ -3476,6 +3476,13 @@
                         
                         const badge = document.getElementById('announcementBadge');
                         console.log('[Admin Zone] Badge element found:', !!badge);
+                        console.log('[Admin Zone] Badge element ID:', badge?.id);
+                        console.log('[Admin Zone] Badge parent:', badge?.parentElement);
+                        console.log('[Admin Zone] Badge parent class:', badge?.parentElement?.className);
+                        console.log('[Admin Zone] All badges on page:', document.querySelectorAll('[id*="announcementBadge"]').length);
+                        document.querySelectorAll('[id*="announcementBadge"]').forEach((b, i) => {
+                            console.log(`[Admin Zone] Badge ${i}:`, b, 'text:', b.textContent, 'parent:', b.parentElement?.className);
+                        });
                         
                         if (badge && unreadData.unread_count > 0) {
                             const displayCount = unreadData.unread_count > 99 ? '99+' : unreadData.unread_count;
