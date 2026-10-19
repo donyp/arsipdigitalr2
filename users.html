@@ -447,9 +447,13 @@
             document.getElementById('userPassword').required = false;
             document.getElementById('userPassword').placeholder = 'Kosongkan untuk tidak mengubah password';
             
-            // Show zona selector if admin_zona
+            // Show zona selector if admin_zona and load options
             if (user.role === 'admin_zona') {
                 document.getElementById('zonaSelectContainer').style.display = 'flex';
+                // Load zonas if not already loaded
+                if (document.getElementById('userZona').options.length <= 1) {
+                    loadZonasForSelect();
+                }
             } else {
                 document.getElementById('zonaSelectContainer').style.display = 'none';
             }
