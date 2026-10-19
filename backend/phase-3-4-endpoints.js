@@ -144,37 +144,6 @@ function registerPhase34Endpoints(app, idempotencyMiddleware, cacheLayer) {
         }
     });
 
-    // ============================================================
-    // NGINX Metrics Endpoint (for dashboard)
-    // ============================================================
-    // Proxy nginx_status through app to avoid CORS issues
-    app.get('/api/nginx/stats', async (req, res) => {
-        try {
-            const http = require('http');
-            
-            // Request nginx_status from localhost
-            http.get('http://localhost/nginx_status', (nginxRes) => {
-                let data = '';
-                
-                nginxRes.on('data', chunk => {
-                    data += chunk;
-                });
-                
-                nginxRes.on('end', () => {
-                    res.set('Content-Type', 'text/plain');
-                    res.send(data);
-                });
-            }).on('error', (error) => {
-                res.status(500).json({ 
-                    error: 'Could not fetch nginx stats',
-                    details: error.message 
-                });
-            });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
-        }
-    });
-
     console.log('[BOOT] ✅ Phase 3-4 endpoints registered');
 }
 

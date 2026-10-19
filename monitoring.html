@@ -772,7 +772,7 @@
                     fetch(`${API_ENDPOINT}/api/phases/health`).then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(`${API_ENDPOINT}/api/cache/stats`).then(r => r.ok ? r.json() : null).catch(() => null),
                     fetch(`${API_ENDPOINT}/api/idempotency/stats`).then(r => r.ok ? r.json() : null).catch(() => null),
-                    fetch(`${API_ENDPOINT}/api/nginx/stats`).then(r => r.ok ? r.text() : null).catch(() => null)
+                    fetch(`${API_ENDPOINT}/nginx_status`).then(r => r.ok ? r.text() : null).catch(() => null)
                 ]);
 
                 const baselineData = await fetch(`${API_ENDPOINT}/api/health`)
