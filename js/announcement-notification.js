@@ -377,7 +377,6 @@ class AnnouncementNotification {
         button.title = 'Pengumuman';
         button.innerHTML = `
             <i class="fas fa-bell"></i>
-            <span id="announcementBadge" class="announcement-badge">0</span>
         `;
         button.onclick = () => this.toggleNotificationPopup();
 
