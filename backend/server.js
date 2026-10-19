@@ -1221,40 +1221,42 @@ setInterval(() => {
         });
 
         console.log('[BOOT] ✅ Redis caching layer initialized');
+        
+        // Initialize cache helper AFTER cacheLayer is ready
+        const cacheHelper = new (require('./cache-helpers'))(cacheLayer);
+        
+        // Register cache helper to request
+        app.use((req, res, next) => {
+            req.cacheHelper = cacheHelper;
+            req.cache = cacheLayer;
+            next();
+        });
+        
+        // Register Phase 3-4 endpoints NOW (after cache initialized)
+        registerPhase34Endpoints(app, idempotencyMiddleware, cacheLayer);
+        console.log('[BOOT] ✅ Phase 3-4 endpoints registered');
 
     } catch (error) {
         console.error('[Redis] Failed to initialize:', error.message);
         console.log('[Redis] ⚠️  Continuing without Redis (degraded mode)');
-        // Continue without Redis - graceful fallback
+        // Fallback: register endpoints without cache
+        const cacheHelper = new (require('./cache-helpers'))(null);
+        app.use((req, res, next) => {
+            req.cacheHelper = cacheHelper;
+            req.cache = null;
+            next();
+        });
+        registerPhase34Endpoints(app, idempotencyMiddleware, null);
     }
 })();
 
 // ============================================================
-// Phase 4: Initialize Cache Helper (NEW)
-// ============================================================
-
-const CacheHelper = require('./cache-helpers');
-const cacheHelper = new CacheHelper(cacheLayer);
-
-// ============================================================
-// REGISTER PHASE 3-4 MIDDLEWARE & ENDPOINTS (NEW) - After initialization
+// REGISTER PHASE 3 MIDDLEWARE (IDEMPOTENCY) - Before async cache init
 // ============================================================
 
 // Register idempotency middleware
 if (idempotencyMiddleware) {
     app.use(idempotencyMiddleware.middleware());
-}
-
-// Register cache helper to request
-app.use((req, res, next) => {
-    req.cacheHelper = cacheHelper;
-    req.cache = cacheLayer;
-    next();
-});
-
-// Register endpoints
-if (idempotencyMiddleware || cacheLayer) {
-    registerPhase34Endpoints(app, idempotencyMiddleware, cacheLayer);
 }
 
 console.log('[BOOT] ✅ Performance monitoring initialized');
