@@ -2063,6 +2063,49 @@
                                         Selamat <span id="time-greeting" style="color:inherit;-webkit-text-fill-color:inherit;">Siang</span>,
                                         <span id="dashboard-user-greeting" style="background:linear-gradient(135deg,#667eea,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">User</span><span style="color:var(--color-text-primary,#f1f5f9);-webkit-text-fill-color:var(--color-text-primary,#f1f5f9);">👋</span>
                                     </h1>
+                                    <script>
+                                        // Set greeting from localStorage IMMEDIATELY (before other scripts)
+                                        (function() {
+                                            try {
+                                                let userName = 'User';
+                                                
+                                                // Try user object first
+                                                const userObj = localStorage.getItem('user');
+                                                console.log('[Dashboard Greeting] localStorage.user:', userObj ? userObj.substring(0, 100) : 'NOT FOUND');
+                                                
+                                                if (userObj) {
+                                                    try {
+                                                        const parsed = JSON.parse(userObj);
+                                                        console.log('[Dashboard Greeting] Parsed user object:', parsed);
+                                                        userName = parsed.username || parsed.name || parsed.email || 'User';
+                                                        console.log('[Dashboard Greeting] Username extracted:', userName);
+                                                    } catch (e) {
+                                                        console.warn('Could not parse user:', e);
+                                                    }
+                                                }
+                                                
+                                                // Try simple user_name
+                                                if (userName === 'User') {
+                                                    const direct = localStorage.getItem('user_name');
+                                                    if (direct) {
+                                                        console.log('[Dashboard Greeting] Using user_name from localStorage:', direct);
+                                                        userName = direct;
+                                                    }
+                                                }
+                                                
+                                                const el = document.getElementById('dashboard-user-greeting');
+                                                console.log('[Dashboard Greeting] Setting element text to:', userName);
+                                                if (el) {
+                                                    el.textContent = userName;
+                                                    console.log('[Dashboard Greeting] ✅ Element updated successfully');
+                                                } else {
+                                                    console.error('[Dashboard Greeting] ❌ Element not found!');
+                                                }
+                                            } catch (err) {
+                                                console.error('Greeting init error:', err);
+                                            }
+                                        })();
+                                    </script>
 
                                     <!-- Date & time -->
                                     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">

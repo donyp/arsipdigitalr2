@@ -202,7 +202,10 @@ function loadUserGreeting() {
     try {
         // Get user name for dashboard greeting (dashboard.html only, not unified-header)
         const userEl = document.getElementById('dashboard-user-greeting');
-        if (!userEl) return;
+        if (!userEl) {
+            console.log('[loadUserGreeting] Element not found, skipping');
+            return;
+        }
         
         // Try to get from localStorage
         let userName = 'User';
@@ -210,15 +213,19 @@ function loadUserGreeting() {
         // First try user_name (simple string)
         const userNameDirect = localStorage.getItem('user_name');
         if (userNameDirect) {
+            console.log('[loadUserGreeting] Using user_name:', userNameDirect);
             userName = userNameDirect;
         }
         // Then try user object (JSON)
         else {
             const userObj = localStorage.getItem('user');
+            console.log('[loadUserGreeting] user object:', userObj ? userObj.substring(0, 100) : 'NOT FOUND');
             if (userObj) {
                 try {
                     const parsed = JSON.parse(userObj);
+                    console.log('[loadUserGreeting] parsed user:', parsed);
                     userName = parsed.username || parsed.name || parsed.email || 'User';
+                    console.log('[loadUserGreeting] extracted username:', userName);
                 } catch (e) {
                     console.warn('Could not parse user object:', e);
                 }
@@ -228,10 +235,15 @@ function loadUserGreeting() {
         // Try sessionStorage as fallback
         if (userName === 'User') {
             const sessionUserName = sessionStorage.getItem('user_name');
-            if (sessionUserName) userName = sessionUserName;
+            if (sessionUserName) {
+                console.log('[loadUserGreeting] Using sessionStorage user_name:', sessionUserName);
+                userName = sessionUserName;
+            }
         }
         
+        console.log('[loadUserGreeting] Setting greeting to:', userName);
         userEl.textContent = userName;
+        console.log('[loadUserGreeting] ✅ Greeting updated');
     } catch (err) {
         console.warn('Could not load user greeting:', err);
     }
