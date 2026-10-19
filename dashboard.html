@@ -2909,24 +2909,25 @@
                 // Set current date/time greeting
                 setCurrentDate();
 
-                // Reinitialize header with custom buttons for moderators
+                // Add announcement button for moderators (don't reinitialize entire header)
                 if (userAuth.role === 'moderator' || userAuth.role === 'super_admin') {
-                    // Remove auto-initialized header
-                    const existingHeader = document.getElementById('unified-header');
-                    if (existingHeader) {
-                        existingHeader.remove();
-                    }
-                    
-                    // Reinitialize with announcement button
-                    const customBtns = [
-                        {
-                            title: 'Kelola Pengumuman',
-                            icon: 'fas fa-bell',
-                            onclick: "window.location.href='/pengumuman.html'"
+                    const headerRight = document.querySelector('.header-right');
+                    if (headerRight) {
+                        // Insert announcement button before logout button
+                        const announcementBtn = document.createElement('button');
+                        announcementBtn.className = 'header-btn';
+                        announcementBtn.title = 'Kelola Pengumuman';
+                        announcementBtn.onclick = () => window.location.href = '/pengumuman.html';
+                        announcementBtn.innerHTML = '<i class="fas fa-bell"></i>';
+                        
+                        const logoutBtn = headerRight.querySelector('.logout-btn');
+                        if (logoutBtn) {
+                            headerRight.insertBefore(announcementBtn, logoutBtn);
+                        } else {
+                            headerRight.appendChild(announcementBtn);
                         }
-                    ];
-                    
-                    initializeUnifiedHeader({ customButtons: customBtns });
+                        console.log('[Dashboard] Added announcement button to existing header');
+                    }
                 }
 
                 // Invoice list content is now embedded directly in dashboard.html
