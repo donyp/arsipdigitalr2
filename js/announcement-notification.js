@@ -458,6 +458,7 @@ class AnnouncementNotification {
             if (!response.ok) throw new Error('Failed to load unread count');
             const data = await response.json();
 
+            // Update badge in main dashboard
             const badge = document.getElementById('announcementBadge');
             this.unreadCount = data.unread_count;
 
@@ -520,6 +521,9 @@ class AnnouncementNotification {
                     </div>
                 `;
             }).join('');
+
+            // Refresh badge count after loading announcements
+            await this.loadUnreadCount();
         } catch (error) {
             console.error('Error loading announcements:', error);
             list.innerHTML = '<div style="color: red; padding: 20px;">Error memuat pengumuman</div>';
