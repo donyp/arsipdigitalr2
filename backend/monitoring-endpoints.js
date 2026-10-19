@@ -12,6 +12,11 @@
  */
 
 const featureFlags = require('./feature-flags');
+const os = require('os');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+
+const execAsync = promisify(exec);
 
 function registerMonitoringEndpoints(app, performanceMonitor) {
     // Public health check (no auth required)
@@ -20,6 +25,111 @@ function registerMonitoringEndpoints(app, performanceMonitor) {
             status: 'ok',
             timestamp: new Date().toISOString(),
             uptime: process.uptime()
+        });
+    });
+
+    // VPS Monitoring Stats - For the monitoring dashboard
+    app.get('/api/monitoring/stats', async (req, res) => {
+        try {
+            const cpus = os.cpus();
+            const totalMem = os.totalmem();
+            const freeMem = os.freemem();
+            const usedMem = totalMem - freeMem;
+            const uptime = os.uptime();
+
+            // Get disk usage (attempt to get root disk)
+            let diskUsed = 0;
+            let diskTotal = 1;
+            try {
+                if (process.platform === 'win32') {
+                    // Windows disk usage
+                    const { stdout } = await execAsync('wmic logicaldisk get size,freespace /format:csv');
+                    const lines = stdout.trim().split('\n').filter(l => l);
+                    if (lines.length > 1) {
+                        const parts = lines[1].split(',');
+                        diskTotal = parseInt(parts[2]) || 1;
+                        diskUsed = diskTotal - (parseInt(parts[1]) || 0);
+                    }
+                } else {
+                    // Unix/Linux disk usage for root partition
+                    const { stdout } = await execAsync('df / | tail -1');
+                    const parts = stdout.trim().split(/\\s+/);
+                    diskTotal = parseInt(parts[1]) * 1024; // Convert to bytes
+                    diskUsed = parseInt(parts[2]) * 1024;
+                }
+            } catch (diskError) {
+                console.warn('Could not get disk stats:', diskError.message);
+            }
+
+            // Get network stats
+            const networkInterfaces = os.networkInterfaces();
+            let networkIn = 0;
+            let networkOut = 0;
+
+            // Try to read from /proc/net/dev on Linux
+            if (process.platform !== 'win32') {
+                try {
+                    const { stdout } = await execAsync('cat /proc/net/dev | grep -E "eth|wlan|ens" | awk \'{sum1+=$2; sum2+=$10} END {print sum1, sum2}\'');
+                    const [inBytes, outBytes] = stdout.trim().split(' ').map(Number);
+                    networkIn = inBytes || 0;
+                    networkOut = outBytes || 0;
+                } catch (netError) {
+                    console.warn('Could not get network stats:', netError.message);
+                }
+            }
+
+            res.json({
+                cpu: {
+                    usage: os.loadavg()[0] * 100 / cpus.length, // Load average as percentage
+                    cores: cpus.length,
+                    model: cpus[0]?.model || 'Unknown'
+                },
+                memory: {
+                    used: usedMem,
+                    total: totalMem,
+                    free: freeMem
+                },
+                disk: {
+                    used: diskUsed,
+                    total: diskTotal,
+                    free: diskTotal - diskUsed
+                },
+                uptime: uptime,
+                network: {
+                    in: networkIn,
+                    out: networkOut
+                },
+                backend: {
+                    status: 'online',
+                    responseTime: 0,
+                    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+                },
+                processes: [], // Optional: could be populated from process manager data
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error('Error collecting monitoring stats:', error);
+            res.status(500).json({
+                error: 'Failed to collect monitoring statistics',
+                message: error.message
+            });
+        }
+    });
+
+    // Also add a logs endpoint if needed
+    app.get('/api/monitoring/logs', (req, res) => {
+        const limit = parseInt(req.query.limit) || 50;
+        
+        // Return recent alerts from performance monitor
+        const alerts = performanceMonitor.alerts || [];
+        
+        res.json({
+            logs: alerts.slice(-limit).map(alert => ({
+                timestamp: alert.timestamp,
+                level: alert.level,
+                message: alert.message
+            })),
+            total: alerts.length
         });
     });
 
