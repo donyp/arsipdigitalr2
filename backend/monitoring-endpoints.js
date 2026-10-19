@@ -116,20 +116,18 @@ function registerMonitoringEndpoints(app, performanceMonitor) {
         }
     });
 
-    // Also add a logs endpoint if needed
+    // Backend logs endpoint - returns real-time logs from global.backendLogs
     app.get('/api/monitoring/logs', (req, res) => {
-        const limit = parseInt(req.query.limit) || 50;
+        const limit = parseInt(req.query.limit) || 100;
         
-        // Return recent alerts from performance monitor
-        const alerts = performanceMonitor.alerts || [];
+        // Return recent backend logs from global buffer
+        const allLogs = global.backendLogs || [];
+        const logs = allLogs.slice(-limit);
         
         res.json({
-            logs: alerts.slice(-limit).map(alert => ({
-                timestamp: alert.timestamp,
-                level: alert.level,
-                message: alert.message
-            })),
-            total: alerts.length
+            logs: logs,
+            total: allLogs.length,
+            timestamp: new Date().toISOString()
         });
     });
 
