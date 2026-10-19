@@ -200,8 +200,8 @@ function updateGreeting(hours) {
 
 function loadUserGreeting() {
     try {
-        // Get user name from storage/token
-        const userEl = document.querySelector('.user-name[data-user-name]');
+        // Get user name for dashboard greeting (dashboard.html only, not unified-header)
+        const userEl = document.getElementById('dashboard-user-greeting');
         if (!userEl) return;
         
         // Try to get from localStorage
