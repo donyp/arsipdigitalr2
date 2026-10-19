@@ -448,6 +448,36 @@ class AnnouncementNotification {
         }
     }
 
+    startHeartbeatAnimation() {
+        // Clear previous interval if any
+        if (this.heartbeatInterval) clearInterval(this.heartbeatInterval);
+
+        // Start new heartbeat animation
+        let opacity = 1;
+        let increasing = false;
+
+        this.heartbeatInterval = setInterval(() => {
+            const dots = document.querySelectorAll('.announcement-unread-dot');
+            
+            dots.forEach(dot => {
+                dot.style.opacity = opacity.toFixed(2);
+            });
+
+            // Double pulse pattern: 1 -> 0.3 -> 1 -> 0.3 -> 1
+            if (!increasing) {
+                opacity -= 0.15;
+                if (opacity <= 0.3) {
+                    increasing = true;
+                }
+            } else {
+                opacity += 0.15;
+                if (opacity >= 1) {
+                    increasing = false;
+                }
+            }
+        }, 150); // 150ms interval for smooth animation
+    }
+
     async loadUnreadCount() {
         const token = localStorage.getItem('jwt_token');
         try {
@@ -522,6 +552,9 @@ class AnnouncementNotification {
                 `;
             }).join('');
 
+            // Start heartbeat animation for unread dots
+            this.startHeartbeatAnimation();
+
             // Refresh badge count after loading announcements
             await this.loadUnreadCount();
         } catch (error) {
@@ -587,6 +620,9 @@ class AnnouncementNotification {
     destroy() {
         if (this.pollInterval) {
             clearInterval(this.pollInterval);
+        }
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
         }
     }
 }
