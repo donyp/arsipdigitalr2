@@ -1644,22 +1644,28 @@
         }
     </style>
 
-    <!-- Announcement Heartbeat Animation -->
+    <!-- Announcement Heartbeat Animation with Double Pulse -->
     <style>
         @keyframes announcementHeartbeat {
             0% {
-                opacity: 0.6;
+                opacity: 1;
+            }
+            25% {
+                opacity: 0.4;
             }
             50% {
                 opacity: 1;
             }
+            75% {
+                opacity: 0.4;
+            }
             100% {
-                opacity: 0.6;
+                opacity: 1;
             }
         }
 
         .announcement-unread-dot {
-            animation: announcementHeartbeat 1.5s ease-in-out infinite !important;
+            animation: announcementHeartbeat 1.2s ease-in-out infinite !important;
         }
 
         /* Style unread dot */
