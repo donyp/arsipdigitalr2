@@ -3445,23 +3445,35 @@
                 if (welcomeInfoEl) welcomeInfoEl.textContent = `Informasi rincian invoice zona ${zonaId}`;
 
                 // Load and display unread announcement count
+                console.log('[Admin Zone] Loading unread announcement count...');
                 try {
                     const token = localStorage.getItem('jwt_token');
+                    console.log('[Admin Zone] Token exists:', !!token);
+                    
                     const unreadResponse = await fetch('/api/announcements/unread/count', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
+                    console.log('[Admin Zone] Unread count response status:', unreadResponse.status);
+                    
                     if (unreadResponse.ok) {
                         const unreadData = await unreadResponse.json();
+                        console.log('[Admin Zone] Unread count data:', unreadData);
+                        
                         const badge = document.getElementById('announcementBadge');
+                        console.log('[Admin Zone] Badge element found:', !!badge);
+                        
                         if (badge && unreadData.unread_count > 0) {
-                            badge.textContent = unreadData.unread_count > 99 ? '99+' : unreadData.unread_count;
-                            badge.style.display = 'flex';
+                            const displayCount = unreadData.unread_count > 99 ? '99+' : unreadData.unread_count;
+                            badge.textContent = displayCount;
+                            badge.style.display = 'inline-flex';
+                            console.log('[Admin Zone] Badge displayed with count:', displayCount);
                         } else if (badge) {
                             badge.style.display = 'none';
+                            console.log('[Admin Zone] Badge hidden (no unread)');
                         }
                     }
                 } catch (err) {
-                    console.warn('Could not load announcement unread count:', err.message);
+                    console.error('[Admin Zone] Error loading announcement count:', err);
                 }
 
                 // Poll for announcement updates every 30 seconds
@@ -3476,15 +3488,16 @@
                             const badge = document.getElementById('announcementBadge');
                             if (badge) {
                                 if (data.unread_count > 0) {
-                                    badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
-                                    badge.style.display = 'flex';
+                                    const displayCount = data.unread_count > 99 ? '99+' : data.unread_count;
+                                    badge.textContent = displayCount;
+                                    badge.style.display = 'inline-flex';
                                 } else {
                                     badge.style.display = 'none';
                                 }
                             }
                         }
                     } catch (err) {
-                        // Silent failure - just continue polling
+                        console.error('[Admin Zone] Polling error:', err);
                     }
                 }, 30000);
 
