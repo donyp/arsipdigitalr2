@@ -200,10 +200,10 @@ function updateGreeting(hours) {
 
 function loadUserGreeting() {
     try {
-        // Get user name for dashboard greeting (dashboard.html only, not unified-header)
-        const userEl = document.getElementById('dashboard-user-greeting');
+        // Set user name in unified header (both .user-name span and dashboard greeting)
+        const userEl = document.querySelector('.user-name');
         if (!userEl) {
-            console.log('[loadUserGreeting] Element not found, skipping');
+            console.log('[loadUserGreeting] Header element not found');
             return;
         }
         
@@ -244,6 +244,12 @@ function loadUserGreeting() {
         console.log('[loadUserGreeting] Setting greeting to:', userName);
         userEl.textContent = userName;
         console.log('[loadUserGreeting] ✅ Greeting updated');
+        
+        // Also update dashboard.html element if exists
+        const dashboardUserEl = document.getElementById('dashboard-user-greeting');
+        if (dashboardUserEl) {
+            dashboardUserEl.textContent = userName;
+        }
     } catch (err) {
         console.warn('Could not load user greeting:', err);
     }
