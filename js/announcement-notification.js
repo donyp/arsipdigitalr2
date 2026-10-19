@@ -540,7 +540,15 @@ class AnnouncementNotification {
 
             list.innerHTML = this.announcements.map((ann, index) => {
                 const isRead = ann.current_user_read;
-                const date = new Date(ann.created_at).toLocaleDateString('id-ID');
+                // Fix: Use toLocaleString with explicit timeZone for correct date/time display
+                const date = new Date(ann.created_at).toLocaleString('id-ID', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'Asia/Jakarta'  // Explicit WIB timezone (UTC+7)
+                });
                 const typeIcon = this.getTypeIcon(ann.announcement_type);
                 return `
                     <div class="announcement-item ${!isRead ? 'unread' : ''}" onclick="announcementNotification.showDetail(${index})">
@@ -548,7 +556,7 @@ class AnnouncementNotification {
                         <div class="announcement-item-content">
                             <div class="announcement-item-title">${ann.title}</div>
                             <span class="announcement-item-type ${ann.announcement_type}">${typeIcon}${ann.announcement_type}</span>
-                            <div class="announcement-item-date">Di release Pada: ${date}</div>
+                            <div class="announcement-item-date">Di release Pada: ${date} WIB</div>
                         </div>
                     </div>
                 `;
@@ -576,12 +584,16 @@ class AnnouncementNotification {
         detailType.innerHTML = `${typeIcon}${ann.announcement_type}`;
         detailType.className = `announcement-item-type ${ann.announcement_type}`;
         
-        // Format date with time in WIB timezone
-        const createdDate = new Date(ann.created_at);
-        const formattedDate = createdDate.toLocaleDateString('id-ID') + ' ' + 
-                             String(createdDate.getHours()).padStart(2, '0') + ':' +
-                             String(createdDate.getMinutes()).padStart(2, '0') + ' WIB';
-        document.getElementById('detailDate').textContent = `Di release Pada: ${formattedDate}`;
+        // Format date with time in WIB timezone - use toLocaleString for consistency
+        const formattedDate = new Date(ann.created_at).toLocaleString('id-ID', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta'  // Explicit WIB timezone (UTC+7)
+        });
+        document.getElementById('detailDate').textContent = `Di release Pada: ${formattedDate} WIB`;
         
         document.getElementById('detailContent').innerHTML = `${ann.content}`;
 
