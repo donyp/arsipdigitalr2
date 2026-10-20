@@ -24,9 +24,32 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function deleteLogsFromStorage() {
   try {
-    console.log('🔍 Searching for log files in Supabase Storage...\n');
+    console.log('🔍 Searching for all files in Supabase Storage...\n');
 
-    // List all objects in the storage bucket
+    // First, list root to see what folders exist
+    const { data: rootFiles, error: rootError } = await supabase
+      .storage
+      .from('arsip-anka')
+      .list('', {
+        limit: 1000,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' }
+      });
+
+    if (rootError) {
+      throw new Error(`Failed to list root: ${rootError.message}`);
+    }
+
+    console.log('📁 Folders/Files in storage:');
+    if (rootFiles && rootFiles.length > 0) {
+      rootFiles.forEach(item => {
+        console.log(`   ${item.id ? '[FOLDER]' : '[FILE]'} ${item.name}`);
+      });
+    }
+    console.log('');
+
+    // Try to list logs folder
+    console.log('🔍 Searching for log files in logs/ folder...\n');
     const { data: files, error: listError } = await supabase
       .storage
       .from('arsip-anka')
@@ -37,11 +60,13 @@ async function deleteLogsFromStorage() {
       });
 
     if (listError) {
-      throw new Error(`Failed to list files: ${listError.message}`);
+      console.warn(`⚠️  Cannot access logs folder: ${listError.message}`);
     }
 
     if (!files || files.length === 0) {
-      console.log('✅ No log files found in storage.');
+      console.log('✅ No files found in logs/ folder.');
+      console.log('\n💡 Logs might be stored in a different location.');
+      console.log('   Check Supabase dashboard → Storage → arsip-anka bucket');
       return;
     }
 
