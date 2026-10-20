@@ -29,6 +29,11 @@
  */
 
 const { buildInvoicePath, buildDocumentPath } = require('./r2-storage');
+const {
+    computeFileStatus,
+    syncInvoiceFileStatus,
+    normalizeKeterangan
+} = require('./invoice-file-status');
 
 const MONTH_NAMES_ID = [
     'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
@@ -235,40 +240,21 @@ async function persistInvoiceFile({ supabase, faktur, type, filePath, userId }) 
 }
 
 /**
- * Sinkronkan files_uploaded_count / files_required_count dari kolom path.
- * Murah (1 SELECT + mungkin 1 UPDATE), TIDAK scan R2.
- * Dipakai sebagai pengaman bila trigger DB belum terpasang.
+ * Sinkronkan files_uploaded_count / files_required_count dari sumber tunggal.
+ *
+ * PENTING: memakai helper invoice-file-status (kolom path + invoice_files),
+ * BUKAN hanya kolom path. Sebelumnya hanya menghitung kolom path, sehingga
+ * bila baris invoice_files sudah ada tapi kolom path belum ter-update,
+ * count bisa ditulis terlalu kecil (status jadi tidak akurat).
+ *
+ * Tidak scan R2 - murah & aman dipanggil setelah setiap upload.
  */
 async function syncInvoiceFileCount({ supabase, faktur, type }) {
-    const cfg = getTypeConfig(type);
     try {
-        const { data, error } = await supabase
-            .from('invoice_file_list')
-            .select('invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan, files_uploaded_count, files_required_count')
-            .eq('faktur', faktur)
-            .maybeSingle();
-
-        if (error || !data) return null;
-
-        const paths = [data.invoice_pdf_path, data.bukti_bayar_path, data.faktur_pajak_path].filter(Boolean);
-        const expectedCount = paths.length;
-        const expectedRequired = (data.keterangan || '').toUpperCase() === 'PPN' ? 3 : 2;
-
-        if ((data.files_uploaded_count || 0) === expectedCount && (data.files_required_count || 0) === expectedRequired) {
-            return { count: expectedCount, required: expectedRequired, updated: false };
-        }
-
-        const { error: updErr } = await supabase
-            .from('invoice_file_list')
-            .update({ files_uploaded_count: expectedCount, files_required_count: expectedRequired })
-            .eq('faktur', faktur);
-
-        if (updErr) {
-            console.warn(`[UploadHelper] sync count gagal untuk ${faktur}: ${updErr.message}`);
-            return { count: expectedCount, required: expectedRequired, updated: false };
-        }
-
-        return { count: expectedCount, required: expectedRequired, updated: true };
+        const result = await syncInvoiceFileStatus({ supabase, faktur });
+        return result
+            ? { count: result.count, required: result.required, updated: result.updated }
+            : null;
     } catch (err) {
         console.warn(`[UploadHelper] sync count error untuk ${faktur}: ${err.message}`);
         return null;
@@ -292,5 +278,8 @@ module.exports = {
     checkDuplicateState,
     persistInvoiceFile,
     syncInvoiceFileCount,
-    isPdfBuffer
+    isPdfBuffer,
+    computeFileStatus,
+    syncInvoiceFileStatus,
+    normalizeKeterangan
 };
