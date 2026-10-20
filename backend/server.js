@@ -1750,6 +1750,30 @@ const createInvoiceAuth = (allowedRoles = null) => {
     }
     return [authenticateToken, authorizeRole(...allowedRoles)];
 };
+
+// ============================================================
+// ZONE ENFORCEMENT MIDDLEWARE (Security Fix #2)
+// ============================================================
+const zoneEnforcement = require('./middleware/zone-enforcement');
+
+// ============================================================
+// UNIVERSAL INPUT VALIDATION MIDDLEWARE (Security Fix #3)
+// ============================================================
+const universalInputValidation = require('./middleware/universal-input-validation');
+
+// Apply universal input validation to ALL API endpoints (before zone enforcement)
+app.use('/api/', universalInputValidation);
+
+// Apply zone enforcement to data endpoints
+// This prevents admin_zona users from accessing other zones
+app.use('/api/invoice/', zoneEnforcement);
+app.use('/api/support/', zoneEnforcement);
+app.use('/api/announcements/', zoneEnforcement);
+app.use('/api/download/', zoneEnforcement);
+app.use('/api/tokos/', zoneEnforcement);
+console.log('[Security] Zone enforcement middleware registered ✅');
+console.log('[Security] Universal input validation middleware registered ✅');
+
 registerInvoiceEndpoints(app, supabase, createInvoiceAuth, R2Storage);
 addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, R2Storage);
 addBatchSyncEndpoint(app, supabase, createInvoiceAuth, featureFlags, queryOptimizer);
@@ -8604,3 +8628,14 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
 });
 
 
+
+
+// ============================================================
+// ERROR HANDLER MIDDLEWARE (must be last)
+// ============================================================
+// This should be registered AFTER all other middleware and routes
+// to catch all errors in the application
+const errorHandler = require('./middleware/error-handler');
+app.use(errorHandler);
+
+console.log('[Security] Comprehensive error handler middleware registered ✅');

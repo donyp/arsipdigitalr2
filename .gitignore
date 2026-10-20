@@ -7,6 +7,19 @@ tmp/
 # Environment Variables
 .env
 backend/.env
+backend/.env.*
+**/.env
+**/.env.*
+
+# Secret files - NEVER commit these
+backend/*-cleanup.js
+backend/update_*.js
+backend/delete_*.js
+backend/clear_*.js
+backend/full_cleanup.js
+backend/*_cleanup.js
+**/keys.json
+**/secrets.json
 
 # Binaries
 *.exe
