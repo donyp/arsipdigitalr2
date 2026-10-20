@@ -612,6 +612,14 @@
                 return;
             }
 
+            // Check max files limit (50 files)
+            const MAX_FILES = 50;
+            if (filesToUpload.length > MAX_FILES) {
+                const excess = filesToUpload.length - MAX_FILES;
+                Toast.warning(`⚠️ Maksimal ${MAX_FILES} file sekaligus. ${excess} file akan dihapus.`);
+                filesToUpload = filesToUpload.slice(0, MAX_FILES);
+            }
+
             validating.style.display = 'block';
             filesList.style.display = 'none';
 

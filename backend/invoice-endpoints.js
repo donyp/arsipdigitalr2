@@ -2800,11 +2800,59 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(400).json({ error: 'File PDF wajib diupload' });
                 }
 
+                // Security Check 1: File size validation (10MB max per file)
+                if (req.file.size > 10 * 1024 * 1024) {
+                    return res.status(413).json({
+                        error: 'File terlalu besar',
+                        message: 'Maksimal ukuran file: 10MB',
+                        received: `${(req.file.size / 1024 / 1024).toFixed(2)}MB`
+                    });
+                }
+
+                // Security Check 2: MIME type validation
+                const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+                if (!allowedMimeTypes.includes(req.file.mimetype)) {
+                    return res.status(400).json({
+                        error: 'Tipe file tidak diizinkan',
+                        message: 'Hanya PDF, JPG, JPEG, PNG yang diterima',
+                        received: req.file.mimetype
+                    });
+                }
+
+                // Security Check 3: Rate limiting (per user, per hour)
+                const userId = req.user?.id;
+                const now = Date.now();
+                const oneHourAgo = now - 3600000;
+                
+                // Store upload history in memory (production: use Redis)
+                if (!global.uploadLimitTracker) {
+                    global.uploadLimitTracker = {};
+                }
+                
+                if (!global.uploadLimitTracker[userId]) {
+                    global.uploadLimitTracker[userId] = [];
+                }
+                
+                // Clean old entries
+                global.uploadLimitTracker[userId] = global.uploadLimitTracker[userId].filter(t => t > oneHourAgo);
+                
+                // Check if user exceeded 50 files per hour
+                if (global.uploadLimitTracker[userId].length >= 50) {
+                    console.warn(`[Upload Security] Rate limit exceeded for user ${userId}: ${global.uploadLimitTracker[userId].length} uploads in last hour`);
+                    return res.status(429).json({
+                        error: 'Terlalu banyak upload',
+                        message: 'Maksimal 50 file per jam. Silakan coba lagi nanti.',
+                        uploadCount: global.uploadLimitTracker[userId].length
+                    });
+                }
+                
+                global.uploadLimitTracker[userId].push(now);
+
                 const fileBuffer = req.file.buffer;
                 const filename = req.file.originalname;
                 const fileType = req.body.type || 'bukti_bayar';
 
-                console.log(`[Invoice Document] Processing ${fileType}: ${filename}`);
+                console.log(`[Invoice Document] Processing ${fileType}: ${filename} | User: ${userId} | Size: ${(req.file.size / 1024 / 1024).toFixed(2)}MB`);
 
                 // Handle based on type
                 if (fileType === 'faktur_pajak') {

@@ -570,6 +570,14 @@
                 document.getElementById('filesList').style.display = 'none';
                 document.getElementById('stats').style.display = 'none';
                 
+                // Check max files limit (50 files)
+                const MAX_FILES = 50;
+                if (files.length > MAX_FILES) {
+                    const excess = files.length - MAX_FILES;
+                    Toast.warning(`⚠️ Maksimal ${MAX_FILES} file sekaligus. ${excess} file akan dihapus.`);
+                    files = Array.from(files).slice(0, MAX_FILES);
+                }
+                
                 // Validate files
                 const validExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
                 let validCount = 0;
