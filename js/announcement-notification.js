@@ -491,14 +491,23 @@ class AnnouncementNotification {
             const data = await response.json();
 
             // Update badge in main dashboard
-            const badge = document.getElementById('announcementBadge');
+            // Use querySelector with data attribute for specificity (matches dashboard-admin-zona.html)
+            let badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
+            
+            // Fallback to getElementById if specific selector not found (for other dashboard pages)
+            if (!badge) {
+                badge = document.getElementById('announcementBadge');
+            }
+            
             this.unreadCount = data.unread_count;
 
-            if (this.unreadCount > 0) {
-                badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
+            if (badge) {
+                if (this.unreadCount > 0) {
+                    badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
             }
         } catch (error) {
             console.error('Error loading unread count:', error);
