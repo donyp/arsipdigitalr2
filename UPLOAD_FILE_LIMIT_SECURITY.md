@@ -1,7 +1,7 @@
 # Upload File Limit Security Enhancement (50 Files)
 
 ## Overview
-Meningkatkan max file upload untuk Faktur Pajak dan Bukti Bayar menjadi 50 file per batch dengan multiple security measures.
+Meningkatkan max file upload untuk Faktur Pajak dan Bukti Bayar menjadi **50 file per batch** dengan security measures dasar.
 
 ## Changes Made
 
@@ -68,30 +68,12 @@ if (!allowedMimeTypes.includes(req.file.mimetype)) {
 }
 ```
 
-**Security Check 3: Rate Limiting (Per User, Per Hour)**
-- Maksimal 50 file per user per jam
-- Uses in-memory tracker (production: implement Redis)
-- Automatic cleanup old entries >1 hour
-- Response: 429 Too Many Requests jika exceed
-
-```javascript
-// Check if user exceeded 50 files per hour
-if (global.uploadLimitTracker[userId].length >= 50) {
-    return res.status(429).json({
-        error: 'Terlalu banyak upload',
-        message: 'Maksimal 50 file per jam. Silakan coba lagi nanti.',
-        uploadCount: global.uploadLimitTracker[userId].length
-    });
-}
-```
-
 **Enhanced Logging**
 - Log setiap upload attempt dengan:
   - User ID
   - File size
   - File type
   - MIME type validation status
-  - Rate limit status
 
 ### 3. Concurrent Upload Handling
 
@@ -113,13 +95,15 @@ for (let i = 0; i < validFiles.length; i++) {
 
 ### ✅ Implemented
 1. **File Size Limit**: 10MB per file (frontend + backend validation)
-2. **MIME Type Validation**: Whitelist approach
-3. **Rate Limiting**: 50 files per user per hour
-4. **File Count Limit**: Max 50 files per batch (frontend)
-5. **Filename Validation**: Extract & verify faktur number
-6. **Duplicate Detection**: Check existing files before upload
-7. **Authentication**: All endpoints require super_admin or moderator role
-8. **Logging**: Comprehensive audit trail
+2. **MIME Type Validation**: Whitelist approach (PDF, JPG, PNG)
+3. **File Count Limit**: Max 50 files per batch (frontend)
+4. **Filename Validation**: Extract & verify faktur number
+5. **Duplicate Detection**: Check existing files before upload
+6. **Authentication**: All endpoints require super_admin or moderator role
+7. **Logging**: Comprehensive audit trail
+
+### ⏸️ Deferred (untuk nanti saat migration selesai)
+- Rate Limiting: 50 files per user per jam - **DISABLED** untuk saat ini karena masih perlu migrate semua file ke sistem
 
 ### 🔄 Sequential Processing
 - Tidak ada concurrent requests ke backend

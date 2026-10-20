@@ -2819,38 +2819,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     });
                 }
 
-                // Security Check 3: Rate limiting (per user, per hour)
-                const userId = req.user?.id;
-                const now = Date.now();
-                const oneHourAgo = now - 3600000;
-                
-                // Store upload history in memory (production: use Redis)
-                if (!global.uploadLimitTracker) {
-                    global.uploadLimitTracker = {};
-                }
-                
-                if (!global.uploadLimitTracker[userId]) {
-                    global.uploadLimitTracker[userId] = [];
-                }
-                
-                // Clean old entries
-                global.uploadLimitTracker[userId] = global.uploadLimitTracker[userId].filter(t => t > oneHourAgo);
-                
-                // Check if user exceeded 50 files per hour
-                if (global.uploadLimitTracker[userId].length >= 50) {
-                    console.warn(`[Upload Security] Rate limit exceeded for user ${userId}: ${global.uploadLimitTracker[userId].length} uploads in last hour`);
-                    return res.status(429).json({
-                        error: 'Terlalu banyak upload',
-                        message: 'Maksimal 50 file per jam. Silakan coba lagi nanti.',
-                        uploadCount: global.uploadLimitTracker[userId].length
-                    });
-                }
-                
-                global.uploadLimitTracker[userId].push(now);
-
                 const fileBuffer = req.file.buffer;
                 const filename = req.file.originalname;
                 const fileType = req.body.type || 'bukti_bayar';
+                const userId = req.user?.id;
 
                 console.log(`[Invoice Document] Processing ${fileType}: ${filename} | User: ${userId} | Size: ${(req.file.size / 1024 / 1024).toFixed(2)}MB`);
 
