@@ -2928,13 +2928,20 @@ async function renderInvoiceTable(invoices) {
         const isPPN = inv.keterangan === 'PPN';
         const requiredCount = isPPN ? 3 : 2;
         
-        // Use files_uploaded_count from backend (already accurate from R2 sync)
-        const actualUploadedCount = inv.files_uploaded_count || 0;
-        
         // Path file dari database (sudah ada di response list)
         const invoicePath = inv.invoice_pdf_path || inv.uploaded_file_path || null;
         const buktiPath = inv.bukti_bayar_path || null;
         const fakturPath = inv.faktur_pajak_path || null;
+        
+        // ============================================================
+        // Status file dihitung dari kolom path - SUMBER YANG SAMA dengan
+        // tombol download. Sebelumnya badge x/y memakai files_uploaded_count
+        // (kolom cache) sementara tombol memakai kolom path -> keduanya
+        // bisa berbeda sehingga user melihat "3/3" tapi tombolnya cuma 2.
+        // ============================================================
+        const pathCount = (invoicePath ? 1 : 0) + (buktiPath ? 1 : 0) + (fakturPath ? 1 : 0);
+        const actualUploadedCount = Math.min(pathCount, requiredCount);
+        const isComplete = pathCount >= requiredCount;
         
         // Build individual file status for action menu
         let invoiceExists = !!invoicePath, buktiExists = !!buktiPath, fakturExists = !!fakturPath;
@@ -2951,15 +2958,13 @@ async function renderInvoiceTable(invoices) {
         }
         
         // Store file status for popup usage later
-        // If files_uploaded_count > 0 but no specific files found, show generic "files exist" state
-        // This handles the case where invoice data was just added and files sync is pending
         const fileStatus = {
-            hasInvoice: invoiceExists || (actualUploadedCount > 0),
-            hasBuktiBayar: buktiExists || (actualUploadedCount > 1),
-            hasFakturPajak: fakturExists || (actualUploadedCount === requiredCount && isPPN),
-            isPPN: inv.keterangan === 'PPN',
-            isComplete: actualUploadedCount === requiredCount,
-            actualCount: actualUploadedCount,
+            hasInvoice: invoiceExists,
+            hasBuktiBayar: buktiExists,
+            hasFakturPajak: fakturExists,
+            isPPN: isPPN,
+            isComplete: isComplete,
+            actualCount: pathCount,
             requiredCount: requiredCount
         };
         
@@ -2968,7 +2973,7 @@ async function renderInvoiceTable(invoices) {
             actualUploadedCount,
             requiredCount,
             buttons,
-            isComplete: actualUploadedCount === requiredCount,
+            isComplete: isComplete,
             fileStatus  // Store for popup
         };
     });
@@ -4317,7 +4322,12 @@ async function applyInvoiceFilters() {
                 filteredData = filteredData.filter(inv => {
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
                     const filesRequired = isPPN ? 3 : 2;
-                    const filesUploaded = (inv.files_uploaded_count || 0);
+                    // Sumber yang sama dengan badge status & tombol download:
+                    // dihitung dari kolom path (bukan kolom cache count)
+                    const filesUploaded =
+                        (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
+                        (inv.bukti_bayar_path ? 1 : 0) +
+                        (inv.faktur_pajak_path ? 1 : 0);
                     const isComplete = filesUploaded >= filesRequired;
                     
                     if (status === 'Lunas') {

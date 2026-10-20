@@ -2513,12 +2513,14 @@
                     totalAmount += nominal;
                     
                     // Calculate files uploaded
-                    let filesUploaded = inv.files_uploaded_count || 0;
-                    if (filesUploaded === 0) {
-                        if (inv.invoice_pdf_path) filesUploaded++;
-                        if (inv.bukti_bayar_path) filesUploaded++;
-                        if (inv.faktur_pajak_path) filesUploaded++;
-                    }
+                    // PERBAIKAN: dihitung dari kolom path (sumber yang sama
+                    // dengan tombol download di menu Aksi) supaya angka
+                    // Lunas/Belum Lunas selalu sama dengan file yang
+                    // benar-benar bisa diunduh.
+                    let filesUploaded =
+                        (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
+                        (inv.bukti_bayar_path ? 1 : 0) +
+                        (inv.faktur_pajak_path ? 1 : 0);
                     
                     // Determine files required (PPN = 3, NON PPN = 2)
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
@@ -2662,12 +2664,14 @@
                     totalAmount += nominal;
                     
                     // Calculate files uploaded
-                    let filesUploaded = inv.files_uploaded_count || 0;
-                    if (filesUploaded === 0) {
-                        if (inv.invoice_pdf_path) filesUploaded++;
-                        if (inv.bukti_bayar_path) filesUploaded++;
-                        if (inv.faktur_pajak_path) filesUploaded++;
-                    }
+                    // PERBAIKAN: dihitung dari kolom path (sumber yang sama
+                    // dengan tombol download di menu Aksi) supaya angka
+                    // Lunas/Belum Lunas selalu sama dengan file yang
+                    // benar-benar bisa diunduh.
+                    let filesUploaded =
+                        (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
+                        (inv.bukti_bayar_path ? 1 : 0) +
+                        (inv.faktur_pajak_path ? 1 : 0);
                     
                     // Determine files required (PPN = 3, NON PPN = 2)
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
@@ -2880,15 +2884,12 @@
                     const nominal = parseFloat(inv.total_jumlah_jual) || 0;
                     totalAmount += nominal;
                     
-                    // Calculate files uploaded from database (cached count)
-                    let filesUploaded = inv.files_uploaded_count || 0;
-                    
-                    // If no cached count, calculate from paths (fallback)
-                    if (filesUploaded === 0) {
-                        if (inv.invoice_pdf_path) filesUploaded++;
-                        if (inv.bukti_bayar_path) filesUploaded++;
-                        if (inv.faktur_pajak_path) filesUploaded++;
-                    }
+                    // Calculate files uploaded from path columns
+                    // (sumber yang sama dengan tombol download)
+                    let filesUploaded =
+                        (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
+                        (inv.bukti_bayar_path ? 1 : 0) +
+                        (inv.faktur_pajak_path ? 1 : 0);
                     
                     // Determine files required (PPN = 3, NON PPN = 2)
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
