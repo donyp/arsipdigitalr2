@@ -56,6 +56,14 @@ async function updateFilePath(faktur, columnName, filePath) {
                     }
                 });
             });
+
+            // Timeout: tanpa ini, koneksi yang menggantung akan menahan
+            // buffer upload selamanya (B1 - RAM tidak pernah bebas)
+            req.setTimeout(15000, () => {
+                console.error(`[UpdatePath] Timeout after 15s for ${faktur} (${columnName})`);
+                req.destroy();
+                resolve(false);
+            });
             
             req.on('error', (err) => {
                 console.error(`[UpdatePath] Network error: ${err.message}`);

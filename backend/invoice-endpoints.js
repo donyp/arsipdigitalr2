@@ -10,6 +10,15 @@ const fs = require('fs');
 const { updateFileCountDirectly, updateFilePath } = require('./direct-postgres-update');
 const { logSecurityEvent, logWarning, logInfo, logDebug, isDebugMode } = require('./security-logging');
 const { sanitizeString } = require('./input-validators');
+const { UploadQueue } = require('./upload-queue');
+const {
+    getTypeConfig,
+    buildTargetPath,
+    checkDuplicateState,
+    persistInvoiceFile,
+    syncInvoiceFileCount,
+    isPdfBuffer
+} = require('./invoice-upload-helper');
 const AuditLogger = require('./audit-logger');
 
 try {
@@ -252,10 +261,10 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         const monthNum = String(invoice.tanggal.split('-')[1]).padStart(2, '0');
         const day = String(invoice.tanggal.split('-')[2]).padStart(2, '0');
         
-        // Convert month number to Indonesian month name
-        const monthNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-                           'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
-        const monthName = monthNames[parseInt(monthNum) - 1];
+        // Convert month number ke nama bulan.
+        // Upload memakai konvensi Indonesia; file lama bisa memakai konvensi
+        // Inggris -> coba keduanya agar file tidak terlewat.
+        const monthVariants = R2Storage.monthNameVariants(monthNum);
         
         // Extract location from toko name
         const location = invoice.toko ? (invoice.toko.includes('PEMALANG') ? 'PEMALANG' : 'BEKASI') : 'BEKASI';
@@ -263,13 +272,16 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         const filename = `${faktur}.pdf`;
         let invoiceCount = 0, buktiCount = 0, fakturCount = 0;
         
-        console.log(`[UpdateCount] Using date: ${year}/${monthName}/${day}, location: ${location}`);
+        console.log(`[UpdateCount] Using date: ${year}/${monthVariants[0]}/${day}, location: ${location}`);
         
-        // Check invoice PDF - try PPN and NON paths for this date
-        const invoicePaths = [
-            `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
-            `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
-        ];
+        // Check invoice PDF - try PPN dan NON paths untuk tanggal ini
+        const invoicePaths = [];
+        for (const monthName of monthVariants) {
+            invoicePaths.push(
+                `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
+                `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
+            );
+        }
         
         for (const path of invoicePaths) {
             try {
@@ -285,9 +297,10 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         }
         
         // Check bukti bayar
-        const buktiPaths = [
-            `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`
-        ];
+        const buktiPaths = [];
+        for (const monthName of monthVariants) {
+            buktiPaths.push(`ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`);
+        }
         
         for (const path of buktiPaths) {
             try {
@@ -318,14 +331,22 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
         
         // If not found in DB path, try scanning folders with just faktur number
         if (fakturCount === 0) {
-            const fakturFolders = [
-                // Try invoice date first
-                `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/`,
-                `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/`,
-                // Try today's date
-                `ARSIP/${location}/faktur-pajak/2026/SEPTEMBER/25/`,
-                `ARSIP/${location}/Faktur-Pajak/2026/SEPTEMBER/25/`
-            ];
+            const fakturFolders = [];
+            for (const monthName of monthVariants) {
+                fakturFolders.push(
+                    `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/`,
+                    `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/`
+                );
+            }
+            // Try today's date (kasus faktur pajak diunggah sebelum tanggal invoice)
+            const today = new Date();
+            const todayVariants = R2Storage.monthNameVariants(today.getMonth() + 1);
+            for (const monthName of todayVariants) {
+                fakturFolders.push(
+                    `ARSIP/${location}/faktur-pajak/${today.getFullYear()}/${monthName}/${String(today.getDate()).padStart(2, '0')}/`,
+                    `ARSIP/${location}/Faktur-Pajak/${today.getFullYear()}/${monthName}/${String(today.getDate()).padStart(2, '0')}/`
+                );
+            }
             
             for (const folderPath of fakturFolders) {
                 try {
@@ -395,6 +416,44 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
     // Initialize audit logger for this endpoint
     const auditLogger = new AuditLogger(supabase);
+
+    // ============================================================
+    // B1: Batas upload yang sedang diproses (backpressure)
+    // ============================================================
+    // Tanpa batas ini, bulk 200+ file menyebabkan semua body request
+    // dibUFFER di RAM (multer memoryStorage) sekaligus -> PM2 me-restart
+    // worker (max_memory_restart 1G) -> upload hilang tanpa error ke user.
+    // Gate ini dijalankan SEBELUM multer, jadi body yang diprosesiom maksimal
+    // MAX_CONCURRENT_UPLOAD_REQUESTS.
+    const MAX_CONCURRENT_UPLOAD_REQUESTS = 8;
+    let uploadRequestsInFlight = 0;
+
+    const uploadGate = (req, res, next) => {
+        if (uploadRequestsInFlight >= MAX_CONCURRENT_UPLOAD_REQUESTS) {
+            return res.status(429).json({
+                error: 'Server sedang memproses banyak upload. Coba lagi sebentar.',
+                retry_after: 5
+            });
+        }
+
+        uploadRequestsInFlight++;
+        let released = false;
+        const release = () => {
+            if (released) return;
+            released = true;
+            uploadRequestsInFlight--;
+        };
+        res.on('finish', release);
+        res.on('close', release);
+        next();
+    };
+
+    // Batas upload R2 yang berjalan bersamaan (Fase 0)
+    const uploadQueue = new UploadQueue({
+        maxConcurrent: Number(process.env.UPLOAD_QUEUE_CONCURRENCY) || 4,
+        maxQueued: Number(process.env.UPLOAD_QUEUE_MAX_PENDING) || 500,
+        maxWaitMs: 120000
+    });
 
     // ============================================================
     // SECURITY: Authorization ownership check helper
@@ -2101,6 +2160,75 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     );
 
     // ============================================
+    // POST /api/invoice/check-fakturs-batch
+    // ============================================
+    // PERF (Fase 2): validasi faktur untuk banyak file sekaligus.
+    // Sebelumnya frontend memanggil GET /api/invoice/check-faktur/<faktur>
+    // untuk SETIAP file -> untuk bulk 200 file = 200 request + 200 query DB.
+    // Endpoint ini memakai .in('faktur', ...) per batch 100 -> 200 file = 2 query.
+    // Response: { results: { <faktur>: { exists, data } } }
+    // ============================================
+    app.post('/api/invoice/check-fakturs-batch',
+        createAuth(),
+        async (req, res) => {
+            try {
+                const { fakturs } = req.body || {};
+
+                if (!Array.isArray(fakturs) || fakturs.length === 0) {
+                    return res.status(400).json({ error: 'fakturs harus berupa array dan tidak boleh kosong' });
+                }
+
+                if (fakturs.length > 1000) {
+                    return res.status(400).json({ error: 'Maksimal 1000 faktur per request' });
+                }
+
+                // Bersihkan & unik
+                const cleanFakturs = [...new Set(
+                    fakturs
+                        .filter(f => typeof f === 'string' || typeof f === 'number')
+                        .map(f => String(f).trim())
+                        .filter(f => f.length > 0)
+                )];
+
+                const results = {};
+                cleanFakturs.forEach(f => { results[f] = { exists: false, data: null }; });
+
+                const BATCH_SIZE = 100;
+                const selectCols = 'faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan';
+
+                for (let i = 0; i < cleanFakturs.length; i += BATCH_SIZE) {
+                    const batch = cleanFakturs.slice(i, i + BATCH_SIZE);
+
+                    const { data, error } = await supabase
+                        .from('invoice_file_list')
+                        .select(selectCols)
+                        .in('faktur', batch);
+
+                    if (error) {
+                        console.error('[Invoice API] Batch check faktur error:', error.message);
+                        return res.status(500).json({ error: 'Server error' });
+                    }
+
+                    (data || []).forEach(row => {
+                        results[row.faktur] = { exists: true, data: row };
+                    });
+                }
+
+                res.json({
+                    success: true,
+                    total: cleanFakturs.length,
+                    found: Object.values(results).filter(r => r.exists).length,
+                    results: results
+                });
+
+            } catch (error) {
+                console.error('[Invoice API] Batch check faktur error:', error);
+                res.status(500).json({ error: 'Server error' });
+            }
+        }
+    );
+
+    // ============================================
     // GET /api/invoice/check-file/:faktur/:fileType
     // Check if file exists on remote storage
     // fileType: 'invoice', 'bukti_bayar', or 'faktur_pajak'
@@ -2235,32 +2363,34 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         const monthNum = String(invoiceForDate.tanggal.split('-')[1]).padStart(2, '0');
                         const day = String(invoiceForDate.tanggal.split('-')[2]).padStart(2, '0');
                         
-                        const monthNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
-                                           'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
-                        const monthName = monthNames[parseInt(monthNum) - 1];
+                        // Nama bulan: upload memakai konvensi Indonesia, file lama
+                        // bisa memakai konvensi Inggris -> coba keduanya.
+                        const monthVariants = R2Storage.monthNameVariants(monthNum);
                         const location = invoiceForDate.toko ? (invoiceForDate.toko.includes('PEMALANG') ? 'PEMALANG' : 'BEKASI') : 'BEKASI';
                         
                         const filename = `${faktur}.pdf`;
                         
                         // Build paths for the requested file type
                         let pathsToCheck = [];
-                        if (fileType === 'invoice') {
-                            pathsToCheck = [
-                                `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
-                                `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
-                            ];
-                        } else if (fileType === 'bukti_bayar') {
-                            pathsToCheck = [
-                                `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`
-                            ];
-                        } else if (fileType === 'faktur_pajak') {
-                            // For faktur pajak, also try with "tax-" prefix and different case variations
-                            pathsToCheck = [
-                                `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
-                                `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`,
-                                `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/tax-${faktur}`,  // partial match for files with extra text
-                                `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/tax-${faktur}`
-                            ];
+                        for (const monthName of monthVariants) {
+                            if (fileType === 'invoice') {
+                                pathsToCheck.push(
+                                    `ARSIP/${location}/PPN/${year}/${monthName}/${day}/${filename}`,
+                                    `ARSIP/${location}/NON/${year}/${monthName}/${day}/${filename}`
+                                );
+                            } else if (fileType === 'bukti_bayar') {
+                                pathsToCheck.push(
+                                    `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}/${filename}`
+                                );
+                            } else if (fileType === 'faktur_pajak') {
+                                // For faktur pajak, also try with "tax-" prefix and different case variations
+                                pathsToCheck.push(
+                                    `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/${filename}`,
+                                    `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/${filename}`,
+                                    `ARSIP/${location}/faktur-pajak/${year}/${monthName}/${day}/tax-${faktur}`,  // partial match for files with extra text
+                                    `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}/tax-${faktur}`
+                                );
+                            }
                         }
                         
                         // Check each possible path
@@ -2617,8 +2747,23 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // Upload PDF and mark invoice as UPLOADED by matching faktur in filename
     // Filename format: 835100310.pdf or similar
     // ============================================
+    // ============================================
+    // POST /api/invoice/upload-pdf
+    // Upload Invoice PDF (1 file per request)
+    // ============================================
+    // PERBAIKAN (B1/B2 + Fase 1 + Fase 2):
+    //  - Upload TIDAK lagi fire-and-forget (setImmediate). Request menunggu
+    //    upload selesai => user tahu file benar-benar masuk, dan tidak ada
+    //    buffer menumpuk di RAM untuk bulk 200+ file.
+    //  - Upload melewati queue dengan batas konkurensi.
+    //  - Path target dihitung dengan fungsi yang SAMA dengan penulisan ke R2
+    //    -> cek duplikat selalu akurat.
+    //  - Kalau upload gagal, kolom path TIDAK pernah ditulis NULL dan
+    //    files_uploaded_count tidak ikut turun.
+    //  - Count file disinkronkan dari database (tidak scan R2).
     app.post('/api/invoice/upload-pdf',
         ...createAuth(['super_admin', 'moderator', 'user']),
+        uploadGate,
         upload.single('pdf'),
         handleMulterError,
         async (req, res) => {
@@ -2626,304 +2771,178 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 if (!req.file) {
                     return res.status(400).json({ error: 'No PDF file provided' });
                 }
-                
+
                 const filename = req.file.originalname;
                 const fileBuffer = req.file.buffer;
-                console.log(`[Invoice PDF] Upload started by ${req.user?.name}`);
-                console.log(`[Invoice PDF] Filename: ${filename}`);
-                
+
+                // Validasi isi file (magic bytes) - cegah file non-PDF
+                if (!isPdfBuffer(fileBuffer)) {
+                    logSecurityEvent('[FILE_UPLOAD]', 'Invalid PDF file rejected', {
+                        userId: req.user?.id,
+                        fileName: filename,
+                        size: fileBuffer.length
+                    });
+                    return res.status(400).json({ error: 'File tidak valid: konten file bukan PDF.' });
+                }
+
                 // Extract faktur from filename (remove .pdf extension)
                 const faktur = path.parse(filename).name; // 835100310.pdf -> 835100310
-                console.log(`[Invoice PDF] Extracted faktur: ${faktur}`);
-                
                 if (!faktur) {
                     return res.status(400).json({ error: 'Cannot extract faktur from filename' });
                 }
-                
+
                 // Check if invoice exists
                 const { data: invoice, error: queryError } = await supabase
                     .from('invoice_file_list')
                     .select('*')
                     .eq('faktur', faktur)
                     .single();
-                
+
                 if (queryError || !invoice) {
-                    console.warn(`[Invoice PDF] Invoice not found for faktur: ${faktur}`);
                     return res.status(404).json({ error: `Invoice not found for faktur: ${faktur}` });
                 }
-                
-                console.log(`[Invoice PDF] Found invoice: ${invoice.konsumen} (${invoice.toko})`);
-                
+
                 // AUTO-FIX: If zona_id is missing, populate it from toko
                 if (!invoice.zona_id && invoice.toko) {
                     try {
-                        console.log(`[Invoice PDF] zona_id is NULL, attempting to populate from toko: ${invoice.toko}`);
                         const { data: tokoData } = await supabase
                             .from('toko')
                             .select('zona_id')
                             .eq('nama', invoice.toko)
                             .maybeSingle();
-                        
+
                         if (tokoData && tokoData.zona_id) {
-                            // Update invoice with zona_id
                             const { error: updateError } = await supabase
                                 .from('invoice_file_list')
                                 .update({ zona_id: tokoData.zona_id })
                                 .eq('faktur', faktur);
-                            
+
                             if (!updateError) {
                                 invoice.zona_id = tokoData.zona_id;
-                                console.log(`[Invoice PDF] ? Auto-populated zona_id: ${tokoData.zona_id}`);
-                            } else {
-                                console.warn(`[Invoice PDF] Failed to auto-populate zona_id:`, updateError);
                             }
-                        } else {
-                            console.warn(`[Invoice PDF] Could not find zona_id for toko: ${invoice.toko}`);
                         }
                     } catch (autoFixErr) {
-                        console.warn(`[Invoice PDF] Auto-populate zona_id failed:`, autoFixErr.message);
                         // Don't block upload, just log warning
+                        console.warn(`[Invoice PDF] Auto-populate zona_id failed:`, autoFixErr.message);
                     }
                 }
-                
-                // Determine path based on keterangan (PPN/NON PPN)
-                // SAFEGUARD: Check if tanggal exists and is in valid format
+
+                // SAFEGUARD: tanggal wajib ada (dipakai untuk path storage)
                 if (!invoice.tanggal) {
-                    console.error(`[Invoice PDF] Invoice tanggal is missing for faktur: ${faktur}`);
                     return res.status(400).json({ error: 'Invoice tanggal tidak ditemukan' });
                 }
-                
-                const year = invoice.tanggal.split('-')[0];
-                const monthNum = String(invoice.tanggal.split('-')[1]).padStart(2, '0');
-                const day = String(invoice.tanggal.split('-')[2]).padStart(2, '0');
-                
-                // Convert month number to Indonesian month name
-                const monthNames = [
-                    'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-                    'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
-                ];
-                const monthName = monthNames[parseInt(monthNum) - 1] || monthNum;
-                
-                const category = invoice.keterangan === 'PPN' ? 'PPN' : 'NON';
-                const location = extractLocationFromToko(invoice.toko);
-                
-                // Path structure: ARSIP/LOCATION/CATEGORY/TAHUN/BULAN/TANGGAL/FILENAME
-                // LOCATION: BEKASI or PEMALANG (extracted from TOKO column)
-                // CATEGORY: PPN or NON (based on keterangan)
-                console.log(`[Invoice PDF] Path components - Location: ${location}, Year: ${year}, Month: ${monthName}, Day: ${day}, Category: ${category}`);
-                console.log(`[Invoice PDF] Invoice keterangan: "${invoice.keterangan}" ? Category: "${category}"`);
-                
-                // Build expected new path with location
-                const expectedNewPath = `ARSIP/${location}/${category}/${year}/${monthName}/${day}/${filename}`;
-                console.log(`[Invoice PDF] Expected new path: ${expectedNewPath}`);
-                console.log(`[Invoice PDF] Current DB path: ${invoice.invoice_pdf_path || 'NULL'}`);
-                console.log(`[Invoice PDF] File size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-                
-                // Check if this is a re-upload of same file (path already matches new structure)
-                const isReuploadWithNewPath = invoice.invoice_pdf_path === expectedNewPath;
-                if (isReuploadWithNewPath) {
-                    console.log(`[Invoice PDF] ??  File already uploaded with new location-based path, allowing re-upload`);
-                } else {
-                    // QUICK CHECK: If existing file in DB, verify file truly exists before rejecting
-                    // Only reject if file ACTUALLY exists in R2 (true duplicate)
-                    if (invoice.invoice_pdf_path || invoice.uploaded_file_path) {
-                        const pathToCheck = invoice.invoice_pdf_path || invoice.uploaded_file_path;
-                        console.log(`[Invoice PDF] Checking if existing path still exists in R2: ${pathToCheck}`);
-                        try {
-                            const existsInR2 = await R2Storage.checkFileExistsNoCache(pathToCheck);
-                            console.log(`[Invoice PDF] Duplicate check result: ${existsInR2 ? 'EXISTS - REJECT' : 'MISSING - ALLOW'}`);
-                            if (existsInR2) {
-                                // File truly exists in R2 - this is a real duplicate, reject
-                                console.warn(`[Invoice PDF] File truly exists in R2: ${pathToCheck}`);
-                                return res.status(409).json({
-                                    error: 'File sudah ada (Duplicate)',
-                                    message: `Invoice PDF sudah ada di R2`,
-                                    existing_path: pathToCheck,
-                                    faktur: faktur
-                                });
-                            } else {
-                                // Old path in DB but file doesn't exist in R2
-                                // This is a re-upload scenario - allow it
-                                console.log(`[Invoice PDF] Old path not found in R2 - allowing re-upload`);
-                            }
-                        } catch (checkErr) {
-                            // Check failed - be lenient, allow upload to proceed
-                            console.warn(`[Invoice PDF] Quick check error (allowing re-upload):`, checkErr.message);
-                        }
-                    }
-                }
-                
-                // OPTIMIZATION: Move upload to background (NON-BLOCKING)
-                // Return response immediately with upload status, actual upload happens async
-                const performUpload = async () => {
-                    try {
-                        console.log(`[Invoice PDF BG] Starting upload for faktur: ${faktur}`);
-                        let uploadResult = null;
-                        let remotePath = null;
-                        
-                        try {
-                            console.log(`[Invoice PDF BG] Original file size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-                            
-                            console.log(`[Invoice PDF BG] Uploading file buffer (${fileBuffer.length} bytes)`);
-                            
-                            uploadResult = await R2Storage.uploadInvoicePDF(fileBuffer, filename, year, monthName, day, category, location);
-                            
-                            console.log(`[Invoice PDF BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
-                            
-                            // uploadResult is valid if it has storagePath (upload succeeded)
-                            if (!uploadResult || !uploadResult.storagePath) {
-                                throw new Error(uploadResult?.error || 'Upload failed');
-                            }
-                            
-                            // Set remotePath on successful upload!
-                            remotePath = uploadResult.storagePath;
-                            console.log(`[Invoice PDF BG] ? File uploaded to R2: ${remotePath}`);
-                        } catch (uploadErr) {
-                            console.error(`[Invoice PDF BG] Upload error:`, uploadErr.message);
-                            remotePath = uploadResult?.storagePath || uploadResult?.path || null;
-                        }
-                        
-                        // Update invoice status in database - try NEW invoice_files table first
-                        console.log('[Invoice PDF BG] Updating invoice path in database...');
-                        let updateSuccess = false;
-                        
-                        try {
-                            console.log(`[Invoice PDF BG] Attempting REST API INSERT into invoice_files...`);
-                            
-                            // Try NEW invoice_files table via REST API
-                            const insertUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files`;
-                            const insertResponse = await fetch(insertUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                                    'Content-Type': 'application/json',
-                                    'Prefer': 'resolution=merge-duplicates'
-                                },
-                                body: JSON.stringify({
-                                    faktur: faktur,
-                                    file_type: 'invoice',
-                                    file_path: remotePath,
-                                    uploaded_at: new Date().toISOString(),
-                                    uploaded_by: req.user.id
-                                })
-                            });
-                            
-                            if (insertResponse.ok) {
-                                console.log(`[Invoice PDF BG] ? Inserted into invoice_files table (REST API)`);
-                                updateSuccess = true;
-                            } else {
-                                const errText = await insertResponse.text();
-                                console.log(`[Invoice PDF BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 100));
-                            }
-                        } catch (restErr) {
-                            console.log(`[Invoice PDF BG] REST API INSERT error:`, restErr.message?.substring(0, 50));
-                        }
-                        
-                        // Fallback: Try standard upsert
-                        if (!updateSuccess) {
-                            try {
-                                const { error: upsertErr } = await supabase
-                                    .from('invoice_files')
-                                    .upsert({
-                                        faktur: faktur,
-                                        file_type: 'invoice',
-                                        file_path: remotePath,
-                                        uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
-                                    });
-                                
-                                if (!upsertErr) {
-                                    console.log(`[Invoice PDF BG] ? Upserted into invoice_files table`);
-                                    updateSuccess = true;
-                                } else {
-                                    console.log(`[Invoice PDF BG] Upsert failed:`, upsertErr.message?.substring(0, 50));
-                                }
-                            } catch (upsertCatchErr) {
-                                console.log(`[Invoice PDF BG] Upsert catch error`);
-                            }
-                        }
-                        
-                        // Final fallback: OLD method - update uploaded_file_path via REST API
-                        if (!updateSuccess) {
-                            try {
-                                const updateUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_file_list?faktur=eq.${faktur}`;
-                                const updateResponse = await fetch(updateUrl, {
-                                    method: 'PATCH',
-                                    headers: {
-                                        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                                        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'return=representation'
-                                    },
-                                    body: JSON.stringify({
-                                        invoice_pdf_path: remotePath || null,
-                                        uploaded_file_path: remotePath || null,  // Keep for backward compat
-                                        uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id,
-                                        updated_at: new Date().toISOString()
-                                    })
-                                });
 
-                                if (updateResponse.ok) {
-                                    console.log(`[Invoice PDF BG] ? Updated uploaded_file_path (OLD method)`);
-                                    updateSuccess = true;
-                                } else {
-                                    const errorText = await updateResponse.text();
-                                    console.error(`[Invoice PDF BG] Update failed (${updateResponse.status}):`, errorText.substring(0, 100));
-                                }
-                            } catch (updateErr) {
-                                console.error('[Invoice PDF BG] Update error:', updateErr.message);
-                            }
-                        }
-                        
-                        // Always update file path via REST API (bypasses schema cache)
-                        // This ensures invoice_pdf_path is set even if previous methods failed
-                        try {
-                            await updateFilePath(faktur, 'invoice_pdf_path', remotePath);
-                        } catch (pathErr) {
-                            console.error(`[Invoice PDF BG] Error updating invoice_pdf_path:`, pathErr.message);
-                        }
-                        
-                        if (updateSuccess) {
-                            console.log(`[Invoice PDF BG] ? Database updated for faktur: ${faktur}`);
-                            console.log(`[Invoice PDF BG] Stored path: ${remotePath || 'NULL'}`);
-                            
-                            // Update files_uploaded_count (includes internal delay for consistency)
-                            const uploadedCount = await updateFilesUploadedCount(supabase, faktur, R2Storage);
-                            console.log(`[Invoice PDF BG] Files uploaded count: ${uploadedCount}`);
-                            
-                            // Save count directly via REST API (bypasses schema cache)
-                            if (uploadedCount > 0) {
-                                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-                                const requiredCount = isPPN ? 3 : 2;
-                                await updateFileCountDirectly(faktur, uploadedCount, requiredCount);
-                            }
-                        } else {
-                            console.error(`[Invoice PDF BG] ? All database update methods failed!`);
-                        }
-                    } catch (bgErr) {
-                        console.error(`[Invoice PDF BG] Background upload error (non-blocking):`, bgErr.message);
+                const location = extractLocationFromToko(invoice.toko);
+                const target = buildTargetPath('invoice', { invoice, filename, location });
+
+                // ============================================================
+                // Aturan duplikat seragam untuk 3 tipe upload
+                // ============================================================
+                const overwrite = String(req.body?.overwrite || '').toLowerCase() === 'true';
+                const dup = await checkDuplicateState({
+                    type: 'invoice',
+                    invoice,
+                    targetPath: target.storagePath,
+                    overwrite,
+                    R2Storage
+                });
+
+                if (dup.action === 'reject') {
+                    return res.status(409).json({
+                        error: 'File sudah ada (Duplicate)',
+                        message: `Invoice PDF untuk faktur ${faktur} sudah ada di storage. Hapus file lama terlebih dahulu bila ingin menggantinya.`,
+                        existing_path: dup.existingPath,
+                        faktur: faktur
+                    });
+                }
+
+                // File orphan: sudah ada di R2 tapi database tidak tahu
+                // -> adot path-nya, tidak perlu upload ulang (menyembuhkan data)
+                if (dup.action === 'adopt') {
+                    const persist = await persistInvoiceFile({
+                        supabase, faktur, type: 'invoice', filePath: target.storagePath, userId: req.user.id
+                    });
+                    const countInfo = await syncInvoiceFileCount({ supabase, faktur, type: 'invoice' });
+
+                    return res.json({
+                        success: true,
+                        message: 'File sudah ada di storage, path diperbaiki di database (tidak diupload ulang)',
+                        faktur,
+                        status: 'completed',
+                        adopted: true,
+                        storagePath: target.storagePath,
+                        files_uploaded_count: countInfo?.count,
+                        files_required_count: countInfo?.required,
+                        dbUpdated: persist.ok,
+                        // WhatsApp data
+                        konsumen: invoice.konsumen,
+                        total_jumlah_jual: invoice.total_jumlah_jual,
+                        zona_id: invoice.zona_id,
+                        tipe: invoice.keterangan || 'PPN',
+                        nominal: invoice.total_jumlah_jual
+                    });
+                }
+
+                // ============================================================
+                // Upload ke R2 - lewat queue, request MENUNGGU sampai selesai
+                // ============================================================
+                let uploadResult;
+                try {
+                    uploadResult = await uploadQueue.run(() => R2Storage.uploadInvoicePDF(
+                        fileBuffer,
+                        filename,
+                        target.year,
+                        target.monthName,
+                        target.day,
+                        target.category,
+                        target.location
+                    ));
+                } catch (uploadErr) {
+                    if (uploadErr.code === 'DUPLICATE_FILE') {
+                        return res.status(409).json({
+                            error: 'File sudah ada (Duplicate)',
+                            message: `Invoice PDF untuk faktur ${faktur} sudah ada di storage.`,
+                            existing_path: target.storagePath,
+                            faktur: faktur
+                        });
                     }
-                };
-                
-                // Start background upload but DON'T wait for it
-                setImmediate(() => performUpload());
-                
-                // Return response immediately to client (with WhatsApp data)
+                    console.error('[Invoice PDF] Upload R2 gagal:', uploadErr.message);
+                    return res.status(500).json({
+                        error: 'Upload ke storage gagal',
+                        message: uploadErr.message,
+                        faktur: faktur
+                    });
+                }
+
+                // ============================================================
+                // Simpan ke database (tidak pernah menulis NULL ke kolom path)
+                // ============================================================
+                const persist = await persistInvoiceFile({
+                    supabase, faktur, type: 'invoice', filePath: uploadResult.storagePath, userId: req.user.id
+                });
+                const countInfo = await syncInvoiceFileCount({ supabase, faktur, type: 'invoice' });
+
+                if (!persist.ok) {
+                    console.error(`[Invoice PDF] DB update belum lengkap untuk ${faktur}:`, persist.error);
+                }
+
                 res.json({
                     success: true,
-                    message: `File upload started for faktur: ${faktur} (processing in background)`,
+                    message: 'Invoice PDF berhasil diupload',
                     faktur,
-                    status: 'processing',
-                    konsumen: invoice.konsumen,
-                    total: invoice.total_jumlah_jual,
+                    status: 'completed',
+                    storagePath: uploadResult.storagePath,
+                    files_uploaded_count: countInfo?.count ?? invoice.files_uploaded_count,
+                    files_required_count: countInfo?.required,
+                    dbUpdated: persist.ok,
                     // WhatsApp data
+                    konsumen: invoice.konsumen,
+                    total_jumlah_jual: invoice.total_jumlah_jual,
                     zona_id: invoice.zona_id,
                     tipe: invoice.keterangan || 'PPN',
                     nominal: invoice.total_jumlah_jual
                 });
-                
+
             } catch (error) {
                 console.error('[Invoice PDF] Upload error:', error);
                 res.status(500).json({ error: 'Server error', details: error.message });
@@ -2936,750 +2955,247 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // Unified endpoint for both Bukti Bayar and Faktur Pajak
     // Body: { type: 'bukti_bayar' | 'faktur_pajak' }
     // ============================================
-    app.post('/api/invoice/upload-document',
-        ...createAuth(['super_admin', 'moderator']),
-        upload.single('file'),
-        handleMulterError,
-        async (req, res) => {
-            try {
-                if (!req.file) {
-                    return res.status(400).json({ error: 'File PDF wajib diupload' });
-                }
+    // ============================================
+    // POST /api/invoice/upload-document
+    // Unified endpoint for both Bukti Bayar and Faktur Pajak
+    // Body: { type: 'bukti_bayar' | 'faktur_pajak' }
+    // ============================================
+    // PERBAIKAN (B1/B2 + Fase 1 + Fase 2):
+    //  - Menunggu upload selesai (tidak fire-and-forget).
+    //  - Aturan duplikat seragam + path target identik dengan path di R2.
+    //  - Path TIDAK PERNAH ditulis NULL saat upload gagal.
+    //  - Count file disinkronkan dari database (tidak scan R2).
+    const handleUploadDocument = async (req, res, forcedType) => {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ error: 'File PDF wajib diupload' });
+            }
 
-                // Security Check 1: File size validation (10MB max per file)
-                if (req.file.size > 10 * 1024 * 1024) {
-                    return res.status(413).json({
-                        error: 'File terlalu besar',
-                        message: 'Maksimal ukuran file: 10MB',
-                        received: `${(req.file.size / 1024 / 1024).toFixed(2)}MB`
-                    });
-                }
-
-                // Security Check 2: MIME type validation (PDF ONLY)
-                const allowedMimeTypes = ['application/pdf'];
-                if (!allowedMimeTypes.includes(req.file.mimetype)) {
-                    return res.status(400).json({
-                        error: 'Tipe file tidak diizinkan',
-                        message: 'Hanya file PDF yang diterima',
-                        received: req.file.mimetype
-                    });
-                }
-
-                const fileBuffer = req.file.buffer;
-                const filename = req.file.originalname;
-                const fileType = req.body.type || 'bukti_bayar';
-                const userId = req.user?.id;
-
-                console.log(`[Invoice Document] Processing ${fileType}: ${filename} | User: ${userId} | Size: ${(req.file.size / 1024 / 1024).toFixed(2)}MB`);
-
-                // Handle based on type
-                if (fileType === 'faktur_pajak') {
-                    // FAKTUR PAJAK FLOW
-                    console.log(`[Invoice Document] Handling as FAKTUR PAJAK`);
-                    
-                    // Handle double .pdf extension
-                    let cleanFilename = filename.replace(/\.pdf\.pdf$/i, '.pdf');
-                    
-                    // Extract faktur number from filename (look for 10+ digit sequences, or any numeric part)
-                    const numberMatches = cleanFilename.match(/\d{10,}/g);
-                    let fakturNumber = numberMatches ? numberMatches[0] : null;
-                    
-                    // If no 10+ digit match found, try shorter numbers
-                    if (!fakturNumber) {
-                        const shortMatch = cleanFilename.match(/(\d+)/);
-                        fakturNumber = shortMatch ? shortMatch[1] : null;
-                    }
-
-                    if (!fakturNumber) {
-                        console.log(`[Invoice Document] Could not extract faktur number from: ${cleanFilename}`);
-                        return res.status(400).json({
-                            success: false,
-                            error: 'ERROR : Format Nama File Tidak Sesuai - Tidak dapat menemukan nomor faktur'
-                        });
-                    }
-
-                    console.log(`[Invoice Document] Extracted faktur: ${fakturNumber}`);
-
-                    // Fetch invoice data to get the correct date
-                    const { data: invoice, error: invoiceError } = await supabase
-                        .from('invoice_file_list')
-                        .select('tanggal, faktur_pajak_path')
-                        .eq('faktur', fakturNumber)
-                        .single();
-
-                    if (invoiceError || !invoice) {
-                        console.warn(`[Invoice Document] Invoice not found for faktur: ${fakturNumber}, using today's date`);
-                    }
-                    
-                    const invoiceDate = invoice?.tanggal ? new Date(invoice.tanggal) : new Date();
-                    const year = invoiceDate.getFullYear().toString();
-                    const month = String(invoiceDate.getMonth() + 1).padStart(2, '0');
-                    const day = String(invoiceDate.getDate()).padStart(2, '0');
-
-                    const monthNames = [
-                        'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-                        'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
-                    ];
-                    const monthName = monthNames[parseInt(month) - 1];
-
-                    const finalFilename = cleanFilename;
-                    const location = extractLocationFromToko(invoice?.toko);
-                    console.log(`[Invoice Document] Path: /ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`);
-
-                    // Build expected new path with location
-                    const expectedNewPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`;
-                    console.log(`[Invoice Document] File size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-                    
-                    // Check if this is a re-upload of same file (path already matches new structure)
-                    const isReuploadWithNewPath = invoice?.faktur_pajak_path === expectedNewPath;
-                    if (isReuploadWithNewPath) {
-                        console.log(`[Invoice Document] ??  Faktur Pajak already uploaded with new location-based path, allowing re-upload`);
-                    } else {
-                        // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
-                        if (invoice && invoice.faktur_pajak_path) {
-                            try {
-                                const existsInGDrive = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
-                                if (existsInGDrive) {
-                                    // File truly exists in Google Drive - reject as duplicate
-                                    console.warn(`[Invoice Document] File already exists in Google Drive: ${invoice.faktur_pajak_path}`);
-                                    return res.status(409).json({
-                                        error: 'File sudah ada (Duplicate)',
-                                        message: `Faktur Pajak sudah ada di Google Drive`,
-                                        existing_path: invoice.faktur_pajak_path,
-                                        faktur: fakturNumber
-                                    });
-                                } else {
-                                    // Old path not found in GDrive - this is a re-upload
-                                    // Allow the upload to proceed without clearing the path
-                                    // The background upload will handle updating with new path
-                                    console.log(`[Invoice Document] Old path not in GDrive - allowing re-upload`);
-                                }
-                            } catch (checkErr) {
-                                // Check failed - be lenient, allow upload to proceed
-                                console.warn(`[Invoice Document] Quick check error (allowing re-upload):`, checkErr.message);
-                            }
-                        }
-                        
-                        // Note: Do NOT clear path here - let background upload properly update it
-                    }
-
-                    // OPTIMIZATION: Move upload to background (NON-BLOCKING)
-                    const performUpload = async () => {
-                        let uploadResult = null;
-                        try {
-                            console.log(`[Invoice Document BG] Original FAKTUR PAJAK file size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-                            
-                            console.log(`[Invoice Document BG] Uploading FAKTUR PAJAK file buffer (${fileBuffer.length} bytes)`);
-                            
-                            uploadResult = await R2Storage.uploadDocumentFile(
-                                fileBuffer,
-                                finalFilename,
-                                year,
-                                monthName,
-                                day,
-                                'Faktur-Pajak',
-                                location
-                            );
-
-                            console.log(`[Invoice Document BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
-
-                            // uploadResult is valid if it has storagePath (upload succeeded)
-                            if (!uploadResult || !uploadResult.storagePath) {
-                                throw new Error(uploadResult?.error || 'Upload failed');
-                            }
-
-                            console.log(`[Invoice Document BG] ? Faktur Pajak uploaded: ${uploadResult.storagePath}`);
-                            
-                            // Update database - try NEW invoice_files table first using REST API
-                            let updateSuccess = false;
-                            try {
-                                console.log(`[Invoice Document BG] Attempting REST API INSERT into invoice_files...`);
-                                
-                                const insertUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files`;
-                                const insertResponse = await fetch(insertUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                                        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'resolution=merge-duplicates'
-                                    },
-                                    body: JSON.stringify({
-                                        faktur: fakturNumber,
-                                        file_type: 'faktur_pajak',
-                                        file_path: uploadResult.storagePath,
-                                        uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
-                                    })
-                                });
-                                
-                                if (insertResponse.ok) {
-                                    console.log(`[Invoice Document BG] ? Inserted into invoice_files table (REST API)`);
-                                    updateSuccess = true;
-                                } else {
-                                    const errText = await insertResponse.text();
-                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 200));
-                                }
-                            } catch (restErr) {
-                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message);
-                            }
-                            
-                            // Fallback: Try standard upsert
-                            if (!updateSuccess) {
-                                try {
-                                    console.log(`[Invoice Document BG] Trying standard upsert...`);
-                                    const { error: upsertErr } = await supabase
-                                        .from('invoice_files')
-                                        .upsert({
-                                            faktur: fakturNumber,
-                                            file_type: 'faktur_pajak',
-                                            file_path: uploadResult.storagePath,
-                                            uploaded_at: new Date().toISOString(),
-                                            uploaded_by: req.user.id
-                                        });
-                                    
-                                    if (!upsertErr) {
-                                        console.log(`[Invoice Document BG] ? Upserted into invoice_files table`);
-                                        updateSuccess = true;
-                                    } else {
-                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message);
-                                    }
-                                } catch (upsertCatchErr) {
-                                    console.log(`[Invoice Document BG] Upsert catch error:`, upsertCatchErr.message);
-                                }
-                            }
-                            
-                            // Final fallback: OLD method - update uploaded_file_path AND faktur_pajak_path
-                            if (!updateSuccess) {
-                                try {
-                                    console.log(`[Invoice Document BG] Trying OLD method (faktur_pajak_path & uploaded_file_path)...`);
-                                    const { error: updateError } = await supabase
-                                        .from('invoice_file_list')
-                                        .update({
-                                            faktur_pajak_path: uploadResult.storagePath,
-                                            uploaded_file_path: uploadResult.storagePath,  // Keep for backward compatibility
-                                            uploaded_at: new Date().toISOString(),
-                                            updated_at: new Date().toISOString(),
-                                            uploaded_by: req.user.id
-                                        })
-                                        .eq('faktur', fakturNumber);
-                                    
-                                    if (!updateError) {
-                                        console.log(`[Invoice Document BG] ? Updated uploaded_file_path (OLD method)`);
-                                        updateSuccess = true;
-                                    } else {
-                                        console.log(`[Invoice Document BG] OLD method failed:`, updateError.message);
-                                    }
-                                } catch (oldErr) {
-                                    console.log(`[Invoice Document BG] OLD method error:`, oldErr.message);
-                                }
-                            }
-                            
-                            // Always update file path via REST API (bypasses schema cache)
-                            try {
-                                await updateFilePath(fakturNumber, 'faktur_pajak_path', uploadResult.storagePath);
-                            } catch (pathErr) {
-                                console.error(`[Invoice Document BG] Error updating faktur_pajak_path:`, pathErr.message);
-                            }
-                            
-                            // Always try to update count, even if database update failed
-                            // The function scans R2 directly, which is the source of truth
-                            try {
-                                const uploadedCount = await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
-                                if (uploadedCount > 0) {
-                                    const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-                                    const requiredCount = isPPN ? 3 : 2;
-                                    await updateFileCountDirectly(fakturNumber, uploadedCount, requiredCount);
-                                }
-                            } catch (countErr) {
-                                console.error(`[Invoice Document BG] Error updating count:`, countErr.message);
-                            }
-                        } catch (uploadErr) {
-                            console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
-                            console.error(`[Invoice Document BG] Error stack:`, uploadErr.stack);
-                            throw uploadErr;
-                        }
-                    };
-                    
-                    // Wait for upload to complete before responding
-                    await performUpload();
-                    
-                    // Return response after upload completes
-                    res.json({
-                        success: true,
-                        message: 'Faktur pajak uploaded successfully',
-                        type: 'faktur_pajak',
-                        originalName: filename,
-                        status: 'completed',
-                        faktur: fakturNumber
-                    });
-
-                } else {
-                    // BUKTI BAYAR FLOW (default)
-                    console.log(`[Invoice Document] Handling as BUKTI BAYAR`);
-                    
-                    // Extract nomor faktur from filename (remove .pdf extensions)
-                    let nomorFaktur = filename.replace(/\.pdf\.pdf$/i, '.pdf').replace(/\.pdf$/i, '').trim();
-
-                    if (!/^\d+$/.test(nomorFaktur)) {
-                        console.log(`[Invoice Document] Invalid bukti bayar format: ${filename}`);
-                        return res.status(400).json({
-                            success: false,
-                            error: 'Nama file harus berupa nomor faktur'
-                        });
-                    }
-
-                    // Fetch invoice data to get the correct date
-                    const { data: invoice, error: invoiceError } = await supabase
-                        .from('invoice_file_list')
-                        .select('tanggal, toko')
-                        .eq('faktur', nomorFaktur)
-                        .single();
-
-                    if (invoiceError || !invoice) {
-                        console.warn(`[Invoice Document] Invoice not found for faktur: ${nomorFaktur}, using today's date`);
-                    }
-                    
-                    const invoiceDate = invoice?.tanggal ? new Date(invoice.tanggal) : new Date();
-                    const year = invoiceDate.getFullYear().toString();
-                    const month = String(invoiceDate.getMonth() + 1).padStart(2, '0');
-                    const day = String(invoiceDate.getDate()).padStart(2, '0');
-
-                    const monthNames = [
-                        'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-                        'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
-                    ];
-                    const monthName = monthNames[parseInt(month) - 1];
-
-                    const finalFilename = `${nomorFaktur}.pdf`;
-                    const location = extractLocationFromToko(invoice?.toko);
-
-                    console.log(`[Invoice Document] Path: /ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}/${finalFilename}`);
-
-                    // Build expected new path with location
-                    const expectedNewPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}/${finalFilename}`;
-                    console.log(`[Invoice Document] File size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-                    
-                    // Check if this is a re-upload of same file (path already matches new structure)
-                    const isReuploadWithNewPath = invoice?.bukti_bayar_path === expectedNewPath;
-                    if (isReuploadWithNewPath) {
-                        console.log(`[Invoice Document] ??  Bukti Bayar already uploaded with new location-based path, allowing re-upload`);
-                    } else {
-                        // QUICK CHECK: If existing path in DB, verify it still exists before rejecting
-                        if (invoice && invoice.bukti_bayar_path) {
-                            try {
-                                const existsInGDrive = await R2Storage.checkFileExistsNoCache(invoice.bukti_bayar_path);
-                                if (existsInGDrive) {
-                                    // File truly exists in Google Drive - reject as duplicate
-                                    console.warn(`[Invoice Document] File already exists in Google Drive: ${invoice.bukti_bayar_path}`);
-                                    return res.status(409).json({
-                                        error: 'File sudah ada (Duplicate)',
-                                        message: `Bukti Bayar sudah ada di Google Drive`,
-                                        existing_path: invoice.bukti_bayar_path,
-                                        faktur: nomorFaktur
-                                    });
-                                } else {
-                                    // Old path not found in GDrive - this is a re-upload
-                                    // Allow the upload to proceed without clearing the path
-                                    // The background upload will handle updating with new path
-                                    console.log(`[Invoice Document] Old path not in GDrive - allowing re-upload`);
-                                }
-                            } catch (checkErr) {
-                                // Check failed - be lenient, allow upload to proceed
-                                console.warn(`[Invoice Document] Quick check error (allowing re-upload):`, checkErr.message);
-                            }
-                        }
-                        
-                        // Note: Do NOT clear path here - let background upload properly update it
-                    }
-
-                    // OPTIMIZATION: Move upload to background (NON-BLOCKING)
-                    const performUpload = async () => {
-                        let uploadResult = null;
-                        try {
-                            console.log(`[Invoice Document BG] Original BUKTI BAYAR file size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)} MB`);
-                            
-                            console.log(`[Invoice Document BG] Uploading BUKTI BAYAR file buffer (${fileBuffer.length} bytes)`);
-                            
-                            uploadResult = await R2Storage.uploadDocumentFile(
-                                fileBuffer,
-                                finalFilename,
-                                year,
-                                monthName,
-                                day,
-                                'bukti-bayar',
-                                location
-                            );
-
-                            console.log(`[Invoice Document BG] uploadResult:`, JSON.stringify(uploadResult, null, 2));
-
-                            // uploadResult is valid if it has storagePath (upload succeeded)
-                            if (!uploadResult || !uploadResult.storagePath) {
-                                throw new Error(uploadResult?.error || 'Upload failed');
-                            }
-
-                            console.log(`[Invoice Document BG] ? Bukti Bayar uploaded: ${uploadResult.storagePath}`);
-                            
-                            // Update database - try NEW invoice_files table first using REST API
-                            let updateSuccess = false;
-                            try {
-                                console.log(`[Invoice Document BG] Attempting REST API INSERT into invoice_files...`);
-                                
-                                const insertUrl = `${process.env.SUPABASE_URL}/rest/v1/invoice_files`;
-                                const insertResponse = await fetch(insertUrl, {
-                                    method: 'POST',
-                                    headers: {
-                                        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
-                                        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                                        'Content-Type': 'application/json',
-                                        'Prefer': 'resolution=merge-duplicates'
-                                    },
-                                    body: JSON.stringify({
-                                        faktur: nomorFaktur,
-                                        file_type: 'bukti_bayar',
-                                        file_path: uploadResult.storagePath,
-                                        uploaded_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
-                                    })
-                                });
-                                
-                                if (insertResponse.ok) {
-                                    console.log(`[Invoice Document BG] ? Inserted into invoice_files table (REST API)`);
-                                    updateSuccess = true;
-                                } else {
-                                    const errText = await insertResponse.text();
-                                    console.log(`[Invoice Document BG] REST API INSERT failed (${insertResponse.status}):`, errText.substring(0, 200));
-                                }
-                            } catch (restErr) {
-                                console.log(`[Invoice Document BG] REST API INSERT error:`, restErr.message);
-                            }
-                            
-                            // Fallback: Try standard upsert
-                            if (!updateSuccess) {
-                                try {
-                                    console.log(`[Invoice Document BG] Trying standard upsert...`);
-                                    const { error: upsertErr } = await supabase
-                                        .from('invoice_files')
-                                        .upsert({
-                                            faktur: nomorFaktur,
-                                            file_type: 'bukti_bayar',
-                                            file_path: uploadResult.storagePath,
-                                            uploaded_at: new Date().toISOString(),
-                                            uploaded_by: req.user.id
-                                        });
-                                    
-                                    if (!upsertErr) {
-                                        console.log(`[Invoice Document BG] ? Upserted into invoice_files table`);
-                                        updateSuccess = true;
-                                    } else {
-                                        console.log(`[Invoice Document BG] Upsert failed:`, upsertErr.message);
-                                    }
-                                } catch (upsertCatchErr) {
-                                    console.log(`[Invoice Document BG] Upsert catch error:`, upsertCatchErr.message);
-                                }
-                            }
-                            
-                            // Final fallback: OLD method - update uploaded_file_path AND bukti_bayar_path
-                            if (!updateSuccess) {
-                                try {
-                                    console.log(`[Invoice Document BG] Trying OLD method (bukti_bayar_path & uploaded_file_path)...`);
-                                    const { error: updateError } = await supabase
-                                        .from('invoice_file_list')
-                                        .update({
-                                            bukti_bayar_path: uploadResult.storagePath,
-                                            uploaded_file_path: uploadResult.storagePath,  // Keep for backward compatibility
-                                            uploaded_at: new Date().toISOString(),
-                                            uploaded_by: req.user.id
-                                        })
-                                        .eq('faktur', nomorFaktur);
-
-                                    if (!updateError) {
-                                        console.log(`[Invoice Document BG] ? Updated uploaded_file_path (OLD method)`);
-                                        updateSuccess = true;
-                                    } else {
-                                        console.log(`[Invoice Document BG] OLD method failed:`, updateError.message);
-                                    }
-                                } catch (oldErr) {
-                                    console.log(`[Invoice Document BG] OLD method error:`, oldErr.message);
-                                }
-                            }
-                            
-                            // Always update file path via REST API (bypasses schema cache)
-                            try {
-                                await updateFilePath(nomorFaktur, 'bukti_bayar_path', uploadResult.storagePath);
-                            } catch (pathErr) {
-                                console.error(`[Invoice Document BG] Error updating bukti_bayar_path:`, pathErr.message);
-                            }
-                            
-                            // Always try to update count, even if database update failed
-                            // The function scans R2 directly, which is the source of truth
-                            try {
-                                const uploadedCount = await updateFilesUploadedCount(supabase, nomorFaktur, R2Storage);
-                                if (uploadedCount > 0) {
-                                    const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-                                    const requiredCount = isPPN ? 3 : 2;
-                                    await updateFileCountDirectly(nomorFaktur, uploadedCount, requiredCount);
-                                }
-                            } catch (countErr) {
-                                console.error(`[Invoice Document BG] Error updating count:`, countErr.message);
-                            }
-                        } catch (uploadErr) {
-                            console.error(`[Invoice Document BG] Upload error:`, uploadErr.message);
-                            console.error(`[Invoice Document BG] Error stack:`, uploadErr.stack);
-                            throw uploadErr;
-                        }
-                    };
-                    
-                    // Wait for upload to complete before responding
-                    await performUpload();
-                    
-                    // Return response after upload completes
-                    res.json({
-                        success: true,
-                        message: 'Bukti bayar uploaded successfully',
-                        type: 'bukti_bayar',
-                        originalName: filename,
-                        status: 'completed',
-                        faktur: nomorFaktur
-                    });
-                }
-
-            } catch (error) {
-                console.error('[Invoice Document] Error:', error.message);
-                res.status(500).json({
-                    success: false,
-                    error: 'Server error: ' + error.message
+            // Security Check 1: File size validation (10MB max per file)
+            if (req.file.size > 10 * 1024 * 1024) {
+                return res.status(413).json({
+                    error: 'File terlalu besar',
+                    message: 'Maksimal ukuran file: 10MB',
+                    received: `${(req.file.size / 1024 / 1024).toFixed(2)}MB`
                 });
             }
+
+            // Security Check 2: isi file harus PDF asli (magic bytes)
+            if (!isPdfBuffer(req.file.buffer)) {
+                logSecurityEvent('[FILE_UPLOAD]', 'Invalid PDF file rejected', {
+                    userId: req.user?.id,
+                    fileName: req.file.originalname,
+                    size: req.file.size
+                });
+                return res.status(400).json({
+                    error: 'Tipe file tidak diizinkan',
+                    message: 'Hanya file PDF yang diterima'
+                });
+            }
+
+            const fileBuffer = req.file.buffer;
+            const filename = req.file.originalname;
+            const fileType = forcedType || req.body.type || 'bukti_bayar';
+            const userId = req.user?.id;
+
+            if (!['bukti_bayar', 'faktur_pajak'].includes(fileType)) {
+                return res.status(400).json({ success: false, error: 'Tipe file tidak valid' });
+            }
+
+            const typeCfg = getTypeConfig(fileType);
+
+            // ---- Ambil nomor faktur dari nama file ----
+            let fakturNumber;
+            let cleanFilename;
+
+            if (fileType === 'faktur_pajak') {
+                // Handle double .pdf extension
+                cleanFilename = filename.replace(/\.pdf\.pdf$/i, '.pdf');
+
+                const numberMatches = cleanFilename.match(/\d{10,}/g);
+                fakturNumber = numberMatches ? numberMatches[0] : null;
+
+                // If no 10+ digit match found, try shorter numbers
+                if (!fakturNumber) {
+                    const shortMatch = cleanFilename.match(/(\d+)/);
+                    fakturNumber = shortMatch ? shortMatch[1] : null;
+                }
+
+                if (!fakturNumber) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'ERROR : Format Nama File Tidak Sesuai - Tidak dapat menemukan nomor faktur'
+                    });
+                }
+            } else {
+                // Bukti bayar: nama file harus nomor faktur
+                fakturNumber = filename.replace(/\.pdf\.pdf$/i, '.pdf').replace(/\.pdf$/i, '').trim();
+
+                if (!/^\d+$/.test(fakturNumber)) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Nama file harus berupa nomor faktur'
+                    });
+                }
+
+                cleanFilename = `${fakturNumber}.pdf`;
+            }
+
+            // ---- Data invoice (tanggal, toko, path file sebelumnya) ----
+            const { data: invoice } = await supabase
+                .from('invoice_file_list')
+                .select('tanggal, toko, keterangan, zona_id, konsumen, total_jumlah_jual, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path')
+                .eq('faktur', fakturNumber)
+                .maybeSingle();
+
+            if (!invoice) {
+                console.warn(`[Invoice Document] Invoice not found for faktur: ${fakturNumber}, using today's date`);
+            }
+
+            const location = extractLocationFromToko(invoice?.toko);
+            const target = buildTargetPath(fileType, { invoice, filename: cleanFilename, location });
+
+            // ============================================================
+            // Aturan duplikat seragam
+            // ============================================================
+            const overwrite = String(req.body?.overwrite || '').toLowerCase() === 'true';
+            const dup = await checkDuplicateState({
+                type: fileType,
+                invoice,
+                targetPath: target.storagePath,
+                overwrite,
+                R2Storage
+            });
+
+            if (dup.action === 'reject') {
+                return res.status(409).json({
+                    error: 'File sudah ada (Duplicate)',
+                    message: `${typeCfg.label} untuk faktur ${fakturNumber} sudah ada di storage. Hapus file lama terlebih dahulu bila ingin menggantinya.`,
+                    existing_path: dup.existingPath,
+                    faktur: fakturNumber
+                });
+            }
+
+            // File orphan (ada di R2, tidak ada di DB) -> adopt path
+            if (dup.action === 'adopt') {
+                const persist = await persistInvoiceFile({
+                    supabase, faktur: fakturNumber, type: fileType, filePath: target.storagePath, userId
+                });
+                const countInfo = await syncInvoiceFileCount({ supabase, faktur: fakturNumber, type: fileType });
+
+                return res.json({
+                    success: true,
+                    message: 'File sudah ada di storage, path diperbaiki di database (tidak diupload ulang)',
+                    type: fileType,
+                    originalName: filename,
+                    status: 'completed',
+                    adopted: true,
+                    faktur: fakturNumber,
+                    storagePath: target.storagePath,
+                    files_uploaded_count: countInfo?.count,
+                    files_required_count: countInfo?.required,
+                    dbUpdated: persist.ok
+                });
+            }
+
+            // ============================================================
+            // Upload ke R2 - lewat queue, request menunggu selesai
+            // ============================================================
+            let uploadResult;
+            try {
+                uploadResult = await uploadQueue.run(() => R2Storage.uploadDocumentFile(
+                    fileBuffer,
+                    cleanFilename,
+                    target.year,
+                    target.monthName,
+                    target.day,
+                    target.folder,
+                    target.location
+                ));
+            } catch (uploadErr) {
+                if (uploadErr.code === 'DUPLICATE_FILE') {
+                    return res.status(409).json({
+                        error: 'File sudah ada (Duplicate)',
+                        message: `${typeCfg.label} untuk faktur ${fakturNumber} sudah ada di storage.`,
+                        existing_path: target.storagePath,
+                        faktur: fakturNumber
+                    });
+                }
+                console.error('[Invoice Document] Upload R2 gagal:', uploadErr.message);
+                return res.status(500).json({
+                    success: false,
+                    error: 'Upload ke storage gagal: ' + uploadErr.message,
+                    faktur: fakturNumber
+                });
+            }
+
+            // ============================================================
+            // Simpan ke database
+            // ============================================================
+            const persist = await persistInvoiceFile({
+                supabase, faktur: fakturNumber, type: fileType, filePath: uploadResult.storagePath, userId
+            });
+            const countInfo = await syncInvoiceFileCount({ supabase, faktur: fakturNumber, type: fileType });
+
+            if (!persist.ok) {
+                console.error(`[Invoice Document] DB update belum lengkap untuk ${fakturNumber}:`, persist.error);
+            }
+
+            res.json({
+                success: true,
+                message: `${typeCfg.label} uploaded successfully`,
+                type: fileType,
+                originalName: filename,
+                status: 'completed',
+                faktur: fakturNumber,
+                storagePath: uploadResult.storagePath,
+                files_uploaded_count: countInfo?.count,
+                files_required_count: countInfo?.required,
+                dbUpdated: persist.ok
+            });
+
+        } catch (error) {
+            console.error('[Invoice Document] Error:', error.message);
+            res.status(500).json({
+                success: false,
+                error: 'Server error: ' + error.message
+            });
         }
+    };
+
+    app.post('/api/invoice/upload-document',
+        ...createAuth(['super_admin', 'moderator']),
+        uploadGate,
+        upload.single('file'),
+        handleMulterError,
+        (req, res) => handleUploadDocument(req, res, null)
     );
 
     // ============================================
     // POST /api/invoice/upload-faktur-pajak
-    // Upload Faktur Pajak - filename detection only
-    // Filename must match format: tax-REFERENSI NAMA NOMINAL.pdf
-    // Example: tax-835100310232 SEMESTA GEMILANG CILEGON 2.393.000.pdf
-    // Path: /ARSIPINVOICE/ARSIPINVOICE/TAHUN/BULAN/TANGGAL/FAKTURPAJAK/
     // ============================================
+    // Route lama (belum pernah dipakai UI). Sempat rusak: membaca
+    // uploadResult.success / .path padahal R2Storage.uploadDocumentFile
+    // return { storagePath } -> selalu dianggap gagal padahal file sudah
+    // masuk R2, sehingga path tidak pernah tercatat di database.
+    // Sekarang route ini memakai handler yang sama dengan /upload-document
+    // sehingga hanya ada SATU implementasi upload faktur pajak.
     app.post('/api/invoice/upload-faktur-pajak',
         ...createAuth(['super_admin', 'moderator']),
+        uploadGate,
         upload.single('file'),
         handleMulterError,
-        async (req, res) => {
-            try {
-                if (!req.file) {
-                    return res.status(400).json({ error: 'File PDF wajib diupload' });
-                }
-
-                const fileBuffer = req.file.buffer;
-                const filename = req.file.originalname;
-
-                console.log(`[Invoice Faktur Pajak] Processing: ${filename}`);
-
-                // Validate filename format: must start with "tax-" and end with ".pdf"
-                const filenamePattern = /^tax-(.+)\.pdf$/i;
-                const match = filename.match(filenamePattern);
-
-                if (!match) {
-                    return res.status(400).json({
-                        success: false,
-                        error: 'Format nama file tidak sesuai. Harus: tax-REFERENSI NAMA NOMINAL.pdf',
-                        example: 'tax-835100310232 SEMESTA GEMILANG CILEGON 2.393.000.pdf'
-                    });
-                }
-
-                const filenameParts = match[1]; // Everything between "tax-" and ".pdf"
-                
-                // Extract faktur/referensi number (first part before space)
-                // Example: "835100310232 SEMESTA GEMILANG 2.393.000" -> "835100310232"
-                const fakturMatch = filenameParts.match(/^(\d+)/);
-                const fakturNumber = fakturMatch ? fakturMatch[1] : null;
-
-                console.log(`[Invoice Faktur Pajak] Extracted faktur: ${fakturNumber}`);
-
-                // Fetch invoice data to get the correct date
-                const { data: invoice, error: invoiceError } = await supabase
-                    .from('invoice_file_list')
-                    .select('tanggal, toko')
-                    .eq('faktur', fakturNumber)
-                    .single();
-
-                if (invoiceError || !invoice) {
-                    console.warn(`[Invoice Faktur Pajak] Invoice not found for faktur: ${fakturNumber}, using today's date`);
-                }
-                
-                // Check if Faktur Pajak has already been uploaded (move checks to background)
-                const performBackgroundChecks = async () => {
-                    if (invoice && invoice.faktur_pajak_path) {
-                        // File path exists in database, but verify it still exists on Google Drive
-                        try {
-                            console.log(`[Invoice Faktur Pajak BG] Verifying if file still exists on Google Drive: ${invoice.faktur_pajak_path}`);
-                            const fileExists = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
-                            
-                            if (fileExists) {
-                                console.log(`[Invoice Faktur Pajak BG] ? File still exists on Google Drive`);
-                            } else {
-                                console.log(`[Invoice Faktur Pajak BG] ? File was deleted from Google Drive`);
-                            }
-                        } catch (verifyErr) {
-                            console.warn(`[Invoice Faktur Pajak BG] Error verifying file on Google Drive:`, verifyErr.message);
-                        }
-                    }
-                    
-                    // Check if file already exists (duplicate detection)
-                    const fakturUploadPath = expectedNewPath;
-                    try {
-                        const fileExists = await R2Storage.checkFileExistsNoCache(fakturUploadPath);
-                        if (fileExists && !isReuploadWithNewPath) {
-                            console.log(`[Invoice Faktur Pajak BG] ? Duplicate file detected at: ${fakturUploadPath}`);
-                        } else {
-                            console.log(`[Invoice Faktur Pajak BG] ? No duplicate found`);
-                        }
-                    } catch (checkErr) {
-                        console.warn(`[Invoice Faktur Pajak BG] Error checking duplicate: ${checkErr.message}`);
-                    }
-                };
-                
-                // Start background checks but DON'T wait for them
-                setImmediate(() => performBackgroundChecks());
-
-                // Use invoice date if available, otherwise use today's date
-                const invoiceDate = invoice?.tanggal ? new Date(invoice.tanggal) : new Date();
-                const year = invoiceDate.getFullYear().toString();
-                const month = String(invoiceDate.getMonth() + 1).padStart(2, '0');
-                const day = String(invoiceDate.getDate()).padStart(2, '0');
-
-                const monthNames = [
-                    'JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
-                    'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'
-                ];
-                const monthName = monthNames[parseInt(month) - 1];
-
-                // Keep filename as-is (already in correct format)
-                const finalFilename = filename;
-                const location = extractLocationFromToko(invoice?.toko);
-
-                console.log(`[Invoice Faktur Pajak] Path: /ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`);
-
-                // Build expected new path with location
-                const expectedNewPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${finalFilename}`;
-                
-                // Check if this is a re-upload of same file (path already matches new structure)
-                const isReuploadWithNewPath = invoice?.faktur_pajak_path === expectedNewPath;
-                
-                if (!isReuploadWithNewPath && invoice?.faktur_pajak_path) {
-                    // QUICK CHECK: If existing OLD path in DB, verify file truly exists before rejecting
-                    // Only reject if file ACTUALLY exists in GDrive (true duplicate)
-                    // Don't clear path here - let the upload process handle it
-                    try {
-                        const existsInGDrive = await R2Storage.checkFileExistsNoCache(invoice.faktur_pajak_path);
-                        if (existsInGDrive) {
-                            // File truly exists in Google Drive - this is a real duplicate, reject
-                            console.warn(`[Invoice Faktur Pajak] File truly exists in Google Drive: ${invoice.faktur_pajak_path}`);
-                            return res.status(409).json({
-                                error: 'File sudah ada (Duplicate)',
-                                message: `Faktur Pajak sudah ada di Google Drive`,
-                                existing_path: invoice.faktur_pajak_path,
-                                faktur: fakturNumber
-                            });
-                        } else {
-                            // Old path in DB but file doesn't exist in GDrive
-                            // This is a re-upload scenario - allow it
-                            console.log(`[Invoice Faktur Pajak] Old path not found in GDrive - allowing re-upload`);
-                        }
-                    } catch (checkErr) {
-                        // Check failed - be lenient, allow upload to proceed
-                        console.warn(`[Invoice Faktur Pajak] Quick check error (allowing re-upload):`, checkErr.message);
-                    }
-                }
-
-                // OPTIMIZATION: Move upload to background (NON-BLOCKING)
-                const performUpload = async () => {
-                    let uploadResult = null;
-                    try {
-                        console.log(`[Invoice Faktur Pajak BG] Uploading file buffer (${fileBuffer.length} bytes)`);
-                        
-                        uploadResult = await R2Storage.uploadDocumentFile(
-                            fileBuffer,
-                            finalFilename,
-                            year,
-                            monthName,
-                            day,
-                            'FAKTURPAJAK',
-                            location
-                        );
-
-                        if (!uploadResult.success) {
-                            throw new Error(uploadResult.error || 'Upload failed');
-                        }
-
-                        console.log(`[Invoice Faktur Pajak BG] ? File uploaded: ${uploadResult.path}`);
-                        
-                        // Update database - track faktur pajak path
-                        if (fakturNumber) {
-                            try {
-                                const { error: updateError } = await supabase
-                                    .from('invoice_file_list')
-                                    .update({
-                                        faktur_pajak_path: uploadResult.path,
-                                        faktur_pajak_uploaded_at: new Date().toISOString(),
-                                        updated_at: new Date().toISOString(),
-                                        uploaded_by: req.user.id
-                                    })
-                                    .eq('faktur', fakturNumber);
-
-                                if (updateError) {
-                                    console.error('[Invoice Faktur Pajak BG] Update error:', updateError);
-                                } else {
-                                    console.log(`[Invoice Faktur Pajak BG] ? Database updated for faktur: ${fakturNumber}`);
-                                }
-                                
-                                // Always update count regardless of database success
-                                // The function scans R2 directly, which is the source of truth
-                                try {
-                                    const uploadedCount = await updateFilesUploadedCount(supabase, fakturNumber, R2Storage);
-                                    if (uploadedCount > 0) {
-                                        const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-                                        const requiredCount = isPPN ? 3 : 2;
-                                        await updateFileCountDirectly(fakturNumber, uploadedCount, requiredCount);
-                                    }
-                                } catch (countErr) {
-                                    console.error(`[Invoice Faktur Pajak BG] Error updating count:`, countErr.message);
-                                }
-                            } catch (dbErr) {
-                                console.error('[Invoice Faktur Pajak BG] DB error:', dbErr.message);
-                            }
-                        }
-                    } catch (uploadErr) {
-                        console.error(`[Invoice Faktur Pajak BG] Upload error:`, uploadErr.message);
-                    }
-                };
-                
-                // Start background upload but DON'T wait for it
-                setImmediate(() => performUpload());
-                
-                // Return response immediately to client
-                // Include current file count so frontend can update display
-                const currentCount = await updateFilesUploadedCount(supabase, fakturNumber, R2Storage).catch(() => 0);
-                const isPPN = invoice?.keterangan?.toUpperCase() === 'PPN';
-                const filesRequired = isPPN ? 3 : 2;
-                
-                res.json({
-                    success: true,
-                    message: 'Faktur pajak upload started (processing in background)',
-                    faktur: fakturNumber,
-                    status: 'processing',
-                    files_uploaded_count: currentCount,
-                    files_required_count: filesRequired
-                });
-
-            } catch (error) {
-                console.error('[Invoice Faktur Pajak] Error:', error.message);
-                res.status(500).json({
+        (req, res) => {
+            // Format nama file: tax-REFERENSI NAMA NOMINAL.pdf
+            const filename = req.file?.originalname || '';
+            if (!/^tax-(.+)\.pdf$/i.test(filename)) {
+                return res.status(400).json({
                     success: false,
-                    error: 'Server error: ' + error.message
+                    error: 'Format nama file tidak sesuai. Harus: tax-REFERENSI NAMA NOMINAL.pdf',
+                    example: 'tax-835100310232 SEMESTA GEMILANG CILEGON 2.393.000.pdf'
                 });
             }
+            return handleUploadDocument(req, res, 'faktur_pajak');
         }
     );
     

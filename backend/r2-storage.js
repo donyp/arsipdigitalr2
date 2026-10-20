@@ -307,6 +307,42 @@ async function checkFileExistsNoCache(storagePath) {
 }
 
 /**
+ * Varian nama bulan untuk path storage.
+ * Upload memakai nama bulan INDONESIA (JANUARI, AGUSTUS, SEPTEMBER, ...).
+ * File lama bisa tersimpan dengan nama bulan INGGRIS (JANUARY, AUGUST, ...).
+ * Fungsi ini dipakai saat memindai folder agar kedua konvensi tetap ditemukan.
+ */
+function monthNameVariants(monthNum) {
+    const idNames = ['JANUARI', 'FEBRUARI', 'MARET', 'APRIL', 'MEI', 'JUNI',
+                     'JULI', 'AGUSTUS', 'SEPTEMBER', 'OKTOBER', 'NOVEMBER', 'DESEMBER'];
+    const enNames = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                     'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    const m = parseInt(monthNum, 10);
+    if (m < 1 || m > 12) return [String(monthNum)];
+    return [idNames[m - 1], enNames[m - 1]];
+}
+
+/**
+ * Build path invoice PDF (sumber kebenaran tunggal)
+ * Format: ARSIP/{location}/{PPN|NON}/{year}/{BULAN}/{day}/{filename}
+ * Dipakai oleh uploadInvoicePDF DAN route upload (cek duplikat) supaya
+ * path yang dicek selalu identik dengan path yang ditulis.
+ */
+function buildInvoicePath({ location, category, year, month, day, filename }) {
+    const monthName = convertMonthToName(month);
+    return `ARSIP/${location}/${category}/${year}/${monthName}/${day}/${filename}`;
+}
+
+/**
+ * Build path dokumen (bukti bayar / faktur pajak)
+ * Format: ARSIP/{location}/{folderType}/{year}/{BULAN}/{day}/{filename}
+ */
+function buildDocumentPath({ location, folderType, year, month, day, filename }) {
+    const monthName = convertMonthToName(month);
+    return `ARSIP/${location}/${folderType}/${year}/${monthName}/${day}/${filename}`;
+}
+
+/**
  * Upload invoice PDF to R2
  * Path format: ARSIP/{location}/{category}/{year}/{month}/{day}/{filename}
  */
@@ -317,8 +353,7 @@ async function uploadInvoicePDF(buffer, filename, year, month, day, category, lo
         // location: 'BEKASI', 'PEMALANG', etc
         // month can be 'SEPTEMBER', '09', etc - convert to month name if number
         
-        const monthName = convertMonthToName(month);
-        const storagePath = `ARSIP/${location}/${category}/${year}/${monthName}/${day}/${filename}`;
+        const storagePath = buildInvoicePath({ location, category, year, month, day, filename });
         
         console.log(`[R2] Uploading invoice PDF: ${storagePath}`);
         
@@ -387,8 +422,7 @@ async function uploadDocumentFile(buffer, filename, year, month, day, folderType
         // folderType: 'bukti-bayar', 'Faktur-Pajak', etc
         // month can be 'SEPTEMBER', '09', etc - convert to month name if number
         
-        const monthName = convertMonthToName(month);
-        const storagePath = `ARSIP/${location}/${folderType}/${year}/${monthName}/${day}/${filename}`;
+        const storagePath = buildDocumentPath({ location, folderType, year, month, day, filename });
         
         console.log(`[R2] Uploading document file: ${storagePath}`);
         
@@ -818,6 +852,11 @@ module.exports = {
     downloadFile,
     deleteFile,
     listFiles,
+    
+    // Path builders (sumber kebenaran tunggal untuk path invoice)
+    buildInvoicePath,
+    buildDocumentPath,
+    monthNameVariants,
     
     // Cache management
     getCachedFileExistence,
