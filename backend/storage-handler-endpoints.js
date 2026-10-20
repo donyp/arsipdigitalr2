@@ -18,9 +18,29 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const multer = require('multer');
 const path = require('path');
 const stream = require('stream');
+const fs = require('fs');
 
 // Import R2 storage module
 const r2Storage = require('./r2-storage');
+const { findInvoicesByPath, findInvoicesByPrefix, clearInvoiceFileRecord } = require('./invoice-file-status');
+
+// Cache download lokal (dipakai endpoint download invoice).
+// Kalau file dihapus dari storage, cache-nya harus ikut dibuang supaya
+// file tidak masih bisa diunduh selama masa cache.
+const DOWNLOAD_CACHE_DIR = path.join(__dirname, '..', 'cache', 'downloads');
+
+function invalidateDownloadCache(filePath) {
+    try {
+        const cacheFile = path.join(DOWNLOAD_CACHE_DIR, Buffer.from(filePath).toString('hex'));
+        if (fs.existsSync(cacheFile)) {
+            fs.unlinkSync(cacheFile);
+            return true;
+        }
+    } catch (err) {
+        // abaikan - cache bukan hal kritis
+    }
+    return false;
+}
 
 module.exports = function registerStorageHandlerEndpoints(app, supabase, authenticateToken, authorizeRole) {
     // ✅ Add cache for stats to avoid repeated expensive ListObjectsV2 calls
@@ -45,78 +65,50 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
     };
     
     /**
-     * Helper: Update invoice file count after deletion
-     * Checks if deleted file is an invoice file and updates the count
+     * Helper: rapikan record invoice setelah file DIHAPUS dari storage
+     *
+     * PERBAIKAN (A2 - status file tidak akurat):
+     *   Versi lama hanya jalan bila path mengandung 'INVOICE'. Path invoice
+     *   sekarang adalah 'ARSIP/{lokasi}/{PPN|NON}/...' sehingga fungsi lama
+     *   SELALU keluar di baris pertama -> database tidak pernah diperbarui,
+     *   status tetap 3/3 dan tombol download tetap muncul padahal file hilang.
+     *   Fungsi lama juga tidak mengosongkan kolom path dan tidak menghapus
+     *   baris invoice_files.
+     *
+     * Sekarang: cocokkan path yang dihapus dengan path yang TERCATAT di
+     * database (tidak menebak format path), lalu:
+     *   1. kosongkan kolom path
+     *   2. hapus baris invoice_files
+     *   3. tulis ulang files_uploaded_count / files_required_count
      */
     async function updateInvoiceFileCountAfterDelete(supabaseClient, deletedFilePath) {
         try {
-            // Check if file is in INVOICE_FILE path
-            if (!deletedFilePath.includes('INVOICE')) {
-                return; // Not an invoice file
+            if (!deletedFilePath) return;
+
+            // Cari invoice yang tercatat memiliki path ini
+            const matches = await findInvoicesByPath({ supabase: supabaseClient, filePath: deletedFilePath });
+
+            if (!matches || matches.length === 0) {
+                // Bukan file invoice (atau sudah tidak tercatat) - biarkan
+                return;
             }
 
-            // Extract faktur from path - typically: INVOICE/BEKASI/2026/SEPTEMBER/02/PPN/faktur.pdf
-            const pathParts = deletedFilePath.split('/');
-            const fileNameIndex = pathParts.length - 1;
-            
-            // Try to find faktur by matching the path pattern
-            let faktur = null;
-            
-            // Look for faktur pattern (numeric, often 15-30 digits)
-            for (const part of pathParts) {
-                if (/^\d{10,}$/.test(part)) {
-                    faktur = part;
-                    break;
+            console.log(`[StorageHandler] ${matches.length} invoice terpengaruh oleh hapus: ${deletedFilePath}`);
+
+            for (const match of matches) {
+                try {
+                    const result = await clearInvoiceFileRecord({
+                        supabase: supabaseClient,
+                        faktur: match.faktur,
+                        fileType: match.fileType,
+                        deletedPath: deletedFilePath
+                    });
+
+                    console.log(`[StorageHandler] ✅ ${match.faktur}/${match.fileType} dirapikan -> count=${result.count}/${result.required}`);
+                } catch (itemErr) {
+                    console.error(`[StorageHandler] Error rapikan ${match.faktur}/${match.fileType}: ${itemErr.message}`);
                 }
             }
-
-            if (!faktur) {
-                console.log(`[StorageHandler] Could not extract faktur from path: ${deletedFilePath}`);
-                return;
-            }
-
-            console.log(`[StorageHandler] Updating file count for faktur: ${faktur}`);
-
-            // Get current invoice record
-            const { data: invoice, error: fetchError } = await supabaseClient
-                .from('invoice_file_list')
-                .select('*')
-                .eq('faktur', faktur)
-                .single();
-
-            if (fetchError) {
-                console.warn(`[StorageHandler] Could not find invoice: ${faktur}`);
-                return;
-            }
-
-            // Recount files from R2 storage
-            let filesCount = 0;
-            
-            if (invoice.invoice_pdf_path && invoice.invoice_pdf_path !== deletedFilePath) {
-                filesCount++;
-            }
-            if (invoice.bukti_bayar_path && invoice.bukti_bayar_path !== deletedFilePath) {
-                filesCount++;
-            }
-            if (invoice.faktur_pajak_path && invoice.faktur_pajak_path !== deletedFilePath) {
-                filesCount++;
-            }
-
-            console.log(`[StorageHandler] Recounted files for ${faktur}: ${filesCount}`);
-
-            // Update the count
-            const { error: updateError } = await supabaseClient
-                .from('invoice_file_list')
-                .update({ files_uploaded_count: filesCount })
-                .eq('faktur', faktur);
-
-            if (updateError) {
-                console.error(`[StorageHandler] Error updating file count: ${updateError.message}`);
-                return;
-            }
-
-            console.log(`[StorageHandler] ✅ Updated files_uploaded_count to ${filesCount} for faktur ${faktur}`);
-
         } catch (error) {
             console.error(`[StorageHandler] Error in updateInvoiceFileCountAfterDelete: ${error.message}`);
         }
@@ -707,9 +699,44 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
 
                 console.log(`[StorageHandler] ✅ Deleted folder: ${filePath} (${objects.length} files)`);
 
+                // Buang cache download lokal untuk semua file yang dihapus
+                for (const obj of objects) {
+                    invalidateDownloadCache(obj.Key);
+                }
+
+                // PERBAIKAN (A2): hapus folder juga harus merapikan record invoice
+                // (sebelumnya hanya hapus file tunggal yang memanggilnya)
+                // Cukup 1 query per kolom path (bukan per file).
+                let affected = 0;
+                try {
+                    const folderMatches = await findInvoicesByPrefix({ supabase, prefix: filePath });
+                    affected = folderMatches.length;
+
+                    for (const match of folderMatches) {
+                        try {
+                            await clearInvoiceFileRecord({
+                                supabase,
+                                faktur: match.faktur,
+                                fileType: match.fileType,
+                                deletedPath: match.path
+                            });
+                        } catch (itemErr) {
+                            console.warn(`[StorageHandler] Error rapikan ${match.faktur}/${match.fileType}: ${itemErr.message}`);
+                        }
+                    }
+
+                    if (affected > 0) {
+                        console.log(`[StorageHandler] ✅ ${affected} record invoice dirapikan setelah hapus folder`);
+                    }
+                } catch (updateError) {
+                    console.warn(`[StorageHandler] Could not update invoice count: ${updateError.message}`);
+                    // Don't fail the delete if update fails
+                }
+
                 res.json({
                     success: true,
                     deleted: objects.length,
+                    invoicesAffected: affected,
                     errors: deleteResponse.Errors || []
                 });
 
@@ -723,6 +750,9 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 await s3Client.send(command);
 
                 console.log(`[StorageHandler] ✅ Deleted file: ${filePath}`);
+
+                // Buang cache download lokal (file sudah tidak ada di storage)
+                invalidateDownloadCache(filePath);
 
                 // Update invoice_file_list if this is an invoice file
                 try {

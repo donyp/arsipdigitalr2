@@ -19,6 +19,13 @@ const {
     syncInvoiceFileCount,
     isPdfBuffer
 } = require('./invoice-upload-helper');
+const {
+    syncInvoiceFileStatus,
+    deleteInvoiceFileRow,
+    clearInvoiceFileRecord,
+    computeFileStatus,
+    normalizeKeterangan
+} = require('./invoice-file-status');
 const AuditLogger = require('./audit-logger');
 
 try {
@@ -3328,8 +3335,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     if (fs.existsSync(cachedFilePath)) {
                         try {
                             const stats = fs.statSync(cachedFilePath);
-                            // Cache valid if less than 24 hours old
-                            if (Date.now() - stats.mtimeMs < 24 * 60 * 60 * 1000) {
+                            // Cache valid if less than DOWNLOAD_CACHE_TTL old
+                            // (default 1 jam - file yang dihapus dari storage
+                            //  tidak bisa "berhilang" terlalu lama dari cache)
+                            const cacheTtlMs = (Number(process.env.DOWNLOAD_CACHE_TTL_MINUTES) || 60) * 60 * 1000;
+                            if (Date.now() - stats.mtimeMs < cacheTtlMs) {
                                 fileBuffer = fs.readFileSync(cachedFilePath);
                                 fromCache = true;
                                 console.log(`[Invoice Download] ? Cache HIT: ${filePath.split('/').pop()} (${fileBuffer.length} bytes)`);
@@ -3347,7 +3357,43 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     if (!fileBuffer) {
                         const downloadStartTime = Date.now();
                         
-                        fileBuffer = await R2Storage.downloadFile(filePath);
+                        try {
+                            fileBuffer = await R2Storage.downloadFile(filePath);
+                        } catch (downloadErr) {
+                            // ============================================================
+                            // PERBAIKAN (A2/A5): SELF-HEALING
+                            // ============================================================
+                            // File tidak ada di storage (mis. dihapus lewat
+                            // Storage Handler / dihapus manual di luar aplikasi).
+                            // Rapikan record invoice supaya status & tombol
+                            // download di dashboard langsung benar lagi.
+                            const isNotFound = /not found|404|NoSuchKey|does not exist/i.test(downloadErr.message || '');
+                            
+                            if (isNotFound) {
+                                console.warn(`[Invoice Download] File tidak ada di storage: ${filePath} - merapikan record invoice`);
+                                
+                                try {
+                                    const heal = await clearInvoiceFileRecord({
+                                        supabase,
+                                        faktur,
+                                        fileType,
+                                        deletedPath: filePath
+                                    });
+                                    console.log(`[Invoice Download] ✅ Self-healing ${faktur}/${fileType} -> count=${heal.count}/${heal.required}`);
+                                } catch (healErr) {
+                                    console.warn(`[Invoice Download] Self-healing gagal: ${healErr.message}`);
+                                }
+                                
+                                return res.status(404).json({
+                                    error: 'File tidak ditemukan di storage',
+                                    message: 'File ini sudah tidak ada di penyimpanan. Status file telah diperbarui, silakan muat ulang halaman.',
+                                    fileType,
+                                    faktur
+                                });
+                            }
+                            
+                            throw downloadErr;
+                        }
                         
                         const downloadTime = Date.now() - downloadStartTime;
                         console.log(`[Invoice Download] Rclone download took ${downloadTime}ms (${fileBuffer.length} bytes)`);
@@ -3673,15 +3719,24 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     updated: []
                 };
                 
-                // Search for each file type in new location-based paths
+                // ============================================================
+                // PERBAIKAN (A4): gunakan path builder yang SAMA dengan
+                // saat upload. Versi lama memakai path lama
+                // ('ARSIPINVOICE/...') dan folder yang tidak sesuai
+                // ('BUKTIBAYAR', 'FAKTURPAJAK') -> file tidak pernah ditemukan.
+                // ============================================================
                 try {
                     // Search for invoice PDF
-                    const invoiceSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}`;
+                    const invoiceSearchPath = R2Storage.buildInvoicePath({
+                        location, category, year, month: monthName, day, filename: ''
+                    }).replace(/\/$/, '');
                     console.log(`[Invoice Search] Searching invoice in: ${invoiceSearchPath}`);
                     const invoiceFiles = await R2Storage.listFiles(invoiceSearchPath);
                     const invoiceFile = invoiceFiles.find(f => f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (invoiceFile && !invoiceFile.is_dir) {
-                        const invoicePath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}/${invoiceFile.name}`;
+                        const invoicePath = R2Storage.buildInvoicePath({
+                            location, category, year, month: monthName, day, filename: invoiceFile.name
+                        });
                         foundFiles.invoice = invoicePath;
                         console.log(`[Invoice Search] Found invoice: ${invoicePath}`);
                     }
@@ -3691,12 +3746,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 try {
                     // Search for bukti bayar
-                    const buktiSearchPath = `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}`;
+                    const buktiSearchPath = R2Storage.buildDocumentPath({
+                        location, folderType: 'bukti-bayar', year, month: monthName, day, filename: ''
+                    }).replace(/\/$/, '');
                     console.log(`[Invoice Search] Searching bukti bayar in: ${buktiSearchPath}`);
                     const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                     const buktiFile = buktiFiles.find(f => f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (buktiFile && !buktiFile.is_dir) {
-                        const buktiPath = `ARSIP/${location}/BUKTIBAYAR/${year}/${monthName}/${day}/${buktiFile.name}`;
+                        const buktiPath = R2Storage.buildDocumentPath({
+                            location, folderType: 'bukti-bayar', year, month: monthName, day, filename: buktiFile.name
+                        });
                         foundFiles.bukti_bayar = buktiPath;
                         console.log(`[Invoice Search] Found bukti bayar: ${buktiPath}`);
                     }
@@ -3706,12 +3765,16 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 try {
                     // Search for faktur pajak
-                    const fakturSearchPath = `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}`;
+                    const fakturSearchPath = R2Storage.buildDocumentPath({
+                        location, folderType: 'Faktur-Pajak', year, month: monthName, day, filename: ''
+                    }).replace(/\/$/, '');
                     console.log(`[Invoice Search] Searching faktur pajak in: ${fakturSearchPath}`);
                     const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                     const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(faktur) && f.name.endsWith('.pdf'));
                     if (fakturFile && !fakturFile.is_dir) {
-                        const fakturPath = `ARSIP/${location}/FAKTURPAJAK/${year}/${monthName}/${day}/${fakturFile.name}`;
+                        const fakturPath = R2Storage.buildDocumentPath({
+                            location, folderType: 'Faktur-Pajak', year, month: monthName, day, filename: fakturFile.name
+                        });
                         foundFiles.faktur_pajak = fakturPath;
                         console.log(`[Invoice Search] Found faktur pajak: ${fakturPath}`);
                     }
@@ -3849,8 +3912,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         };
                         
                         // Search for files
+                        // PERBAIKAN (A4): path builder yang sama dengan upload
                         try {
-                            const invoiceSearchPath = `ARSIPINVOICE/${location}/${year}/${monthName}/${day}/${category}`;
+                            const invoiceSearchPath = R2Storage.buildInvoicePath({
+                                location, category, year, month: monthName, day, filename: ''
+                            }).replace(/\/$/, '');
                             const invoiceFiles = await R2Storage.listFiles(invoiceSearchPath);
                             const invoiceFile = invoiceFiles.find(f => f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (invoiceFile && !invoiceFile.is_dir) {
@@ -3861,7 +3927,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         try {
-                            const buktiSearchPath = `ARSIP/${location}/bukti-bayar/${year}/${monthName}/${day}`;
+                            const buktiSearchPath = R2Storage.buildDocumentPath({
+                                location, folderType: 'bukti-bayar', year, month: monthName, day, filename: ''
+                            }).replace(/\/$/, '');
                             const buktiFiles = await R2Storage.listFiles(buktiSearchPath);
                             const buktiFile = buktiFiles.find(f => f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (buktiFile && !buktiFile.is_dir) {
@@ -3872,7 +3940,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                         
                         try {
-                            const fakturSearchPath = `ARSIP/${location}/Faktur-Pajak/${year}/${monthName}/${day}`;
+                            const fakturSearchPath = R2Storage.buildDocumentPath({
+                                location, folderType: 'Faktur-Pajak', year, month: monthName, day, filename: ''
+                            }).replace(/\/$/, '');
                             const fakturFiles = await R2Storage.listFiles(fakturSearchPath);
                             const fakturFile = fakturFiles.find(f => f.name.includes('tax-') && f.name.includes(invoice.faktur) && f.name.endsWith('.pdf'));
                             if (fakturFile && !fakturFile.is_dir) {
@@ -4098,24 +4168,23 @@ function addClearFileEndpoint(app, supabase, createAuth) {
                     return res.status(500).json({ error: 'Failed to clear file path' });
                 }
                 
-                // Recalculate files_uploaded_count
-                let uploadedCount = 0;
+                // ============================================================
+                // PERBAIKAN (A3): hapus record invoice_files juga
+                // ============================================================
+                // Tanpa ini, baris di invoice_files tetap ada sehingga
+                // trigger DB menghitung file yang SUDAH DIHAPUS lagi ->
+                // status naik kembali (mis. 2/3 -> 3/3) begitu file lain
+                // diunggah. Sekarang record ikut dibersihkan.
+                const fileTypeForStatus = fileType === 'invoice_pdf' ? 'invoice' : fileType;
+                await deleteInvoiceFileRow({ supabase, faktur, fileType: fileTypeForStatus });
                 
-                // Count existing files AFTER clearing the deleted one
-                if (fileType !== 'invoice_pdf' && invoice.invoice_pdf_path) uploadedCount++;
-                if (fileType !== 'bukti_bayar' && invoice.bukti_bayar_path) uploadedCount++;
-                if (fileType !== 'faktur_pajak' && invoice.faktur_pajak_path) uploadedCount++;
+                // Recalculate files_uploaded_count via sumber tunggal
+                // (kolom path + invoice_files), bukan hitung manual
+                const statusInfo = await syncInvoiceFileStatus({ supabase, faktur });
+                const uploadedCount = statusInfo?.count ?? 0;
                 
-                const { error: countErr } = await supabase
-                    .from('invoice_file_list')
-                    .update({
-                        files_uploaded_count: uploadedCount,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('faktur', faktur);
-                
-                if (countErr) {
-                    console.warn(`[ClearFile] Failed to update count:`, countErr);
+                if (!statusInfo) {
+                    console.warn(`[ClearFile] Gagal sinkronkan status file untuk ${faktur}`);
                 }
                 
                 const totalTime = Date.now() - startTime;
