@@ -927,10 +927,135 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 }
             }
 
-            // OPTIMIZATION: For root stats, scan R2 directly for REAL storage usage
+            // OPTIMIZATION: For root stats, scan R2 with TIMEOUT protection
             if (!prefix) {
-                console.log('[StorageHandler] Scanning R2 for real storage stats...');
+                console.log('[StorageHandler] Scanning R2 for real storage stats (with timeout)...');
+                
+                // Set a 30-second timeout for R2 scan to prevent hanging
+                const scanPromise = (async () => {
+                    const command = new ListObjectsV2Command({
+                        Bucket: config.bucketName,
+                        Prefix: prefix
+                    });
 
+                    let totalSize = 0;
+                    let totalFiles = 0;
+                    let todayUploadSize = 0;
+                    let todayUploadCount = 0;
+                    let todayUsedSize = 0;
+                    let todayChangesCount = 0;
+                    const fileTypes = {};
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    let continuationToken = null;
+                    let isTruncated = true;
+                    let iterationCount = 0;
+                    const maxIterations = 100; // Limit iterations to prevent hanging
+
+                    // Paginate through all results (with limit)
+                    while (isTruncated && iterationCount < maxIterations) {
+                        iterationCount++;
+                        const listCommand = new ListObjectsV2Command({
+                            Bucket: config.bucketName,
+                            Prefix: prefix,
+                            ContinuationToken: continuationToken
+                        });
+
+                        const response = await s3Client.send(listCommand);
+                        const objects = response.Contents || [];
+
+                        for (const obj of objects) {
+                            totalSize += obj.Size;
+                            totalFiles++;
+
+                            const ext = path.extname(obj.Key).toLowerCase() || 'no-extension';
+                            fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+
+                            // Track today's uploads (files modified today)
+                            const lastModified = new Date(obj.LastModified);
+                            lastModified.setHours(0, 0, 0, 0);
+                            
+                            if (lastModified.getTime() === today.getTime()) {
+                                todayUploadSize += obj.Size;
+                                todayUploadCount++;
+                                todayUsedSize += obj.Size;
+                                todayChangesCount++;
+                            }
+                        }
+
+                        isTruncated = response.IsTruncated && iterationCount < maxIterations;
+                        continuationToken = response.NextContinuationToken;
+                        
+                        if (iterationCount % 10 === 0) {
+                            console.log(`[StorageHandler] Scan progress: ${iterationCount} batches, ${totalFiles} files`);
+                        }
+                    }
+
+                    if (iterationCount >= maxIterations) {
+                        console.warn('[StorageHandler] R2 scan hit iteration limit - returning partial results');
+                    }
+
+                    return { totalSize, totalFiles, todayUploadSize, todayUploadCount, todayUsedSize, todayChangesCount, fileTypes };
+                })();
+
+                // Timeout after 30 seconds
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('R2 scan timeout')), 30000)
+                );
+
+                try {
+                    const scanResults = await Promise.race([scanPromise, timeoutPromise]);
+                    const { totalSize, totalFiles, todayUploadSize, todayUploadCount, todayUsedSize, todayChangesCount, fileTypes } = scanResults;
+
+                    const storageQuotaGB = parseFloat(process.env.STORAGE_QUOTA_GB) || 10;
+                    const capacityBytes = storageQuotaGB * 1024 * 1024 * 1024;
+                    const capacityGB = storageQuotaGB;
+
+                    const responseData = {
+                        success: true,
+                        prefix: prefix || '/',
+                        stats: {
+                            totalFiles,
+                            totalSize,
+                            totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
+                            totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
+                            capacityBytes: Math.floor(capacityBytes),
+                            capacityGB: parseInt(capacityGB),
+                            todayUploadSize,
+                            todayUploadCount,
+                            todayUploadMB: (todayUploadSize / 1024 / 1024).toFixed(2),
+                            todayUploadGB: (todayUploadSize / 1024 / 1024 / 1024).toFixed(2),
+                            todayUsedSize,
+                            todayUsedGB: (todayUsedSize / 1024 / 1024 / 1024).toFixed(2),
+                            todayChangesCount,
+                            fileTypes
+                        }
+                    };
+
+                    if (!prefix) {
+                        setCachedStats(responseData);
+                    }
+
+                    const duration = performance.now() - startTime;
+                    console.log(`[StorageHandler] R2 scan complete (${duration.toFixed(2)}ms): ${totalFiles} files, ${(totalSize / 1024 / 1024 / 1024).toFixed(2)} GB`);
+                    return res.json(responseData);
+                } catch (scanErr) {
+                    console.error('[StorageHandler] R2 scan failed:', scanErr.message);
+                    
+                    // Return cached stats if scan fails/timeout
+                    const cached = getCachedStats();
+                    if (cached) {
+                        console.log('[StorageHandler] Returning cached stats due to scan failure');
+                        return res.json(cached.data);
+                    }
+                    
+                    throw scanErr;
+                }
+            }
+
+            // For prefixed stats: quick scan
             const command = new ListObjectsV2Command({
                 Bucket: config.bucketName,
                 Prefix: prefix
