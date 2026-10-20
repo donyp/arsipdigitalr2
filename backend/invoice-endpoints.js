@@ -2809,12 +2809,12 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     });
                 }
 
-                // Security Check 2: MIME type validation
-                const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+                // Security Check 2: MIME type validation (PDF ONLY)
+                const allowedMimeTypes = ['application/pdf'];
                 if (!allowedMimeTypes.includes(req.file.mimetype)) {
                     return res.status(400).json({
                         error: 'Tipe file tidak diizinkan',
-                        message: 'Hanya PDF, JPG, JPEG, PNG yang diterima',
+                        message: 'Hanya file PDF yang diterima',
                         received: req.file.mimetype
                     });
                 }

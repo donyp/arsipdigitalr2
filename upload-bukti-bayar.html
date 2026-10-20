@@ -457,7 +457,7 @@
                         <p class="text-sm text-gray-500">Mohon tunggu sementara kami memeriksa file Anda</p>
                     </div>
 
-                    <input type="file" id="fileInput" accept=".pdf,image/*" multiple style="display: none;">
+                    <input type="file" id="fileInput" accept=".pdf" multiple style="display: none;">
 
                     <!-- Stats -->
                     <div id="stats" style="display: none;" class="grid grid-cols-3 gap-4 mb-6">
@@ -578,8 +578,8 @@
                     files = Array.from(files).slice(0, MAX_FILES);
                 }
                 
-                // Validate files
-                const validExtensions = ['pdf', 'jpg', 'jpeg', 'png'];
+                // Validate files - PDF ONLY
+                const validExtensions = ['pdf'];
                 let validCount = 0;
                 let invalidCount = 0;
 
