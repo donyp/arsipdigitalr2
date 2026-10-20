@@ -2084,11 +2084,20 @@
                                                         
                                                         // IMPORTANT: Use name field (real name), not username (login name)
                                                         // The 'name' field contains real names (Andi, Arif, Asep, Doni)
-                                                        // The 'username' field contains login usernames (adminandi, adminarif, etc)
-                                                        if (parsed.name) {
+                                                        // The 'username' field contains login usernames (adminandi, adminarif, moderator, etc)
+                                                        if (parsed.name && parsed.name !== parsed.role && parsed.name !== 'moderator' && parsed.name !== 'super_admin') {
                                                             userName = parsed.name;
+                                                        } else if (parsed.email && !parsed.email.includes('@')) {
+                                                            // If email looks like a name (doesn't have @), use it
+                                                            userName = parsed.email;
+                                                        } else if (parsed.username && parsed.username !== 'moderator' && parsed.username !== 'super_admin' && !parsed.username.startsWith('admin')) {
+                                                            // Only use username if it's NOT a role/admin prefix
+                                                            userName = parsed.username;
+                                                        } else if (parsed.email && parsed.email.includes('@')) {
+                                                            // Use email prefix (before @) as last resort
+                                                            userName = parsed.email.split('@')[0];
                                                         } else {
-                                                            userName = parsed.username || parsed.email || 'User';
+                                                            userName = 'User';
                                                         }
                                                         console.log('[Dashboard Greeting] Username extracted:', userName);
                                                     } catch (e) {

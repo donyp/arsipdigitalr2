@@ -230,15 +230,25 @@ function loadUserGreeting() {
                     // Use name field (real name) first, not username (login name)
                     // name = "Andi", "Arif", "Doni" (real names)
                     // username = "adminandi", "adminarif", "moderator" (login usernames)
-                    if (parsed.name) {
+                    // email = "andi@example.com", "arif@example.com"
+                    if (parsed.name && parsed.name !== parsed.role && parsed.name !== 'moderator' && parsed.name !== 'super_admin') {
                         userName = parsed.name;
                         console.log('[loadUserGreeting] Using name from user object:', userName);
-                    } else if (parsed.username) {
+                    } else if (parsed.email && !parsed.email.includes('@')) {
+                        // If email looks like a name (doesn't have @), use it
+                        userName = parsed.email;
+                        console.log('[loadUserGreeting] Using email as name:', userName);
+                    } else if (parsed.username && parsed.username !== 'moderator' && parsed.username !== 'super_admin' && !parsed.username.startsWith('admin')) {
+                        // Only use username if it's NOT a role/admin prefix
                         userName = parsed.username;
-                        console.log('[loadUserGreeting] Fallback to username:', userName);
+                        console.log('[loadUserGreeting] Using username:', userName);
+                    } else if (parsed.email && parsed.email.includes('@')) {
+                        // Use email prefix (before @) as last resort
+                        userName = parsed.email.split('@')[0];
+                        console.log('[loadUserGreeting] Using email prefix as name:', userName);
                     } else {
-                        userName = parsed.email || 'User';
-                        console.log('[loadUserGreeting] Fallback to email/User:', userName);
+                        userName = 'User';
+                        console.log('[loadUserGreeting] Using default User');
                     }
                 } catch (e) {
                     console.warn('Could not parse user object:', e);
