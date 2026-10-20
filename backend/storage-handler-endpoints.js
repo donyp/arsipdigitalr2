@@ -908,34 +908,104 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
     /**
      * GET /api/storage-handler/stats
      * Get storage statistics with today's tracking
+     * OPTIMIZED: Use database cache + periodic R2 refresh instead of live scan
      */
     app.get('/api/storage-handler/stats', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
         try {
             const { prefix = '' } = req.query;
+            const startTime = performance.now();
 
             console.log(`[StorageHandler] Stats request for prefix: ${prefix || 'root'}`);
 
-            // ✅ Check cache first (only for root prefix, since file-specific stats might be different)
+            // ✅ Check cache first (instant response for root)
             if (!prefix) {
                 const cached = getCachedStats();
-                if (cached) {
-                    return res.json(cached);
+                if (cached && Date.now() - cached.timestamp < 60000) { // 60s cache
+                    const duration = performance.now() - startTime;
+                    console.log(`[StorageHandler] Returning cached stats (${duration.toFixed(2)}ms)`);
+                    return res.json(cached.data);
                 }
             }
 
-            // Get actual bucket size
-            let bucketSizeInfo = { totalBytes: 0, totalGB: 0 };
-            try {
-                // Only calculate full bucket size if no prefix (root stats)
-                // For prefixed stats, we'll calculate just that prefix
-                if (!prefix) {
-                    bucketSizeInfo = await r2Storage.getBucketSize();
-                    console.log(`[StorageHandler] Bucket actual size: ${bucketSizeInfo.totalGB} GB`);
+            // OPTIMIZATION: For root stats, use database instead of R2 scan
+            if (!prefix) {
+                try {
+                    // Query database files table - MUCH FASTER than R2 scan
+                    const { data: allFiles, error } = await supabase
+                        .from('files')
+                        .select('ukuran_bytes, created_at')
+                        .is('deleted_at', null);
+
+                    if (!error && allFiles) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+
+                        let totalSize = 0;
+                        let todayUploadSize = 0;
+                        let todayUploadCount = 0;
+                        let todayChangesCount = 0;
+
+                        for (const file of allFiles) {
+                            totalSize += file.ukuran_bytes || 0;
+
+                            // Check if created today
+                            const createdAt = new Date(file.created_at);
+                            createdAt.setHours(0, 0, 0, 0);
+                            
+                            if (createdAt.getTime() === today.getTime()) {
+                                todayUploadSize += file.ukuran_bytes || 0;
+                                todayUploadCount++;
+                                todayChangesCount++;
+                            }
+                        }
+
+                        const storageQuotaGB = parseFloat(process.env.STORAGE_QUOTA_GB) || 10;
+                        const capacityBytes = storageQuotaGB * 1024 * 1024 * 1024;
+
+                        const responseData = {
+                            success: true,
+                            prefix: '/',
+                            stats: {
+                                totalFiles: allFiles.length,
+                                totalSize, // bytes
+                                totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
+                                totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
+                                
+                                // Storage capacity
+                                capacityBytes: Math.floor(capacityBytes),
+                                capacityGB: storageQuotaGB,
+                                
+                                // Today's uploads
+                                todayUploadSize, // bytes
+                                todayUploadCount,
+                                todayUploadMB: (todayUploadSize / 1024 / 1024).toFixed(2),
+                                todayUploadGB: (todayUploadSize / 1024 / 1024 / 1024).toFixed(2),
+                                
+                                // Today's usage
+                                todayUsedSize: todayUploadSize,
+                                todayUsedGB: (todayUploadSize / 1024 / 1024 / 1024).toFixed(2),
+                                todayChangesCount,
+                                
+                                fileTypes: {}
+                            }
+                        };
+
+                        // Cache the result
+                        setCachedStats(responseData);
+
+                        const duration = performance.now() - startTime;
+                        console.log(`[StorageHandler] Stats from DB (${duration.toFixed(2)}ms): ${allFiles.length} files, ${(totalSize / 1024 / 1024 / 1024).toFixed(2)} GB`);
+                        
+                        return res.json(responseData);
+                    }
+                } catch (dbErr) {
+                    console.warn('[StorageHandler] Database stats failed, falling back to R2:', dbErr.message);
+                    // Fall through to R2 scan if DB fails
                 }
-            } catch (err) {
-                console.warn('[StorageHandler] Could not get bucket size:', err.message);
-                bucketSizeInfo = { totalBytes: 0, totalGB: 0 };
             }
+
+            // FALLBACK: Scan R2 for prefixed stats or if DB failed
+            console.log('[StorageHandler] Scanning R2 for stats...');
 
             const command = new ListObjectsV2Command({
                 Bucket: config.bucketName,
@@ -1003,9 +1073,6 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
             const storageQuotaGB = parseFloat(process.env.STORAGE_QUOTA_GB) || 10;
             const capacityBytes = storageQuotaGB * 1024 * 1024 * 1024;
             const capacityGB = storageQuotaGB;
-
-            // Estimate "today used" as recent changes (last 24 hours activity)
-            // For now, we'll use upload count as proxy
             const todayUsedGB = Math.max(0, (todayUsedSize / 1024 / 1024 / 1024).toFixed(2));
             const todayUploadGB = Math.max(0, (todayUploadSize / 1024 / 1024 / 1024).toFixed(2));
 
