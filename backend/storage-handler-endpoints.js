@@ -936,7 +936,10 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                         .select('ukuran_bytes, created_at')
                         .is('deleted_at', null);
 
+                    // If database has files, use those (even if empty array is valid)
                     if (!error && allFiles) {
+                        // Only use database result if it has files OR if we get a valid response
+                        // If we have data, process it regardless of count
                         const today = new Date();
                         today.setHours(0, 0, 0, 0);
 
@@ -996,7 +999,12 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                         const duration = performance.now() - startTime;
                         console.log(`[StorageHandler] Stats from DB (${duration.toFixed(2)}ms): ${allFiles.length} files, ${(totalSize / 1024 / 1024 / 1024).toFixed(2)} GB`);
                         
+                        // Always return DB result (even if 0 files) for fast response
+                        // If user has files in R2 but not in DB, files should be synced to DB
                         return res.json(responseData);
+                    } else if (error) {
+                        console.warn('[StorageHandler] Database query error, falling back to R2:', error.message);
+                        // Fall through to R2 scan if DB query fails
                     }
                 } catch (dbErr) {
                     console.warn('[StorageHandler] Database stats failed, falling back to R2:', dbErr.message);
