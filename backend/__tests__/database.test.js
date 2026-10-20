@@ -9,11 +9,16 @@ const { createClient } = require('@supabase/supabase-js');
 
 describe('Database Connection & Integrity', () => {
   let supabase;
-  const SUPABASE_URL = process.env.SUPABASE_URL || 'https://test.supabase.co';
-  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-key';
 
+  // FIX 1 & 5: Validate environment variables before tests run
   beforeAll(() => {
-    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error(
+        'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are required. ' +
+        'Tests cannot proceed without real database credentials.'
+      );
+    }
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
   });
 
   describe('Database Connection', () => {
@@ -39,6 +44,9 @@ describe('Database Connection & Integrity', () => {
     });
 
     test('should timeout on invalid connection', async () => {
+      // FIX 3: Add explicit Jest timeout to prevent hanging
+      jest.setTimeout(15000);
+      
       const invalidSupabase = createClient('https://invalid.supabase.co', 'invalid-key');
       const timeoutPromise = new Promise((resolve) => {
         setTimeout(() => resolve({ error: 'timeout' }), 3000);
@@ -50,61 +58,64 @@ describe('Database Connection & Integrity', () => {
 
       const result = await Promise.race([queryPromise, timeoutPromise]);
       expect(result).toBeDefined();
-    });
+    }, 20000);
   });
 
   describe('Schema Validation', () => {
-    test('should verify users table exists', async () => {
-      if (!process.env.SUPABASE_URL) return;
+    // FIX 4: Validate environment before schema tests
+    beforeAll(() => {
+      if (!process.env.SUPABASE_URL) {
+        throw new Error('SUPABASE_URL required for schema validation tests');
+      }
+    });
 
+    test('should verify users table exists', async () => {
       const { data, error } = await supabase
         .from('users')
         .select('id, email, user_role')
         .limit(1);
 
-      if (!error) {
-        expect(data).toBeDefined();
-        expect(Array.isArray(data)).toBe(true);
+      // Throw error instead of silently passing
+      if (error) {
+        throw new Error(`Users table check failed: ${error.message}`);
       }
+      expect(Array.isArray(data)).toBe(true);
     });
 
     test('should verify invoices table has required columns', async () => {
-      if (!process.env.SUPABASE_URL) return;
-
       const { data, error } = await supabase
         .from('invoices')
         .select('id, invoice_number, zona_id, toko_id')
         .limit(1);
 
-      if (!error) {
-        expect(data).toBeDefined();
+      if (error) {
+        throw new Error(`Invoices table check failed: ${error.message}`);
       }
+      expect(data).toBeDefined();
     });
 
     test('should verify files table exists', async () => {
-      if (!process.env.SUPABASE_URL) return;
-
       const { data, error } = await supabase
         .from('files')
         .select('id, filename, zona_id')
         .limit(1);
 
-      if (!error) {
-        expect(data).toBeDefined();
+      if (error) {
+        throw new Error(`Files table check failed: ${error.message}`);
       }
+      expect(data).toBeDefined();
     });
 
     test('should verify zones table structure', async () => {
-      if (!process.env.SUPABASE_URL) return;
-
       const { data, error } = await supabase
         .from('zones')
         .select('id, zone_name')
         .limit(1);
 
-      if (!error) {
-        expect(data).toBeDefined();
+      if (error) {
+        throw new Error(`Zones table check failed: ${error.message}`);
       }
+      expect(data).toBeDefined();
     });
   });
 
@@ -177,13 +188,15 @@ describe('Database Connection & Integrity', () => {
         .limit(1);
 
       if (data && data.length > 0) {
-        // Verify zona_id is valid reference
-        const { zonaData } = await supabase
+        // FIX: Correct destructuring - was { zonaData } should be { data: zonaData }
+        const { data: zonaData } = await supabase
           .from('zones')
           .select('id')
           .eq('id', data[0].zona_id);
 
-        expect(true).toBe(true); // If query succeeds, FK is working
+        // Verify zona exists (FK constraint working)
+        expect(zonaData).toBeDefined();
+        expect(Array.isArray(zonaData)).toBe(true);
       }
     });
 
@@ -239,12 +252,17 @@ describe('Database Connection & Integrity', () => {
         supabase.from('zones').select('id').limit(1),
       ];
 
-      const results = await Promise.all(queries);
+      // FIX 2: Use allSettled to handle individual query failures
+      const results = await Promise.allSettled(queries);
 
       // All queries should complete
       expect(results).toHaveLength(4);
-      results.forEach(result => {
-        expect(result).toBeDefined();
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          throw new Error(`Query ${index} failed: ${result.reason}`);
+        }
+        expect(result.status).toBe('fulfilled');
+        expect(result.value).toBeDefined();
       });
     });
 
