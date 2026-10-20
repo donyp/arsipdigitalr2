@@ -380,46 +380,58 @@ async function validateAllFiles() {
         }
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-        // Validate all files in parallel for speed
-        const validationPromises = selectedFiles.map(async (file) => {
+        // ============================================================
+        // PERF (Fase 2.1): validasi faktur BATCH
+        // ============================================================
+        // Sebelumnya: 1 request check-faktur per file -> 200 file = 200 request
+        // Sekarang: 1 request per 100 faktur -> 200 file = 2 request.
+        const fakturMap = new Map();
+        selectedFiles.forEach(file => {
             const faktur = file.name.replace(/\.pdf$/i, '').trim();
-            try {
-                const response = await fetch(`${CONFIG.API_URL}/api/invoice/check-faktur/${faktur}`, {
-                    method: 'GET',
-                    headers: headers
-                });
+            fakturMap.set(faktur, file);
+        });
 
-                const result = await response.json();
-                
-                if (response.ok && result.data) {
-                    // Faktur exists in database - valid for upload
-                    // (Don't check Google Drive duplicate to speed up validation)
-                    return {
-                        file: file,
-                        faktur: faktur,
-                        valid: true,
-                        invoice: result.data
-                    };
-                } else {
-                    return {
-                        file: file,
-                        faktur: faktur,
-                        valid: false,
-                        error: 'Faktur tidak ditemukan'
-                    };
-                }
-            } catch (error) {
+        const fakturList = Array.from(fakturMap.keys());
+        const VALIDATION_BATCH_SIZE = 100;
+        const batchResults = {};
+
+        for (let i = 0; i < fakturList.length; i += VALIDATION_BATCH_SIZE) {
+            const batch = fakturList.slice(i, i + VALIDATION_BATCH_SIZE);
+            const response = await fetch(`${CONFIG.API_URL}/api/invoice/check-fakturs-batch`, {
+                method: 'POST',
+                headers: { ...headers, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fakturs: batch })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Validasi gagal (${response.status})`);
+            }
+
+            const result = await response.json();
+            if (result && result.results) {
+                Object.assign(batchResults, result.results);
+            }
+        }
+
+        // Susun hasil validasi per file
+        validationResults = selectedFiles.map((file) => {
+            const faktur = file.name.replace(/\.pdf$/i, '').trim();
+            const found = batchResults[faktur];
+            if (found && found.exists && found.data) {
                 return {
                     file: file,
                     faktur: faktur,
-                    valid: false,
-                    error: error.message
+                    valid: true,
+                    invoice: found.data
                 };
             }
+            return {
+                file: file,
+                faktur: faktur,
+                valid: false,
+                error: 'Faktur tidak ditemukan'
+            };
         });
-
-        // Wait for all validations to complete
-        validationResults = await Promise.all(validationPromises);
 
         // Hide validating, show results
         validating.style.display = 'none';
@@ -536,15 +548,22 @@ async function uploadValidFiles() {
         }
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-        // OPTIMIZATION: Upload files in parallel without limit
-        // All files upload concurrently for maximum speed
-        // Notifications will be generated ONCE at the end with all invoices grouped by zona
+        // ============================================================
+        // PERF (Fase 0.5): upload dengan batas konkurensi
+        // ============================================================
+        // Sebelumnya semua file diupload tanpa batas (Promise.all 200+ file).
+        // Browser sebenarnya hanya membuka 6 koneksi, tapi karena server
+        // membalas "processing" duluan, buffer file menumpuk di RAM server
+        // (B1). Dengan batas 6 + server yang MENUNGGU upload selesai,
+        // tekanan memory server ikut terkendali.
+        const UPLOAD_CONCURRENCY = 6;
         let successCount = 0;
         let failCount = 0;
         let currentProgress = 0;
 
-        // Create upload tasks
-        const uploadTasks = validFiles.map((fileResult, index) => async () => {
+        let cursor = 0;
+
+        const uploadOne = async (fileResult, index) => {
             try {
                 const formData = new FormData();
                 formData.append('pdf', fileResult.file);
@@ -557,13 +576,27 @@ async function uploadValidFiles() {
                     `${index + 1} of ${validFiles.length} • ${currentProgress}%`
                 );
 
-                const response = await fetch(`${CONFIG.API_URL}/api/invoice/upload-pdf`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: formData
-                });
+                // Retry untuk 429/503 (antrean upload penuh / server sibuk)
+                let response = null;
+                let result = {};
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    response = await fetch(`${CONFIG.API_URL}/api/invoice/upload-pdf`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: formData
+                    });
 
-                const result = await response.json();
+                    if (response.status !== 429 && response.status !== 503) break;
+
+                    // Tunggu lalu coba lagi
+                    await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+                }
+
+                try {
+                    result = await response.json();
+                } catch (parseErr) {
+                    result = { error: `Respons tidak valid (${response.status})` };
+                }
 
                 if (response.ok && result.success) {
                     successCount++;
@@ -586,18 +619,25 @@ async function uploadValidFiles() {
                     }
                 } else {
                     failCount++;
-                    showNotification(`✗ ${fileResult.faktur}: ${result.error}`, 'error', 2000);
+                    showNotification(`✗ ${fileResult.faktur}: ${result.error || ('HTTP ' + response.status)}`, 'error', 2000);
                 }
             } catch (error) {
                 failCount++;
                 showNotification(`✗ ${fileResult.faktur}: ${error.message}`, 'error', 2000);
             }
-        });
+        };
 
-        // Execute all uploads in parallel (no concurrency limit)
-        // All files upload at same time → all collected in uploadBatch
-        // Then generate notifications ONCE at the end grouped by zona
-        await Promise.all(uploadTasks.map(task => task()));
+        // Worker pool: maksimal UPLOAD_CONCURRENCY upload berjalan bersamaan
+        const worker = async () => {
+            while (true) {
+                const index = cursor++;
+                if (index >= validFiles.length) break;
+                await uploadOne(validFiles[index], index);
+            }
+        };
+
+        const workerCount = Math.min(UPLOAD_CONCURRENCY, validFiles.length);
+        await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
         // Hide loading overlay
         window.hideLoadingOverlay();

@@ -613,82 +613,84 @@
                 };
                 const token = getToken();
 
-                for (const file of files) {
-                    // Extract faktur from filename
+                // ============================================================
+                // PERF (Fase 2.1): validasi faktur BATCH
+                // ============================================================
+                // Sebelumnya: 2 request per file (check-faktur + check-file)
+                // Sekarang: 1 request per 100 file. Pengecekan duplikat ikut
+                // dari data path di response (tanpa request tambahan), dan
+                // server tetap jadi penentu final (otoritatif).
+                const fakturByFile = files.map(file => {
                     const nameWithoutExt = file.name.substring(0, file.name.lastIndexOf('.'));
                     const faktur = nameWithoutExt.split('_')[0] || nameWithoutExt;
-                    
-                    let isDuplicate = false;
+                    return { file, faktur };
+                });
+
+                const fakturList = fakturByFile
+                    .filter(item => item.faktur && item.faktur.trim())
+                    .map(item => item.faktur);
+
+                const batchResults = {};
+                const BATCH_SIZE = 100;
+
+                for (let i = 0; i < fakturList.length; i += BATCH_SIZE) {
+                    const batch = fakturList.slice(i, i + BATCH_SIZE);
+                    try {
+                        const res = await fetch('/api/invoice/check-fakturs-batch', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ fakturs: batch })
+                        });
+
+                        if (res.ok) {
+                            const json = await res.json();
+                            if (json && json.results) {
+                                Object.assign(batchResults, json.results);
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('[Bukti Bayar] Validasi batch gagal:', err.message);
+                    }
+                }
+
+                for (const item of fakturByFile) {
+                    const { file, faktur } = item;
                     let errorMsg = '';
                     let tokoName = '';
                     let nominal = '';
 
-                    if (faktur && faktur.trim()) {
-                        try {
-                            // Check if faktur exists
-                            const checkRes = await fetch(`/api/invoice/check-faktur/${faktur}`, {
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            
-                            if (checkRes.ok) {
-                                const result = await checkRes.json();
-                                if (result.exists && result.data) {
-                                    // Get toko name and nominal
-                                    tokoName = result.data.konsumen || result.data.toko || '-';
-                                    nominal = result.data.total_jumlah_jual || 0;
-                                    
-                                    if (result.data.bukti_bayar_path) {
-                                        // Check if file truly exists in GDrive
-                                        try {
-                                            const fileCheckRes = await fetch(`/api/invoice/check-file/${faktur}/bukti_bayar`, {
-                                                headers: { 'Authorization': `Bearer ${token}` }
-                                            });
-                                            const fileCheckData = await fileCheckRes.json();
-                                            
-                                            if (fileCheckData.exists) {
-                                                isDuplicate = true;
-                                                errorMsg = 'Bukti Bayar sudah diupload (Duplicate)';
-                                                invalidCount++;
-                                            } else {
-                                                // File was deleted from GDrive - allow re-upload
-                                                validCount++;
-                                                file.tokoName = tokoName;
-                                                file.nominal = nominal;
-                                                selectedFiles.push(file);
-                                            }
-                                        } catch (fileCheckErr) {
-                                            // If check fails, allow re-upload
-                                            validCount++;
-                                            file.tokoName = tokoName;
-                                            file.nominal = nominal;
-                                            selectedFiles.push(file);
-                                        }
-                                    } else {
-                                        // No existing path - new upload
-                                        validCount++;
-                                        file.tokoName = tokoName;
-                                        file.nominal = nominal;
-                                        selectedFiles.push(file);
-                                    }
-                                } else {
-                                    // Faktur not found - allow upload anyway
-                                    validCount++;
-                                    selectedFiles.push(file);
-                                }
-                            } else {
-                                // Faktur not found - allow upload anyway
-                                validCount++;
-                                selectedFiles.push(file);
-                            }
-                        } catch (err) {
-                            // If check fails, allow upload
-                            validCount++;
-                            selectedFiles.push(file);
-                        }
-                    } else {
+                    if (!faktur || !faktur.trim()) {
                         // No faktur detected
                         invalidCount++;
                         errorMsg = 'Format filename salah';
+                        continue;
+                    }
+
+                    const found = batchResults[faktur];
+
+                    if (found && found.exists && found.data) {
+                        // Get toko name and nominal
+                        tokoName = found.data.konsumen || found.data.toko || '-';
+                        nominal = found.data.total_jumlah_jual || 0;
+
+                        if (found.data.bukti_bayar_path) {
+                            // Sudah pernah diupload - path tercatat di database
+                            errorMsg = 'Bukti Bayar sudah diupload (Duplicate)';
+                            invalidCount++;
+                        } else {
+                            // No existing path - new upload
+                            validCount++;
+                            file.tokoName = tokoName;
+                            file.nominal = nominal;
+                            selectedFiles.push(file);
+                        }
+                    } else {
+                        // Faktur not found - allow upload anyway
+                        validCount++;
+                        selectedFiles.push(file);
                     }
                 }
 
@@ -764,28 +766,57 @@
                     let successCount = 0;
                     let failedFiles = [];
 
-                    for (const file of selectedFiles) {
+                    // ============================================================
+                    // PERF (Fase 0.5): upload dengan batas konkurensi 5
+                    // ============================================================
+                    // Sebelumnya satu per satu (sequential) -> 50 file = lama.
+                    const UPLOAD_CONCURRENCY = 5;
+                    let cursor = 0;
+
+                    const uploadOne = async (file) => {
                         try {
                             const formData = new FormData();
                             formData.append('file', file);
                             formData.append('type', 'bukti_bayar');
 
-                            const response = await fetch('/api/invoice/upload-document', {
-                                method: 'POST',
-                                body: formData,
-                                headers: { 'Authorization': `Bearer ${token}` }
-                            });
+                            // Retry untuk 429/503 (antrean upload penuh / server sibuk)
+                            let response = null;
+                            for (let attempt = 0; attempt < 3; attempt++) {
+                                response = await fetch('/api/invoice/upload-document', {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: { 'Authorization': `Bearer ${token}` }
+                                });
+                                if (response.status !== 429 && response.status !== 503) break;
+                                await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+                            }
 
                             if (!response.ok) {
-                                failedFiles.push(file.name);
-                                continue;
+                                let msg = 'HTTP ' + response.status;
+                                try {
+                                    const errBody = await response.json();
+                                    if (errBody && errBody.error) msg = errBody.error;
+                                } catch (e) { /* abaikan */ }
+                                failedFiles.push(file.name + ' (' + msg + ')');
+                                return;
                             }
                             
                             successCount++;
                         } catch (fileError) {
-                            failedFiles.push(file.name);
+                            failedFiles.push(file.name + ' (' + fileError.message + ')');
                         }
-                    }
+                    };
+
+                    const worker = async () => {
+                        while (true) {
+                            const idx = cursor++;
+                            if (idx >= selectedFiles.length) break;
+                            await uploadOne(selectedFiles[idx]);
+                        }
+                    };
+
+                    const workerCount = Math.min(UPLOAD_CONCURRENCY, selectedFiles.length);
+                    await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
                     // Show results
                     if (successCount > 0) {
