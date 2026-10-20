@@ -202,6 +202,19 @@ const app = express();
 const DEFAULT_PORT = 5000;
 
 // ============================================================
+// TRUST PROXY (B3)
+// ============================================================
+// Nginx berada di host yang sama dan meneruskan X-Forwarded-For.
+// Tanpa 'trust proxy', req.ip selalu 127.0.0.1 sehingga SEMUA rate limiter
+// ter-skip (tidak ada proteksi) - kebetulan tidak terlihat.
+// 'loopback' = percaya proxy yang datang dari localhost saja, sehingga:
+//   - req.ip = IP asli client (rate limit per user jadi benar)
+//   - client luar tidak bisa memalsukan X-Forwarded-For
+//   - kalau aplikasi dijalankan tanpa nginx (Docker/Cloud Run), req.ip
+//     tetap IP client langsung (benar)
+app.set('trust proxy', 'loopback');
+
+// ============================================================
 // HTTP Agent Configuration - Increase connection pool limits
 // Default Node.js limit is 6 connections per host, which causes
 // batch operations (25+ files) to timeout around file 10-15
@@ -335,7 +348,14 @@ app.use((req, res, next) => {
 // ============================================================
 app.use((req, res, next) => {
     // Set timeout to 60 seconds for normal requests, 120 seconds for batch operations
-    const timeout = req.path.includes('/api/invoice/rename') ? 120000 : 60000;
+    // Upload: 300 detik (bukan 60) karena request menunggu upload R2 selesai
+    // dan nginx juga memakai proxy_read_timeout 300s.
+    let timeout = 60000;
+    if (req.path.includes('/api/invoice/rename')) {
+        timeout = 120000;
+    } else if (isUploadPath(req)) {
+        timeout = 300000;
+    }
     req.setTimeout(timeout, () => {
         console.error(`[TIMEOUT] Request to ${req.method} ${req.path} exceeded ${timeout}ms`);
         if (!res.headersSent) {
@@ -494,6 +514,48 @@ const getClientIp = (req) => {
     );
 };
 
+// ============================================================
+// Rate limit key per USER (B3)
+// ============================================================
+// Rate limiter global dipasang SEBELUM middleware auth per-route, jadi
+// req.user belum terisi saat keyGenerator dipanggil. Karena itu userId
+// diambil dari payload JWT (HANYA untuk menentukan bucket, bukan untuk
+// otorisasi - otorisasi tetap dilakukan authenticateToken).
+// Fallback ke IP untuk request tanpa token.
+// ============================================================
+const getJwtUserId = (req) => {
+    if (req.user && (req.user.userId || req.user.id)) {
+        return req.user.userId || req.user.id;
+    }
+    const authHeader = req.headers['authorization'];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+            const payloadPart = authHeader.slice(7).split('.')[1];
+            if (payloadPart) {
+                const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf8'));
+                if (payload && (payload.userId || payload.sub)) {
+                    return payload.userId || payload.sub;
+                }
+            }
+        } catch (e) {
+            // token bukan format JWT - pakai IP
+        }
+    }
+    return null;
+};
+
+const getRateLimitKey = (req, prefix) => {
+    const userId = getJwtUserId(req);
+    if (userId) return `${prefix}-${userId}`;
+    return `${prefix}-ip-${getClientIp(req)}`;
+};
+
+// Deteksi endpoint upload (dipakai untuk rate limit & timeout khusus upload)
+const isUploadPath = (req) => {
+    const p = (req.path || '').toLowerCase();
+    return p.includes('/upload');
+};
+
 // Rate limit for login endpoint: 5 attempts per 15 minutes per IP
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -555,26 +617,36 @@ const shareLimiter = rateLimit({
 });
 
 // --- SECURITY FIX #11: Comprehensive rate limiting for all authenticated endpoints ---
-// General API rate limit: 100 requests per 15 minutes per IP for authenticated users
+// General API rate limit: 1200 requests per 15 minutes per USER
+// (naik dari 100 - lihat catatan di bawah)
+//
+// CATATAN PENTING (B3):
+//   Nilai lama (100/15 menit) tidak realistis untuk aplikasi ini:
+//   polling dashboard saja sudah ~230 request/15 menit per user
+//   (session-status-checker 10 detik, maintenance-banner 10 detik,
+//   unread count 30 detik, notifikasi 60 detik, keepalive 5 menit).
+//   Karena limiter sebelumnya ter-skip otomatis (trust proxy tidak di-set
+//   sehingga req.ip = 127.0.0.1), nilainya tidak pernah terasa. Sekarang
+//   limiter benar-benar aktif, jadi batasnya disetel realistis: 1200/15 mnt
+//   (= 80 request/menit) - 5x dari kebutuhan polling normal.
+//
+//   Endpoint upload TIDAK dihitung di sini, tapi memakai uploadLimiter
+//   (lihat bawah) supaya bulk 200+ file tidak kena limit API umum.
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // max 100 requests per windowMs
+    max: 1200, // max 1200 requests per windowMs per user
     message: {
         error: 'Terlalu banyak request. Silakan coba lagi nanti.'
     },
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => {
-        // Skip rate limit for localhost
-        return req.ip === '127.0.0.1' || req.ip === '::1';
+        // Skip rate limit untuk localhost (development)
+        if (req.ip === '127.0.0.1' || req.ip === '::1') return true;
+        // Upload di-handle oleh uploadLimiter (tidak dihitung dua kali)
+        return isUploadPath(req);
     },
-    keyGenerator: (req) => {
-        // For authenticated users, use user ID; otherwise use IP
-        if (req.user && req.user.userId) {
-            return `user-${req.user.userId}`;
-        }
-        return getClientIp(req);
-    },
+    keyGenerator: (req) => getRateLimitKey(req, 'user'),
     handler: (req, res) => {
         logWarning('[RATE_LIMIT]', 'API rate limit exceeded', {
             userId: req.user?.userId,
@@ -588,10 +660,45 @@ const apiLimiter = rateLimit({
     }
 });
 
-// Stricter rate limit for file operations (upload/download): 20 per 15 minutes
+// ============================================================
+// Rate limit khusus UPLOAD (B3)
+// ============================================================
+// 1000 upload per 15 menit per user -> mendukung bulk 200+ file
+// (200 file + 2 request validasi batch) dengan margin panjang,
+// sekaligus tetap melindungi server dari abuse.
+const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 1000, // max 1000 upload per windowMs per user
+    message: {
+        error: 'Terlalu banyak upload. Silakan coba lagi nanti.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+        if (req.ip === '127.0.0.1' || req.ip === '::1') return true;
+        return !isUploadPath(req);
+    },
+    keyGenerator: (req) => getRateLimitKey(req, 'upload'),
+    handler: (req, res) => {
+        logWarning('[RATE_LIMIT]', 'Upload rate limit exceeded', {
+            userId: req.user?.userId,
+            path: req.path,
+            method: req.method,
+            ip: getClientIp(req)
+        });
+        res.status(429).json({
+            error: 'Terlalu banyak upload. Silakan coba lagi nanti.'
+        });
+    }
+});
+
+// Rate limit untuk operasi file (upload/download).
+// Dinaikkan dari 20 -> 1000 per 15 menit (B3) karena limit lama hanya
+// memuat 20 file per 15 menit sehingga bulk upload mustahil.
+// Upload juga sudah dibatasi oleh uploadLimiter + uploadGate (backpressure).
 const fileOpsLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // max 20 file operations per user
+    max: 1000, // max 1000 file operations per user
     message: {
         error: 'Terlalu banyak operasi file. Silakan coba lagi nanti.'
     },
@@ -600,12 +707,7 @@ const fileOpsLimiter = rateLimit({
     skip: (req) => {
         return req.ip === '127.0.0.1' || req.ip === '::1';
     },
-    keyGenerator: (req) => {
-        if (req.user && req.user.userId) {
-            return `file-${req.user.userId}`;
-        }
-        return getClientIp(req);
-    },
+    keyGenerator: (req) => getRateLimitKey(req, 'file'),
     handler: (req, res) => {
         logSecurityEvent('[RATE_LIMIT]', 'File operation rate limit exceeded', {
             userId: req.user?.userId,
@@ -1764,6 +1866,18 @@ const universalInputValidation = require('./middleware/universal-input-validatio
 // Apply universal input validation to ALL API endpoints (before zone enforcement)
 app.use('/api/', universalInputValidation);
 
+// ============================================================
+// RATE LIMITER (B3) - DAFTAR DI SINI (SEBELUM endpoint didaftarkan)
+// ============================================================
+// PENTING: Express memproses middleware & route SESUAI URUTAN PENDAFTARAN.
+// Sebelumnya app.use('/api/', apiLimiter) diletakkan SESUDAH
+// registerInvoiceEndpoints(), sehingga SEMUA route invoice (upload PDF,
+// bukti bayar, faktur pajak) TIDAK PERNAH ikut di-rate-limit.
+// Limiter sekarang dipasang sebelum pendaftaran endpoint supaya benar-benar
+// berlaku untuk semua /api/*.
+app.use('/api/', apiLimiter);
+app.use('/api/', uploadLimiter);
+
 // Apply zone enforcement to data endpoints
 // This prevents admin_zona users from accessing other zones
 app.use('/api/invoice/', zoneEnforcement);
@@ -1894,9 +2008,11 @@ app.options('/api/maintenance/active-sessions/:sessionId/update-activity', (req,
 });
 
 // --- SECURITY FIX #11: Apply comprehensive rate limiting ---
-// Apply general API rate limiter to all API endpoints (after auth)
-// Note: auth-required endpoints will use user ID; public endpoints will use IP
-app.use('/api/', apiLimiter);
+// CATATAN: apiLimiter & uploadLimiter sudah dipasang SEBELUM endpoint
+// didaftarkan (lihat blok "RATE LIMITER (B3)" di atas) supaya route
+// invoice/storage-handler/support juga ikut terlindungi.
+// app.use('/api/', apiLimiter);
+// app.use('/api/', uploadLimiter);
 
 // ============================================================
 // AUTH ENDPOINTS
