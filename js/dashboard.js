@@ -2914,88 +2914,41 @@ async function renderInvoiceTable(invoices) {
         return;
     }
     
-    // Show loading overlay while checking files
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;"><div style="display: flex; flex-direction: column; align-items: center; gap: 12px;"><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><div style="width: 2rem; height: 2rem; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; animation: spinLoader 1s linear infinite;"></div><span style="color: #7f8c8d;">Memeriksa ketersediaan file...</span></div></td></tr>';
+    // ============================================================
+    // PERF (fix N+1): render langsung dari data list
+    // ============================================================
+    // SEBELUMNYA: setiap baris memicu 2-3 request /api/invoice/check-file
+    // (40-60 request + scan R2 + update DB per halaman) sehingga tabel
+    // lama muncul ("Memeriksa ketersediaan file...").
+    // SEKARANG: status file dibaca dari kolom path yang SUDAH ikut di
+    // response /api/invoice/list (select *), jadi 0 request tambahan.
+    // Sumber kebenaran tetap sama: invoice_file_list (path) + files_uploaded_count.
     
-    const token = localStorage.getItem('access_token') || localStorage.getItem('jwt_token');
-    
-    // PAGINATION: Process in batches of 50 to avoid timeout on large datasets
-    const PAGE_SIZE = 50;
-    const allInvoicesWithStatus = [];
-    
-    for (let batch = 0; batch < invoices.length; batch += PAGE_SIZE) {
-        const batchInvoices = invoices.slice(batch, batch + PAGE_SIZE);
-        const batchProgress = Math.floor(batch / PAGE_SIZE) + 1;
-        const totalBatches = Math.ceil(invoices.length / PAGE_SIZE);
+    const allInvoicesWithStatus = invoices.map((inv) => {
+        const isPPN = inv.keterangan === 'PPN';
+        const requiredCount = isPPN ? 3 : 2;
         
-        // Update loading message
-        if (batch > 0) {
-            const msg = 'Memeriksa ketersediaan file... (Batch ' + batchProgress + '/' + totalBatches + ')';
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;"><div style="display: flex; flex-direction: column; align-items: center; gap: 12px;"><style>@keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style><div style="width: 2rem; height: 2rem; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; animation: spinLoader 1s linear infinite;"></div><span style="color: #7f8c8d;">' + msg + '</span></div></td></tr>';
+        // Use files_uploaded_count from backend (already accurate from R2 sync)
+        const actualUploadedCount = inv.files_uploaded_count || 0;
+        
+        // Path file dari database (sudah ada di response list)
+        const invoicePath = inv.invoice_pdf_path || inv.uploaded_file_path || null;
+        const buktiPath = inv.bukti_bayar_path || null;
+        const fakturPath = inv.faktur_pajak_path || null;
+        
+        // Build individual file status for action menu
+        let invoiceExists = !!invoicePath, buktiExists = !!buktiPath, fakturExists = !!fakturPath;
+        const buttons = [];
+        
+        if (invoiceExists) {
+            buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'invoice')" style="background: #3498db; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Invoice">📄</button>`);
         }
-    
-        // Use pre-calculated file counts from backend instead of checking each file
-        const batchWithFileStatus = await Promise.all(batchInvoices.map(async (inv) => {
-            const isPPN = inv.keterangan === 'PPN';
-            const requiredCount = isPPN ? 3 : 2;
-            
-            // Use files_uploaded_count from backend (already accurate from R2 sync)
-            const actualUploadedCount = inv.files_uploaded_count || 0;
-            
-            // IMPROVED LOGIC: Only make API checks if files have been uploaded
-            // If files_uploaded_count > 0, check file existence; otherwise, assume no files
-            const checkPromises = [];
-            
-            // Only check files if any have been uploaded
-            if (actualUploadedCount > 0) {
-                // Check invoice file
-                checkPromises.push(
-                    fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/invoice?t=${Date.now()}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                        .then(d => ({ type: 'invoice', exists: d.exists }))
-                );
-                
-                // Check bukti bayar
-                checkPromises.push(
-                    fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/bukti_bayar?t=${Date.now()}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                        .then(d => ({ type: 'bukti_bayar', exists: d.exists }))
-                );
-                
-                // Check faktur pajak if PPN
-                if (isPPN) {
-                    checkPromises.push(
-                        fetch(`${CONFIG.API_URL}/api/invoice/check-file/${inv.faktur}/faktur_pajak?t=${Date.now()}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        }).then(r => r.ok ? r.json() : { exists: false }).catch(() => ({ exists: false }))
-                            .then(d => ({ type: 'faktur_pajak', exists: d.exists }))
-                    );
-                }
-            }
-        
-            // Wait for checks (but use pre-calculated count for display)
-            const results = await Promise.all(checkPromises);
-            
-            // Build individual file status for action menu
-            let invoiceExists = false, buktiExists = false, fakturExists = false;
-            const buttons = [];
-            
-            results.forEach(res => {
-                if (res.exists) {
-                    if (res.type === 'invoice') {
-                        invoiceExists = true;
-                        buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'invoice')" style="background: #3498db; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Invoice">📄</button>`);
-                    } else if (res.type === 'bukti_bayar') {
-                        buktiExists = true;
-                        buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'bukti_bayar')" style="background: #27ae60; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Bukti Bayar">💰</button>`);
-                    } else if (res.type === 'faktur_pajak') {
-                        fakturExists = true;
-                        buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'faktur_pajak')" style="background: #9b59b6; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Faktur Pajak">📋</button>`);
-                    }
-                }
-            });
+        if (buktiExists) {
+            buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'bukti_bayar')" style="background: #27ae60; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Bukti Bayar">💰</button>`);
+        }
+        if (fakturExists) {
+            buttons.push(`<button onclick="downloadInvoiceFile(this, '${inv.faktur}', 'faktur_pajak')" style="background: #9b59b6; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap; transition: all 0.2s;" title="Download Faktur Pajak">📋</button>`);
+        }
         
         // Store file status for popup usage later
         // If files_uploaded_count > 0 but no specific files found, show generic "files exist" state
@@ -3018,11 +2971,7 @@ async function renderInvoiceTable(invoices) {
             isComplete: actualUploadedCount === requiredCount,
             fileStatus  // Store for popup
         };
-        }));
-        
-        // Collect all batch results
-        allInvoicesWithStatus.push(...batchWithFileStatus);
-    }
+    });
     
     // Use collected results instead
     const invoicesWithFileStatus = allInvoicesWithStatus;
@@ -3538,12 +3487,111 @@ async function combinePDF(faktur) {
     }
 }
 
+// ============================================================
+// PERF: cache opsi filter di browser (30 menit)
+// ============================================================
+const INVOICE_FILTER_OPTIONS_CACHE_TTL = 30 * 60 * 1000;
+
+/**
+ * Isi dropdown filter (Tahun / Toko / Kategori) dari data opsi ringkas
+ */
+function applyInvoiceFilterOptions(options) {
+    if (!options) return;
+    
+    // Populate year select (CUSTOM DROPDOWN)
+    const yearSelect = document.getElementById('filterYear');
+    if (yearSelect) {
+        const yearOptions = (options.years || []).map(year => ({ value: year, label: year }));
+        populateCustomDropdownOptions('tahunDropdown', yearOptions);
+    }
+    
+    // DO NOT populate month dropdown - hardcoded 12 bulan di dashboard.html
+    
+    // Populate toko custom dropdown
+    // admin_zona memakai konsumen (nama toko dari Excel), role lain memakai field toko
+    const tokoList = currentUser?.role === 'admin_zona' ? (options.konsumen || []) : (options.toko || []);
+    const tokoOptions = tokoList.map(toko => ({ value: toko, label: toko }));
+    populateCustomDropdownOptions('tokoDropdown', tokoOptions);
+    
+    // Populate kategori (keterangan) custom dropdown
+    const keteranganOptions = (options.keterangans || []).map(ket => ({ value: ket, label: ket }));
+    populateCustomDropdownOptions('kategoriDropdown', keteranganOptions);
+}
+
+/**
+ * Ambil opsi filter dari endpoint ringan /api/invoice/filter-options.
+ * Cache browser 30 menit supaya dashboard tidak menarik data tiap buka.
+ * Return null bila endpoint tidak tersedia (fallback ke cara lama).
+ */
+async function fetchInvoiceFilterOptions(headers) {
+    // Cache key per role + zona (data berbeda per zona)
+    const cacheKey = 'invoice_filter_options_' + (currentUser?.role || 'anon') + '_' + (currentUser?.zona_id || 'all');
+    
+    // 1) Cache lokal
+    try {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.timestamp && parsed.data && (Date.now() - parsed.timestamp) < INVOICE_FILTER_OPTIONS_CACHE_TTL) {
+                console.log('[FilterOptions] Cache HIT');
+                return parsed.data;
+            }
+        }
+    } catch (cacheErr) {
+        // abaikan cache error
+    }
+    
+    // 2) Endpoint ringan
+    try {
+        const res = await fetch(`${CONFIG.API_URL}/api/invoice/filter-options`, {
+            method: 'GET',
+            headers: headers
+        });
+        if (!res.ok) return null;
+        
+        const json = await res.json();
+        if (!json || !json.success) return null;
+        
+        const options = {
+            years: json.years || [],
+            toko: json.toko || [],
+            konsumen: json.konsumen || [],
+            keterangans: json.keterangans || [],
+            totalCount: json.totalCount
+        };
+        
+        try {
+            localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data: options }));
+        } catch (storeErr) {
+            // cache penuh / tidak tersedia - abaikan
+        }
+        
+        return options;
+    } catch (optErr) {
+        return null;
+    }
+}
+
 // Load unique filter values from database
 async function loadFilterOptions() {
     try {
         
         const token = API.getToken() || localStorage.getItem('jwt_token');
         const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
+        // PERF: coba endpoint ringan (+cache) dulu.
+        // Cara lama (tarik /api/invoice/list?limit=10000 = 8.000+ baris penuh)
+        // hanya dipakai sebagai fallback bila endpoint baru tidak tersedia.
+        const lightweightOptions = await fetchInvoiceFilterOptions(headers);
+        if (lightweightOptions) {
+            if (typeof lightweightOptions.totalCount === 'number') {
+                invoiceTotalCount = lightweightOptions.totalCount;
+            }
+            applyInvoiceFilterOptions(lightweightOptions);
+            return;
+        }
+        
+        console.log('[FilterOptions] Fallback ke /api/invoice/list?limit=10000');
         
         
         
@@ -4750,7 +4798,13 @@ async function startInvoiceBackgroundScan() {
  * This is called when user applies filters (e.g., selects a month)
  * Scans R2 for accurate file counts WITHOUT blocking the UI
  * Results are silently cached in the browser
+ *
+ * PERF: scan background membebani R2 + database. Karena user sering
+ * berganti filter, pemicuannya diberi cooldown 10 menit per kombinasi
+ * filter (sessionStorage) supaya R2 tidak dibanjiri request berulang.
  */
+const R2_SCAN_COOLDOWN_MS = 10 * 60 * 1000;
+
 async function triggerBatchR2Scan(status, toko, keterangan, year, month, search) {
     try {
         const token = API.getToken() || localStorage.getItem('jwt_token');
@@ -4787,6 +4841,20 @@ async function triggerBatchR2Scan(status, toko, keterangan, year, month, search)
         Object.keys(scanRequest).forEach(key => {
             if (scanRequest[key] === undefined) delete scanRequest[key];
         });
+        
+        // PERF: cooldown per kombinasi filter (cegah scan R2 berulang)
+        let scanKey = null;
+        try {
+            scanKey = 'r2scan_' + JSON.stringify(scanRequest);
+            const last = parseInt(sessionStorage.getItem(scanKey) || '0', 10);
+            if (last && (Date.now() - last) < R2_SCAN_COOLDOWN_MS) {
+                console.log('[R2Scan] Skipped (cooldown active for this filter)');
+                return;
+            }
+            sessionStorage.setItem(scanKey, String(Date.now()));
+        } catch (storageErr) {
+            scanKey = null; // sessionStorage tidak tersedia - lanjut tanpa cooldown
+        }
         
         // Send scan request to backend (fire and forget)
         fetch(`${CONFIG.API_URL}/api/invoice/scan-filtered`, {

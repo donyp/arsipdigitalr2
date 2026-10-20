@@ -2128,6 +2128,30 @@ app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
             }
         }
 
+        // ============================================================
+        // Filter Rentang Tanggal (start_date / end_date)
+        // ============================================================
+        // SEBELUMNYA: frontend mengirim start_date & end_date (js/dashboard.js
+        // loadArchives) tetapi backend TIDAK pernah membacanya -> filter tanggal
+        // tidak pernah diterapkan di server.
+        // Sekarang diterapkan ke created_at (tanggal upload) dengan validasi format.
+        const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+        
+        if (req.query.start_date && DATE_RE.test(req.query.start_date)) {
+            query = query.gte('created_at', `${req.query.start_date}T00:00:00`);
+            if (LOG_LEVEL === "debug") console.log(`[/api/files] start_date: ${req.query.start_date}`);
+        } else if (req.query.start_date) {
+            if (LOG_LEVEL === "debug") console.log(`[/api/files] WARNING: invalid start_date "${req.query.start_date}" (ignored)`);
+        }
+        
+        if (req.query.end_date && DATE_RE.test(req.query.end_date)) {
+            // Rentang inklusif sampai 23:59:59.999
+            query = query.lte('created_at', `${req.query.end_date}T23:59:59.999`);
+            if (LOG_LEVEL === "debug") console.log(`[/api/files] end_date: ${req.query.end_date}`);
+        } else if (req.query.end_date) {
+            if (LOG_LEVEL === "debug") console.log(`[/api/files] WARNING: invalid end_date "${req.query.end_date}" (ignored)`);
+        }
+
         // Pagination
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 50;

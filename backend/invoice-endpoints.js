@@ -1288,6 +1288,104 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     });
 
     // ============================================
+    // GET /api/invoice/filter-options
+    // ============================================
+    // PERF: endpoint ringan untuk mengisi dropdown filter (Tahun/Bulan/Toko/Kategori).
+    // Sebelumnya frontend memakai /api/invoice/list?limit=10000 yang menarik
+    // SELURUH baris invoice (8.000+ baris, semua kolom) hanya untuk mengisi dropdown.
+    // Endpoint ini hanya mengambil 4 kolom (toko, konsumen, keterangan, tanggal)
+    // tanpa count, lalu computes distinct di server.
+    // Tidak ada perubahan pada data.
+    // ============================================
+    app.get('/api/invoice/filter-options', createAuth(), async (req, res) => {
+        try {
+            const MAX_ROWS = 20000;
+            
+            let query = supabase
+                .from('invoice_file_list')
+                .select('toko, konsumen, keterangan, tanggal, tanggal_dokumen');
+            
+            // Auto-filter by zona for admin_zona users
+            if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
+                const userZonaId = parseInt(req.user.zona_id) || req.user.zona_id;
+                query = query.eq('zona_id', userZonaId);
+            }
+            
+            query = query.limit(MAX_ROWS);
+            
+            let { data, error } = await query;
+            
+            // Fallback: schema lama mungkin tidak punya tanggal_dokumen
+            if (error && /tanggal_dokumen|does not exist/i.test(error.message || '')) {
+                console.warn('[Invoice API] Filter options: fallback select tanpa tanggal_dokumen');
+                let fallbackQuery = supabase
+                    .from('invoice_file_list')
+                    .select('toko, konsumen, keterangan, tanggal');
+                if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
+                    fallbackQuery = fallbackQuery.eq('zona_id', parseInt(req.user.zona_id) || req.user.zona_id);
+                }
+                const fallback = await fallbackQuery.limit(MAX_ROWS);
+                data = fallback.data;
+                error = fallback.error;
+            }
+            
+            if (error) {
+                console.error('[Invoice API] Filter options error:', error.message);
+                return res.status(500).json({ error: 'Failed to fetch filter options' });
+            }
+            
+            const rows = data || [];
+            const years = new Set();
+            const tokoSet = new Set();
+            const konsumenSet = new Set();
+            const keterangans = new Set();
+            let total = rows.length;
+            
+            rows.forEach(row => {
+                if (row.toko) tokoSet.add(row.toko);
+                if (row.konsumen) konsumenSet.add(row.konsumen);
+                if (row.keterangan) keterangans.add(row.keterangan);
+                
+                const dateField = row.tanggal || row.tanggal_dokumen;
+                if (dateField) {
+                    const year = String(dateField).slice(0, 4);
+                    if (/^\d{4}$/.test(year)) years.add(year);
+                }
+            });
+            
+            // Total invoice (untuk pagination) - query terpisah, head only
+            let totalCount = null;
+            try {
+                let countQuery = supabase
+                    .from('invoice_file_list')
+                    .select('*', { count: 'exact', head: true });
+                if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
+                    countQuery = countQuery.eq('zona_id', parseInt(req.user.zona_id) || req.user.zona_id);
+                }
+                const { count } = await countQuery;
+                if (typeof count === 'number') totalCount = count;
+            } catch (countErr) {
+                // abaikan - count hanya untuk info pagination
+            }
+            
+            res.json({
+                success: true,
+                years: Array.from(years).sort().reverse(),
+                toko: Array.from(tokoSet).sort(),
+                konsumen: Array.from(konsumenSet).sort(),
+                keterangans: Array.from(keterangans).sort(),
+                total,
+                totalCount,
+                truncated: total >= MAX_ROWS
+            });
+            
+        } catch (error) {
+            console.error('[Invoice API] Filter options error:', error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+
+    // ============================================
     // POST /api/invoice/scan-filtered
     // Batch scan R2 for filtered invoices (called from frontend when user applies filters)
     // This is expensive, so only call when needed (not on initial page load)
@@ -1299,7 +1397,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 keterangan,
                 date_from,
                 date_to,
-                search
+                search,
+                force = false
             } = req.body;
 
             console.log('[Invoice Scan] Batch scan request received');
@@ -1311,41 +1410,56 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 }
             }
             
-            // Build query
-            let query = supabase
+            // ============================================================
+            // PERF: batasi cakupan scan background
+            // ============================================================
+            // Default: hanya scan invoice yang files_uploaded_count = 0
+            // (file kemungkinan hilang / diunggah langsung ke R2 di luar aplikasi).
+            // Invoice yang sudah punya count > 0 tidak perlu di-scan ulang:
+            // count-nya sudah di-maintain oleh upload flow + trigger database.
+            //_scanMax membatasi jumlah invoice per request supaya R2 tidak dibanjiri.
+            const SCAN_MAX = 50;
+            let scanQuery = supabase
                 .from('invoice_file_list')
-                .select('faktur');
+                .select('faktur, files_uploaded_count');
             
             // Auto-filter by zona for admin_zona users
             if (req.user && req.user.role === 'admin_zona' && req.user.zona_id) {
                 const userZonaId = parseInt(req.user.zona_id) || req.user.zona_id;
-                query = query.eq('zona_id', userZonaId);
+                scanQuery = scanQuery.eq('zona_id', userZonaId);
             }
             
             // Apply same filters as invoice list endpoint
-            if (toko) query = query.eq('toko', toko);
-            if (keterangan) query = query.eq('keterangan', keterangan);
-            if (date_from) query = query.gte('tanggal', date_from);
-            if (date_to) query = query.lte('tanggal', date_to);
+            if (toko) scanQuery = scanQuery.eq('toko', toko);
+            if (keterangan) scanQuery = scanQuery.eq('keterangan', keterangan);
+            if (date_from) scanQuery = scanQuery.gte('tanggal', date_from);
+            if (date_to) scanQuery = scanQuery.lte('tanggal', date_to);
             
             if (search) {
                 const sanitizedSearch = sanitizeString(search.trim());
                 if (sanitizedSearch && sanitizedSearch.length > 0) {
-                    query = query.or(`faktur.ilike.%${sanitizedSearch}%,konsumen.ilike.%${sanitizedSearch}%`);
+                    scanQuery = scanQuery.or(`faktur.ilike.%${sanitizedSearch}%,konsumen.ilike.%${sanitizedSearch}%`);
                 }
             }
+
+            // Hanya invoice yang belum punya hitungan file (kecuali force=true)
+            if (!force) {
+                scanQuery = scanQuery.eq('files_uploaded_count', 0);
+            }
+            scanQuery = scanQuery.limit(SCAN_MAX);
 
             // RETURN IMMEDIATELY - don't block on R2 scan
             res.json({
                 success: true,
                 message: 'Background scan started',
+                maxScan: SCAN_MAX,
                 _startedAt: new Date().toISOString()
             });
 
             // ==== NOW DO THE SCAN IN THE BACKGROUND (don't await) ====
             (async () => {
                 try {
-                    const { data: invoices, error } = await query;
+                    const { data: invoices, error } = await scanQuery;
                     
                     if (error) {
                         console.error('[Invoice Scan BG] Error fetching invoices:', error.message);
@@ -1357,7 +1471,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         return;
                     }
                     
-                    console.log('[Invoice Scan BG] Starting R2 scan for ' + invoices.length + ' invoices');
+                    console.log('[Invoice Scan BG] Starting R2 scan for ' + invoices.length + ' invoices (max ' + SCAN_MAX + ')');
                     
                     // Start background R2 scan
                     let scannedCount = 0;
@@ -1368,6 +1482,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         } catch (err) {
                             console.error('[Invoice Scan BG] Error scanning ' + inv.faktur + ':', err.message);
                         }
+                        // Jeda singkat agar R2 tidak dibanjiri request beruntun
+                        await new Promise(resolve => setTimeout(resolve, 50));
                     }
                     
                     console.log('[Invoice Scan BG] Completed: ' + scannedCount + ' invoices scanned');
@@ -2168,8 +2284,38 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     console.log(`[Check File] File not found in R2 for ${fileType}`);
                 }
 
-                // Count files by scanning R2 directly (source of truth)
-                const filesUploaded = await updateFilesUploadedCount(supabase, faktur, R2Storage);
+                // ============================================================
+                // PERF (fix N+1): hitung jumlah file dari DATABASE
+                // ============================================================
+                // SEBELUMNYA: setiap panggilan check-file menjalankan
+                // updateFilesUploadedCount() = scan R2 (sampai 15x HeadObject)
+                // + UPDATE files_uploaded_count. Endpoint ini dipanggil per file
+                // saat upload, jadi sangat berat dan membebani R2 + database.
+                // SEKARANG: cukup 1 COUNT dari tabel invoice_files + nilai
+                // files_uploaded_count yang sudah di-maintain oleh upload flow
+                // dan trigger database (CREATE_TRIGGER_FUNCTION.sql).
+                // Perilaku 'exists' (cek file di R2) TIDAK berubah.
+                let filesUploaded = invoice.files_uploaded_count || 0;
+                try {
+                    const { count: fileRows, error: countErr } = await supabase
+                        .from('invoice_files')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('faktur', faktur);
+                    if (!countErr && typeof fileRows === 'number') {
+                        filesUploaded = Math.max(filesUploaded, fileRows);
+                    }
+                } catch (countErr) {
+                    // abaikan - pakai nilai files_uploaded_count dari DB
+                }
+                if (!filesUploaded) {
+                    // Fallback: hitung dari kolom path (legacy schema)
+                    const pathCount = [
+                        invoice.invoice_pdf_path,
+                        invoice.bukti_bayar_path,
+                        invoice.faktur_pajak_path
+                    ].filter(Boolean).length;
+                    filesUploaded = pathCount;
+                }
                 
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
                 const requiredCount = isPPN ? 3 : 2;
