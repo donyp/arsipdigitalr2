@@ -927,93 +927,9 @@ module.exports = function registerStorageHandlerEndpoints(app, supabase, authent
                 }
             }
 
-            // OPTIMIZATION: For root stats, use database instead of R2 scan
+            // OPTIMIZATION: For root stats, scan R2 directly for REAL storage usage
             if (!prefix) {
-                try {
-                    // Query database files table - MUCH FASTER than R2 scan
-                    const { data: allFiles, error } = await supabase
-                        .from('files')
-                        .select('ukuran_bytes, created_at')
-                        .is('deleted_at', null);
-
-                    // If database has files, use those (even if empty array is valid)
-                    if (!error && allFiles) {
-                        // Only use database result if it has files OR if we get a valid response
-                        // If we have data, process it regardless of count
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-
-                        let totalSize = 0;
-                        let todayUploadSize = 0;
-                        let todayUploadCount = 0;
-                        let todayChangesCount = 0;
-
-                        for (const file of allFiles) {
-                            totalSize += file.ukuran_bytes || 0;
-
-                            // Check if created today
-                            const createdAt = new Date(file.created_at);
-                            createdAt.setHours(0, 0, 0, 0);
-                            
-                            if (createdAt.getTime() === today.getTime()) {
-                                todayUploadSize += file.ukuran_bytes || 0;
-                                todayUploadCount++;
-                                todayChangesCount++;
-                            }
-                        }
-
-                        const storageQuotaGB = parseFloat(process.env.STORAGE_QUOTA_GB) || 10;
-                        const capacityBytes = storageQuotaGB * 1024 * 1024 * 1024;
-
-                        const responseData = {
-                            success: true,
-                            prefix: '/',
-                            stats: {
-                                totalFiles: allFiles.length,
-                                totalSize, // bytes
-                                totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
-                                totalSizeGB: (totalSize / 1024 / 1024 / 1024).toFixed(2),
-                                
-                                // Storage capacity
-                                capacityBytes: Math.floor(capacityBytes),
-                                capacityGB: storageQuotaGB,
-                                
-                                // Today's uploads
-                                todayUploadSize, // bytes
-                                todayUploadCount,
-                                todayUploadMB: (todayUploadSize / 1024 / 1024).toFixed(2),
-                                todayUploadGB: (todayUploadSize / 1024 / 1024 / 1024).toFixed(2),
-                                
-                                // Today's usage
-                                todayUsedSize: todayUploadSize,
-                                todayUsedGB: (todayUploadSize / 1024 / 1024 / 1024).toFixed(2),
-                                todayChangesCount,
-                                
-                                fileTypes: {}
-                            }
-                        };
-
-                        // Cache the result
-                        setCachedStats(responseData);
-
-                        const duration = performance.now() - startTime;
-                        console.log(`[StorageHandler] Stats from DB (${duration.toFixed(2)}ms): ${allFiles.length} files, ${(totalSize / 1024 / 1024 / 1024).toFixed(2)} GB`);
-                        
-                        // Always return DB result (even if 0 files) for fast response
-                        // If user has files in R2 but not in DB, files should be synced to DB
-                        return res.json(responseData);
-                    } else if (error) {
-                        console.warn('[StorageHandler] Database query error, falling back to R2:', error.message);
-                        // Fall through to R2 scan if DB query fails
-                    }
-                } catch (dbErr) {
-                    console.warn('[StorageHandler] Database stats failed, falling back to R2:', dbErr.message);
-                    // Fall through to R2 scan if DB fails
-                }
-            }
-
-            // FALLBACK: Scan R2 for prefixed stats or if DB failed
-            console.log('[StorageHandler] Scanning R2 for stats...');
+                console.log('[StorageHandler] Scanning R2 for real storage stats...');
 
             const command = new ListObjectsV2Command({
                 Bucket: config.bucketName,
