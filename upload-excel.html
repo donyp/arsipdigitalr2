@@ -538,6 +538,13 @@
                                 <i class="fas fa-info-circle" style="color: #ffc107; margin-right: 6px;"></i> Transaksi RETUR diabaikan: <span id="skippedReturCountBadge" style="background: #ffc107; color: #333; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 6px;">0</span>
                             </p>
                         </div>
+
+                        <!-- Info faktur duplikat (sudah ada di database) -->
+                        <div id="duplicateInfo" style="background: rgba(52, 152, 219, 0.1); border-left: 4px solid #3498db; padding: 12px; border-radius: 6px; margin-bottom: 10px; display: none; border: 1px solid rgba(52, 152, 219, 0.3);">
+                            <p style="margin: 0; color: var(--color-text-primary); font-size: 12px; font-weight: 600;">
+                                <i class="fas fa-info-circle" style="color: #3498db; margin-right: 6px;"></i> Faktur sudah ada di database (tidak akan diupload ulang): <span id="duplicateCountBadge" style="background: #3498db; color: #fff; padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 6px;">0</span>
+                            </p>
+                        </div>
                         
                         <div style="background: var(--color-bg-secondary); padding: 12px; border-radius: 6px; border-left: 4px solid #27ae60; border: 1px solid var(--color-border);">
                             <p style="margin: 0; color: #27ae60; font-size: 12px;">
@@ -633,6 +640,7 @@
     <script src="js/auth.js"></script>
     <script src="js/sidebar.js?t=1792067064.55694"></script>
     <script src="js/spa-page-handler.js"></script>
+    <script src="js/excel-utils.js"></script>
     <script src="js/upload-excel.js?t=1792067064.56000"></script>
     <script>
         if (typeof initUploadExcelPage === 'function') {

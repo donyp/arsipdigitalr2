@@ -140,14 +140,29 @@ async function deleteBatch(batchId, filename, invoiceCount) {
 
     if (!doubleConfirm) return;
 
+    // Tanya juga apakah file PDF di storage ikut dihapus.
+    // WAJIB dihapus kalau nanti batch diupload ulang - kalau file lama masih
+    // ada di storage, upload ulang akan dianggap "Duplicate" dan gagal.
+    let deleteFiles = false;
+    const deleteFilesConfirm = confirm(
+        `File di penyimpanan (PDF) ikut dihapus?\n\n` +
+        `• Pilih "OK" : file PDF di storage ikut dihapus (disarankan,\n` +
+        `  supaya file ini bisa diupload ulang dengan bersih)\n` +
+        `• Pilih "Cancel" : file PDF di storage tetap ada\n\n` +
+        `Pilihan Anda?`
+    );
+    deleteFiles = deleteFilesConfirm;
+
     showLoading();
 
     try {
         const response = await fetch(`/api/invoice/batch/${batchId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${getToken()}`
-            }
+                'Authorization': `Bearer ${getToken()}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ delete_files: deleteFiles })
         });
 
         if (!response.ok) {
@@ -157,10 +172,14 @@ async function deleteBatch(batchId, filename, invoiceCount) {
 
         const result = await response.json();
 
+        const storageInfo = result.storageFilesDeleted
+            ? `\nFile PDF di storage dihapus: ${result.storageFilesDeleted}`
+            : (result.storageFilesFailed ? `\nGagal hapus ${result.storageFilesFailed} file di storage` : '');
+
         alert(
             `✅ Batch berhasil dihapus!\n\n` +
             `File: ${result.batchFilename}\n` +
-            `Invoice dihapus: ${result.deletedCount}`
+            `Invoice dihapus: ${result.deletedCount}${storageInfo}`
         );
 
         // Reload batches

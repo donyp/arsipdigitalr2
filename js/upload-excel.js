@@ -4,6 +4,8 @@
 
 let currentFile = null;
 let parsedData = null;
+// Jumlah transaksi RETUR yang dilewati pada parsing terakhir
+let lastSkippedReturs = 0;
 
 // Step 1: File Selection
 document.addEventListener('DOMContentLoaded', () => {
@@ -132,57 +134,71 @@ async function checkData() {
             throw new Error('File Excel kosong atau tidak memiliki data');
         }
 
-        // Transform and aggregate
-        let skippedReturs = 0;
-        let invoices = parsed.map(row => {
-            // Normalize toko values
-            let tokoRaw = (row['TOKO'] || row['toko'] || '').trim();
-            let tokoValue = tokoRaw.toUpperCase();
-            // Map all toko variations to their normalized names
-            if (tokoValue.includes('PEMALANG')) {
-                tokoValue = 'ANKA PEMALANG';
-            } else if (tokoValue.includes('ANKA')) {
-                tokoValue = 'ANKA BEKASI';
-            } else if (tokoValue === '' || !tokoValue) {
-                // DEFAULT: If empty or invalid, default to ANKA BEKASI
-                tokoValue = 'ANKA BEKASI';
-            } else {
-                // Any other value that doesn't contain ANKA/PEMALANG, keep as is
-                tokoValue = tokoRaw;
+        // ============================================================
+        // Transform + agregasi (utilitas BERSAMA dengan server)
+        // ============================================================
+        // Memakai ExcelUtils supaya tanggal/nominal/toko/retur TIDAK lagi
+        // berbeda antara browser & server (penyebab utama data rusak).
+        const mapped = parsed.map(row => ({
+            tanggal: ExcelUtils.normalizeExcelDate(row['TANGGAL'] || row['tanggal']),
+            toko: ExcelUtils.normalizeTokoValue(row['TOKO'] || row['toko']),
+            faktur: row['FAKTUR'] || row['faktur'],
+            metode_bayar: row['METODE BAYAR'] || row['metode_bayar'],
+            jenis_transaksi: row['JENIS TRANSAKSI'] || row['jenis_transaksi'],
+            konsumen: row['KONSUMEN'] || row['konsumen'],
+            total_jumlah_jual: row['JUMLAH JUAL'] || row['jumlah_jual'] || 0,
+            keterangan: row['KET 2'] || row['ket_2'] || 'NON PPN'
+        }));
+        
+        // Aggregate by faktur + filter retur (1 implementasi, dipakai server juga)
+        const aggregation = ExcelUtils.aggregateByFaktur(mapped);
+        const skippedReturs = aggregation.skippedReturs;
+        lastSkippedReturs = skippedReturs;
+        parsedData = aggregation.data;
+        
+        // ============================================================
+        // Cek duplikat ke database SEBELUM upload (C3)
+        // ============================================================
+        let duplicateFakturs = [];
+        try {
+            const token = (typeof API !== 'undefined' && API.getToken)
+                ? API.getToken()
+                : (localStorage.getItem('jwt_token') || localStorage.getItem('access_token'));
+            
+            const fakturs = parsedData.map(inv => inv.faktur).filter(Boolean);
+            const CHECK_CHUNK = 500;
+            
+            for (let i = 0; i < fakturs.length; i += CHECK_CHUNK) {
+                const chunk = fakturs.slice(i, i + CHECK_CHUNK);
+                const dupRes = await fetch(`${CONFIG.API_URL}/api/invoice/check-duplicate-fakturs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ fakturs: chunk })
+                });
+                
+                if (dupRes.ok) {
+                    const dupJson = await dupRes.json();
+                    if (dupJson && Array.isArray(dupJson.duplicates)) {
+                        duplicateFakturs = duplicateFakturs.concat(dupJson.duplicates);
+                    }
+                }
             }
-            return {
-                tanggal: row['TANGGAL'] || row['tanggal'],
-                toko: tokoValue,
-                faktur: row['FAKTUR'] || row['faktur'],
-                metode_bayar: row['METODE BAYAR'] || row['metode_bayar'],
-                jenis_transaksi: row['JENIS TRANSAKSI'] || row['jenis_transaksi'],
-                konsumen: row['KONSUMEN'] || row['konsumen'],
-                total_jumlah_jual: parseFloat(row['JUMLAH JUAL'] || row['jumlah_jual'] || 0),
-                keterangan: row['KET 2'] || row['ket_2'] || 'NON PPN'
-            };
-        }).filter(inv => {
-            // Filter: Only accept JUAL transactions, skip RETUR
-            if (!inv.faktur) return false;
-            const transType = String(inv.jenis_transaksi || 'jual').toLowerCase().trim();
-            if (transType === 'retur' || transType === 'return') {
-                skippedReturs++;
-                return false;
-            }
-            return true;
-        });
-
-        // Aggregate by faktur
-        const aggregated = {};
-        invoices.forEach(inv => {
-            if (aggregated[inv.faktur]) {
-                aggregated[inv.faktur].total_jumlah_jual += inv.total_jumlah_jual;
-                aggregated[inv.faktur].item_count = (aggregated[inv.faktur].item_count || 1) + 1;
-            } else {
-                aggregated[inv.faktur] = { ...inv, item_count: 1 };
-            }
-        });
-
-        parsedData = Object.values(aggregated);
+        } catch (dupErr) {
+            console.warn('[UploadExcel] Cek duplikat gagal (lanjut):', dupErr.message);
+        }
+        
+        // Tampilkan jumlah faktur yang sudah ada
+        const duplicateInfo = document.getElementById('duplicateInfo');
+        const duplicateCountBadge = document.getElementById('duplicateCountBadge');
+        if (duplicateFakturs.length > 0) {
+            if (duplicateInfo) duplicateInfo.style.display = 'block';
+            if (duplicateCountBadge) duplicateCountBadge.textContent = duplicateFakturs.length;
+        } else if (duplicateInfo) {
+            duplicateInfo.style.display = 'none';
+        }
         
         // Show validation results - display skipped returs
         document.getElementById('totalRows').textContent = parsed.length;
@@ -274,14 +290,32 @@ async function uploadData() {
 
         const result = await response.json();
         if (response.ok && result.success) {
-            const processed = result.summary?.processed || 0;
-            const skippedReturs = result.summary?.skippedReturs || 0;
+            const summary = result.summary || {};
+            const processed = summary.processed || 0;
+            const duplicates = summary.duplicates || 0;
+            const failed = summary.failed || 0;
+            const rejected = summary.rejected || 0;
             
             document.getElementById('uploadedCount').textContent = processed;
             
-            if (skippedReturs > 0) {
-                document.getElementById('skippedReturCount').textContent = skippedReturs + ' transaksi diabaikan';
+            if (lastSkippedReturs > 0) {
+                document.getElementById('skippedReturCount').textContent = lastSkippedReturs + ' transaksi diabaikan';
                 document.getElementById('skippedReturInfo').style.display = 'block';
+            }
+            
+            // Laporan rinci: duplikat, baris ditolak, dan error
+            const parts = [];
+            if (processed > 0) parts.push(processed + ' invoice baru');
+            if (duplicates > 0) parts.push(duplicates + ' sudah ada (tidak diupload ulang)');
+            if (rejected > 0) parts.push(rejected + ' baris ditolak (tidak valid)');
+            if (failed > 0) parts.push(failed + ' baris gagal disimpan');
+            
+            const rejectedRows = summary.rejectedRows || [];
+            if (rejectedRows.length > 0) {
+                const sample = rejectedRows.slice(0, 5)
+                    .map(r => `${r.faktur || '-'} (${r.reason || 'tidak valid'})`)
+                    .join('\n');
+                console.warn('[UploadExcel] Baris ditolak:\n' + sample);
             }
             
             document.getElementById('card3').style.display = 'none';
@@ -289,10 +323,12 @@ async function uploadData() {
             updateStep(4);
 
             if (typeof Toast !== 'undefined') {
-                const msg = skippedReturs > 0 
-                    ? processed + ' invoice diupload! (' + skippedReturs + ' retur diabaikan)'
-                    : processed + ' file Excel berhasil diupload!';
-                Toast.success(msg);
+                const msg = parts.length > 0 ? parts.join(', ') + '!' : 'Tidak ada data baru yang diupload';
+                if (rejected > 0 || failed > 0) {
+                    Toast.warning(msg, rejected > 0 || failed > 0 ? '⚠️ Sebagian Data' : 'Info');
+                } else {
+                    Toast.success(msg);
+                }
             }
         } else {
             Toast.error(result.error || 'Upload failed', 'Upload Error');

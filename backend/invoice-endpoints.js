@@ -10,6 +10,7 @@ const fs = require('fs');
 const { updateFileCountDirectly, updateFilePath } = require('./direct-postgres-update');
 const { logSecurityEvent, logWarning, logInfo, logDebug, isDebugMode } = require('./security-logging');
 const { sanitizeString } = require('./input-validators');
+const { ExcelUtils } = require('./excel-parser');
 const { UploadQueue } = require('./upload-queue');
 const {
     getTypeConfig,
@@ -566,28 +567,49 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             let updated = 0;
             let failed = 0;
             
-            for (const inv of invoicesWithoutZona) {
+            // ============================================================
+            // PERBAIKAN (H5): aturan resolusi yang SAMA dengan upload
+            // ============================================================
+            // Dulu: 1 query per invoice dengan .eq('nama', inv.toko)
+            //       -> case-sensitive & tidak cocok dengan nama toko asli
+            //       ->alat perbaikan praktis tidak pernah berhasil.
+            // Sekarang: tabel toko dibaca SEKALI, dicocokkan KONSUMEN dulu
+            // lalu TOKO (case-insensitive) - identik dengan alur upload.
+            const { data: allToko, error: tokoListErr } = await supabase
+                .from('toko')
+                .select('id, nama, zona_id');
+            
+            if (tokoListErr) {
+                console.error('[Invoice API] Error ambil daftar toko:', tokoListErr.message);
+                return res.status(500).json({ error: 'Failed to fetch toko list' });
+            }
+            
+            const tokoByName = new Map();
+            (allToko || []).forEach(t => {
+                if (t && t.nama) tokoByName.set(String(t.nama).trim().toLowerCase(), t);
+            });
+            
+            // Ambil konsumen + toko untuk pencocokan
+            const { data: invoicesToFix } = await supabase
+                .from('invoice_file_list')
+                .select('id, faktur, toko, konsumen')
+                .is('zona_id', null);
+            
+            for (const inv of invoicesToFix || []) {
                 try {
-                    // Look up zona_id from toko name
-                    const { data: tokoData, error: tokoError } = await supabase
-                        .from('toko')
-                        .select('id, zona_id')
-                        .eq('nama', inv.toko)
-                        .maybeSingle();
+                    const konsumenKey = String(inv.konsumen || '').trim().toLowerCase();
+                    const tokoKey = String(inv.toko || '').trim().toLowerCase();
                     
-                    if (tokoError) {
-                        console.error(`[Invoice API] Error looking up toko "${inv.toko}":`, tokoError);
-                        failed++;
-                        continue;
-                    }
+                    const match = (konsumenKey && tokoByName.get(konsumenKey)) ||
+                                 (tokoKey && tokoByName.get(tokoKey)) || null;
                     
-                    if (tokoData && tokoData.zona_id) {
+                    if (match && match.zona_id) {
                         // Update invoice with zona_id
                         const { error: updateError } = await supabase
                             .from('invoice_file_list')
                             .update({ 
-                                zona_id: tokoData.zona_id,
-                                toko_id: tokoData.id
+                                zona_id: match.zona_id,
+                                toko_id: match.id
                             })
                             .eq('id', inv.id);
                         
@@ -601,7 +623,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             }
                         }
                     } else {
-                        console.warn(`[Invoice API] Could not find zona_id for toko: "${inv.toko}"`);
+                        console.warn(`[Invoice API] Could not find toko match for: "${inv.toko}" / "${inv.konsumen}"`);
                         failed++;
                     }
                 } catch (err) {
@@ -631,6 +653,21 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // Upload pre-parsed Excel data (from frontend validation)
     // RESTRICTED: super_admin & moderator only
     // ============================================
+    // ============================================
+    // POST /api/invoice/upload-excel-data
+    // Upload pre-parsed Excel data (from frontend validation)
+    // RESTRICTED: super_admin & moderator only
+    // ============================================
+    // PERBAIKAN (audit upload Excel):
+    //  C1 - Tanggal: baris dengan tanggal tidak valid DITOLAK & dilaporkan
+    //       (dulu diam-diam jadi tanggal hari ini / string rusak)
+    //  C2 - Insert bukan lagi all-or-nothing: duplikat difilter sebelum insert
+    //       + fallback insert per baris kalau ada bentrok
+    //  C4 - Tabel toko dibaca SEKALI (bukan 1 query per baris)
+    //  H3 - Validasi field per baris (faktur/tanggal/toko)
+    //  H7 - Insert per chunk 500 baris (tidak exceeds batas payload)
+    //  M4 - Status batch mencerminkan hasil sebenarnya
+    //  M6 - Upload ulang file yang sama = no-op (tidak bikin batch baru)
     app.post('/api/invoice/upload-excel-data',
         ...createAuth(['super_admin', 'moderator']),
         async (req, res) => {
@@ -644,7 +681,90 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     });
                 }
                 
-                // Create batch record
+                // ============================================================
+                // 1. VALIDASI PER BARIS (tolak & laporkan, jangan insert diam-diam)
+                // ============================================================
+                const validRows = [];
+                const rejected = [];
+                
+                for (const item of data) {
+                    const row = {
+                        ...item,
+                        // Tanggal dinormalisasi ke YYYY-MM-DD (utilitas bersama)
+                        tanggal: ExcelUtils.normalizeExcelDate(item.tanggal),
+                        // Nominal aman untuk format Indonesia ("1.234,56")
+                        total_jumlah_jual: ExcelUtils.parseNominal(item.total_jumlah_jual),
+                        toko: item.toko ? String(item.toko).trim() : '',
+                        faktur: item.faktur ? String(item.faktur).trim() : ''
+                    };
+                    
+                    const validation = ExcelUtils.validateInvoiceRow(row);
+                    if (!validation.valid) {
+                        rejected.push({
+                            faktur: row.faktur || '-',
+                            reason: validation.reason
+                        });
+                        continue;
+                    }
+                    
+                    validRows.push(row);
+                }
+                
+                if (rejected.length > 0) {
+                    console.warn(`[Invoice API] ${rejected.length} baris ditolak (validasi gagal)`);
+                }
+                
+                // ============================================================
+                // 2. CEK DUPLIKAT (1 query, bukan per baris)
+                // ============================================================
+                const fakturs = validRows.map(r => r.faktur);
+                const existingFakturs = new Set();
+                
+                if (fakturs.length > 0) {
+                    const CHUNK = 100;
+                    for (let i = 0; i < fakturs.length; i += CHUNK) {
+                        const chunk = fakturs.slice(i, i + CHUNK);
+                        const { data: existingInvoices, error: dupErr } = await supabase
+                            .from('invoice_file_list')
+                            .select('faktur')
+                            .in('faktur', chunk);
+                        
+                        if (dupErr) {
+                            console.error('[Invoice API] Error cek duplikat:', dupErr.message);
+                            continue;
+                        }
+                        (existingInvoices || []).forEach(inv => existingFakturs.add(inv.faktur));
+                    }
+                }
+                
+                const newRows = validRows.filter(r => !existingFakturs.has(r.faktur));
+                const duplicateRows = validRows.filter(r => existingFakturs.has(r.faktur));
+                
+                // ============================================================
+                // 3. IDEMPOTENCY (M6): tidak ada data baru -> jangan buat batch
+                // ============================================================
+                if (newRows.length === 0) {
+                    console.log(`[Invoice API] Tidak ada faktur baru (${duplicateRows.length} sudah ada) - tidak ada batch dibuat`);
+                    return res.json({
+                        success: true,
+                        batchId: null,
+                        message: duplicateRows.length > 0
+                            ? 'Semua faktur sudah ada di database - tidak ada data baru yang diupload'
+                            : 'Tidak ada data valid untuk diupload',
+                        summary: {
+                            totalReceived: data.length,
+                            processed: 0,
+                            duplicates: duplicateRows.length,
+                            failed: 0,
+                            rejected: rejected.length,
+                            rejectedRows: rejected.slice(0, 20)
+                        }
+                    });
+                }
+                
+                // ============================================================
+                // 4. BUAT RECORD BATCH
+                // ============================================================
                 const batchId = uuidv4();
                 const { error: batchError } = await supabase
                     .from('excel_upload_batches')
@@ -654,7 +774,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         total_rows: data.length,
                         processed_rows: 0,
                         failed_rows: 0,
-                        duplicate_rows: 0,
+                        duplicate_rows: duplicateRows.length,
                         uploaded_by: req.user.id,
                         status: 'processing'
                     });
@@ -664,135 +784,110 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     // Continue anyway, batch is optional
                 }
                 
-                // BULK CHECK: Get all existing fakturs in one query
-                const fakturs = data.map(item => item.faktur).filter(Boolean);
+                // ============================================================
+                // 5. RESOLUSI ZONA - tabel toko dibaca SEKALI (fix N+1)
+                // ============================================================
+                const { data: allToko } = await supabase
+                    .from('toko')
+                    .select('id, nama, zona_id');
                 
-                if (fakturs.length === 0) {
-                    console.warn('[Invoice API] ?? WARNING: No fakturs found in data!');
-                }
-                
-                const { data: existingInvoices } = await supabase
-                    .from('invoice_file_list')
-                    .select('faktur')
-                    .in('faktur', fakturs);
-                
-                const existingFakturs = new Set((existingInvoices || []).map(inv => inv.faktur));
-                
-                // BULK INSERT: Insert all invoices one-by-one to handle duplicates
-                const invoicesToInsert = await Promise.all(data.map(async (item) => {
-                    // Parse date string (DD-MM-YYYY format from Excel) to ISO date
-                    let tanggalDate = null;
-                    if (item.tanggal) {
-                        try {
-                            const [day, month, year] = item.tanggal.toString().split('-');
-                            if (day && month && year) {
-                                tanggalDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                            }
-                        } catch (e) {
-                            console.warn(`[Invoice API] Could not parse date for faktur ${item.faktur}:`, item.tanggal);
-                        }
+                const tokoByName = new Map();
+                (allToko || []).forEach(t => {
+                    if (t && t.nama) {
+                        tokoByName.set(String(t.nama).trim().toLowerCase(), t);
                     }
+                });
+                
+                // ============================================================
+                // 6. BANGUN RECORD INVOICE
+                // ============================================================
+                const invoiceRecords = newRows.map((row) => {
+                    // Cocokkan KONSUMEN dulu (nama toko asli), lalu TOKO
+                    const konsumenKey = String(row.konsumen || '').trim().toLowerCase();
+                    const tokoKey = String(row.toko || '').trim().toLowerCase();
+                    const match = (konsumenKey && tokoByName.get(konsumenKey)) ||
+                                 (tokoKey && tokoByName.get(tokoKey)) || null;
                     
-                    // Look up zona_id from konsumen name (actual store name in toko table)
-                    // Zona lookup: EXACT MATCH ONLY (no fuzzy/partial matching)
-                    let zona_id = null;
-                    if (item.konsumen) {
-                        const konsumenLower = item.konsumen.trim().toLowerCase();
-                        
-                        // Get all toko records for exact matching
-                        const { data: allToko } = await supabase
-                            .from('toko')
-                            .select('nama, zona_id');
-                        
-                        if (allToko) {
-                            // EXACT MATCH ONLY: case-insensitive, whitespace-normalized
-                            const match = allToko.find(t => 
-                                t.nama.trim().toLowerCase() === konsumenLower
-                            );
-                            
-                            if (match && match.zona_id) {
-                                zona_id = match.zona_id;
-                                console.log(`[Invoice API] ? Matched konsumen "${item.konsumen}" to zona_id ${zona_id}`);
-                            } else {
-                                console.warn(`[Invoice API] ??  No exact match for konsumen: "${item.konsumen}" (zona_id will be NULL)`);
-                            }
-                        }
-                    }
-                    
-                    const invoiceRecord = {
-                        tanggal: tanggalDate || new Date().toISOString().split('T')[0], // Fallback to today if parse fails
-                        toko: item.toko,
-                        zona_id: zona_id,  // ADD ZONA_ID!
-                        faktur: item.faktur,
-                        metode_bayar: item.metode_bayar,
-                        jenis_transaksi: item.jenis_transaksi,
-                        konsumen: item.konsumen,
-                        keterangan: item.keterangan,
-                        total_jumlah_jual: parseFloat(item.total_jumlah_jual) || 0,
-                        item_count: parseInt(item.item_count) || 1,
+                    return {
+                        tanggal: row.tanggal,
+                        toko: row.toko,
+                        zona_id: match && match.zona_id ? match.zona_id : null,
+                        faktur: row.faktur,
+                        metode_bayar: row.metode_bayar,
+                        jenis_transaksi: row.jenis_transaksi,
+                        konsumen: row.konsumen,
+                        keterangan: row.keterangan,
+                        total_jumlah_jual: row.total_jumlah_jual,
+                        item_count: parseInt(row.item_count) || 1,
                         status: 'PENDING',
                         excel_batch_id: batchId,
                         excel_uploaded_at: new Date().toISOString(),
                         excel_uploaded_by: req.user.id
                     };
-                    
-                    // Log toko value for debugging
-                    if (!item.toko || item.toko === '' || item.toko === '-') {
-                        console.warn(`[Invoice API] ??  Faktur ${item.faktur}: toko is EMPTY or INVALID: "${item.toko}"`);
-                    }
-                    
-                    return invoiceRecord;
-                }));
+                });
                 
+                // ============================================================
+                // 7. INSERT PER CHUNK (H7) + fallback per baris (C2)
+                // ============================================================
+                const INSERT_CHUNK = 500;
                 let processedCount = 0;
-                let duplicateCount = 0;  // RESET THIS!
                 let failedCount = 0;
                 const errors = [];
                 
-                // BULK INSERT - one shot, let DB handle duplicates via constraint
-                if (invoicesToInsert.length > 0) {
-                    const { data: inserted, error: insertError } = await supabase
-                        .from('invoice_file_list')
-                        .insert(invoicesToInsert);
+                for (let i = 0; i < invoiceRecords.length; i += INSERT_CHUNK) {
+                    const chunk = invoiceRecords.slice(i, i + INSERT_CHUNK);
                     
-                    if (insertError) {
-                        // There IS an error
-                        console.error('[Invoice API] ? INSERT ERROR DETAILS:');
-                        console.error('  Code:', insertError.code);
-                        console.error('  Message:', insertError.message);
-                        console.error('  Details:', insertError.details);
-                        console.error('  Full:', JSON.stringify(insertError, null, 2));
-                        
-                        if (insertError.code === '23505') {
-                            // Duplicate key constraint - expected on re-upload
-                            processedCount = 0;
-                            duplicateCount = invoicesToInsert.length;
-                            console.log('[Invoice API] ?? All rows were duplicates (expected on re-upload)');
-                        } else {
-                            // Real error - something went wrong
-                            failedCount = invoicesToInsert.length;
-                            errors.push(`Bulk insert failed: ${insertError.message}`);
-                            console.error('[Invoice API] Real error - not duplicate key');
-                        }
-                    } else {
-                        // NO ERROR = SUCCESS!
-                        processedCount = invoicesToInsert.length;
-                        duplicateCount = 0;
-                        failedCount = 0;
-                        console.log(`[Invoice API] ? Successfully inserted ${processedCount} invoices`);
+                    const { error: insertError } = await supabase
+                        .from('invoice_file_list')
+                        .insert(chunk);
+                    
+                    if (!insertError) {
+                        processedCount += chunk.length;
+                        continue;
                     }
-                } else {
-                    console.warn('[Invoice API] No invoices to insert');
+                    
+                    // Insert chunk gagal (mis. bentrok unique) -> insert per baris
+                    // supaya baris yang valid tetap tersimpan
+                    console.error(`[Invoice API] Bulk insert chunk ${Math.floor(i / INSERT_CHUNK) + 1} gagal (${insertError.code || insertError.message}) - fallback per baris`);
+                    
+                    for (const record of chunk) {
+                        try {
+                            const { error: rowError } = await supabase
+                                .from('invoice_file_list')
+                                .insert(record);
+                            
+                            if (rowError) {
+                                failedCount++;
+                                if (errors.length < 20) {
+                                    errors.push({ faktur: record.faktur, reason: rowError.message });
+                                }
+                            } else {
+                                processedCount++;
+                            }
+                        } catch (rowErr) {
+                            failedCount++;
+                            if (errors.length < 20) {
+                                errors.push({ faktur: record.faktur, reason: rowErr.message });
+                            }
+                        }
+                    }
                 }
                 
-                // Update batch
+                // ============================================================
+                // 8. UPDATE BATCH (M4: status mencerminkan hasil sebenarnya)
+                // ============================================================
+                const hasIssues = failedCount > 0 || rejected.length > 0;
+                const batchStatus = processedCount === 0
+                    ? 'failed'
+                    : (hasIssues ? 'completed_with_errors' : 'completed');
+                
                 await supabase
                     .from('excel_upload_batches')
                     .update({
                         processed_rows: processedCount,
-                        failed_rows: failedCount,
-                        duplicate_rows: duplicateCount,
-                        status: failedCount > 0 ? 'completed_with_errors' : 'completed'
+                        failed_rows: failedCount + rejected.length,
+                        duplicate_rows: duplicateRows.length,
+                        status: batchStatus
                     })
                     .eq('id', batchId);
                 
@@ -809,20 +904,23 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     resourceName: filename || `Batch ${batchId}`,
                     operation: 'CREATE',
                     details: {
-                        filename: filename,
+                        filename,
                         totalReceived: data.length,
                         processed: processedCount,
-                        duplicates: duplicateCount,
+                        duplicates: duplicateRows.length,
                         failed: failedCount,
-                        batchId: batchId
+                        rejected: rejected.length,
+                        batchId
                     },
-                    ipAddress: ipAddress,
+                    ipAddress,
                     userAgent: req.headers['user-agent'] || 'Unknown',
                     requestPath: '/api/invoice/upload-excel-data',
                     requestMethod: 'POST',
                     statusCode: 200,
                     responseMessage: `Uploaded ${processedCount} invoices`,
-                    errorMessage: failedCount > 0 ? `${failedCount} failed, ${duplicateCount} duplicates` : null,
+                    errorMessage: (failedCount + rejected.length) > 0
+                        ? `${failedCount} failed, ${rejected.length} rejected, ${duplicateRows.length} duplicates`
+                        : null,
                     isSuspicious: false,
                     severity: 'info'
                 }).catch(err => {
@@ -832,11 +930,17 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 res.json({
                     success: true,
                     batchId,
+                    message: processedCount > 0
+                        ? `${processedCount} invoice baru diupload`
+                        : 'Tidak ada data baru yang diupload',
                     summary: {
                         totalReceived: data.length,
                         processed: processedCount,
-                        duplicates: duplicateCount,
-                        failed: failedCount
+                        duplicates: duplicateRows.length,
+                        failed: failedCount,
+                        rejected: rejected.length,
+                        rejectedRows: rejected.slice(0, 20),
+                        errors: errors.slice(0, 20)
                     }
                 });
                 
@@ -1803,8 +1907,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         userId: req.user.userId,
                         userEmail: req.user.email,
                         userRole: req.user.role,
-                        zonaId: invoice.zona_id,
-                        action: 'Delete Invoice - Database Failure',
+                        zonaId: invoice.zona_id,                        action: 'Delete Invoice - Database Failure',
                         resourceType: 'invoice',
                         resourceId: faktur,
                         resourceName: faktur,
@@ -1825,6 +1928,22 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         severity: 'error'
                     }).catch(() => {});
                     return res.status(500).json({ error: 'Failed to delete invoice from database' });
+                }
+                
+                // ============================================================
+                // PERBAIKAN (C5): bersihkan record invoice_files
+                // ============================================================
+                // Kalau dibiarkan, record invoice_files tetap ada sehingga
+                // hitungan file (path ATAU invoice_files) menghitung file yang
+                // sudah dihapus -> status invoice jadi tidak akurat (mis. 3/3
+                // padahal 0 file) saat faktur yang sama diupload ulang.
+                try {
+                    await supabase
+                        .from('invoice_files')
+                        .delete()
+                        .eq('faktur', faktur);
+                } catch (filesCleanupErr) {
+                    console.warn(`[Invoice API] Gagal bersihkan invoice_files untuk ${faktur}: ${filesCleanupErr.message}`);
                 }
                 
                 const totalTime = Date.now() - startTime;
@@ -1971,11 +2090,62 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(500).json({ error: 'Failed to count invoices' });
                 }
                 
+                // ============================================================
+                // PERBAIKAN (C5): hapus invoice_files & file di storage
+                // ============================================================
+                // req.body.delete_files = true -> file PDF di R2 ikut dihapus
+                // (dikonfirmasi user di UI). Tanpa ini, upload ulang Excel yang
+                // sama akan kena "File sudah ada (Duplicate)" untuk semua baris.
+                const deleteFiles = !!(req.body && (req.body.delete_files === true || req.body.delete_files === 'true'));
+                
+                // Ambil daftar invoice + path file-nya SEBELUM dihapus
+                const { data: batchInvoices } = await supabase
+                    .from('invoice_file_list')
+                    .select('faktur, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, uploaded_file_path')
+                    .eq('excel_batch_id', batchId);
+                
+                let storageFilesDeleted = 0;
+                let storageFilesFailed = 0;
+                
+                if (deleteFiles && batchInvoices && batchInvoices.length > 0) {
+                    for (const inv of batchInvoices) {
+                        const paths = [
+                            inv.invoice_pdf_path,
+                            inv.bukti_bayar_path,
+                            inv.faktur_pajak_path
+                        ].filter(Boolean);
+                        
+                        for (const p of paths) {
+                            try {
+                                await R2Storage.deleteFile(p);
+                                storageFilesDeleted++;
+                            } catch (delErr) {
+                                storageFilesFailed++;
+                            }
+                        }
+                    }
+                    console.log(`[Invoice API] Batch ${batchId}: ${storageFilesDeleted} file storage dihapus (${storageFilesFailed} gagal)`);
+                }
+                
                 // Delete all invoices from this batch
                 const { error: deleteError } = await supabase
                     .from('invoice_file_list')
                     .delete()
                     .eq('excel_batch_id', batchId);
+                
+                // Bersihkan record invoice_files milik batch ini
+                if (batchInvoices && batchInvoices.length > 0) {
+                    for (const inv of batchInvoices) {
+                        try {
+                            await supabase
+                                .from('invoice_files')
+                                .delete()
+                                .eq('faktur', inv.faktur);
+                        } catch (filesCleanupErr) {
+                            console.warn(`[Invoice API] Gagal bersihkan invoice_files ${inv.faktur}: ${filesCleanupErr.message}`);
+                        }
+                    }
+                }
                 
                 if (deleteError) {
                     console.error('[Invoice API] Batch delete error:', deleteError);
@@ -2035,6 +2205,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         invoicesDeleted: count,
                         batchStatus: batch.status,
                         uploadedAt: batch.created_at,
+                        storageFilesDeleted: storageFilesDeleted,
+                        storageFilesFailed: storageFilesFailed,
                         deletionTime: totalTime
                     },
                     ipAddress: ipAddress,
@@ -2051,7 +2223,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 res.json({ 
                     success: true,
                     deletedCount: count,
-                    batchFilename: batch.filename
+                    batchFilename: batch.filename,
+                    storageFilesDeleted: storageFilesDeleted,
+                    storageFilesFailed: storageFilesFailed
                 });
                 
             } catch (error) {

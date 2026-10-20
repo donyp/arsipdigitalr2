@@ -182,34 +182,27 @@ window.uploadExcelFile = async function() {
         }
         
         // Transform data to match backend expectation
-        let invoices = parsedData.map(row => ({
-            tanggal: row['TANGGAL'] || row['tanggal'],
-            toko: row['TOKO'] || row['toko'],
+        // PERBAIKAN (H1): transaksi RETUR ikut difilter (sebelumnya ikut
+        // terimport sebagai penjualan) + tanggal/nominal memakai utilitas
+        // yang SAMA dengan halaman upload utama.
+        const mapped = parsedData.map(row => ({
+            tanggal: ExcelUtils.normalizeExcelDate(row['TANGGAL'] || row['tanggal']),
+            toko: ExcelUtils.normalizeTokoValue(row['TOKO'] || row['toko']),
             faktur: row['FAKTUR'] || row['faktur'],
             metode_bayar: row['METODE BAYAR'] || row['metode_bayar'],
             jenis_transaksi: row['JENIS TRANSAKSI'] || row['jenis_transaksi'],
             konsumen: row['KONSUMEN'] || row['konsumen'],
-            total_jumlah_jual: parseFloat(row['JUMLAH JUAL'] || row['jumlah_jual'] || 0),
+            total_jumlah_jual: row['JUMLAH JUAL'] || row['jumlah_jual'] || 0,
             keterangan: row['KET 2'] || row['ket_2'] || 'NON PPN'
-        })).filter(inv => inv.faktur); // Remove rows without faktur
-        
-        // AGGREGATION: Group by faktur and sum totals for duplicate fakturs
-        const aggregated = {};
-        invoices.forEach(inv => {
-            if (aggregated[inv.faktur]) {
-                // Faktur already exists - add to total
-                aggregated[inv.faktur].total_jumlah_jual += inv.total_jumlah_jual;
-                aggregated[inv.faktur].item_count = (aggregated[inv.faktur].item_count || 1) + 1;
-            } else {
-                // First occurrence of this faktur
-                aggregated[inv.faktur] = {
-                    ...inv,
-                    item_count: 1
-                };
-            }
-        });
-        
-        invoices = Object.values(aggregated);
+        }));
+
+        // Filter retur + agregasi per faktur (utilitas bersama)
+        const aggregation = ExcelUtils.aggregateByFaktur(mapped);
+        let invoices = aggregation.data;
+
+        if (aggregation.skippedReturs > 0) {
+            console.log(`[UploadExcel] ${aggregation.skippedReturs} transaksi RETUR diabaikan`);
+        }
         
         uploadBtn.textContent = 'Uploading...';
         

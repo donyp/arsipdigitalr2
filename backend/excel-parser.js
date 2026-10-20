@@ -4,68 +4,34 @@
 // ============================================================
 
 const XLSX = require('xlsx');
+const path = require('path');
+
+// Utilitas bersama dengan browser (sumber kebenaran tunggal) - Lihat js/excel-utils.js
+const ExcelUtils = require(path.join(__dirname, '..', 'js', 'excel-utils.js'));
 
 /**
  * Normalize toko name based on business rules:
- * - "ANKA" or contains "ANKA" but NOT "PEMALANG" â†’ "ANKA BEKASI"
- * - Contains "ANKA PEMALANG" â†’ "ANKA PEMALANG"
+ * - "ANKA" or contains "ANKA" but NOT "PEMALANG" → "ANKA BEKASI"
+ * - Contains "ANKA PEMALANG" → "ANKA PEMALANG"
+ * Memakai utilitas bersama dengan browser (js/excel-utils.js).
  */
 function normalizeToko(tokoRaw) {
-    // Handle empty/null values - default to ANKA BEKASI
     if (!tokoRaw || String(tokoRaw).trim() === '') {
         console.warn('[Excel Parser] Empty toko value detected, defaulting to ANKA BEKASI');
-        return 'ANKA BEKASI';
     }
-    
-    const tokoUpper = String(tokoRaw).toUpperCase().trim();
-    
-    // Check for ANKA PEMALANG first (more specific)
-    if (tokoUpper.includes('PEMALANG')) {
-        return 'ANKA PEMALANG';
-    }
-    
-    // Check for ANKA (default to BEKASI)
-    if (tokoUpper.includes('ANKA')) {
-        return 'ANKA BEKASI';
-    }
-    
-    // If not ANKA-related, keep original but trimmed
-    // This allows for future expansion to other stores
-    return String(tokoRaw).trim();
+    return ExcelUtils.normalizeTokoValue(tokoRaw);
 }
 
 /**
  * Parse Excel date to JavaScript Date
+ * Menggunakan utilitas yang SAMA dengan browser (js/excel-utils.js)
+ * -> tanggal tidak lagi bisa berbeda antara client & server.
  */
 function parseExcelDate(excelDate) {
-    if (!excelDate) return null;
-    
-    // If already a Date object
-    if (excelDate instanceof Date) {
-        return excelDate;
-    }
-    
-    // If string format DD-MM-YYYY or DD/MM/YYYY
-    if (typeof excelDate === 'string') {
-        const parts = excelDate.split(/[-\/]/);
-        if (parts.length === 3) {
-            // Assuming DD-MM-YYYY format
-            const day = parseInt(parts[0]);
-            const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
-            const year = parseInt(parts[2]);
-            return new Date(year, month, day);
-        }
-    }
-    
-    // If Excel serial number
-    if (typeof excelDate === 'number') {
-        // Excel serial date starts from 1900-01-01
-        const excelEpoch = new Date(1900, 0, 1);
-        const days = excelDate - 2; // Excel has a bug, off by 2
-        return new Date(excelEpoch.getTime() + days * 24 * 60 * 60 * 1000);
-    }
-    
-    return null;
+    const ymd = ExcelUtils.normalizeExcelDate(excelDate);
+    if (!ymd) return null;
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(y, m - 1, d);
 }
 
 /**
@@ -165,14 +131,14 @@ function parseExcel(fileBuffer) {
                 }
                 
                 // FILTER: Only accept 'jual' transactions, skip 'retur'
-                const transactionType = String(jenisTransaksi || 'jual').toLowerCase().trim();
-                if (transactionType === 'retur' || transactionType === 'return') {
+                // Memakai utilitas bersama dengan browser (M3)
+                if (ExcelUtils.isReturTransaction(jenisTransaksi)) {
                     console.warn(`[Excel Parser] Row ${index + 1}: Skipping RETUR transaction (faktur: ${faktur})`);
                     skippedRetur++;
                     return;
                 }
                 
-                // Parse tanggal
+                // Parse tanggal (utilitas bersama - handle Date/ISO/DD-MM-YYYY/serial)
                 const parsedDate = parseExcelDate(tanggal);
                 if (!parsedDate) {
                     console.warn(`[Excel Parser] Row ${index + 1}: Invalid date, skipping`);
@@ -183,10 +149,13 @@ function parseExcel(fileBuffer) {
                 const tokoNormalized = normalizeToko(tokoRaw);
                 console.log(`[Excel Parser] Row ${index + 1}: tokoRaw="${tokoRaw}" -> tokoNormalized="${tokoNormalized}"`);
                 
+                // Nominal aman untuk format Indonesia ("1.234,56")
+                const nominal = ExcelUtils.parseNominal(jumlahJual);
+                
                 // If faktur already exists, aggregate
                 if (faktursMap.has(faktur)) {
                     const existing = faktursMap.get(faktur);
-                    existing.total_jumlah_jual += jumlahJual;
+                    existing.total_jumlah_jual += nominal;
                     existing.item_count += 1;
                 } else {
                     // Create new entry
@@ -200,7 +169,7 @@ function parseExcel(fileBuffer) {
                         jenis_transaksi: jenisTransaksi || 'jual',
                         konsumen: konsumen || 'Unknown',
                         keterangan: keterangan || 'NON PPN',
-                        total_jumlah_jual: jumlahJual,
+                        total_jumlah_jual: nominal,
                         item_count: 1
                     });
                 }
@@ -319,5 +288,7 @@ module.exports = {
     validateData,
     normalizeToko,
     parseExcelDate,
-    formatDate
+    formatDate,
+    // Utilitas bersama (sumber kebenaran tunggal untuk browser & server)
+    ExcelUtils
 };
