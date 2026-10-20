@@ -1893,10 +1893,89 @@ addFileExistenceVerificationEndpoint(app, supabase, createInvoiceAuth, R2Storage
 addBatchSyncEndpoint(app, supabase, createInvoiceAuth, featureFlags, queryOptimizer);
 addClearFileEndpoint(app, supabase, createInvoiceAuth);
 addFakturPajakRenameEndpoints(app, supabase, createInvoiceAuth);
+
+// ============================================================
+// ENDPOINT REKONSILIASI STATUS FILE (Fase 4)
+// ============================================================
+// Menyamakan kembali files_uploaded_count, kolom path, dan record
+// invoice_files supaya status (0/3, 1/3, ...) selalu akurat.
+//
+// POST /api/invoice/reconcile-file-status
+//   body: { "verify_r2": false, "backfill_paths": true, "normalize_keterangan": true }
+//   verify_r2=false -> hanya DB (detik, aman dijalankan kapan saja)
+//   verify_r2=true  -> cek setiap file di R2 (10-30 menit, paling akurat)
+//
+// POST /api/invoice/sync-file-status-now  -> jalankan job berkala sekarang
+// GET  /api/invoice/sync-file-status      -> lihat status job
+// ============================================================
+const { FileStatusReconciler } = require('./file-status-reconciler');
+const {
+    initFileStatusSyncJob,
+    runFileStatusSync,
+    getFileStatusSyncState
+} = require('./file-status-sync-job');
+
+const fileStatusReconciler = new FileStatusReconciler(supabase, R2Storage, {
+    skipRecentlyUpdatedMinutes: 10
+});
+
+app.post('/api/invoice/reconcile-file-status',
+    authenticateToken,
+    authorizeRole('super_admin'),
+    async (req, res) => {
+        try {
+            const body = req.body || {};
+            const verifyR2 = body.verify_r2 === true || body.verify_r2 === 'true';
+            const backfillPaths = body.backfill_paths !== false && body.backfill_paths !== 'false';
+            const doNormalize = body.normalize_keterangan !== false && body.normalize_keterangan !== 'false';
+
+            console.log(`[Reconcile] Dimulai oleh ${req.user?.username} (verify_r2=${verifyR2})`);
+
+            const result = await fileStatusReconciler.run({
+                verifyR2,
+                backfillPaths,
+                normalizeKeterangan: doNormalize
+            });
+
+            if (!result.success) {
+                return res.status(500).json({ success: false, error: result.error });
+            }
+
+            res.json(result);
+        } catch (error) {
+            console.error('[Reconcile] Error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+);
+
+app.post('/api/invoice/sync-file-status-now',
+    authenticateToken,
+    authorizeRole('super_admin', 'moderator'),
+    async (req, res) => {
+        try {
+            const result = await runFileStatusSync('manual');
+            res.status(result.success ? 200 : 409).json(result);
+        } catch (error) {
+            console.error('[FileStatusSync] Error:', error);
+            res.status(500).json({ success: false, error: error.message });
+        }
+    }
+);
+
+app.get('/api/invoice/sync-file-status',
+    authenticateToken,
+    authorizeRole('super_admin', 'moderator'),
+    async (req, res) => {
+        res.json({ success: true, state: getFileStatusSyncState() });
+    }
+);
+
 console.log('[INIT] Invoice System endpoints registered ✅');
 console.log('  ✓ Excel Upload & Parsing');
 console.log('  ✓ Invoice List & Statistics');
 console.log('  ✓ PDF Upload & Auto-matching');
+console.log('  ✓ Reconcile File Status');
 
 // ============================================================
 // MULTER ERROR HANDLER (Middleware)
@@ -8300,6 +8379,18 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
             console.log(`   DB: Supabase PostgreSQL`);
             console.log('================================================\n');
         });
+
+        // ============================================================
+        // JOB SINKRONISASI STATUS FILE (Fase 4)
+        // ============================================================
+        // Menjalankan rekonsiliasi status file invoice secara berkala
+        // (default 6 jam, mode DB-only) supaya files_uploaded_count &
+        // kolom path tidak pernah meleset dari data sebenarnya.
+        try {
+            initFileStatusSyncJob(supabase, R2Storage);
+        } catch (syncInitErr) {
+            console.warn('[FileStatusSync] Gagal inisialisasi job:', syncInitErr.message);
+        }
 
         // Initialize WebSocket server for maintenance mode notifications
         // ============================================================

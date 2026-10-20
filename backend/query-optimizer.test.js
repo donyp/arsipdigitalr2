@@ -90,12 +90,12 @@ describe('QueryOptimizer', () => {
         test('should fetch file counts with single query', async () => {
             const invoiceIds = [1, 2, 3];
             const mockFiles = [
-                { invoice_id: 1, file_type: 'pdf' },
-                { invoice_id: 1, file_type: 'bukti' },
-                { invoice_id: 2, file_type: 'pdf' },
-                { invoice_id: 3, file_type: 'faktur' },
-                { invoice_id: 3, file_type: 'bukti' },
-                { invoice_id: 3, file_type: 'pdf' }
+                { faktur: 1, file_type: 'pdf' },
+                { faktur: 1, file_type: 'bukti' },
+                { faktur: 2, file_type: 'pdf' },
+                { faktur: 3, file_type: 'faktur' },
+                { faktur: 3, file_type: 'bukti' },
+                { faktur: 3, file_type: 'pdf' }
             ];
 
             mockSupabase.from().select().in.mockResolvedValue({
@@ -198,11 +198,11 @@ describe('QueryOptimizer', () => {
             ];
 
             const mockFileCounts = [
-                { invoice_id: 1, file_type: 'pdf' },
-                { invoice_id: 1, file_type: 'bukti' },
-                { invoice_id: 1, file_type: 'faktur' },
-                { invoice_id: 2, file_type: 'pdf' },
-                { invoice_id: 2, file_type: 'bukti' }
+                { faktur: 'INV001', file_type: 'invoice' },
+                { faktur: 'INV001', file_type: 'bukti_bayar' },
+                { faktur: 'INV001', file_type: 'faktur_pajak' },
+                { faktur: 'INV002', file_type: 'invoice' },
+                { faktur: 'INV002', file_type: 'bukti_bayar' }
             ];
 
             // Mock database responses
@@ -254,9 +254,9 @@ describe('QueryOptimizer', () => {
                         return {
                             select: jest.fn().mockResolvedValue({
                                 data: [
-                                    { invoice_id: 1, file_type: 'pdf' },
-                                    { invoice_id: 1, file_type: 'bukti' },
-                                    { invoice_id: 1, file_type: 'faktur' }
+                                    { faktur: '1', file_type: 'pdf' },
+                                    { faktur: '1', file_type: 'bukti' },
+                                    { faktur: '1', file_type: 'faktur' }
                                 ],
                                 error: null
                             })

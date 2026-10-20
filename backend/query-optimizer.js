@@ -10,6 +10,8 @@
  *   const result = await queryOptimizer.getInvoicesWithFiles(zonaId, limit);
  */
 
+const { computeFileStatus } = require('./invoice-file-status');
+
 class QueryOptimizer {
     constructor(supabaseClient, options = {}) {
         this.supabase = supabaseClient;
@@ -95,25 +97,29 @@ class QueryOptimizer {
                 return { success: true, data: {} };
             }
 
-            // ✅ OPTIMIZED: Single query with GROUP BY instead of N queries
+            // PERBAIKAN: kolom invoice_files adalah `faktur` (bukan `invoice_id`)
+            // - kolom invoice_id tidak pernah ada -> query selalu error ->
+            //   sinkronisasi "75x lebih cepat" tidak pernah jalan.
             const { data: fileCounts, error } = await this.supabase
                 .from('invoice_files')
-                .select('invoice_id')
-                .in('invoice_id', invoiceIds);
+                .select('faktur')
+                .in('faktur', invoiceIds);
 
             if (error) {
                 console.error('[QueryOptimizer] Error fetching file counts:', error.message);
                 return { success: false, data: {}, error: error.message };
             }
 
-            // Group by invoice_id
+            // Group by faktur
             const countsByInvoice = {};
             invoiceIds.forEach(id => {
                 countsByInvoice[id] = 0;
             });
 
             fileCounts.forEach(file => {
-                countsByInvoice[file.invoice_id] = (countsByInvoice[file.invoice_id] || 0) + 1;
+                if (file.faktur !== undefined && file.faktur !== null) {
+                    countsByInvoice[file.faktur] = (countsByInvoice[file.faktur] || 0) + 1;
+                }
             });
 
             if (this.enableMetrics) {
@@ -158,10 +164,11 @@ class QueryOptimizer {
             }
 
             // Also get file list (second query only if needed)
+            // PERBAIKAN: invoice_files di-key oleh `faktur`, bukan id invoice
             const { data: files, error: filesError } = await this.supabase
                 .from('invoice_files')
-                .select('id, file_type, file_path, status, uploaded_by, created_at')
-                .eq('invoice_id', invoiceId);
+                .select('id, faktur, file_type, file_path, uploaded_by, created_at')
+                .eq('faktur', invoice.faktur);
 
             if (filesError) {
                 console.warn('[QueryOptimizer] Warning fetching files:', filesError.message);
@@ -217,20 +224,23 @@ class QueryOptimizer {
 
             console.log(`[QueryOptimizer] Processing ${allInvoices?.length || 0} invoices...`);
 
-            // ✅ Step 2: SINGLE query to get all file counts (GROUP BY instead of N queries)
+            // ✅ Step 2: SINGLE query to get all file records (GROUP BY instead of N queries)
+            // PERBAIKAN: kolom invoice_files adalah `faktur` (invoice_id tidak ada)
             const { data: fileCounts, error: countErr } = await supabaseClient
                 .from('invoice_files')
-                .select('invoice_id, file_type');
+                .select('faktur, file_type');
 
             if (countErr) {
                 console.error('[QueryOptimizer] Count error:', countErr.message);
                 return { success: false, error: countErr.message };
             }
 
-            // Group file counts by invoice
-            const countsByInvoice = {};
-            fileCounts.forEach(file => {
-                countsByInvoice[file.invoice_id] = (countsByInvoice[file.invoice_id] || 0) + 1;
+            // Group file types by faktur
+            const typesByFaktur = {};
+            (fileCounts || []).forEach(file => {
+                if (!file.faktur) return;
+                if (!typesByFaktur[file.faktur]) typesByFaktur[file.faktur] = [];
+                typesByFaktur[file.faktur].push(file.file_type);
             });
 
             // ✅ Step 3: Batch updates in chunks (not all at once)
@@ -238,17 +248,19 @@ class QueryOptimizer {
             const batchSize = 50;
 
             allInvoices.forEach(inv => {
-                let filesUploaded = 0;
-                if (inv.invoice_pdf_path) filesUploaded++;
-                if (inv.bukti_bayar_path) filesUploaded++;
-                if (inv.faktur_pajak_path) filesUploaded++;
+                // PERBAIKAN: pakai sumber tunggal (kolom path + invoice_files)
+                const status = computeFileStatus({
+                    invoice: {
+                        invoice_pdf_path: inv.invoice_pdf_path,
+                        bukti_bayar_path: inv.bukti_bayar_path,
+                        faktur_pajak_path: inv.faktur_pajak_path,
+                        keterangan: inv.keterangan
+                    },
+                    invoiceFileTypes: typesByFaktur[inv.faktur] || []
+                });
 
-                // Use max of denormalized + table counts
-                const tableCount = countsByInvoice[inv.id] || 0;
-                filesUploaded = Math.max(filesUploaded, tableCount);
-
-                const isPPN = inv.keterangan?.toUpperCase() === 'PPN';
-                const requiredCount = isPPN ? 3 : 2;
+                const filesUploaded = status.count;
+                const requiredCount = status.required;
 
                 if (inv.files_uploaded_count !== filesUploaded) {
                     updateBatch.push({
