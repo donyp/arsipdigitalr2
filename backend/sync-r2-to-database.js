@@ -86,6 +86,13 @@ async function syncR2ToDatabase() {
                     continue;
                 }
 
+                // Skip files without zona_id (required field)
+                if (!zona_id) {
+                    filesSkipped++;
+                    console.log(`⊘ Skipped (no zona): ${obj.Key}`);
+                    continue;
+                }
+
                 // Create file record
                 const filename = obj.Key.split('/').pop();
                 const fileRecord = {
@@ -93,12 +100,11 @@ async function syncR2ToDatabase() {
                     storage_path: obj.Key,
                     ukuran_bytes: obj.Size,
                     category: category || 'OTHER',
-                    zona_id: zona_id || null,
+                    zona_id: zona_id, // Required
                     toko_id: toko_id || null,
                     status: 'verified',
                     created_at: new Date().toISOString(),
-                    uploaded_by: null,
-                    is_missing: false
+                    uploaded_by: null
                 };
 
                 batch.push(fileRecord);
