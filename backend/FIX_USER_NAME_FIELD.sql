@@ -5,8 +5,7 @@
 -- Only update if name doesn't look like a real name (no spaces, matches role keywords, etc)
 
 UPDATE users
-SET name = username,
-    updated_at = NOW()
+SET name = username
 WHERE 
     -- Match role keywords (most common issue)
     LOWER(name) IN ('moderator', 'admin', 'super_admin', 'user', 'superadmin')
@@ -21,7 +20,7 @@ WHERE
     -- Match email-like names (suspicious - should be real name, not email)
     OR (name LIKE '%@%' AND email IS NOT NULL AND name != email);
 
--- Log the changes
+-- Log the changes - show how many were affected
 SELECT 
     COUNT(*) as total_users_fixed,
     COUNT(DISTINCT role) as affected_roles,
@@ -37,5 +36,10 @@ FROM users
 ORDER BY created_at DESC 
 LIMIT 20;
 
--- If you need to revert, run: UPDATE users SET name = role WHERE 1=1;
--- But DON'T run that unless needed!
+-- Check if there are still any users with role names as their name
+SELECT id, username, email, name, role 
+FROM users 
+WHERE LOWER(name) IN ('moderator', 'admin', 'super_admin', 'user')
+   OR name IS NULL 
+   OR name = '';
+-- If this returns rows, the fix didn't work properly

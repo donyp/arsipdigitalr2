@@ -4998,6 +4998,45 @@ app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) 
             throw new Error(`Gagal membuat user di database: ${error.message}`);
         }
 
+        // ============================================================
+        // AUTO-SYNC NEW USER TO ANNOUNCEMENTS
+        // When a user is created in a zona, automatically create
+        // announcement_reads entries for all announcements in that zona
+        // so the user gets notification badges immediately
+        // ============================================================
+        if (zona_id && role === 'admin_zona') {
+            try {
+                // Get all active announcements for this zona
+                const { data: announcements, error: announcementsError } = await supabase
+                    .from('announcements')
+                    .select('id')
+                    .eq('is_active', true);
+
+                if (!announcementsError && announcements && announcements.length > 0) {
+                    // Create announcement_reads for this user for all announcements
+                    const readRecords = announcements.map(a => ({
+                        announcement_id: a.id,
+                        user_id: user.id,
+                        is_read: false,
+                        read_at: null
+                    }));
+
+                    const { error: readError } = await supabase
+                        .from('announcement_reads')
+                        .upsert(readRecords, { onConflict: 'announcement_id,user_id' });
+
+                    if (readError) {
+                        console.warn('[CreateUser] Warning: Could not auto-sync announcements:', readError);
+                    } else {
+                        console.log(`[CreateUser] ✅ Auto-synced ${announcements.length} announcements to new user ${user.id} in zona ${zona_id}`);
+                    }
+                }
+            } catch (syncErr) {
+                console.warn('[CreateUser] Warning during announcement auto-sync:', syncErr.message);
+                // Don't fail user creation if sync fails - just log warning
+            }
+        }
+
         const totalTime = Date.now() - startTime;
         const { ipAddress } = AuditLogger.extractClientInfo(req);
         
@@ -6719,6 +6758,46 @@ app.post('/api/zonas', authenticateToken, requirePermission('manage_zonas'), asy
             .single();
 
         if (error) throw error;
+
+        // ============================================================
+        // AUTO-SYNC NEW ZONA TO ANNOUNCEMENTS
+        // When a new zona is created, automatically sync it to all
+        // announcements so users in the new zona get announcement badges
+        // ============================================================
+        try {
+            const newZonaId = data.id;
+            
+            // Get all active announcements
+            const { data: announcements, error: announcementsError } = await supabase
+                .from('announcements')
+                .select('id')
+                .eq('is_active', true);
+
+            if (announcementsError) {
+                console.warn('[Zonas] Warning: Could not auto-sync announcements for new zona:', announcementsError);
+            } else if (announcements && announcements.length > 0) {
+                // For each announcement, add announcement_recipients entry
+                const recipientRecords = announcements.map(a => ({
+                    announcement_id: a.id,
+                    recipient_type: 'zona',
+                    recipient_id: newZonaId
+                }));
+
+                const { error: recipientError } = await supabase
+                    .from('announcement_recipients')
+                    .upsert(recipientRecords, { onConflict: 'announcement_id,recipient_type,recipient_id' });
+
+                if (recipientError) {
+                    console.warn('[Zonas] Warning: Could not upsert announcement_recipients:', recipientError);
+                } else {
+                    console.log(`[Zonas] ✅ Auto-synced ${announcements.length} announcements to new zona ${newZonaId}`);
+                }
+            }
+        } catch (syncErr) {
+            console.warn('[Zonas] Warning during announcement auto-sync:', syncErr.message);
+            // Don't fail the zona creation if sync fails - just log warning
+        }
+
         res.json({ success: true, message: 'Zona baru berhasil ditambahkan.', zona: data });
     } catch (err) {
         res.status(500).json({ error: 'Gagal menambahkan zona: ' + err.message });
