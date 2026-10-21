@@ -694,8 +694,8 @@
                 info.tokoName = found.data.konsumen || 'Unknown';
                 info.nominal = found.data.total_jumlah_jual || 0;
 
-                if (found.data.faktur_pajak_path) {
-                    // Sudah pernah diupload - path tercatat di database.
+                if (found.data.has_faktur_pajak !== undefined ? found.data.has_faktur_pajak : found.data.faktur_pajak_path) {
+                    // Sudah pernah diupload - tercatat di database.
                     // Server tetap memeriksa ke storage saat upload (otoritatif).
                     info.isValid = false;
                     info.errorMsg = 'Faktur Pajak sudah diupload (Duplicate)';

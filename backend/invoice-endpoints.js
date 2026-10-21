@@ -29,6 +29,50 @@ const {
 } = require('./invoice-file-status');
 const AuditLogger = require('./audit-logger');
 
+// ============================================================
+// CACHE HELPERS (download file & combined PDF)
+// ============================================================
+// TTL cache download (menit). Default 1 jam - file yang dihapus dari
+// storage tidak boleh terlalu lama hidup di cache.
+const DOWNLOAD_CACHE_TTL_MINUTES = Math.max(1, Number(process.env.DOWNLOAD_CACHE_TTL_MINUTES) || 60);
+const DOWNLOAD_CACHE_TTL_MS = DOWNLOAD_CACHE_TTL_MINUTES * 60 * 1000;
+
+// Menulis cache secara ATOMIK: isi file sementara dulu lalu rename.
+// Tanpa ini, dua request bersamaan untuk file yang sama bisa membaca
+// file cache yang baru setengah tertulis -> PDF rusak.
+function atomicWriteFileSync(destPath, buffer) {
+    const tmpPath = `${destPath}.tmp-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    try {
+        fs.writeFileSync(tmpPath, buffer);
+        fs.renameSync(tmpPath, destPath);
+    } catch (err) {
+        try { fs.unlinkSync(tmpPath); } catch (_) { /* abaikan */ }
+        throw err;
+    }
+}
+
+// Bersihkan cache yang sudah kedaluwarsa (dipanggil saat server start
+// supaya direktori cache tidak tumbuh tanpa batas; kegagalan diabaikan).
+function cleanupStaleCacheFiles(cacheDir) {
+    try {
+        if (!fs.existsSync(cacheDir)) return 0;
+        let removed = 0;
+        for (const name of fs.readdirSync(cacheDir)) {
+            const full = path.join(cacheDir, name);
+            try {
+                const stats = fs.statSync(full);
+                if (Date.now() - stats.mtimeMs >= DOWNLOAD_CACHE_TTL_MS * 2) {
+                    fs.unlinkSync(full);
+                    removed++;
+                }
+            } catch (_) { /* abaikan file individual */ }
+        }
+        return removed;
+    } catch (_) {
+        return 0;
+    }
+}
+
 try {
     multer = require('multer');
     uuid = require('uuid');
@@ -421,6 +465,10 @@ async function updateFilesUploadedCount(supabaseClient, faktur, R2Storage) {
 }
 
 function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
+
+    // Bersihkan cache kedaluwarsa saat server start (cache non-kritis, gagal diabaikan)
+    cleanupStaleCacheFiles(path.join(__dirname, '..', 'cache', 'downloads'));
+    cleanupStaleCacheFiles(path.join(__dirname, '..', 'cache', 'combined-pdfs'));
 
     // Initialize audit logger for this endpoint
     const auditLogger = new AuditLogger(supabase);
@@ -2304,6 +2352,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // ============================================
     // GET /api/invoice/check-faktur/:faktur
     // Check if faktur exists in daftar invoice
+    // SECURITY: admin_zona & user hanya boleh melihat faktur di zonanya
+    // sendiri (selaras dengan endpoint download-file). Response TIDAK
+    // memuat path internal storage (hanya flag has_*).
     // ============================================
     app.get('/api/invoice/check-faktur/:faktur',
         createAuth(),
@@ -2317,7 +2368,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 
                 const { data, error } = await supabase
                     .from('invoice_file_list')
-                    .select('faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan')
+                    .select('faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan, zona_id')
                     .eq('faktur', faktur)
                     .single();
                 
@@ -2326,11 +2377,33 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     return res.status(500).json({ error: 'Server error' });
                 }
                 
+                if (!data) {
+                    // Tidak dibedakan "tidak ada" vs "tidak boleh akses" (tanpa bocor)
+                    return res.json({ exists: false, faktur: faktur, data: null });
+                }
+                
+                // SECURITY: verifikasi user boleh akses invoice ini berdasarkan zona_id
+                if (!enforceZoneOwnership(req, res, data.zona_id)) return;
+                
+                // PRIVATE: jangan bocorkan path internal storage ke client
+                const safeData = {
+                    faktur: data.faktur,
+                    status: data.status,
+                    toko: data.toko,
+                    tanggal: data.tanggal,
+                    konsumen: data.konsumen,
+                    total_jumlah_jual: data.total_jumlah_jual,
+                    keterangan: data.keterangan,
+                    has_invoice: !!(data.invoice_pdf_path || data.uploaded_file_path),
+                    has_bukti_bayar: !!data.bukti_bayar_path,
+                    has_faktur_pajak: !!data.faktur_pajak_path
+                };
+                
                 // Return result: exists = true if found, false if not
                 res.json({
-                    exists: !!data,
+                    exists: true,
                     faktur: faktur,
-                    data: data || null
+                    data: safeData
                 });
                 
             } catch (error) {
@@ -2348,6 +2421,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // untuk SETIAP file -> untuk bulk 200 file = 200 request + 200 query DB.
     // Endpoint ini memakai .in('faktur', ...) per batch 100 -> 200 file = 2 query.
     // Response: { results: { <faktur>: { exists, data } } }
+    // SECURITY: admin_zona & user hanya melihat faktur zonanya sendiri.
+    // PRIVATE: data yang dikirim tidak memuat path internal storage.
     // ============================================
     app.post('/api/invoice/check-fakturs-batch',
         createAuth(),
@@ -2374,8 +2449,36 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const results = {};
                 cleanFakturs.forEach(f => { results[f] = { exists: false, data: null }; });
 
+                // SECURITY: admin_zona & user hanya boleh melihat faktur di zonanya sendiri
+                // (selaras dengan endpoint download-file). super_admin & moderator tanpa batas.
+                const isPrivilegedUser = ['super_admin', 'moderator'].includes(req.user?.role);
+                const requesterZona = parseInt(req.user?.zona_id, 10);
+
+                const canSeeZona = (zonaId) => {
+                    if (isPrivilegedUser) return true;
+                    const rowZona = parseInt(zonaId, 10);
+                    // Data lama tanpa zona_id: perilaku sama dengan enforceZoneOwnership
+                    // (tidak dibatasi) supaya faktur lama tidak salah dianggap "tidak ada".
+                    if (isNaN(rowZona)) return true;
+                    return !isNaN(requesterZona) && rowZona === requesterZona;
+                };
+
+                // PRIVATE: bentuk data yang tidak bocor ke path internal storage
+                const toSafeData = (row) => ({
+                    faktur: row.faktur,
+                    status: row.status,
+                    toko: row.toko,
+                    tanggal: row.tanggal,
+                    konsumen: row.konsumen,
+                    total_jumlah_jual: row.total_jumlah_jual,
+                    keterangan: row.keterangan,
+                    has_invoice: !!(row.invoice_pdf_path || row.uploaded_file_path),
+                    has_bukti_bayar: !!row.bukti_bayar_path,
+                    has_faktur_pajak: !!row.faktur_pajak_path
+                });
+
                 const BATCH_SIZE = 100;
-                const selectCols = 'faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan';
+                const selectCols = 'faktur, status, toko, tanggal, konsumen, total_jumlah_jual, uploaded_file_path, invoice_pdf_path, bukti_bayar_path, faktur_pajak_path, keterangan, zona_id';
 
                 for (let i = 0; i < cleanFakturs.length; i += BATCH_SIZE) {
                     const batch = cleanFakturs.slice(i, i + BATCH_SIZE);
@@ -2391,7 +2494,8 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     }
 
                     (data || []).forEach(row => {
-                        results[row.faktur] = { exists: true, data: row };
+                        if (!canSeeZona(row.zona_id)) return; // zona lain -> dianggap tidak ada
+                        results[row.faktur] = { exists: true, data: toSafeData(row) };
                     });
                 }
 
@@ -3509,11 +3613,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     if (fs.existsSync(cachedFilePath)) {
                         try {
                             const stats = fs.statSync(cachedFilePath);
-                            // Cache valid if less than DOWNLOAD_CACHE_TTL old
+                            // Cache valid selama DOWNLOAD_CACHE_TTL
                             // (default 1 jam - file yang dihapus dari storage
                             //  tidak bisa "berhilang" terlalu lama dari cache)
-                            const cacheTtlMs = (Number(process.env.DOWNLOAD_CACHE_TTL_MINUTES) || 60) * 60 * 1000;
-                            if (Date.now() - stats.mtimeMs < cacheTtlMs) {
+                            if (Date.now() - stats.mtimeMs < DOWNLOAD_CACHE_TTL_MS) {
                                 fileBuffer = fs.readFileSync(cachedFilePath);
                                 fromCache = true;
                                 console.log(`[Invoice Download] ? Cache HIT: ${filePath.split('/').pop()} (${fileBuffer.length} bytes)`);
@@ -3572,9 +3675,11 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         const downloadTime = Date.now() - downloadStartTime;
                         console.log(`[Invoice Download] Rclone download took ${downloadTime}ms (${fileBuffer.length} bytes)`);
                         
-                        // Save to cache for future requests
+                        // Save to cache for future requests (ATOMIC:
+                        // write file sementara + rename, supaya request
+                        // paralel tidak pernah membaca file setengah isi)
                         try {
-                            fs.writeFileSync(cachedFilePath, fileBuffer);
+                            atomicWriteFileSync(cachedFilePath, fileBuffer);
                             console.log(`[Invoice Download] ? Cached for future requests`);
                         } catch (cacheWriteErr) {
                             console.warn(`[Invoice Download] Cache write failed (non-blocking):`, cacheWriteErr.message);
@@ -3588,7 +3693,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     res.setHeader('Content-Type', 'application/pdf');
                     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
                     res.setHeader('Content-Length', fileBuffer.length);
-                    res.setHeader('Cache-Control', 'public, max-age=86400, immutable'); // Browser cache 24 hours
+                    res.setHeader('Cache-Control', `private, max-age=${DOWNLOAD_CACHE_TTL_MINUTES * 60}`); // Browser cache terbatas & selalu revalidasi (bukan 24 jam immutable)
                     res.setHeader('X-Content-Type-Options', 'nosniff');
                     res.setHeader('ETag', `"${Buffer.from(filePath).toString('hex').substring(0, 16)}"`)
                     
@@ -3656,7 +3761,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
     // Order: BUKTI BAYAR + INVOICE + FAKTUR PAJAK (for PPN)
     // Order: BUKTI BAYAR + INVOICE (for NON PPN)
     // Output filename: {faktur}.pdf
-    // OPTIMIZED: Caches combined PDFs locally (24h TTL)
+    // OPTIMIZED: Caches combined PDFs locally (TTL = DOWNLOAD_CACHE_TTL_MINUTES, default 1h)
     // First request: 10-15s (download + merge)
     // Repeat requests: <100ms (cache hit)
     // ============================================
@@ -3679,6 +3784,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 if (queryError || !invoice) {
                     return res.status(404).json({ error: `Invoice not found: ${faktur}` });
                 }
+                
+                // SECURITY: Verifikasi user boleh akses invoice ini berdasarkan zona_id
+                // (selaras dengan endpoint download-file)
+                if (!enforceZoneOwnership(req, res, invoice.zona_id)) return;
                 
                 // Check if all required files are uploaded
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
@@ -3722,8 +3831,10 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 if (fs.existsSync(cachedFilePath)) {
                     try {
                         const stats = fs.statSync(cachedFilePath);
-                        // Cache valid if less than 24 hours old
-                        if (Date.now() - stats.mtimeMs < 24 * 60 * 60 * 1000) {
+                        // Cache valid selama TTL sama dengan cache download
+                        // (default 1 jam - hasil gabungan tidak basi terlalu
+                        // lama bila file sumber ditimpa)
+                        if (Date.now() - stats.mtimeMs < DOWNLOAD_CACHE_TTL_MS) {
                             mergedBuffer = fs.readFileSync(cachedFilePath);
                             fromCache = true;
                             console.log(`[Invoice Combine] ? Cache HIT: Combined PDF (${mergedBuffer.length} bytes)`);
@@ -3809,7 +3920,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         
                         // Save to cache for future requests
                         try {
-                            fs.writeFileSync(cachedFilePath, mergedBuffer);
+                            atomicWriteFileSync(cachedFilePath, mergedBuffer);
                             console.log(`[Invoice Combine] ? Cached for future requests`);
                         } catch (cacheWriteErr) {
                             console.warn(`[Invoice Combine] Cache write failed (non-blocking):`, cacheWriteErr.message);
@@ -3829,7 +3940,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 res.setHeader('Content-Type', 'application/pdf');
                 res.setHeader('Content-Disposition', `attachment; filename="${outputFilename}"`);
                 res.setHeader('Content-Length', mergedBuffer.length);
-                res.setHeader('Cache-Control', 'public, max-age=3600');
+                res.setHeader('Cache-Control', `private, max-age=${DOWNLOAD_CACHE_TTL_MINUTES * 60}`);
                 
                 res.send(mergedBuffer);
                 

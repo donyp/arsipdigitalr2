@@ -3256,8 +3256,14 @@ async function downloadInvoiceFile(btn, faktur, fileType) {
         
         if (!response.ok) {
             Swal.close();
-            const error = await response.json();
-            throw new Error(error.error || 'Download failed');
+            // Respons bisa jadi bukan JSON (mis. reset dari proxy/CDN) -
+            // jangan biarkan .json() melempar error yang membingungkan.
+            let errMsg = 'Gagal mengunduh file';
+            try {
+                const errorData = await response.json();
+                if (errorData && errorData.error) errMsg = errorData.error;
+            } catch (_) { /* respons bukan JSON - pakai pesan default */ }
+            throw new Error(errMsg);
         }
         
         // Progress stage 3: Memproses file (60%)
@@ -3445,8 +3451,13 @@ async function combinePDF(faktur) {
         
         if (!response.ok) {
             Swal.close();
-            const error = await response.json();
-            throw new Error(error.error || 'Combine failed');
+            // Respons bisa jadi bukan JSON (mis. reset proxy/CDN)
+            let errMsg = 'Gagal menggabungkan PDF';
+            try {
+                const error = await response.json();
+                if (error && error.error) errMsg = error.error;
+            } catch (_) { /* respons bukan JSON - pakai pesan default */ }
+            throw new Error(errMsg);
         }
         
         // Progress stage 3: Menggabungkan PDF (60%)
@@ -3844,10 +3855,12 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
                     const result = await response.json();
                     const invoice = result.data;
                     if (invoice) {
+                        // Server kirim flag has_*, tidak lagi bocor path storage.
+                        // Fallback ke kolom lama selagi server versi lama masih jalan.
                         fileStatus = {
-                            hasInvoice: !!(invoice.invoice_pdf_path || invoice.uploaded_file_path),
-                            hasBuktiBayar: !!invoice.bukti_bayar_path,
-                            hasFakturPajak: !!invoice.faktur_pajak_path,
+                            hasInvoice: invoice.has_invoice !== undefined ? !!invoice.has_invoice : !!(invoice.invoice_pdf_path || invoice.uploaded_file_path),
+                            hasBuktiBayar: invoice.has_bukti_bayar !== undefined ? !!invoice.has_bukti_bayar : !!invoice.bukti_bayar_path,
+                            hasFakturPajak: invoice.has_faktur_pajak !== undefined ? !!invoice.has_faktur_pajak : !!invoice.faktur_pajak_path,
                             isPPN: invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN'
                         };
                         console.log('[Action Menu] Fetched fresh file status:', fileStatus);

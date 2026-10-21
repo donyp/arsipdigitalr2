@@ -676,8 +676,8 @@
                         tokoName = found.data.konsumen || found.data.toko || '-';
                         nominal = found.data.total_jumlah_jual || 0;
 
-                        if (found.data.bukti_bayar_path) {
-                            // Sudah pernah diupload - path tercatat di database
+                        if (found.data.has_bukti_bayar !== undefined ? found.data.has_bukti_bayar : found.data.bukti_bayar_path) {
+                            // Sudah pernah diupload - tercatat di database
                             errorMsg = 'Bukti Bayar sudah diupload (Duplicate)';
                             invalidCount++;
                         } else {

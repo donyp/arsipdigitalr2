@@ -3720,7 +3720,9 @@
                 let hasFiles = false;
                 
                 // Download invoice button if exists
-                if (invoice.invoice_pdf_path) {
+                // Server kirim flag has_* (bukan path internal); fallback ke kolom
+                // lama selagi server versi lama masih jalan.
+                if (invoice.has_invoice !== undefined ? invoice.has_invoice : invoice.invoice_pdf_path) {
                     hasFiles = true;
                     // SECURITY FIX #2: Use data attributes instead of inline onclick with unescaped variables
                     menuHTML += `
@@ -3750,7 +3752,7 @@
                 }
                 
                 // Download bukti bayar button if exists
-                if (invoice.bukti_bayar_path) {
+                if (invoice.has_bukti_bayar !== undefined ? invoice.has_bukti_bayar : invoice.bukti_bayar_path) {
                     hasFiles = true;
                     menuHTML += `
                     <button class="admin-zona-download-btn" data-faktur="${faktur}" data-type="bukti_bayar"
@@ -3779,7 +3781,7 @@
                 }
                 
                 // Download faktur pajak button if exists (PPN only)
-                if (invoice.faktur_pajak_path) {
+                if (invoice.has_faktur_pajak !== undefined ? invoice.has_faktur_pajak : invoice.faktur_pajak_path) {
                     hasFiles = true;
                     menuHTML += `
                     <button class="admin-zona-download-btn" data-faktur="${faktur}" data-type="faktur_pajak" 
@@ -3810,7 +3812,12 @@
                 // Combine PDF button if all required files exist
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
                 const filesRequired = isPPN ? 3 : 2;
-                const filesUploaded = (invoice.invoice_pdf_path ? 1 : 0) + (invoice.bukti_bayar_path ? 1 : 0) + (invoice.faktur_pajak_path ? 1 : 0);
+                // Flag baru dari server (has_*); fallback ke kolom lama bila server masih versi lama
+                const flag = (val, legacy) => (val !== undefined ? !!val : !!legacy);
+                const filesUploaded =
+                    (flag(invoice.has_invoice, invoice.invoice_pdf_path || invoice.uploaded_file_path) ? 1 : 0) +
+                    (flag(invoice.has_bukti_bayar, invoice.bukti_bayar_path) ? 1 : 0) +
+                    (flag(invoice.has_faktur_pajak, invoice.faktur_pajak_path) ? 1 : 0);
                 
                 if (filesUploaded >= filesRequired) {
                     hasFiles = true;
@@ -4178,8 +4185,13 @@
                                 if (!response.ok) {
                                     clearInterval(progressInterval);
                                     Swal.close();
-                                    const error = await response.json();
-                                    throw new Error(error.error || 'Download failed');
+                                    // Respons bisa jadi bukan JSON (mis. reset proxy/CDN)
+                                    let errMsg = 'Gagal mengunduh file';
+                                    try {
+                                        const errorData = await response.json();
+                                        if (errorData && errorData.error) errMsg = errorData.error;
+                                    } catch (_) { /* respons bukan JSON - pakai pesan default */ }
+                                    throw new Error(errMsg);
                                 }
                                 
                                 
@@ -4433,8 +4445,13 @@
                             if (!response.ok) {
                                 clearInterval(progressInterval);
                                 Swal.close();
-                                const error = await response.json();
-                                throw new Error(error.error || 'Combine failed');
+                                // Respons bisa jadi bukan JSON (mis. reset proxy/CDN)
+                                let errMsg = 'Gagal menggabungkan PDF';
+                                try {
+                                    const error = await response.json();
+                                    if (error && error.error) errMsg = error.error;
+                                } catch (_) { /* respons bukan JSON - pakai pesan default */ }
+                                throw new Error(errMsg);
                             }
                             
                             
