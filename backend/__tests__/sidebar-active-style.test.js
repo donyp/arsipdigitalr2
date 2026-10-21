@@ -100,4 +100,23 @@ describe('Sidebar - style item aktif', () => {
         // tanpa override, ikut pathname saat ini
         expect(internals.isMenuItemActive('/dashboard')).toBe(true);
     });
+
+    // ============================================================
+    // REGRESI: saat navigasi SPA, URL masih path LAMA -> highlight
+    // sempat balik ke menu lama (glitch). Router menyimpan path tujuan
+    // di window.__spaTargetPath -> itu yang jadi acuan.
+    // ============================================================
+    test('acuan path aktif memakai __spaTargetPath (bukan pathname lama)', () => {
+        global.window.location.pathname = '/dashboard';
+        global.window.__spaTargetPath = '/notifikasi';
+
+        // Semua pemanggil (router, init halaman, dropdown) ikut acuan yang sama
+        expect(internals.isMenuItemActive('/notifikasi')).toBe(true);
+        expect(internals.isMenuItemActive('/dashboard')).toBe(false);
+
+        // Setelah navigasi selesai, target dibersihkan -> kembali ke pathname
+        global.window.__spaTargetPath = null;
+        expect(internals.isMenuItemActive('/dashboard')).toBe(true);
+        expect(internals.isMenuItemActive('/notifikasi')).toBe(false);
+    });
 });

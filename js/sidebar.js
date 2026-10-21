@@ -396,11 +396,30 @@
     }
 
     // Update active menu item without full re-render
+    /**
+     * Path yang sedang aktif.
+     *
+     * Saat navigasi SPA berjalan, window.location.pathname masih berisi path
+     * LAMA (URL baru berubah setelah konten tertukar). Kalau sidebar memakai
+     * pathname itu, highlight akan sempat balik ke menu lama (glitch) setiap
+     * kali halaman memanggil loadSidebar() di init-nya.
+     *
+     * Karena itu router menyimpan path tujuan di window.__spaTargetPath dan
+     * path itulah yang jadi acuan SEMUA penentuan menu aktif.
+     */
+    function getActivePath(pathOverride) {
+        if (pathOverride) return pathOverride;
+        if (typeof window !== 'undefined' && window.__spaTargetPath) {
+            return window.__spaTargetPath;
+        }
+        return window.location.pathname;
+    }
+
     function updateActiveMenuItem(pathOverride) {
         const allItems = document.querySelectorAll('.sidebar-item, .sidebar-child-item');
         // pathOverride dipakai saat navigasi SPA: URL baru berubah setelah
         // konten tertukar, jadi highlight tidak bisa menunggu pathname.
-        const currentPath = (pathOverride || window.location.pathname);
+        const currentPath = getActivePath(pathOverride);
 
         // Pastikan hanya SATU item aktif: kalau ada item yang cocok PERSIS
         // dengan path sekarang, item lain (yang hanya cocok lewat aturan
@@ -773,7 +792,7 @@
         
         // pathOverride: path tujuan navigasi (dipakai router SPA supaya
         // highlight bisa langsung pindah sebelum URL ikut berubah)
-        const currentPath = String(pathOverride || window.location.pathname).toLowerCase();
+        const currentPath = String(getActivePath(pathOverride)).toLowerCase();
         const currentFile = currentPath.split('/').pop().replace('.html', '');
         
         // Extract filename/path from href

@@ -244,13 +244,17 @@ class SPARouter {
         }
 
         // ============================================================
-        // HIGHLIGHT MENU AKTIF PINDAH SEGERA
+        // ACUAN PATH AKTIF + HIGHLIGHT PINDAH SEGERA
         // ============================================================
-        // Dulu highlight baru diperbarui di akhir loadPage, setelah
-        // fetch + injeksi script + 2 jeda tetap (500 ms + 1000 ms)
-        // -> perpindahan highlight terasa lambat ±1,5-3 detik.
-        // Path tujuan sudah diketahui, jadi highlight bisa langsung
-        // pindah tanpa menunggu konten selesai dimuat.
+        // window.__spaTargetPath = path tujuan navigasi. Semua pihak
+        // (router, init halaman yang memanggil loadSidebar, dropdown)
+        // memakai acuan yang sama -> highlight tidak pernah semphit
+        // balik ke menu lama, dan URL tetap berubah setelah konten
+        // tertukar (menjaga perilaku "klik sekali langsung ganti").
+        try {
+            window.__spaTargetPath = path;
+        } catch (e) { /* abaikan */ }
+
         if (typeof window.updateSidebarActiveState === 'function') {
             try {
                 window.updateSidebarActiveState(path);
@@ -525,6 +529,15 @@ class SPARouter {
             // Update current page
             this.currentPage = path;
 
+            // Acuan path aktif: kalau ada navigasi yang diantrikan, tunggu
+            // tujuan berikutnya (biar highlight tidak semphit balik ke
+            // halaman yang baru saja selesai dimuat)
+            try {
+                window.__spaTargetPath = (this.pendingPath && this.pendingPath !== path)
+                    ? this.pendingPath
+                    : path;
+            } catch (e) { /* abaikan */ }
+
             // Jalankan navigasi yang diantrikan (klik terakhir yang menang)
             if (this.pendingPath && this.pendingPath !== path) {
                 const nextPath = this.pendingPath;
@@ -577,6 +590,7 @@ class SPARouter {
             // secara penuh supaya user selalu dapat halaman yang utuh.
             console.error('[SPA Router] Navigasi gagal, fallback ke full reload:', error);
             try {
+                window.__spaTargetPath = null;
                 mainContent.style.opacity = '1';
                 mainContent.style.pointerEvents = 'auto';
                 const loader = document.querySelector('.page-loader');
