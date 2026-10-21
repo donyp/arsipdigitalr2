@@ -1421,11 +1421,15 @@
 
         .filter-group label {
             font-size: 12px;
-            color: var(--color-text-secondary);
+            color: rgba(61, 59, 107, 0.9);
             margin-bottom: 6px;
             font-weight: 900;
             text-transform: uppercase;
             text-align: left;
+        }
+
+        html[data-dark-mode="true"] .filter-group label {
+            color: var(--color-text-secondary);
         }
 
         .filter-group select,
@@ -1541,8 +1545,12 @@
             white-space: nowrap;
             border-bottom: 2px solid #3b82f6;
             vertical-align: middle;
-            color: white;
+            color: #3d3b6b;
             letter-spacing: 0.5px;
+        }
+
+        html[data-dark-mode="true"] .invoice-table th {
+            color: white;
         }
 
         .invoice-table th:last-child {
