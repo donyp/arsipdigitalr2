@@ -132,6 +132,8 @@ class SPARouter {
         // "SyntaxError: Identifier 'X' has already been declared".
         this.loadedScriptPaths = new Set();
         this.loadedScriptNames = new Set();
+        this.pageInitCallbacks = {};     // callback DOMContentLoaded per halaman (untuk re-run)
+        this.executedInlinePaths = new Set(); // halaman yang inline-script-nya sudah pernah dijalankan
         this.collectLoadedScripts();
 
         this.init();
@@ -285,11 +287,9 @@ class SPARouter {
     }
 
     navigate(path) {
-        console.log('[SPA-TRACE] navigate(' + path + ') isLoading=' + this.isLoading + ' currentPage=' + this.currentPage);
         const normalized = this.normalizePath(path);
         const config = this.menuMapping[normalized];
         if (!config) {
-            console.log('[SPA-TRACE] config tidak ada -> FULL RELOAD');
             // Di luar whitelist -> full page reload
             window.location.href = path;
             return;
@@ -350,7 +350,7 @@ class SPARouter {
         // Fungsi sidebar asli (dikembalikan setelah navigasi selesai)
         let origInitSidebar = null;
         let origLoadSidebar = null;
-
+        let origAddEventListener = null;   // untuk capture DOMContentLoaded listeners
         try {
             // Show loading state only on first load (refresh/login)
             const isFirstLoadOfSession = this.isFirstLoad;
@@ -481,6 +481,29 @@ class SPARouter {
             window.initSidebar = sidebarStub;
             window.loadSidebar = sidebarStub;
 
+            // ============================================================
+            // CAPTURE DOMContentLoaded LISTENER (untuk page init)
+            // ============================================================
+            // Banyak halaman (users, tokos, zonas, upload-excel, kendaraan,
+            // dll) menjalankan init-nya di dalam
+            // document.addEventListener('DOMContentLoaded', ...). Saat
+            // navigasi SPA, DOMContentLoaded TIDAK PERNAH tembak lagi ->
+            // init tidak pernah jalan -> halaman stuck di skeleton.
+            // Solusi: tangkap callback yang didaftarkan selama script
+            // halaman tujuan dieksekusi, lalu panggil manual. Callback
+            // juga disimpan per-path supaya bisa di-re-run saat kunjungan
+            // berikutnya (tanpa re-inject script -> tidak ada SyntaxError
+            // "Identifier already declared").
+            const capturedInitCallbacks = [];
+            origAddEventListener = document.addEventListener.bind(document);
+            document.addEventListener = function(type, fn, opts) {
+                if (type === 'DOMContentLoaded' && document.readyState !== 'loading') {
+                    if (typeof fn === 'function') capturedInitCallbacks.push(fn);
+                    return;
+                }
+                return origAddEventListener(type, fn, opts);
+            };
+
             // Separate inline scripts from external scripts in pageScripts array
             const inlineScripts = pageScripts.filter(s => !s.src);
             const externalScripts = pageScripts.filter(s => s.src);
@@ -563,21 +586,51 @@ class SPARouter {
                 }
             }
 
-            // Execute inline scripts after content and external scripts
-            // These scripts define functions and set up event listeners
-            for (const scriptData of inlineScripts) {
+            // Execute inline scripts after content and external scripts.
+            // Hanya pada kunjungan PERTAMA ke halaman ini. Pada kunjungan
+            // berikutnya, script tidak di-inject ulang (hindari SyntaxError
+            // "Identifier 'x' has already been declared" karena let/const
+            // halaman tetap di global lexical scope). Page init-nya tetap
+            // dijalankan lewat callback yang disimpan.
+            const isFirstInlineRun = !this.executedInlinePaths.has(path);
+            if (isFirstInlineRun) {
+                for (const scriptData of inlineScripts) {
+                    try {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = scriptData.textContent;
+                        newScript.setAttribute('data-spa-inline-script', 'true');
+                        newScript.setAttribute('data-page', path);
+                        document.body.appendChild(newScript);
+                        // Script inline dieksekusi sinkron saat appendChild,
+                        // jadi jeda 50 ms per script tidak perlu (dulu total
+                        // bisa 400-500 ms untuk halaman dengan banyak script)
+                        await new Promise(resolve => setTimeout(resolve, 5));
+                    } catch (e) {
+                        console.warn('[SPA] Inline script error:', e.message);
+                    }
+                }
+                this.executedInlinePaths.add(path);
+            }
+
+            // Kembalikan document.addEventListener asli
+            document.addEventListener = origAddEventListener;
+
+            // Simpan callback init yang baru ditangkap (jika ada)
+            if (capturedInitCallbacks.length > 0) {
+                this.pageInitCallbacks[path] = (this.pageInitCallbacks[path] || [])
+                    .concat(capturedInitCallbacks);
+            }
+
+            // Jalankan init halaman (callback DOMContentLoaded yang ditangkap,
+            // atau yang disimpan dari kunjungan sebelumnya). Ini yang
+            // sebelumnya TIDAK PERNAH jalan karena DOMContentLoaded sudah
+            // lewat -> halaman stuck di skeleton / dropzone mati.
+            const initCallbacks = this.pageInitCallbacks[path] || [];
+            for (const cb of initCallbacks) {
                 try {
-                    const newScript = document.createElement('script');
-                    newScript.textContent = scriptData.textContent;
-                    newScript.setAttribute('data-spa-inline-script', 'true');
-                    newScript.setAttribute('data-page', path);
-                    document.body.appendChild(newScript);
-                    // Script inline dieksekusi sinkron saat appendChild,
-                    // jadi jeda 50 ms per script tidak perlu (dulu total
-                    // bisa 400-500 ms untuk halaman dengan banyak script)
-                    await new Promise(resolve => setTimeout(resolve, 5));
+                    await cb();
                 } catch (e) {
-                    console.warn('[SPA] Inline script error:', e.message);
+                    console.warn('[SPA] Page init error:', e && e.message);
                 }
             }
 
@@ -686,7 +739,6 @@ class SPARouter {
             // Kalau navigasi SPA gagal (mis. script halaman error),
             // jangan tampilkan halaman kosong/error - muat ulang halaman
             // secara penuh supaya user selalu dapat halaman yang utuh.
-            console.log('[SPA-TRACE] ERROR -> FULL RELOAD:', error && error.message);
             console.error('[SPA Router] Navigasi gagal, fallback ke full reload:', error);
             try {
                 window.__spaTargetPath = null;
@@ -694,6 +746,7 @@ class SPARouter {
                 // dirender ulang lagi di dokumen ini)
                 if (typeof origInitSidebar !== 'undefined') window.initSidebar = origInitSidebar;
                 if (typeof origLoadSidebar !== 'undefined') window.loadSidebar = origLoadSidebar;
+                if (origAddEventListener) document.addEventListener = origAddEventListener;
                 mainContent.style.opacity = '1';
                 mainContent.style.pointerEvents = 'auto';
                 const loader = document.querySelector('.page-loader');
