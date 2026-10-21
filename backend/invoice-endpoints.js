@@ -25,7 +25,9 @@ const {
     deleteInvoiceFileRow,
     clearInvoiceFileRecord,
     computeFileStatus,
-    normalizeKeterangan
+    normalizeKeterangan,
+    getInvoiceFileTypes,
+    PATH_COLUMN_BY_TYPE
 } = require('./invoice-file-status');
 const AuditLogger = require('./audit-logger');
 
@@ -3943,18 +3945,51 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const isPPN = invoice.keterangan && invoice.keterangan.toUpperCase() === 'PPN';
                 const requiredCount = isPPN ? 3 : 2;
                 
-                if (invoice.files_uploaded_count < requiredCount) {
+
+                // ============================================================
+                // Verifikasi file WAJIB yang benar-benar ada
+                // (kolom path ATAU record invoice_files)
+                // ============================================================
+                // Dulu pakai files_uploaded_count (angka cache) -> bisa lolos
+                // padahal ada file wajib yang hilang, lalu PDF "gabungan"
+                // hanya berisi 1 file tanpa memberi tahu user.
+                const fileTypes = await getInvoiceFileTypes(supabase, faktur);
+                const fileStatus = computeFileStatus({ invoice, invoiceFileTypes: fileTypes });
+                const requiredTypes = fileStatus.requiredTypes;
+
+                // Path file: pakai kolom path, fallback ke invoice_files
+                const fileRowsResult = await supabase
+                    .from('invoice_files')
+                    .select('file_type, file_path')
+                    .eq('faktur', faktur);
+                const pathByType = {};
+                (fileRowsResult.data || []).forEach(r => {
+                    const t = String(r.file_type || '').trim().toLowerCase();
+                    if (t && r.file_path) pathByType[t] = r.file_path;
+                });
+                const pathFor = (type) => {
+                    const column = PATH_COLUMN_BY_TYPE[type];
+                    const fromColumn = column ? invoice[column] : null;
+                    return (fromColumn && String(fromColumn).trim() !== '') ? fromColumn : (pathByType[type] || null);
+                };
+
+                const missingFiles = requiredTypes.filter(t => !fileStatus.perType[t]);
+
+                if (missingFiles.length > 0) {
+                    const labels = {
+                        invoice: 'Invoice PDF',
+                        bukti_bayar: 'Bukti Bayar',
+                        faktur_pajak: 'Faktur Pajak'
+                    };
                     return res.status(400).json({
-                        error: 'Not all required files uploaded',
-                        status: `${invoice.files_uploaded_count}/${requiredCount}`,
-                        missing: []
-                            .concat(!invoice.invoice_pdf_path ? ['invoice'] : [])
-                            .concat(!invoice.bukti_bayar_path ? ['bukti_bayar'] : [])
-                            .concat(isPPN && !invoice.faktur_pajak_path ? ['faktur_pajak'] : [])
+                        error: `File belum lengkap: ${missingFiles.map(t => labels[t] || t).join(', ')}`,
+                        missing: missingFiles,
+                        required: requiredTypes,
+                        status: `${fileStatus.count}/${fileStatus.required}`
                     });
                 }
-                
-                console.log(`[Invoice Combine] Combining ${requiredCount} files for ${isPPN ? 'PPN' : 'NON PPN'} invoice`);
+
+                console.log(`[Invoice Combine] Combining ${requiredTypes.length} files for ${isPPN ? 'PPN' : 'NON PPN'} invoice`);
                 
                 // OPTIMIZATION: Check cache first
                 const cacheDir = path.join(__dirname, '..', 'cache', 'combined-pdfs');
@@ -3966,9 +4001,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 // Use SHA256 hash instead of full path to avoid ENAMETOOLONG errors
                 const crypto = require('crypto');
                 const fileListSignature = [
-                    invoice.bukti_bayar_path,
-                    invoice.invoice_pdf_path,
-                    invoice.faktur_pajak_path
+                    pathFor('bukti_bayar'),
+                    pathFor('invoice'),
+                    pathFor('faktur_pajak')
                 ].filter(Boolean).join('|');
                 
                 const cacheKey = crypto.createHash('sha256').update(fileListSignature).digest('hex');
@@ -4006,23 +4041,28 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         // Create all download promises
                         const downloadPromises = [];
                         
-                        if (invoice.bukti_bayar_path) {
+                        // Path yang sudah diverifikasi (kolom path ATAU invoice_files)
+                        const buktiPath = pathFor('bukti_bayar');
+                        const invoicePath = pathFor('invoice');
+                        const fakturPath = pathFor('faktur_pajak');
+                        
+                        if (buktiPath) {
                             downloadPromises.push(
-                                R2Storage.downloadFile(invoice.bukti_bayar_path)
+                                R2Storage.downloadFile(buktiPath)
                                     .then(buffer => ({ name: 'bukti_bayar', buffer }))
                             );
                         }
                         
-                        if (invoice.invoice_pdf_path) {
+                        if (invoicePath) {
                             downloadPromises.push(
-                                R2Storage.downloadFile(invoice.invoice_pdf_path)
+                                R2Storage.downloadFile(invoicePath)
                                     .then(buffer => ({ name: 'invoice', buffer }))
                             );
                         }
                         
-                        if (isPPN && invoice.faktur_pajak_path) {
+                        if (isPPN && fakturPath) {
                             downloadPromises.push(
-                                R2Storage.downloadFile(invoice.faktur_pajak_path)
+                                R2Storage.downloadFile(fakturPath)
                                     .then(buffer => ({ name: 'faktur_pajak', buffer }))
                             );
                         }
