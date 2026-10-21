@@ -1113,8 +1113,12 @@
 
         /* TABLE HEADER LIGHT MODE FIX */
         /* Override hardcoded table header color in light mode */
+        html[data-dark-mode="true"] .invoice-table th {
+            color: white;
+        }
+
         :root:not([data-dark-mode="true"]) th[style*="color: #667eea"] {
-            color: var(--color-primary) !important;
+            color: #3d3b6b !important;
         }
 
         :root:not([data-dark-mode="true"]) .invoice-table thead {
@@ -2656,16 +2660,16 @@
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
-                                        <th id="th-status" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
-                                        <th id="th-tanggal" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 6%;">Tipe</th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
-                                        <th id="th-total" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
-                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Keterangan</th>
-                                        <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Aksi</th>
+                                        <th id="th-status" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
+                                        <th id="th-tanggal" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
+                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
+                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
+                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 6%;">Tipe</th>
+                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
+                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
+                                        <th id="th-total" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
+                                        <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 7%;">Keterangan</th>
+                                        <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #3d3b6b; letter-spacing: 0.08em; width: 7%;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="invoiceTableBody" style="border-top: 1px solid #e5e7eb;">
