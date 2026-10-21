@@ -15,6 +15,7 @@
         })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/color-vars.css">
     <style>
@@ -694,6 +695,14 @@
                 info.tokoName = found.data.konsumen || 'Unknown';
                 info.nominal = found.data.total_jumlah_jual || 0;
 
+                // Catat apakah invoice ini PPN (faktur pajak wajib) atau bukan.
+                // Invoice NON PPN tidak butuh faktur pajak - upload seperti ini
+                // pernah membuat data membingungkan (terlihat "lengkap"
+                // padahal file wajibnya yang hilang).
+                info.isPPN = String(found.data.keterangan || '').trim().toUpperCase() === 'PPN';
+                info.isNonPPN = !info.isPPN;
+                info.keterangan = found.data.keterangan || '';
+
                 if (found.data.has_faktur_pajak !== undefined ? found.data.has_faktur_pajak : found.data.faktur_pajak_path) {
                     // Sudah pernah diupload - tercatat di database.
                     // Server tetap memeriksa ke storage saat upload (otoritatif).
@@ -763,6 +772,49 @@
             btnUpload.disabled = true;
         }
 
+        /**
+         * NOTICE: faktur pajak untuk invoice NON PPN.
+         * Faktur pajak hanya file wajib untuk invoice PPN. Upload ke invoice
+         * NON PPN tetap bisa dilakukan, tapi user diberi tahu dulu karena
+         * sebelumnya membuat data membingungkan (invoice terlihat "lengkap"
+         * padahal file wajibnya yang hilang).
+         * @returns {Promise<boolean>} true = lanjut upload
+         */
+        function confirmNonPpnUpload(fakturs) {
+            const list = (fakturs || [])
+                .map(f => `<li style="margin:3px 0;font-family:monospace;">${f}</li>`)
+                .join('');
+
+            const title = 'Faktur Pajak untuk Invoice NON PPN';
+            const message = 'Faktur pajak hanya file wajib untuk invoice PPN. '
+                + 'Invoice NON PPN tidak memerlukan faktur pajak.';
+
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    title: '⚠️ ' + title,
+                    html: `<p style="text-align:left;font-size:14px;line-height:1.5;">${message}</p>`
+                          + `<p style="text-align:left;font-size:13px;margin-top:10px;">Invoice NON PPN berikut:</p>`
+                          + `<ul style="text-align:left;font-size:13px;margin-top:4px;">${list}</ul>`
+                          + `<p style="text-align:left;font-size:12px;margin-top:12px;color:#64748b;">`
+                          + `File faktur pajak ini tidak termasuk file wajib invoice NON PPN.`
+                          + `Lanjutkan?</p>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Lanjut Upload',
+                    cancelButtonText: 'Batalkan',
+                    confirmButtonColor: '#e67e22',
+                    cancelButtonColor: '#94a3b8',
+                    reverseButtons: true,
+                    allowOutsideClick: false
+                }).then(result => !!result.isConfirmed);
+            }
+
+            // Fallback kalau SweetAlert tidak tersedia
+            return Promise.resolve(window.confirm(
+                `${title}\n\n${message}\n\n${(fakturs || []).join(', ')}\n\nLanjutkan upload?`
+            ));
+        }
+
         btnUpload.addEventListener('click', async (e) => {
             // Force prevent default
             e.preventDefault();
@@ -788,6 +840,26 @@
                     alert('Tidak ada file valid untuk diupload');
                 }
                 return;
+            }
+
+            // ============================================================
+            // NOTICE: Faktur Pajak untuk invoice NON PPN
+            // ============================================================
+            // Faktur pajak hanya file wajib untuk invoice PPN. Kalau invoice
+            // NON PPN ikut di-upload, catatan faktur pajak tidak termasuk
+            // file wajib -> sebelumnya membuat invoice terlihat "lengkap"
+            // padahal file wajibnya (invoice PDF / bukti bayar) yang hilang.
+            // User diberi tahu & bisa membatalkan.
+            const nonPpnFakturs = validFiles
+                .map(f => (f.info && f.info.isNonPPN) ? (f.info.noFaktur || f.name || '') : null)
+                .filter(Boolean);
+
+            if (nonPpnFakturs.length > 0) {
+                const proceed = await confirmNonPpnUpload(nonPpnFakturs);
+                if (!proceed) {
+                    console.log('[Upload Click] Dibatalkan oleh user (invoice NON PPN)');
+                    return;
+                }
             }
 
             const overlay = document.getElementById('uploadOverlay');
