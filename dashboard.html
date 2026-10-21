@@ -1114,7 +1114,11 @@
         /* TABLE HEADER LIGHT MODE FIX */
         /* Override hardcoded table header color in light mode */
         html[data-dark-mode="true"] .invoice-table th {
-            color: white;
+            color: white !important;
+        }
+
+        html[data-dark-mode="true"] th[style*="color: #3d3b6b"] {
+            color: white !important;
         }
 
         :root:not([data-dark-mode="true"]) th[style*="color: #667eea"] {
