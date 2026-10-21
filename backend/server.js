@@ -760,11 +760,22 @@ const sensitiveOpsLimiter = rateLimit({
 // ============================================================
 
 // Serve Static Frontend from root (BEFORE generic page router)
-app.use(express.static(path.join(__dirname, '..')));
+// CATATAN: file .js & .html diberi Cache-Control 'no-cache' supaya browser
+// selalu melakukan revalidasi (ETag/304 - ringan). Tanpa ini, file JS/HTML
+// versi lama bisa tertahan di cache browser padahal sudah diperbarui ->
+// user memakai kode lama (bug " mysteriously kembali muncul").
+const staticNoCache = {
+    setHeaders(res, filePath) {
+        if (/\.(js|html|css)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        }
+    }
+};
+app.use(express.static(path.join(__dirname, '..'), staticNoCache));
 
 // Explicitly serve JS files (ensure they're accessible)
-app.use('/js', express.static(path.join(__dirname, '..', 'js')));
-app.use('/css', express.static(path.join(__dirname, '..', 'css')));
+app.use('/js', express.static(path.join(__dirname, '..', 'js'), staticNoCache));
+app.use('/css', express.static(path.join(__dirname, '..', 'css'), staticNoCache));
 
 // URL Aliases for cleaner routes
 app.get('/login', (req, res) => {
