@@ -96,13 +96,25 @@
         } else if (field === 'status') {
             const ai = countFiles(a);
             const bi = countFiles(b);
-            // Lengkap dulu (3/3), lalu 2, lalu 1, lalu 0
-            result = ai.badgeCount - bi.badgeCount;
-            if (result === 0) {
-                // Tie-break: yang lebih lengkap (uploaded lebih banyak) di atas
+            // ============================================================
+            // Urutan kelengkapan file (penting: 2/2 LENGKAP harus tidak
+            // tercampur dengan 2/3 yang BELUM lengkap)
+            //
+            // Arah "lengkap dulu" (desc):
+            //   3/3 -> 2/2 -> 2/3 -> 1/2 -> 1/3 -> 0/2 -> 0/3
+            // Arah sebaliknya (asc) = kebalikannya:
+            //   0/3 -> 0/2 -> 1/3 -> 1/2 -> 2/3 -> 2/2 -> 3/3
+            // ============================================================
+            if (ai.isComplete !== bi.isComplete) {
+                // Belum lengkap di atas (untuk asc); dibalik otomatis di desc
+                result = ai.isComplete ? 1 : -1;
+            } else if (ai.uploaded !== bi.uploaded) {
+                // Lebih sedikit file di atas (untuk asc)
                 result = ai.uploaded - bi.uploaded;
-            }
-            if (result === 0) {
+            } else if (ai.required !== bi.required) {
+                // Jumlah file wajib lebih banyak di atas (untuk asc)
+                result = bi.required - ai.required;
+            } else {
                 const af = String(a && a.faktur || '');
                 const bf = String(b && b.faktur || '');
                 result = af < bf ? -1 : (af > bf ? 1 : 0);

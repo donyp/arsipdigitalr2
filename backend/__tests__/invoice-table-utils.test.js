@@ -180,6 +180,52 @@ describe('Invoice Table Utils', () => {
             const asc = Table.sortInvoices(data, 'status', 'asc');
             expect(asc[asc.length - 1].faktur).toBe('lengkap');
         });
+
+        // ============================================================
+        // REGRESI: 2/2 (LENGKAP) tidak boleh tercampur dengan 2/3 (belum).
+        // Urutan yang diharapkan:
+        //   lengkap dulu : 3/3 -> 2/2 -> 2/3 -> 1/2 -> 1/3 -> 0/2 -> 0/3
+        //   sebaliknya    : 0/3 -> 0/2 -> 1/3 -> 1/2 -> 2/3 -> 2/2 -> 3/3
+        // ============================================================
+        describe('urutan sort status', () => {
+            const mix = [
+                { faktur: 'a-2/3', keterangan: 'PPN', invoice_pdf_path: 'x.pdf', bukti_bayar_path: 'y.pdf' },
+                { faktur: 'b-2/2', keterangan: 'NON', invoice_pdf_path: 'x.pdf', bukti_bayar_path: 'y.pdf' },
+                { faktur: 'c-3/3', keterangan: 'PPN', invoice_pdf_path: 'x.pdf', bukti_bayar_path: 'y.pdf', faktur_pajak_path: 'z.pdf' },
+                { faktur: 'd-1/2', keterangan: 'NON', invoice_pdf_path: 'x.pdf' },
+                { faktur: 'e-1/3', keterangan: 'PPN', invoice_pdf_path: 'x.pdf' },
+                { faktur: 'f-0/2', keterangan: 'NON' },
+                { faktur: 'g-0/3', keterangan: 'PPN' }
+            ];
+
+            test('arah "lengkap dulu": 3/3, 2/2, 2/3, 1/2, 1/3, 0/2, 0/3', () => {
+                const r = Table.sortInvoices(mix, 'status', 'desc');
+                expect(r.map(x => x.faktur)).toEqual([
+                    'c-3/3', 'b-2/2', 'a-2/3', 'd-1/2', 'e-1/3', 'f-0/2', 'g-0/3'
+                ]);
+            });
+
+            test('arah sebaliknya: 0/3, 0/2, 1/3, 1/2, 2/3, 2/2, 3/3', () => {
+                const r = Table.sortInvoices(mix, 'status', 'asc');
+                expect(r.map(x => x.faktur)).toEqual([
+                    'g-0/3', 'f-0/2', 'e-1/3', 'd-1/2', 'a-2/3', 'b-2/2', 'c-3/3'
+                ]);
+            });
+
+            test('arah berlawanan benar-benar kebalikan (reverse)', () => {
+                const asc = Table.sortInvoices(mix, 'status', 'asc').map(x => x.faktur);
+                const desc = Table.sortInvoices(mix, 'status', 'desc').map(x => x.faktur);
+                expect(desc).toEqual(asc.slice().reverse());
+            });
+
+            test('semua invoice lengkap berada di satu blok (tidak tercampur)', () => {
+                const desc = Table.sortInvoices(mix, 'status', 'desc');
+                const lengkapIdx = desc.map((x, i) => Table.countFiles(x).isComplete ? i : -1).filter(i => i >= 0);
+                const belumIdx = desc.map((x, i) => Table.countFiles(x).isComplete ? -1 : i).filter(i => i >= 0);
+                // semua lengkap harus di indeks lebih kecil dari semua yang belum
+                expect(Math.max(...lengkapIdx)).toBeLessThan(Math.min(...belumIdx));
+            });
+        });
     });
 
     describe('paginate', () => {

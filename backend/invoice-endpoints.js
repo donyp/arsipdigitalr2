@@ -1382,8 +1382,15 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             query = query
                 .order(sortField, { ascending: sortAsc })
-                .order('created_at', { ascending: sortAsc })
-                .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
+                .order('created_at', { ascending: sortAsc });
+            
+            // Sort status: lengkapi dengan keterangan sebagai pemutus urutan
+            // supaya 2/2 (NON, lengkap) tidak tercampur dengan 2/3 (PPN, belum)
+            if (sortField === 'files_uploaded_count') {
+                query = query.order('keterangan', { ascending: sortAsc });
+            }
+            
+            query = query.range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
             
             const { data, error, count } = await query;
             
