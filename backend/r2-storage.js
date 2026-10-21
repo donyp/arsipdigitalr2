@@ -629,6 +629,56 @@ async function downloadFile(storagePath) {
 }
 
 /**
+ * Download file sebagai STREAM (tanpa menampung seluruh file di RAM dulu).
+ * Dipakai relai download invoice supaya TTFB lebih cepat & RAM hemat.
+ * Throw dini (dari S3 API) bila file tidak ada - err.message berpola
+ * "not found / NoSuchKey" sehingga self-healing di endpoint tetap bekerja.
+ * @returns {Promise<{stream: Readable, contentType: string|null, contentLength: number|null}>}
+ */
+async function downloadFileStream(storagePath) {
+    try {
+        // Jika R2 belum dikonfigurasi -> baca dari filesystem lokal
+        if (!R2_ENABLED) {
+            await ensureBackupDir();
+            const localPath = path.join(BACKUP_STORAGE_PATH, storagePath);
+            const stat = await fs.stat(localPath).catch((fileError) => {
+                if (fileError.code === 'ENOENT') {
+                    throw new Error(`File not found: ${storagePath}`);
+                }
+                throw fileError;
+            });
+            return {
+                stream: createReadStream(localPath),
+                contentType: 'application/pdf',
+                contentLength: stat.size
+            };
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: R2Config.bucketName,
+            Key: storagePath
+        });
+
+        const response = await s3Client.send(command);
+        return {
+            stream: response.Body,
+            contentType: response.ContentType || 'application/pdf',
+            contentLength: (typeof response.ContentLength === 'number') ? response.ContentLength : null
+        };
+    } catch (error) {
+        console.error(`[R2] ❌ Stream download error for ${storagePath}:`, error.message);
+        errorLogger.logError({
+            operation: 'downloadFileStream',
+            error: error.message,
+            storagePath,
+            errorCode: error.Code,
+            statusCode: error.$metadata?.httpStatusCode
+        });
+        throw error;
+    }
+}
+
+/**
  * Delete file from R2 (or local filesystem if R2 not configured)
  */
 async function deleteFile(storagePath) {
@@ -850,6 +900,7 @@ module.exports = {
     uploadFile,
     getStream,
     downloadFile,
+    downloadFileStream,
     deleteFile,
     listFiles,
     

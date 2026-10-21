@@ -3630,10 +3630,151 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                         }
                     }
                     
-                    // If not in cache or cache invalid, download from rclone
+                    // If not in cache or cache invalid, download from storage
                     if (!fileBuffer) {
                         const downloadStartTime = Date.now();
-                        
+
+                        // ============================================================
+                        // STREAM MODE (percepatan): bila modul storage mendukung,
+                        // data dari R2 dialirkan LANGSUNG ke client (tanpa
+                        // menumpuk seluruh file di RAM dulu) sambil ikut
+                        // disalin ke cache disk. TTFB lebih cepat, RAM hemat.
+                        // ============================================================
+                        if (typeof R2Storage.downloadFileStream === 'function') {
+                            const filename = filePath.split('/').pop();
+                            let streamInfo = null;
+
+                            try {
+                                streamInfo = await R2Storage.downloadFileStream(filePath);
+                            } catch (downloadErr) {
+                                // ============================================================
+                                // PERBAIKAN (A2/A5): SELF-HEALING (sama dengan mode buffer)
+                                // ============================================================
+                                const isNotFound = /not found|404|NoSuchKey|does not exist/i.test(downloadErr.message || '');
+
+                                if (isNotFound) {
+                                    console.warn(`[Invoice Download] File tidak ada di storage: ${filePath} - merapikan record invoice`);
+
+                                    try {
+                                        const heal = await clearInvoiceFileRecord({
+                                            supabase,
+                                            faktur,
+                                            fileType,
+                                            deletedPath: filePath
+                                        });
+                                        console.log(`[Invoice Download] ✅ Self-healing ${faktur}/${fileType} -> count=${heal.count}/${heal.required}`);
+                                    } catch (healErr) {
+                                        console.warn(`[Invoice Download] Self-healing gagal: ${healErr.message}`);
+                                    }
+
+                                    return res.status(404).json({
+                                        error: 'File tidak ditemukan di storage',
+                                        message: 'File ini sudah tidak ada di penyimpanan. Status file telah diperbarui, silakan muat ulang halaman.',
+                                        fileType,
+                                        faktur
+                                    });
+                                }
+
+                                throw downloadErr;
+                            }
+
+                            // Cache parsial ditulis ke file unik, lalu di-rename ATOMIK
+                            // setelah data lengkap (tidak pernah dipecah di tengah jalan).
+                            const tmpCache = `${cachedFilePath}.part-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                            let received = 0;
+                            let streamCompleted = false;
+                            const cacheWs = fs.createWriteStream(tmpCache);
+
+                            res.setHeader('Content-Type', 'application/pdf');
+                            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                            if (streamInfo.contentLength) res.setHeader('Content-Length', streamInfo.contentLength);
+                            res.setHeader('Cache-Control', `private, max-age=${DOWNLOAD_CACHE_TTL_MINUTES * 60}`);
+                            res.setHeader('X-Content-Type-Options', 'nosniff');
+                            res.setHeader('ETag', `"${Buffer.from(filePath).toString('hex').substring(0, 16)}"`);
+
+                            streamInfo.stream.on('error', (streamErr) => {
+                                console.error(`[Invoice Download] Stream error:`, streamErr.message);
+                                cacheWs.destroy();
+                                try { fs.unlinkSync(tmpCache); } catch (_) { /* abaikan */ }
+                                // Header sudah terkirim -> tidak bisa kirim 500 lagi
+                                res.destroy(streamErr);
+                            });
+
+                            streamInfo.stream.on('data', (chunk) => {
+                                received += chunk.length;
+                                // Backpressure: jeda bila tulisan disk kelebihan beban
+                                if (!cacheWs.write(chunk)) {
+                                    streamInfo.stream.pause();
+                                    cacheWs.once('drain', () => streamInfo.stream.resume());
+                                }
+                            });
+
+                            streamInfo.stream.on('end', () => { streamCompleted = true; });
+
+                            // Kirim ke client sementara salinan jalan ke cache disk
+                            streamInfo.stream.pipe(res);
+
+                            res.on('finish', () => {
+                                cacheWs.end(() => {
+                                    if (streamCompleted) {
+                                        try {
+                                            fs.renameSync(tmpCache, cachedFilePath);
+                                        } catch (renameErr) {
+                                            console.warn(`[Invoice Download] Cache rename failed:`, renameErr.message);
+                                            try { fs.unlinkSync(tmpCache); } catch (_) { /* abaikan */ }
+                                        }
+                                    } else {
+                                        try { fs.unlinkSync(tmpCache); } catch (_) { /* abaikan */ }
+                                    }
+                                });
+
+                                const totalTime = Date.now() - startTime;
+                                console.log(`[Invoice Download] ✅ Complete in ${totalTime}ms (STREAM, ${received} bytes)`);
+
+                                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                                auditLogger.log({
+                                    userId: req.user.userId,
+                                    userEmail: req.user.email,
+                                    userRole: req.user.role,
+                                    zonaId: invoice.zona_id,
+                                    action: `Download ${fileType === 'invoice' ? 'Invoice PDF' : fileType === 'bukti_bayar' ? 'Bukti Bayar' : 'Faktur Pajak'}`,
+                                    resourceType: 'invoice_file',
+                                    resourceId: faktur,
+                                    resourceName: `${faktur} - ${fileType}`,
+                                    operation: 'READ',
+                                    details: {
+                                        fileType: fileType,
+                                        filePath: filePath,
+                                        fileSize: received,
+                                        source: 'STREAM',
+                                        downloadTime: totalTime
+                                    },
+                                    ipAddress: ipAddress,
+                                    userAgent: req.headers['user-agent'] || 'Unknown',
+                                    requestPath: `/api/invoice/download-file/${faktur}/${fileType}`,
+                                    requestMethod: 'GET',
+                                    statusCode: 200,
+                                    responseMessage: 'File downloaded successfully',
+                                    errorMessage: null,
+                                    isSuspicious: false,
+                                    severity: 'info'
+                                }).catch(err => {
+                                    console.warn('[Invoice Download] Audit log failed:', err.message);
+                                });
+                            });
+
+                            // Client membatalkan -> buang cache parsial
+                            res.on('close', () => {
+                                if (!res.writableFinished) {
+                                    cacheWs.destroy();
+                                    try { fs.unlinkSync(tmpCache); } catch (_) { /* abaikan */ }
+                                }
+                            });
+
+                            return; // Respons sudah dialirkan
+                        }
+
+                        // FALLBACK BUFFER (modul storage lama tanpa streaming)
                         try {
                             fileBuffer = await R2Storage.downloadFile(filePath);
                         } catch (downloadErr) {

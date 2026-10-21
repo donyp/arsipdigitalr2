@@ -4195,8 +4195,35 @@
                                 }
                                 
                                 
-                                // Get blob immediately
-                                const blob = await response.blob();
+                                // PROGRESS NYATA: ikuti byte yang benar-benar
+                                // diterima (bukan simulasi). Bila Content-Length
+                                // tidak tersedia, simulasi tetap dipakai.
+                                const contentLength = Number(response.headers.get('Content-Length')) || 0;
+                                if (contentLength > 0) {
+                                    // Progres nyata menggantikan simulasi
+                                    clearInterval(progressInterval);
+                                }
+
+                                let blob;
+                                if (response.body && contentLength > 0) {
+                                    const reader = response.body.getReader();
+                                    const chunks = [];
+                                    let received = 0;
+                                    while (true) {
+                                        const { done, value } = await reader.read();
+                                        if (done) break;
+                                        chunks.push(value);
+                                        received += value.length;
+                                        const pct = Math.min(90, Math.round((received / contentLength) * 90));
+                                        const pBar = document.getElementById('progress-bar');
+                                        const pText = document.getElementById('progress-text');
+                                        if (pBar) pBar.style.width = pct + '%';
+                                        if (pText) pText.textContent = pct + '%';
+                                    }
+                                    blob = new Blob(chunks, { type: response.headers.get('Content-Type') || 'application/pdf' });
+                                } else {
+                                    blob = await response.blob();
+                                }
                                 
                                 // Set progress to 90% on response received
                                 let progressBar = document.getElementById('progress-bar');
@@ -4204,9 +4231,11 @@
                                 if (progressBar) progressBar.style.width = '90%';
                                 if (progressText) progressText.textContent = '90%';
                                 
-                                // Ensure minimum TOTAL loading time of 1500ms from when popup opened
+                                // Jeda minimum 300ms (dari 1500ms) - cukup agar
+                                // animasi tidak berkedip, download jadi jauh
+                                // lebih cepat terasa
                                 const totalElapsedTime = Date.now() - startTime;
-                                const remainingWaitTime = 1500 - totalElapsedTime;
+                                const remainingWaitTime = 300 - totalElapsedTime;
                                 
                                 if (remainingWaitTime > 0) {
                                     await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
@@ -4464,9 +4493,9 @@
                             if (progressBar) progressBar.style.width = '85%';
                             if (progressText) progressText.textContent = '85%';
                             
-                            // Ensure minimum TOTAL loading time of 1500ms
+                            // Jeda minimum 300ms (dari 1500ms) - animasi tidak berkedip
                             const totalElapsedTime = Date.now() - startTime;
-                            const remainingWaitTime = 1500 - totalElapsedTime;
+                            const remainingWaitTime = 300 - totalElapsedTime;
                             
                             if (remainingWaitTime > 0) {
                                 await new Promise(resolve => setTimeout(resolve, remainingWaitTime));
