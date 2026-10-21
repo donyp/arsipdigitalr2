@@ -96,9 +96,9 @@ describe('SPA Router - keputusan navigasi', () => {
         expect(router.loadPage).not.toHaveBeenCalled();
     });
 
-    test('route dalam whitelist & sidebar sama -> SPA (pushState, tanpa reload)', () => {
+    test('route dalam whitelist & sidebar sama -> SPA (tanpa reload)', () => {
         router.navigate('/toko');
-        expect(fakeWindow.location.pathname).toBe('/toko');
+        // URL baru berubah setelah konten tertukar (lihat loadPage)
         expect(fakeWindow.location.href).toBe('');       // tidak full reload
         expect(router.loadPage).toHaveBeenCalledWith('/toko', true);
     });
@@ -122,6 +122,28 @@ describe('SPA Router - keputusan navigasi', () => {
             expect(cfg.hasSidebar).toBe(true);
             expect(cfg.url).toBe(p);
         });
+    });
+
+    // ============================================================
+    // REGRESI: URL dulu berubah dulu (pushState) lalu loadPage bisa
+    // BATAL (isLoading) -> "URL berubah tapi halaman tidak" -> user
+    // harus klik dua kali.
+    // ============================================================
+    test('navigate() tidak mengubah URL sebelum konten tertukar', () => {
+        router.loadPage = jest.fn();
+        router.navigate('/toko');
+        expect(fakeWindow.location.pathname).toBe('/dashboard'); // URL BELUM berubah
+        expect(router.loadPage).toHaveBeenCalledWith('/toko', true);
+    });
+
+    test('navigasi saat halaman sedang dimuat -> diantrikan, URL tidak berubah', () => {
+        router.loadPage = jest.fn();
+        router.isLoading = true;
+        router.navigate('/zona');
+        expect(router.pendingPath).toBe('/zona');
+        expect(fakeWindow.location.pathname).toBe('/dashboard');
+        router.isLoading = false;
+        router.pendingPath = null;
     });
 
     // ============================================================

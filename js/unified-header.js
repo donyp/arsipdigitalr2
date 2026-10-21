@@ -96,6 +96,18 @@ function createUnifiedHeader(options = {}) {
 }
 
 function initializeUnifiedHeader(options = {}) {
+    // Hindari timer ganda: kalau header di-inisialisasi ulang (mis. saat
+    // navigasi SPA), timer tanggal/jam sebelumnya harus dihentikan.
+    if (window._unifiedHeaderTimer) {
+        clearInterval(window._unifiedHeaderTimer);
+        window._unifiedHeaderTimer = null;
+    }
+    // Buang header lama (kalau ada) supaya tidak ada dua header
+    const existingHeader = document.getElementById('unified-header');
+    if (existingHeader) {
+        existingHeader.remove();
+    }
+
     const header = createUnifiedHeader(options);
     
     // Insert at the very top of body (before everything)
@@ -128,7 +140,7 @@ function initializeUnifiedHeader(options = {}) {
 
     // Initialize dynamic features
     updateDateTime();
-    setInterval(updateDateTime, 1000);
+    window._unifiedHeaderTimer = setInterval(updateDateTime, 1000);
     
     // Dark mode toggle
     const darkToggle = document.getElementById('header-dark-toggle');

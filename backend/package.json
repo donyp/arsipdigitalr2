@@ -9,7 +9,7 @@
         "seed": "node seed_admin.js",
         "test": "jest",
         "test:watch": "jest --watch",
-        "test:unit": "jest __tests__/excel-utils.test.js __tests__/invoice-file-status.test.js __tests__/invoice-file-status-db.test.js __tests__/invoice-upload-helper.test.js __tests__/upload-queue.test.js __tests__/upload-excel-data.test.js __tests__/file-status-reconciler.test.js __tests__/download-zone-security.test.js __tests__/download-streaming.test.js __tests__/invoice-table-utils.test.js __tests__/file-count-required-only.test.js __tests__/combine-pdf-safety.test.js __tests__/spa-router-navigation.test.js --forceExit",
+        "test:unit": "jest __tests__/excel-utils.test.js __tests__/invoice-file-status.test.js __tests__/invoice-file-status-db.test.js __tests__/invoice-upload-helper.test.js __tests__/upload-queue.test.js __tests__/upload-excel-data.test.js __tests__/file-status-reconciler.test.js __tests__/download-zone-security.test.js __tests__/download-streaming.test.js __tests__/invoice-table-utils.test.js __tests__/file-count-required-only.test.js __tests__/combine-pdf-safety.test.js __tests__/spa-router-navigation.test.js __tests__/sidebar-active-style.test.js --forceExit",
         "test:all": "jest --forceExit"
     },
     "dependencies": {

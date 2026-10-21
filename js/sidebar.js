@@ -7,6 +7,13 @@
 (function() {
     console.log('[SIDEBAR] Initializing clean sidebar...');
 
+    // Hook untuk unit test (regresi highlight menu aktif)
+    window.SidebarInternals = {
+        applyItemActiveStyle: (item, isActive, colors, isChild) =>
+            applyItemActiveStyle(item, isActive, colors, isChild),
+        isMenuItemActive: (href) => isMenuItemActive(href)
+    };
+
     // ============================================================
     // INJECT SIDEBAR CSS IMMEDIATELY (Global - all pages)
     // ============================================================
@@ -360,18 +367,61 @@
         adjustMainContent();
     }
 
+    // ============================================================
+    // STYLE ITEM AKTIF (SATU SUMBER KEBENARAN)
+    // ============================================================
+    // Dipakai oleh renderMenuItem, renderChildItem, DAN updateActiveMenuItem.
+    // Dulu saat pindah menu (SPA) hanya class 'active' yang di-toggle, sedang
+    // highlight (background/warna/border) berasal dari inline style saat render
+    // awal -> item lama tetap terlihat aktif (2 highlight) walau class-nya
+    // sudah dilepas.
+    function applyItemActiveStyle(item, isActive, colors, isChild) {
+        if (!item) return;
+        const c = colors || (localStorage.getItem('dark_mode_enabled') === 'true'
+            ? { hoverBg: 'rgba(37, 99, 235, 0.15)', activeTextColor: '#60a5fa', textColor: '#f0f4f8', textMutedColor: '#cbd5e1' }
+            : STYLES);
+
+        if (isActive) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+
+        item.style.backgroundColor = isActive ? c.hoverBg : 'transparent';
+        item.style.color = isActive ? c.activeTextColor : (isChild ? c.textMutedColor : c.textColor);
+        item.style.fontWeight = isActive ? 600 : (isChild ? 400 : 500);
+        item.style.borderLeft = isActive
+            ? `3px solid ${c.activeTextColor}`
+            : '3px solid transparent';
+    }
+
     // Update active menu item without full re-render
     function updateActiveMenuItem() {
         const allItems = document.querySelectorAll('.sidebar-item, .sidebar-child-item');
         const currentPath = window.location.pathname;
 
+        // Pastikan hanya SATU item aktif: kalau ada item yang cocok PERSIS
+        // dengan path sekarang, item lain (yang hanya cocok lewat aturan
+        // longgar) tidak ikut ditandai aktif.
+        let exactItem = null;
         allItems.forEach(item => {
             const href = item.getAttribute('data-href');
-            if (href && isMenuItemActive(href)) {
-                item.classList.add('active');
-            } else {
-                item.classList.remove('active');
+            if (!href) return;
+            const h = href.toLowerCase();
+            const p = currentPath.toLowerCase();
+            if (p === h || p === h + '.html') exactItem = item;
+        });
+
+        allItems.forEach(item => {
+            const href = item.getAttribute('data-href');
+            const isChild = item.classList.contains('sidebar-child-item');
+            let isActive = false;
+            if (href) {
+                isActive = exactItem
+                    ? (item === exactItem)
+                    : isMenuItemActive(href);
             }
+            applyItemActiveStyle(item, isActive, null, isChild);
         });
     }
 

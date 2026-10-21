@@ -9,6 +9,7 @@ class SPARouter {
         this.pageCache = {};
         this.isFirstLoad = true; // Track if it's the first page load
         this.pageLoadStart = Date.now(); // Track page load start time
+        this.pendingPath = null;   // Navigasi yang diantrikan (klik saat halaman memuat)
 
         // ============================================================
         // KILL SWITCH
@@ -170,6 +171,11 @@ class SPARouter {
                 window.location.reload();
                 return;
             }
+            if (this.isLoading) {
+                // Halaman sedang dimuat & user menekan back -> aman dengan reload
+                window.location.reload();
+                return;
+            }
             this.loadPage(path, false);
         });
 
@@ -228,8 +234,16 @@ class SPARouter {
             return;
         }
 
-        // Update URL tanpa reload
-        window.history.pushState({ page: path }, '', path);
+        // Navigasi sedang berjalan -> antrikan, dijalankan setelah selesai
+        // (klik terakhir yang menang). URL TIDAK disentuh sekarang supaya
+        // tidak terjadi "URL berubah tapi halaman tidak".
+        if (this.isLoading) {
+            console.log('[SPA Router] Halaman sedang dimuat, navigasi diantrikan');
+            this.pendingPath = path;
+            return;
+        }
+
+        // URL di-update SETELAH konten benar-benar tertukar (di loadPage)
         this.loadPage(path, true);
     }
 
@@ -319,6 +333,26 @@ class SPARouter {
             mainContent.innerHTML = htmlContent;
             mainContent.style.opacity = '1';
             mainContent.style.pointerEvents = 'auto';
+
+            // ============================================================
+            // HEADER UNIFIED
+            // ============================================================
+            // Header dibuat sebagai sibling #app di body (DI LUAR
+            // #main-content) -> tidak ikut tertukar saat konten
+            // ditukar, sehingga header greeting dashboard tetap nongket
+            // di halaman lain. Buang yang lama, lalu biarkan script
+            // halaman tujuan membuat ulang header-nya sendiri.
+            const oldHeader = document.getElementById('unified-header');
+            if (oldHeader) oldHeader.remove();
+            if (pageData.hasUnifiedHeader) {
+                try {
+                    if (typeof window.initializeUnifiedHeader === 'function') {
+                        window.initializeUnifiedHeader();
+                    }
+                } catch (e) {
+                    console.warn('[SPA Router] Gagal membuat ulang unified header:', e.message);
+                }
+            }
             
             // Inject page-specific styles into head
             const pageStyles = pageData.styles || [];
@@ -457,8 +491,27 @@ class SPARouter {
                 window.updateSidebarActiveState(path);
             }
 
+            // ============================================================
+            // URL BARU DIUBAH SETELAH KONTEN SUDAH TERTUKAR
+            // ============================================================
+            // Dulu pushState dilakukan sebelum loadPage, sehingga kalau
+            // navigasi batal (mis. sedang memuat) URL sudah berubah tapi
+            // halaman tidak -> user harus klik dua kali.
+            try {
+                if (window.location.pathname !== path) {
+                    window.history.pushState({ page: path }, '', path);
+                }
+            } catch (e) { /* abaikan */ }
+
             // Update current page
             this.currentPage = path;
+
+            // Jalankan navigasi yang diantrikan (klik terakhir yang menang)
+            if (this.pendingPath && this.pendingPath !== path) {
+                const nextPath = this.pendingPath;
+                this.pendingPath = null;
+                setTimeout(() => this.navigate(nextPath), 50);
+            }
 
             // Scroll to top
             window.scrollTo(0, 0);
@@ -599,6 +652,7 @@ class SPARouter {
                 html: contentHtml,
                 scripts: scriptData,
                 styles: styleData,
+                hasUnifiedHeader: html.indexOf('unified-header.js') >= 0,
                 layout: {
                     appStyle: targetApp ? targetApp.getAttribute('style') : null,
                     mainContentStyle: targetMain ? targetMain.getAttribute('style') : null
