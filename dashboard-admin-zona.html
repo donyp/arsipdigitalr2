@@ -1134,7 +1134,7 @@
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
         }
 
-        /* Light mode: icon background white untuk semua stat-icon */
+        /* Light mode: icon background white untuk total invoice, gradient untuk lunas & belum lunas */
         body:not(.dark-mode) .stat-card .stat-icon {
             background: white !important;
             color: #3d3b6b;
@@ -1147,13 +1147,13 @@
         }
 
         body:not(.dark-mode) .stat-card .stat-icon.lunas {
-            background: white;
-            color: #10b981;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
         }
 
         body:not(.dark-mode) .stat-card .stat-icon.belum-lunas {
-            background: white;
-            color: #f59e0b;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
         }
 
         .stat-content {
