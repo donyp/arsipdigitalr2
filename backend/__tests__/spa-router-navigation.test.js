@@ -76,10 +76,21 @@ describe('SPA Router - keputusan navigasi', () => {
         expect(router.isValidRoute('/notifikasi')).toBe(true);
         expect(router.isValidRoute('/whatsapp-setup')).toBe(true);
 
+        // Halaman upload & alat sekarang ikut SPA (tidak full reload)
+        expect(router.isValidRoute('/excel')).toBe(true);
+        expect(router.isValidRoute('/invoice')).toBe(true);
+        expect(router.isValidRoute('/buktibayar')).toBe(true);
+        expect(router.isValidRoute('/fakturpajak')).toBe(true);
+        expect(router.isValidRoute('/renamefaktur')).toBe(true);
+        expect(router.isValidRoute('/logs')).toBe(true);
+        expect(router.isValidRoute('/backup')).toBe(true);
+        expect(router.isValidRoute('/kendaraan')).toBe(true);
+        expect(router.isValidRoute('/penyimpanan')).toBe(true);
+        expect(router.isValidRoute('/support/admin')).toBe(true);
+
         // Di luar whitelist (harus full reload)
-        expect(router.isValidRoute('/excel')).toBe(false);
-        expect(router.isValidRoute('/invoice')).toBe(false);
-        expect(router.isValidRoute('/logs')).toBe(false);
+        expect(router.isValidRoute('/monitoring.html')).toBe(false);
+        expect(router.isValidRoute('/upload')).toBe(false);
         expect(router.isValidRoute('/zona/dashboard')).toBe(false);  // admin zona (tanpa sidebar)
     });
 
@@ -91,8 +102,8 @@ describe('SPA Router - keputusan navigasi', () => {
     });
 
     test('route di luar whitelist -> full page reload (bukan SPA)', () => {
-        router.navigate('/excel');
-        expect(fakeWindow.location.href).toBe('/excel');
+        router.navigate('/monitoring.html');
+        expect(fakeWindow.location.href).toBe('/monitoring.html');
         expect(router.loadPage).not.toHaveBeenCalled();
     });
 
@@ -103,11 +114,19 @@ describe('SPA Router - keputusan navigasi', () => {
         expect(router.loadPage).toHaveBeenCalledWith('/toko', true);
     });
 
-    test('sidebar tidak terlihat di halaman sekarang -> full reload (sidebar harus hilang/muncul)', () => {
+    test('sidebar berbeda kondisi -> disembunyikan/ditampilkan, BUKAN full reload', () => {
         sidebarEl._visible = false;   // mis. sedang di halaman tanpa sidebar
+        const sidebar = { style: {} };
+        const origGet = global.document.getElementById;
+        global.document.getElementById = (id) => (id === 'sidebar' ? sidebar : null);
+
         router.navigate('/toko');
-        expect(fakeWindow.location.href).toBe('/toko');
-        expect(router.loadPage).not.toHaveBeenCalled();
+        // tidak full reload lagi -> transisi tetap instan
+        expect(fakeWindow.location.href).toBe('');
+        expect(router.loadPage).toHaveBeenCalledWith('/toko', true);
+        expect(sidebar.style.display).toBe('block');   // sidebar ditampilkan
+
+        global.document.getElementById = origGet;
     });
 
     test('hasVisibleSidebar membaca elemen sidebar yang sudah dirender', () => {
@@ -144,6 +163,36 @@ describe('SPA Router - keputusan navigasi', () => {
         expect(fakeWindow.location.pathname).toBe('/dashboard');
         router.isLoading = false;
         router.pendingPath = null;
+    });
+
+    // ============================================================
+    // REGRESI: server bisa me-redirect /logs -> /logs/ (karena ada
+    // folder 'logs' di root) -> path dengan trailing slash harus
+    // tetap dikenali sebagai route yang sama.
+    // ============================================================
+    test('normalizePath: trailing slash dianggap route yang sama', () => {
+        expect(router.normalizePath('/logs/')).toBe('/logs');
+        expect(router.normalizePath('/logs')).toBe('/logs');
+        expect(router.normalizePath('/')).toBe('/');
+    });
+
+    test('route dengan trailing slash tetap valid (isValidRoute)', () => {
+        router.loadPage = jest.fn();
+        expect(router.isValidRoute('/logs/')).toBe(true);
+        expect(router.isValidRoute('/logs')).toBe(true);
+    });
+
+    test('setSidebarVisibility: menyembunyikan & menampilkan sidebar', () => {
+        const sidebar = { style: {} };
+        const origGet = global.document.getElementById;
+        global.document.getElementById = (id) => (id === 'sidebar' ? sidebar : null);
+
+        router.setSidebarVisibility(false);
+        expect(sidebar.style.display).toBe('none');
+        router.setSidebarVisibility(true);
+        expect(sidebar.style.display).toBe('block');
+
+        global.document.getElementById = origGet;
     });
 
     // ============================================================

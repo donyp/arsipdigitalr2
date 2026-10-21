@@ -202,6 +202,32 @@ const app = express();
 const DEFAULT_PORT = 5000;
 
 // ============================================================
+// CACHE HEADER HALAMAN HTML (via res.sendFile)
+// ============================================================
+// res.sendFile menimpa header Cache-Control dengan 'public, max-age=0',
+// yang MASIH mengizinkan browser memakai salinan HTML lama dari cache
+// (heuristik freshness). Akibatnya user bisa memakai HTML versi lama ->
+// script versi lama ikut termuat -> fitur terbaru tampak "hilang".
+// Patch global ini memaksa HTML selalu divalidasi ulang (ETag/304 ringan).
+(function patchSendFileCacheHeader() {
+    try {
+        const original = express.response.sendFile;
+        express.response.sendFile = function (filePath, options, callback) {
+            let opts = options;
+            let cb = callback;
+            if (typeof opts === 'function') { cb = opts; opts = undefined; }
+            opts = Object.assign({}, opts || {});
+            opts.headers = Object.assign({}, opts.headers || {}, {
+                'Cache-Control': 'no-cache, must-revalidate'
+            });
+            return original.call(this, filePath, opts, cb);
+        };
+    } catch (e) {
+        console.warn('[SERVER] Gagal memasang patch Cache-Control sendFile:', e.message);
+    }
+})();
+
+// ============================================================
 // TRUST PROXY (B3)
 // ============================================================
 // Nginx berada di host yang sama dan meneruskan X-Forwarded-For.
@@ -758,6 +784,42 @@ const sensitiveOpsLimiter = rateLimit({
 // Allow /index instead of /index.html
 // Must be BEFORE express.static() to intercept requests
 // ============================================================
+
+// ============================================================
+// RUTE KHUSUS: path yang sama dengan nama folder
+// ============================================================
+// Ada folder 'logs' dan 'BACKUP' di root -> express.static me-redirect
+// /logs -> /logs/ dan /backup -> /BACKUP/ sehingga URL tidak lagi cocok
+// dengan rute aslinya (SPA router pun jadi gagal). Rute ini ditulis
+// SEBELUM express.static supaya tidak terjadi redirect.
+const folderNameRoutes = {
+    '/logs': 'audit-logs-dashboard.html',
+    '/backup': 'admin-backup-dashboard.html'
+};
+Object.keys(folderNameRoutes).forEach((route) => {
+    app.get(route, (req, res) => {
+        res.sendFile(path.join(__dirname, '..', folderNameRoutes[route]));
+    });
+});
+
+// ============================================================
+// CACHE HEADER UNTUK HALAMAN HTML
+// ============================================================
+// Halaman HTML (res.sendFile) sebelumnya memakai 'public, max-age=0'
+// yang MASIH mengizinkan browser memakai salinan lama dari cache
+// (heuristik freshness) -> user bisa memakai versi HTML lama =>
+// script versi lama ikut termuat => fitur terbaru "hilang".
+// Sekarang HTML selalu divalidasi ulang (ETag/304 - ringan).
+app.use((req, res, next) => {
+    if (req.method === 'GET') {
+        const accepts = req.headers.accept || '';
+        const wantsHtml = accepts.indexOf('text/html') >= 0;
+        if (wantsHtml || req.path.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+        }
+    }
+    next();
+});
 
 // Serve Static Frontend from root (BEFORE generic page router)
 // CATATAN: file .js & .html diberi Cache-Control 'no-cache' supaya browser
