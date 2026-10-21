@@ -252,4 +252,68 @@ describe('Invoice Table Utils', () => {
             sorted.forEach(r => expect(Table.countFiles(r).isComplete).toBe(false));
         });
     });
+
+    // ============================================================
+    // REGRESI: server (Supabase) membatasi jumlah baris per request
+    // ("max rows" = 500). Kalau kode menganggap semua baris sudah
+    // terambil, total invoice jadi salah (contoh: 865 -> 500).
+    // ============================================================
+    describe('fetchAllRows', () => {
+        test('server memotong 500 baris -> data diambil bertahap sampai habis', async () => {
+            const total = 865;
+            const CAP = 500;
+            const pages = [];
+
+            const fetchPage = async (offset, limit) => {
+                pages.push({ offset, limit });
+                const start = Math.min(offset, total);
+                const end = Math.min(start + CAP, total);   // server potong di 500
+                const rows = [];
+                for (let i = start; i < end; i++) rows.push({ faktur: 'F' + i });
+                return rows;
+            };
+
+            const rows = await Table.fetchAllRows(fetchPage, total);
+
+            expect(rows.length).toBe(total);          // SEMUA baris didapat
+            expect(rows[0].faktur).toBe('F0');
+            expect(rows[rows.length - 1].faktur).toBe('F864');
+            expect(pages.length).toBe(2);              // 500 + 365
+        });
+
+        test('server tidak memotong -> cukup 1 request', async () => {
+            const total = 120;
+            let calls = 0;
+            const fetchPage = async (offset, limit) => {
+                calls++;
+                const rows = [];
+                for (let i = offset; i < Math.min(offset + limit, total); i++) rows.push({ faktur: 'F' + i });
+                return rows;
+            };
+            const rows = await Table.fetchAllRows(fetchPage, total);
+            expect(rows.length).toBe(total);
+            expect(calls).toBe(1);
+        });
+
+        test('total 0 -> tidak ada request', async () => {
+            let calls = 0;
+            const rows = await Table.fetchAllRows(async () => { calls++; return []; }, 0);
+            expect(rows).toEqual([]);
+            expect(calls).toBe(0);
+        });
+
+        test('server mengembalikan data kosong di tengah -> berhenti (tidak loop)', async () => {
+            let calls = 0;
+            const fetchPage = async () => { calls++; return []; };
+            const rows = await Table.fetchAllRows(fetchPage, 1000);
+            expect(rows).toEqual([]);
+            expect(calls).toBe(1);
+        });
+
+        test('batas jumlah request dipatuhi', async () => {
+            const fetchPage = async () => [{ faktur: 'x' }];
+            const rows = await Table.fetchAllRows(fetchPage, 1000, { maxRequests: 3 });
+            expect(rows.length).toBeLessThanOrEqual(3);
+        });
+    });
 });

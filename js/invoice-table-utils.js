@@ -141,12 +141,60 @@
         return rows.slice(start, start + size);
     }
 
+    /**
+     * Ambil SELURUH baris dari endpoint yang membatasi jumlah baris
+     * per request (mis. "max rows" di Supabase = 500 baris).
+     *
+     * fetchPage(offset, limit) harus mengembalikan array baris.
+     *-totalCount = jumlah baris sebenarnya (dari count endpoint)
+     * -jumlah baris yang benar-benar diterima server dipakai untuk
+     *  menentukan ukuran request berikutnya (jadi aman walau cap-nya 500
+     *  atau angka lain)
+     * -jika data tidak bisa diambil semua, hasil yang dikembalikan
+     *  lebih pendek - pemanggil bisa memutuskan fallback ke mode server
+     */
+    async function fetchAllRows(fetchPage, totalCount, options) {
+        const opts = options || {};
+        const maxRequests = opts.maxRequests || 20;
+        const firstLimit = opts.firstLimit || 1000;
+        const total = Number(totalCount) || 0;
+
+        const rows = [];
+        if (total <= 0) return rows;
+
+        let offset = 0;
+        let chunkSize = 0;
+        let requests = 0;
+
+        while (offset < total && requests < maxRequests) {
+            const limit = chunkSize || Math.min(firstLimit, total);
+            const data = await fetchPage(offset, limit);
+            requests++;
+
+            if (!data || !data.length) break;
+
+            for (let i = 0; i < data.length; i++) rows.push(data[i]);
+            offset += data.length;
+
+            // Server memotong hasil (cap) -> pakai ukuran baris yang sama
+            // untuk request berikutnya agar tidak ada baris yang terlewat
+            if (data.length < limit) {
+                chunkSize = data.length;
+            }
+
+            if (rows.length >= total) break;
+        }
+
+        return rows;
+    }
+
     return {
         isPPNInvoice: isPPNInvoice,
         countFiles: countFiles,
         filterByStatus: filterByStatus,
         compareInvoices: compareInvoices,
         sortInvoices: sortInvoices,
-        paginate: paginate
+        paginate: paginate,
+        fetchAllRows: fetchAllRows
     };
 });

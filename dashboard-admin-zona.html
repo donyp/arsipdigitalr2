@@ -2467,13 +2467,43 @@
 
 
         // ============================================
+        // AMBIL SEMUA DATA INVOICE (bertahap)
+        // ============================================
+        // Server (Supabase "max rows") membatasi jumlah baris per request
+        // (mis. 500). Kalau hanya request sekali dengan limit besar,
+        // data terpotong -> jumlah invoice & pagination salah.
+        // Fungsi ini mengambil bertahap sampai semua baris terkumpul.
+        async function fetchAllInvoiceRows(extraParams = '') {
+            const all = [];
+            let count = 0;
+            let offset = 0;
+            let chunk = 1000;
+
+            for (let i = 0; i < 20; i++) {
+                const suffix = extraParams ? `&${extraParams}` : '';
+                const res = await API.get(`/api/invoice/list?limit=${chunk}&offset=${offset}${suffix}`);
+                const rows = res.data || [];
+                if (res.count !== undefined) count = res.count;
+                if (!rows.length) break;
+
+                for (let j = 0; j < rows.length; j++) all.push(rows[j]);
+                offset += rows.length;
+
+                // Server memotong hasil -> pakai ukuran baris yang sama
+                if (rows.length < chunk) chunk = rows.length;
+                if (all.length >= count) break;
+            }
+
+            return { data: all, count: count || all.length };
+        }
+
+        // ============================================
         // LOAD FILTER OPTIONS ONLY (NO STATS UPDATE)
         // ============================================
         async function loadFilterOptionsOnly() {
             try {
-                // Single API call to get all invoice data
-                const res = await API.get('/api/invoice/list?limit=10000&offset=0');
-                const invoices = res.data || [];
+                // Semua data invoice (diambil bertahap)
+                const invoices = (await fetchAllInvoiceRows()).data;
                 
                 // Store invoices globally for use in filter and download functions
                 window.allAdminZonaInvoices = invoices;
@@ -2577,9 +2607,9 @@
         // ============================================
         async function loadAllInvoicesAndStats() {
             try {
-                // Single API call to get all invoice data
-                const res = await API.get('/api/invoice/list?limit=10000&offset=0');
-                const invoices = res.data || [];
+                // Semua data invoice (diambil bertahap - server membatasi
+                // jumlah baris per request)
+                const invoices = (await fetchAllInvoiceRows()).data;
                 
                 // Store invoices globally for use in download functions
                 window.allAdminZonaInvoices = invoices;
@@ -2732,8 +2762,8 @@
         // ============================================
         async function updateWelcomeStats() {
             try {
-                const res = await API.get('/api/invoice/list?limit=10000&offset=0');
-                const invoices = res.data || [];
+                // Semua data invoice (diambil bertahap)
+                const invoices = (await fetchAllInvoiceRows()).data;
 
                 // Calculate stats based on FILE COMPLETION, not status field
                 const totalInvoice = invoices.length;
@@ -2803,8 +2833,8 @@
         // ============================================
         async function loadAllInvoices() {
             try {
-                const res = await API.get('/api/invoice/list?limit=10000&offset=0');
-                const invoices = res.data || [];
+                // Semua data invoice (diambil bertahap)
+                const invoices = (await fetchAllInvoiceRows()).data;
 
                 // Extract unique years and months
                 const yearsSet = new Set();
@@ -2886,9 +2916,23 @@
                 if (keterangan) params.append('keterangan', keterangan);
                 if (search) params.append('search', search);
 
-                const res = await API.get(`/api/invoice/list?${params.toString()}`);
-                let invoices = res.data || [];
-                totalCount = res.count || 0;
+                let invoices;
+                let totalCount = 0;
+                if (hasMonthYearFilter) {
+                    // Mode "semua data": ambil bertahap (server membatasi
+                    // jumlah baris per request, mis. 500 baris)
+                    const extra = [];
+                    if (supplier) extra.push(`toko=${encodeURIComponent(supplier)}`);
+                    if (keterangan) extra.push(`keterangan=${encodeURIComponent(keterangan)}`);
+                    if (search) extra.push(`search=${encodeURIComponent(search)}`);
+                    const resAll = await fetchAllInvoiceRows(extra.join('&'));
+                    invoices = resAll.data;
+                    totalCount = resAll.count;
+                } else {
+                    const res = await API.get(`/api/invoice/list?${params.toString()}`);
+                    invoices = res.data || [];
+                    totalCount = res.count || 0;
+                }
 
                 // Apply client-side filtering by year/month/toko
                 if (year || month || toko) {

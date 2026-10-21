@@ -2746,6 +2746,29 @@ function filterDashboardRowsByStatus(rows, status) {
     });
 }
 
+/**
+ * Ambil seluruh baris dari endpoint yang membatasi jumlah baris per
+ * request (Supabase "max rows", mis. 500 baris).
+ * Tanpa ini, dataset di browser hanya berisi 500 dari 865 baris ->
+ * total invoice & pagination jadi salah setelah user klik sort.
+ */
+async function fetchAllRowsCompat(fetchPage, totalCount) {
+    if (InvoiceTable && InvoiceTable.fetchAllRows) {
+        return InvoiceTable.fetchAllRows(fetchPage, totalCount);
+    }
+    // Fallback (modul util belum ter-deploy): ambil bertahap 500 baris
+    const rows = [];
+    let offset = 0;
+    for (let i = 0; i < 20 && offset < totalCount; i++) {
+        const data = await fetchPage(offset, 500);
+        if (!data || !data.length) break;
+        for (let j = 0; j < data.length; j++) rows.push(data[j]);
+        offset += data.length;
+        if (data.length < 500) break;
+    }
+    return rows;
+}
+
 // ============================================
 // Track currently active filters for pagination
 // ============================================
@@ -4405,21 +4428,46 @@ async function applyInvoiceFilters() {
         
         let result = await response.json();
         const totalMatching = (result.count !== undefined) ? result.count : 0;
-        const useLocalDataset = totalMatching > 0 && totalMatching <= LOCAL_DATASET_LIMIT;
+        let useLocalDataset = totalMatching > 0 && totalMatching <= LOCAL_DATASET_LIMIT;
         
         if (useLocalDataset) {
-            // Ambil seluruh dataset hasil filter
-            params.set('limit', LOCAL_DATASET_LIMIT);
-            response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
-                method: 'GET',
-                headers: headers
-            });
-            if (!response.ok) {
-                throw new Error('Failed to filter invoices');
+            // Ambil SELURUH dataset hasil filter.
+            // CATATAN: server bisa membatasi jumlah baris per request
+            // (Supabase "max rows" = 500) -> wajib ambil bertahap,
+            // kalau tidak dataset di browser terpotong (mis. 865 -> 500)
+            // dan total invoice jadi salah setelah sort.
+            const fetchPage = async (offset, limit) => {
+                const pageParams = new URLSearchParams(params);
+                pageParams.set('limit', limit);
+                pageParams.set('offset', offset);
+                // Urutan harus sama di semua request agar tidak ada baris
+                // yang terlewat/berubah urutan
+                pageParams.set('sort_by', 'tanggal');
+                pageParams.set('sort_order', 'desc');
+
+                const pageRes = await fetch(`${CONFIG.API_URL}/api/invoice/list?${pageParams.toString()}`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                if (!pageRes.ok) {
+                    throw new Error('Failed to load invoice dataset');
+                }
+                const pageJson = await pageRes.json();
+                return pageJson.data || [];
+            };
+
+            const fullRows = await fetchAllRowsCompat(fetchPage, totalMatching);
+
+            if (fullRows.length >= totalMatching) {
+                result = Object.assign({}, result, { data: fullRows, count: totalMatching });
+            } else {
+                // Tidak berhasil mengambil semua -> mode server (sort di backend)
+                useLocalDataset = false;
             }
-            result = await response.json();
-        } else {
-            // Terlalu banyak data (atau kosong) -> ambil 1 halaman saja
+        }
+        
+        if (!useLocalDataset) {
+            // Ambil 1 halaman saja (mode server)
             params.set('limit', INVOICE_PAGE_SIZE);
             response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
                 method: 'GET',
