@@ -1503,9 +1503,35 @@
             gap: 4px;
         }
 
+        /* Light mode: button color #3d3b6b */
+        body:not(.dark-mode) .btn-page {
+            color: #3d3b6b;
+            border-color: #3d3b6b;
+        }
+
+        /* Dark mode: button color white */
+        body.dark-mode .btn-page,
+        html.dark-mode .btn-page {
+            color: white;
+            border-color: white;
+        }
+
         .btn-page:hover:not(:disabled) {
             background: var(--color-accent);
             color: var(--color-bg-secondary);
+        }
+
+        /* Light mode: button hover */
+        body:not(.dark-mode) .btn-page:hover:not(:disabled) {
+            background: #3d3b6b;
+            color: white;
+        }
+
+        /* Dark mode: button hover */
+        body.dark-mode .btn-page:hover:not(:disabled),
+        html.dark-mode .btn-page:hover:not(:disabled) {
+            background: white;
+            color: #3d3b6b;
         }
 
         .btn-page:disabled {
