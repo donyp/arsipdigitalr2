@@ -60,7 +60,101 @@ class SPARouter {
         // sendiri -> akan membuat handler klik dobel)
         this.neverReloadScripts = ['spa-router.js'];
 
+        // ============================================================
+        // SCRIPT YANG MENYATAKAN GLOBAL SAMA
+        // ============================================================
+        // js/api.js & js/supabase.js sama-sama mendeklarasikan `const API`
+        // (begitu juga CONFIG di config.js, Toast di utils.js).
+        // Kalau script yang(global-nya sudah ada) dieksekusi lagi ->
+        // "SyntaxError: Identifier 'X' has already been declared" dan
+        // kode halaman gagal jalan.
+        // Solusi: script dieksekusi di scope terpisah lalu method-nya
+        // digabung ke global yang sudah ada (jadi API.del dari
+        // supabase.js & API.postFormData dari api.js sama-sama tersedia).
+        this.scriptGlobalMap = {
+            'api.js': 'API',
+            'supabase.js': 'API',
+            'config.js': 'CONFIG',
+            'utils.js': 'Toast',
+            'auth.js': 'currentUser'
+        };
+
+        // ============================================================
+        // DAFTAR SCRIPT YANG SUDAH TERMUAT
+        // ============================================================
+        // Disimpan di memori (bukan dibaca dari DOM) karena tag <script>
+        // milik halaman berada DI DALAM #main-content -> element-nya
+        // terhapus setiap kali konten ditukar, padahal global yang
+        // dideklarasikannya masih hidup. Kalau tidak dicatat, script
+        // yang sama akan di-inject ulang ->
+        // "SyntaxError: Identifier 'X' has already been declared".
+        this.loadedScriptPaths = new Set();
+        this.loadedScriptNames = new Set();
+        this.collectLoadedScripts();
+
         this.init();
+    }
+
+    /**
+     * Apakah sebuah global (const/let di level atas script) sudah ada?
+     */
+    globalExists(name) {
+        try {
+            // eslint-disable-next-line no-eval
+            return eval(`typeof ${name} !== 'undefined'`);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Eksekusi script di scope terpisah lalu GABUNG method-nya ke global
+     * yang sudah ada. Dipakai untuk script yang mendeklarasikan global
+     * yang sama dengan script lain (mis. js/api.js vs js/supabase.js).
+     */
+    async mergeScriptGlobals(url, globalName) {
+        try {
+            const res = await fetch(url);
+            if (!res.ok) return;
+            const src = await res.text();
+
+            // Global yang sudah ada (objek) - diambil SEBELUM script
+            // dieksekusi di scope terpisah
+            let existing = null;
+            try {
+                // eslint-disable-next-line no-eval
+                existing = eval(`(typeof ${globalName} !== 'undefined' && typeof ${globalName} === 'object') ? ${globalName} : null`);
+            } catch (e) { existing = null; }
+
+            // Jalankan di scope terpisah -> deklarasi di dalamnya tidak
+            // bentrok dengan global yang sudah ada
+            // eslint-disable-next-line no-new-func
+            const fn = new Function(`${src}\n; return (typeof ${globalName} !== 'undefined') ? ${globalName} : null;`);
+            const produced = fn();
+
+            if (produced && existing && typeof produced === 'object' && typeof existing === 'object') {
+                Object.assign(existing, produced);
+            }
+        } catch (e) {
+            // Tidak fatal: halaman tetap jalan dengan global yang ada
+        }
+    }
+
+    /**
+     * Catat semua script yang sudah termuat di dokumen ini.
+     */
+    collectLoadedScripts() {
+        try {
+            document.querySelectorAll('script[src]').forEach(script => {
+                const src = script.getAttribute('src') || '';
+                if (!src) return;
+                const path = src.split('?')[0];
+                this.loadedScriptPaths.add(path);
+                this.loadedScriptNames.add(path.split('/').pop());
+            });
+        } catch (e) {
+            // abaikan
+        }
     }
 
     init() {
@@ -195,6 +289,32 @@ class SPARouter {
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
 
+            // ============================================================
+            // Terapkan LAYOUT halaman tujuan
+            // ============================================================
+            // Tiap halaman punya gaya shell sendiri (mis. halaman flex
+            // vs halaman dengan margin-left 16rem). Tanpa ini, konten
+            // halaman baru tampil dengan gaya halaman SEBELUMNYA ->
+            // terlihat meleset / berantakan.
+            const layout = (typeof pageData === 'object' && pageData.layout) ? pageData.layout : null;
+            if (layout) {
+                const appEl = document.getElementById('app');
+                if (appEl) {
+                    if (layout.appStyle) {
+                        appEl.setAttribute('style', layout.appStyle);
+                    } else {
+                        appEl.removeAttribute('style');
+                    }
+                }
+                if (layout.mainContentStyle) {
+                    mainContent.setAttribute('style', layout.mainContentStyle);
+                    //transition & opacity dipakai router untuk animasi
+                    mainContent.style.transition = 'opacity 0.3s ease';
+                    mainContent.style.opacity = '0.5';
+                    mainContent.style.pointerEvents = 'none';
+                }
+            }
+
             // Insert HTML content (scripts are in separate pageScripts array)
             mainContent.innerHTML = htmlContent;
             mainContent.style.opacity = '1';
@@ -234,19 +354,27 @@ class SPARouter {
                 const scriptPath = scriptData.src.split('?')[0]; // Remove query string
                 const scriptName = scriptPath.split('/').pop(); // Get filename
                 
-                // Check if any loaded script has this name (ignore query params)
-                const allScripts = document.querySelectorAll('script[src]');
-                let alreadyLoaded = false;
-                for (const existingScript of allScripts) {
-                    const existingPath = existingScript.src.split('?')[0];
-                    const existingName = existingPath.split('/').pop();
-                    if (existingName === scriptName && existingPath === scriptPath) {
-                        alreadyLoaded = true;
-                        break;
-                    }
-                }
+                // PENTING: script halaman (config.js, utils.js, auth.js, dll)
+                // berada DI DALAM #main-content, jadi element <script>-nya
+                // terhapus saat konten ditukar. Karena itu daftar "sudah
+                // termuat" HARUS disimpan di memori (Set), bukan dibaca dari
+                // DOM - kalau tidak, script yang sama di-inject ulang ->
+                // "SyntaxError: Identifier 'X' has already been declared".
+                const alreadyLoaded = this.loadedScriptPaths.has(scriptPath)
+                    || this.loadedScriptNames.has(scriptName);
                 
                 if (alreadyLoaded) {
+                    continue;
+                }
+                
+                // Global yang mendeklarasikan script ini sudah ada ->
+                // jangan eksekusi di global scope (bikin SyntaxError).
+                // Metodenya digabung ke global yang sudah ada.
+                const globalName = this.scriptGlobalMap[scriptName];
+                if (globalName && this.globalExists(globalName)) {
+                    await this.mergeScriptGlobals(scriptData.src, globalName);
+                    this.loadedScriptPaths.add(scriptPath);
+                    this.loadedScriptNames.add(scriptName);
                     continue;
                 }
                 
@@ -276,6 +404,10 @@ class SPARouter {
                     const script = document.createElement('script');
                     script.src = scriptData.src;
                     script.async = false;
+                    // Catat bahwa script ini sudah termuat (supaya tidak
+                    // di-inject ulang di navigasi berikutnya)
+                    this.loadedScriptPaths.add(scriptPath);
+                    this.loadedScriptNames.add(scriptName);
                     await new Promise((resolve, reject) => {
                         script.onload = resolve;
                         script.onerror = reject;
@@ -407,6 +539,11 @@ class SPARouter {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
+            // Style shell halaman tujuan (supaya layout tiap halaman sama
+            // seperti saat halaman itu dibuka penuh)
+            const targetApp = doc.getElementById('app');
+            const targetMain = doc.getElementById('main-content');
+
             // Strategy 1: Look for main-content div (semua halaman utama punya)
             let mainContent = doc.getElementById('main-content');
             
@@ -457,11 +594,15 @@ class SPARouter {
                 type: style.type || 'text/css'
             }));
 
-            // Return both HTML, script data, and style data
+            // Return HTML, script data, style data, dan layout
             return {
                 html: contentHtml,
                 scripts: scriptData,
-                styles: styleData
+                styles: styleData,
+                layout: {
+                    appStyle: targetApp ? targetApp.getAttribute('style') : null,
+                    mainContentStyle: targetMain ? targetMain.getAttribute('style') : null
+                }
             };
         } catch (error) {
             throw error;

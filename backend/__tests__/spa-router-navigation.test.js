@@ -123,4 +123,58 @@ describe('SPA Router - keputusan navigasi', () => {
             expect(cfg.url).toBe(p);
         });
     });
+
+    // ============================================================
+    // REGRESI: script halaman (config.js, utils.js, api.js, auth.js)
+    // berada DI DALAM #main-content -> element <script>-nya terhapus
+    // saat konten ditukar. Kalau router hanya membaca DOM untuk
+    // mengecek "sudah termuat", script yang sama di-inject ulang ->
+    // "SyntaxError: Identifier 'X' has already been declared".
+    // ============================================================
+    describe('penanganan script yang bentrok global', () => {
+
+        test('daftar script termuat disimpan di memori (bukan dari DOM)', () => {
+            expect(router.loadedScriptPaths instanceof Set).toBe(true);
+            expect(router.loadedScriptNames instanceof Set).toBe(true);
+        });
+
+        test('globalExists: true untuk global yang ada, false untuk yang tidak', () => {
+            global.__testGlobalObj = { a: 1 };
+            expect(router.globalExists('__testGlobalObj')).toBe(true);
+            expect(router.globalExists('__globalYangTidakAda')).toBe(false);
+            delete global.__testGlobalObj;
+        });
+
+        test('mergeScriptGlobals: method script digabung ke global yang sudah ada', async () => {
+            const target = { get: () => 'lama' };
+            global.__mergeTarget = target;
+
+            // script sederhana yang mendeklarasikan object global sama
+            const scriptUrl = 'data:text/javascript,' + encodeURIComponent(
+                'const __mergeTarget = { get: () => "baru", post: () => "post" };'
+            );
+
+            await router.mergeScriptGlobals(scriptUrl, '__mergeTarget');
+
+            expect(target.get()).toBe('baru');     // method dari script baru menimpa
+            expect(typeof target.post).toBe('function'); // method baru ikut tersedia
+            expect(global.__mergeTarget).toBe(target);
+
+            delete global.__mergeTarget;
+        });
+
+        test('mergeScriptGlobals: script rusak tidak membuat halaman gagal', async () => {
+            const target = { get: () => 'lama' };
+            global.__mergeTarget2 = target;
+            await router.mergeScriptGlobals('data:text/javascript,' + encodeURIComponent('this is not valid javascript ==='), '__mergeTarget2');
+            expect(target.get()).toBe('lama');
+            delete global.__mergeTarget2;
+        });
+
+        test('peta global script memuat api.js & supabase.js (keduanya const API)', () => {
+            expect(router.scriptGlobalMap['api.js']).toBe('API');
+            expect(router.scriptGlobalMap['supabase.js']).toBe('API');
+            expect(router.scriptGlobalMap['utils.js']).toBe('Toast');
+        });
+    });
 });
