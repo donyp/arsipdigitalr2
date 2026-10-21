@@ -86,4 +86,18 @@ describe('Sidebar - style item aktif', () => {
         expect(internals.isMenuItemActive('/user')).toBe(true);
         expect(internals.isMenuItemActive('/dashboard')).toBe(false);
     });
+
+    // ============================================================
+    // REGRESI: highlight menu aktif harus PINDAH SEGERA saat klik,
+    // padahal URL baru berubah setelah konten tertukar. Karena itu
+    // path tujuan bisa diberikan langsung (pathOverride).
+    // ============================================================
+    test('isMenuItemActive: pathOverride dipakai untuk target navigasi', () => {
+        global.window.location.pathname = '/dashboard';
+        // target navigasi = /toko (URL belum berubah)
+        expect(internals.isMenuItemActive('/toko', '/toko')).toBe(true);
+        expect(internals.isMenuItemActive('/dashboard', '/toko')).toBe(false);
+        // tanpa override, ikut pathname saat ini
+        expect(internals.isMenuItemActive('/dashboard')).toBe(true);
+    });
 });

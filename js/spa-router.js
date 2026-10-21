@@ -243,6 +243,20 @@ class SPARouter {
             return;
         }
 
+        // ============================================================
+        // HIGHLIGHT MENU AKTIF PINDAH SEGERA
+        // ============================================================
+        // Dulu highlight baru diperbarui di akhir loadPage, setelah
+        // fetch + injeksi script + 2 jeda tetap (500 ms + 1000 ms)
+        // -> perpindahan highlight terasa lambat ±1,5-3 detik.
+        // Path tujuan sudah diketahui, jadi highlight bisa langsung
+        // pindah tanpa menunggu konten selesai dimuat.
+        if (typeof window.updateSidebarActiveState === 'function') {
+            try {
+                window.updateSidebarActiveState(path);
+            } catch (e) { /* abaikan */ }
+        }
+
         // URL di-update SETELAH konten benar-benar tertukar (di loadPage)
         this.loadPage(path, true);
     }
@@ -460,15 +474,19 @@ class SPARouter {
                     newScript.setAttribute('data-spa-inline-script', 'true');
                     newScript.setAttribute('data-page', path);
                     document.body.appendChild(newScript);
-                    // Wait for script to fully execute before next one
-                    await new Promise(resolve => setTimeout(resolve, 50));
+                    // Script inline dieksekusi sinkron saat appendChild,
+                    // jadi jeda 50 ms per script tidak perlu (dulu total
+                    // bisa 400-500 ms untuk halaman dengan banyak script)
+                    await new Promise(resolve => setTimeout(resolve, 5));
                 } catch (e) {
                     console.warn('[SPA] Inline script error:', e.message);
                 }
             }
 
             // Wait for page to stabilize after scripts
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // (dilewati 500 ms -> 200 ms: jeda ini hanya menahan navigasi
+            //  berikutnya, bukan menunggu data)
+            await new Promise(resolve => setTimeout(resolve, 200));
 
             // Dispatch spa-page-loaded event to notify page-specific scripts
             // This triggers initialization in pages that listen for this event
@@ -477,8 +495,9 @@ class SPARouter {
             }));
             
             // Wait for page-specific initialization to complete
-            // This is crucial - pages need time to fetch data and render
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // (1000 ms -> 400 ms; klik saat halaman masih dimuat sudah
+            //  diantrikan, jadi tidak perlu menunggu lama)
+            await new Promise(resolve => setTimeout(resolve, 400));
 
             // Clear sidebar inject flag to allow re-render on next page
             const sidebar = document.getElementById('sidebar');

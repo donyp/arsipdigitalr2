@@ -11,7 +11,7 @@
     window.SidebarInternals = {
         applyItemActiveStyle: (item, isActive, colors, isChild) =>
             applyItemActiveStyle(item, isActive, colors, isChild),
-        isMenuItemActive: (href) => isMenuItemActive(href)
+        isMenuItemActive: (href, pathOverride) => isMenuItemActive(href, pathOverride)
     };
 
     // ============================================================
@@ -396,9 +396,11 @@
     }
 
     // Update active menu item without full re-render
-    function updateActiveMenuItem() {
+    function updateActiveMenuItem(pathOverride) {
         const allItems = document.querySelectorAll('.sidebar-item, .sidebar-child-item');
-        const currentPath = window.location.pathname;
+        // pathOverride dipakai saat navigasi SPA: URL baru berubah setelah
+        // konten tertukar, jadi highlight tidak bisa menunggu pathname.
+        const currentPath = (pathOverride || window.location.pathname);
 
         // Pastikan hanya SATU item aktif: kalau ada item yang cocok PERSIS
         // dengan path sekarang, item lain (yang hanya cocok lewat aturan
@@ -419,7 +421,7 @@
             if (href) {
                 isActive = exactItem
                     ? (item === exactItem)
-                    : isMenuItemActive(href);
+                    : isMenuItemActive(href, pathOverride);
             }
             applyItemActiveStyle(item, isActive, null, isChild);
         });
@@ -766,10 +768,12 @@
     // ============================================================
     // HELPER FUNCTIONS
     // ============================================================
-    function isMenuItemActive(href) {
+    function isMenuItemActive(href, pathOverride) {
         if (!href || href === '#') return false;
         
-        const currentPath = window.location.pathname.toLowerCase();
+        // pathOverride: path tujuan navigasi (dipakai router SPA supaya
+        // highlight bisa langsung pindah sebelum URL ikut berubah)
+        const currentPath = String(pathOverride || window.location.pathname).toLowerCase();
         const currentFile = currentPath.split('/').pop().replace('.html', '');
         
         // Extract filename/path from href
@@ -932,12 +936,12 @@
     // ============================================================
     // Saat navigasi SPA, sidebar TIDAK di-render ulang (supaya tidak
     // berkedip) - hanya item aktifnya yang diperbarui.
-    window.updateSidebarActiveState = function () {
+    window.updateSidebarActiveState = function (pathOverride) {
         try {
             const sidebar = document.getElementById('sidebar');
             if (!sidebar) return;
             if (sidebar.getAttribute('data-rendered') !== 'true') return;
-            updateActiveMenuItem();
+            updateActiveMenuItem(pathOverride);
         } catch (e) {
             console.warn('[SIDEBAR] Gagal update item aktif:', e.message);
         }
