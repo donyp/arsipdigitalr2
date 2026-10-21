@@ -4004,10 +4004,20 @@ async function showInvoiceActionMenu(faktur, invoiceId) {
         }
         
         // Show combine button only if we can estimate all files exist
-        const actualCount = (fileStatus.hasInvoice ? 1 : 0) + (fileStatus.hasBuktiBayar ? 1 : 0) + (fileStatus.hasFakturPajak ? 1 : 0);
-        const requiredCount = fileStatus.isPPN ? 3 : 2;
-        
-        if (actualCount === requiredCount) {
+        // Show combine button only if ALL REQUIRED files exist
+        // (invoice + bukti bayar, + faktur pajak bila PPN)
+        // Dulu: file "sisa" (mis. faktur pajak pada invoice NON) ikut dihitung
+        // sehingga tombol Combine muncul padahal ada file wajib yang hilang.
+        const requiredTypes = fileStatus.isPPN
+            ? ['invoice', 'bukti_bayar', 'faktur_pajak']
+            : ['invoice', 'bukti_bayar'];
+        const missingRequired = requiredTypes.filter(t => {
+            if (t === 'invoice') return !fileStatus.hasInvoice;
+            if (t === 'bukti_bayar') return !fileStatus.hasBuktiBayar;
+            return !fileStatus.hasFakturPajak;
+        });
+
+        if (missingRequired.length === 0) {
             menuHTML += `<button onclick="combinePDF('${faktur}');" style="width: 100%; padding: 8px 6px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; transition: all 0.2s; line-height: 1.2;" onmouseover="this.style.background='#d35400'" onmouseout="this.style.background='#e67e22'">
                 📦 Combine
             </button>`;

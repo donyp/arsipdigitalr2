@@ -2635,7 +2635,10 @@
                     let filesUploaded =
                         (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
                         (inv.bukti_bayar_path ? 1 : 0) +
-                        (inv.faktur_pajak_path ? 1 : 0);
+                        // Faktur pajak hanya dihitung untuk invoice PPN.
+                        // Invoice NON yang punya "faktur pajak sisa" tidak boleh
+                        // dihitung sebagai file wajib (bikin terlihat lengkap).
+                        (String(inv.keterangan || '').trim().toUpperCase() === 'PPN' && inv.faktur_pajak_path ? 1 : 0);
                     
                     // Determine files required (PPN = 3, NON PPN = 2)
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
@@ -2786,7 +2789,10 @@
                     let filesUploaded =
                         (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
                         (inv.bukti_bayar_path ? 1 : 0) +
-                        (inv.faktur_pajak_path ? 1 : 0);
+                        // Faktur pajak hanya dihitung untuk invoice PPN.
+                        // Invoice NON yang punya "faktur pajak sisa" tidak boleh
+                        // dihitung sebagai file wajib (bikin terlihat lengkap).
+                        (String(inv.keterangan || '').trim().toUpperCase() === 'PPN' && inv.faktur_pajak_path ? 1 : 0);
                     
                     // Determine files required (PPN = 3, NON PPN = 2)
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
@@ -3018,7 +3024,10 @@
                     let filesUploaded =
                         (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
                         (inv.bukti_bayar_path ? 1 : 0) +
-                        (inv.faktur_pajak_path ? 1 : 0);
+                        // Faktur pajak hanya dihitung untuk invoice PPN.
+                        // Invoice NON yang punya "faktur pajak sisa" tidak boleh
+                        // dihitung sebagai file wajib (bikin terlihat lengkap).
+                        (String(inv.keterangan || '').trim().toUpperCase() === 'PPN' && inv.faktur_pajak_path ? 1 : 0);
                     
                     // Determine files required (PPN = 3, NON PPN = 2)
                     const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
@@ -3946,7 +3955,8 @@
                 const filesUploaded =
                     (flag(invoice.has_invoice, invoice.invoice_pdf_path || invoice.uploaded_file_path) ? 1 : 0) +
                     (flag(invoice.has_bukti_bayar, invoice.bukti_bayar_path) ? 1 : 0) +
-                    (flag(invoice.has_faktur_pajak, invoice.faktur_pajak_path) ? 1 : 0);
+                    // Faktur pajak hanya wajib & dihitung untuk invoice PPN
+                    (isPPN && flag(invoice.has_faktur_pajak, invoice.faktur_pajak_path) ? 1 : 0);
                 
                 if (filesUploaded >= filesRequired) {
                     hasFiles = true;

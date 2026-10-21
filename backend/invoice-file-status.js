@@ -79,14 +79,27 @@ function computeFileStatus({ invoice = {}, invoiceFileTypes = [] } = {}) {
         perType[type] = hasPath || hasRecord;
     }
 
-    const count = FILE_TYPES.reduce((sum, type) => sum + (perType[type] ? 1 : 0), 0);
     const required = requiredFileCount(invoice.keterangan);
+
+    // PENTING: yang dihitung HANYA file yang WAJIB untuk tipe invoice ini.
+    // PPN  -> invoice + bukti bayar + faktur pajak (3)
+    // NON -> invoice + bukti bayar (2)
+    // Invoice NON yang punya "faktur pajak sisa" tidak boleh dihitung,
+    // kalau tidak invoice tanpa Invoice PDF tetap terlihat "lengkap".
+    const requiredTypes = required === 3
+        ? ['invoice', 'bukti_bayar', 'faktur_pajak']
+        : ['invoice', 'bukti_bayar'];
+
+    const count = requiredTypes.reduce((sum, type) => sum + (perType[type] ? 1 : 0), 0);
+    const missing = requiredTypes.filter(type => !perType[type]);
 
     return {
         count,
         required,
         perType,
         types: FILE_TYPES.filter(t => perType[t]),
+        requiredTypes,
+        missing,
         isComplete: count >= required
     };
 }

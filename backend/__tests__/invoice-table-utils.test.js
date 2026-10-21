@@ -74,8 +74,61 @@ describe('Invoice Table Utils', () => {
                 faktur_pajak_path: 'c.pdf'
             }));
             expect(r.badgeCount).toBe(2);
-            expect(r.uploaded).toBe(3);
+            // file tak wajib (faktur pajak pada invoice NON) TIDAK dihitung
+            expect(r.uploaded).toBe(2);
+            expect(r.required).toBe(2);
+            expect(r.extraTypes).toEqual(['faktur_pajak']);
             expect(r.isComplete).toBe(true);
+        });
+
+        // ============================================================
+        // REGRESI: 2 faktur nyata dari diagnosa (tampil 2/2 padahal
+        // file wajibnya hilang) -> harus jadi 1/2
+        // ============================================================
+        test('faktus 835100310010126011: tanpa Invoice PDF -> 1/2, bukan 2/2', () => {
+            const r = Table.countFiles({
+                faktur: '835100310010126011',
+                keterangan: 'NON PPN',
+                invoice_pdf_path: null,
+                uploaded_file_path: null,
+                bukti_bayar_path: 'ARSIP/BEKASI/bukti-bayar/2026/JANUARI/01/835100310010126011.pdf',
+                faktur_pajak_path: 'ARSIP/BEKASI/Faktur-Pajak/2026/JANUARI/01/835100310010126011.pdf'
+            });
+            expect(r.required).toBe(2);
+            expect(r.uploaded).toBe(1);
+            expect(r.badgeCount).toBe(1);
+            expect(r.isComplete).toBe(false);
+            expect(r.hasInvoice).toBe(false);
+            expect(r.hasBuktiBayar).toBe(true);
+            expect(r.missing).toEqual(['invoice']);
+        });
+
+        test('faktus 835100310021026005: tanpa Bukti Bayar -> 1/2, bukan 2/2', () => {
+            const r = Table.countFiles({
+                faktur: '835100310021026005',
+                keterangan: 'NON PPN',
+                invoice_pdf_path: 'ARSIP/BEKASI/NON/2026/OKTOBER/02/835100310021026005.pdf',
+                uploaded_file_path: null,
+                bukti_bayar_path: null,
+                faktur_pajak_path: 'ARSIP/BEKASI/Faktur-Pajak/2026/OKTOBER/02/835100310021026005.pdf'
+            });
+            expect(r.required).toBe(2);
+            expect(r.uploaded).toBe(1);
+            expect(r.badgeCount).toBe(1);
+            expect(r.isComplete).toBe(false);
+            expect(r.hasInvoice).toBe(true);
+            expect(r.hasBuktiBayar).toBe(false);
+            expect(r.missing).toEqual(['bukti_bayar']);
+        });
+
+        test('semua file wajib ada -> lengkap (tidak terpengaruh file ekstra)', () => {
+            const r = Table.countFiles(inv({
+                keterangan: 'NON',
+                bukti_bayar_path: 'b.pdf',
+                faktur_pajak_path: 'c.pdf'
+            }));
+            expect(r.isComplete).toBe(true);
+            expect(r.missing).toEqual([]);
         });
 
         test('uploaded_file_path dipakai sebagai pengganti invoice_pdf_path', () => {

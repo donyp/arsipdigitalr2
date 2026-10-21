@@ -40,28 +40,62 @@
     }
 
     /**
+     * Tipe file yang WAJIB ada untuk sebuah invoice.
+     * PPN  -> invoice PDF + bukti bayar + faktur pajak (3)
+     * NON -> invoice PDF + bukti bayar (2)
+     */
+    function requiredFileTypes(inv) {
+        return isPPNInvoice(inv)
+            ? ['invoice', 'bukti_bayar', 'faktur_pajak']
+            : ['invoice', 'bukti_bayar'];
+    }
+
+    /**
      * Hitung status file satu invoice.
+     *
+     * PENTING: yang dihitung HANYA file yang wajib untuk tipe invoice ini.
+     * Invoice NON yang punya "faktur pajak sisa" tidak boleh dihitung sebagai
+     * file lengkap - kalau tidak, invoice tanpa Invoice PDF tetap terlihat
+     * "lengkap" (2/2) dan tombol Combine jadi salah.
+     *
      * @returns {{required:number, uploaded:number, badgeCount:number,
      *            isComplete:boolean, hasInvoice:boolean,
-     *            hasBuktiBayar:boolean, hasFakturPajak:boolean}}
+     *            hasBuktiBayar:boolean, hasFakturPajak:boolean,
+     *            missing:string[], extraTypes:string[]}}
      */
     function countFiles(inv) {
         const invoicePath = (inv && (inv.invoice_pdf_path || inv.uploaded_file_path)) || null;
         const buktiPath = (inv && inv.bukti_bayar_path) || null;
         const fakturPath = (inv && inv.faktur_pajak_path) || null;
 
-        const required = isPPNInvoice(inv) ? 3 : 2;
-        const uploaded = (invoicePath ? 1 : 0) + (buktiPath ? 1 : 0) + (fakturPath ? 1 : 0);
+        const requiredTypes = requiredFileTypes(inv);
+        const required = requiredTypes.length;
+
+        const present = {
+            invoice: !!invoicePath,
+            bukti_bayar: !!buktiPath,
+            faktur_pajak: !!fakturPath
+        };
+
+        // Hanya file wajib yang dihitung
+        const missing = requiredTypes.filter(t => !present[t]);
+        const uploaded = requiredTypes.length - missing.length;
+
+        // File ada tapi tidak wajib untuk tipe invoice ini (mis. faktur pajak
+        // sisa pada invoice NON) - tidak dihitung, tombolnya juga disembunyikan
+        const extraTypes = ['invoice', 'bukti_bayar', 'faktur_pajak']
+            .filter(t => present[t] && requiredTypes.indexOf(t) === -1);
 
         return {
             required: required,
             uploaded: uploaded,
-            // Badge tidak boleh lebih besar dari jumlah file wajib
             badgeCount: Math.min(uploaded, required),
             isComplete: uploaded >= required,
-            hasInvoice: !!invoicePath,
-            hasBuktiBayar: !!buktiPath,
-            hasFakturPajak: !!fakturPath
+            hasInvoice: present.invoice,
+            hasBuktiBayar: present.bukti_bayar,
+            hasFakturPajak: present.faktur_pajak,
+            missing: missing,
+            extraTypes: extraTypes
         };
     }
 
@@ -202,6 +236,7 @@
 
     return {
         isPPNInvoice: isPPNInvoice,
+        requiredFileTypes: requiredFileTypes,
         countFiles: countFiles,
         filterByStatus: filterByStatus,
         compareInvoices: compareInvoices,
