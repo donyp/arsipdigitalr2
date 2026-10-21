@@ -1374,7 +1374,9 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             // Order by specified field and direction
             // Validate sort_by to prevent injection (only allow specific fields)
-            const allowedSortFields = ['tanggal', 'status', 'total_jumlah_jual', 'created_at', 'konsumen', 'toko'];
+            // 'files_uploaded_count' dipakai kolom Status di dashboard supaya
+            // urutannya mengikuti kelengkapan file (x/3), bukan status Excel.
+            const allowedSortFields = ['tanggal', 'status', 'total_jumlah_jual', 'created_at', 'konsumen', 'toko', 'files_uploaded_count'];
             const sortField = allowedSortFields.includes(sort_by) ? sort_by : 'tanggal';
             const sortAsc = sort_order === 'asc';
             

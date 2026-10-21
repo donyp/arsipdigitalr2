@@ -2687,6 +2687,66 @@ let invoiceCurrentPage = 1;
 let invoiceTotalCount = 0;
 
 // ============================================
+// SUMBER TUNGGU: hitung status file, filter, & sort
+// ============================================
+// Modul bersama js/invoice-table-utils.js (juga dipakai unit test).
+// Fallback kecil di bawah hanya dipakai bila file util belum ter-deploy
+// (mis. sebagian user masih cache lama) - agar halaman tidak pernah error.
+const InvoiceTable = (typeof window !== 'undefined' && window.InvoiceTableUtils) ? window.InvoiceTableUtils : null;
+
+function countInvoiceFiles(inv) {
+    if (InvoiceTable) return InvoiceTable.countFiles(inv);
+    // Fallback (identik aturan dengan modul utama)
+    const isPPN = String((inv && inv.keterangan) || '').trim().toUpperCase() === 'PPN';
+    const invoicePath = (inv && (inv.invoice_pdf_path || inv.uploaded_file_path)) || null;
+    const buktiPath = (inv && inv.bukti_bayar_path) || null;
+    const fakturPath = (inv && inv.faktur_pajak_path) || null;
+    const required = isPPN ? 3 : 2;
+    const uploaded = (invoicePath ? 1 : 0) + (buktiPath ? 1 : 0) + (fakturPath ? 1 : 0);
+    return {
+        required: required,
+        uploaded: uploaded,
+        badgeCount: Math.min(uploaded, required),
+        isComplete: uploaded >= required,
+        hasInvoice: !!invoicePath,
+        hasBuktiBayar: !!buktiPath,
+        hasFakturPajak: !!fakturPath
+    };
+}
+
+// ============================================
+// MODE LOKAL: dataset lengkap di memory -> sort & paginate tanpa server
+// ============================================
+// Setelah user menekan "Terapkan", dataset hasil filter disimpan di
+// memory. Klik sort lalu diurutkan di browser (INSTANT, tanpa request),
+// seperti halaman admin zona.
+// - dashboardDataset    : semua baris hasil filter (BELUM difilter status)
+// - dashboardRows       : baris setelah filter status (Lunas/Belum Lunas)
+// - dashboardSort       : kolom & arah sort terakhir
+const LOCAL_DATASET_LIMIT = 5000;   // di atas ini -> kembali ke mode server
+let dashboardDataset = null;
+let dashboardRows = null;
+let dashboardSort = { field: 'tanggal', direction: 'desc' };
+
+function getSortedDashboardRows() {
+    if (!dashboardRows) return [];
+    if (!InvoiceTable) return dashboardRows;
+    return InvoiceTable.sortInvoices(dashboardRows, dashboardSort.field, dashboardSort.direction);
+}
+
+function filterDashboardRowsByStatus(rows, status) {
+    if (!status) return rows.slice();
+    if (InvoiceTable) return InvoiceTable.filterByStatus(rows, status);
+    // Fallback bila modul util belum tersedia
+    return rows.filter(inv => {
+        const info = countInvoiceFiles(inv);
+        if (status === 'Lunas') return info.isComplete;
+        if (status === 'Belum Lunas') return !info.isComplete;
+        return true;
+    });
+}
+
+// ============================================
 // Track currently active filters for pagination
 // ============================================
 let activeInvoiceFilters = {
@@ -2805,6 +2865,22 @@ async function loadMonitoringStats() {
 
 async function loadInvoicesInDashboard(page = 1) {
     try {
+        // ============================================================
+        // MODE LOKAL: dataset sudah lengkap di memory (setelah "Terapkan")
+        // -> sort & paginate di browser, TANPA request ke server (INSTANT)
+        // ============================================================
+        if (dashboardDataset && dashboardRows) {
+            const rows = getSortedDashboardRows();
+            const pageRows = InvoiceTable
+                ? InvoiceTable.paginate(rows, page, INVOICE_PAGE_SIZE)
+                : rows.slice((page - 1) * INVOICE_PAGE_SIZE, page * INVOICE_PAGE_SIZE);
+
+            await renderInvoiceTable(pageRows);
+            invoiceCurrentPage = page;
+            invoiceTotalCount = rows.length;
+            updatePaginationInfo();
+            return;
+        }
         
         
         const token = API.getToken() || localStorage.getItem('jwt_token');
@@ -2925,26 +3001,24 @@ async function renderInvoiceTable(invoices) {
     // Sumber kebenaran tetap sama: invoice_file_list (path) + files_uploaded_count.
     
     const allInvoicesWithStatus = invoices.map((inv) => {
-        const isPPN = inv.keterangan === 'PPN';
-        const requiredCount = isPPN ? 3 : 2;
-        
-        // Path file dari database (sudah ada di response list)
-        const invoicePath = inv.invoice_pdf_path || inv.uploaded_file_path || null;
-        const buktiPath = inv.bukti_bayar_path || null;
-        const fakturPath = inv.faktur_pajak_path || null;
-        
         // ============================================================
         // Status file dihitung dari kolom path - SUMBER YANG SAMA dengan
         // tombol download. Sebelumnya badge x/y memakai files_uploaded_count
         // (kolom cache) sementara tombol memakai kolom path -> keduanya
         // bisa berbeda sehingga user melihat "3/3" tapi tombolnya cuma 2.
         // ============================================================
-        const pathCount = (invoicePath ? 1 : 0) + (buktiPath ? 1 : 0) + (fakturPath ? 1 : 0);
-        const actualUploadedCount = Math.min(pathCount, requiredCount);
-        const isComplete = pathCount >= requiredCount;
+        // Hitungan kini memakai modul bersama (js/invoice-table-utils.js)
+        // yang sama dipakai filter status & sort - satu sumber, tidak
+        // bisa lagi berbeda antar tempat.
+        const info = countInvoiceFiles(inv);
+        const isPPN = info.required === 3;
+        const requiredCount = info.required;
+        const actualUploadedCount = info.badgeCount;   // min(uploaded, required)
+        const pathCount = info.uploaded;
+        const isComplete = info.isComplete;
         
         // Build individual file status for action menu
-        let invoiceExists = !!invoicePath, buktiExists = !!buktiPath, fakturExists = !!fakturPath;
+        let invoiceExists = info.hasInvoice, buktiExists = info.hasBuktiBayar, fakturExists = info.hasFakturPajak;
         const buttons = [];
         
         if (invoiceExists) {
@@ -4304,11 +4378,23 @@ async function applyInvoiceFilters() {
             sort_order: 'desc'
         };
         
-        params.append('limit', INVOICE_PAGE_SIZE);
+        // ============================================================
+        // Ambil dataset LENGKAP hasil filter (bukan hanya 1 halaman).
+        // Dataset ini disimpan di memory -> sort & navigasi halaman
+        // berikutnya berjalan di browser (INSTANT, tanpa request),
+        // seperti halaman admin zona.
+        // LANGKAH 1: hitung dulu jumlah data dengan permintaan kecil
+        //            (limit 1) supaya tidak menarik ribuan baris hanya
+        //            untuk tahu jumlahnya.
+        // LANGKAH 2: kalau jumlahnya wajar (<= LOCAL_DATASET_LIMIT) ambil
+        //            seluruhnya (mode lokal). Kalau terlalu banyak, tetap
+        //            pakai mode server (1 halaman, sort di backend).
+        // ============================================================
+        params.append('limit', 1);
         params.append('offset', 0);
         invoiceCurrentPage = 1;  // Reset to page 1 when applying filters
         
-        const response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
+        let response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
             method: 'GET',
             headers: headers
         });
@@ -4317,9 +4403,45 @@ async function applyInvoiceFilters() {
             throw new Error('Failed to filter invoices');
         }
         
-        const result = await response.json();
+        let result = await response.json();
+        const totalMatching = (result.count !== undefined) ? result.count : 0;
+        const useLocalDataset = totalMatching > 0 && totalMatching <= LOCAL_DATASET_LIMIT;
         
+        if (useLocalDataset) {
+            // Ambil seluruh dataset hasil filter
+            params.set('limit', LOCAL_DATASET_LIMIT);
+            response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
+                method: 'GET',
+                headers: headers
+            });
+            if (!response.ok) {
+                throw new Error('Failed to filter invoices');
+            }
+            result = await response.json();
+        } else {
+            // Terlalu banyak data (atau kosong) -> ambil 1 halaman saja
+            params.set('limit', INVOICE_PAGE_SIZE);
+            response = await fetch(`${CONFIG.API_URL}/api/invoice/list?${params.toString()}`, {
+                method: 'GET',
+                headers: headers
+            });
+            if (!response.ok) {
+                throw new Error('Failed to filter invoices');
+            }
+            result = await response.json();
+        }
         
+        // Simpan dataset untuk mode lokal (sort + paginasi tanpa server)
+        if (useLocalDataset) {
+            dashboardDataset = result.data || [];
+            dashboardRows = filterDashboardRowsByStatus(dashboardDataset, status);
+            // Filter baru -> kembali ke sort default (tanggal desc),
+            // sama seperti activeInvoiceFilters yang di-reset di atas
+            dashboardSort = { field: 'tanggal', direction: 'desc' };
+        } else {
+            dashboardDataset = null;
+            dashboardRows = null;
+        }
         
         // Track total count for pagination
         if (result.count !== undefined) {
@@ -4332,24 +4454,9 @@ async function applyInvoiceFilters() {
             let filteredData = result.data || [];
             
             if (status) {
-                filteredData = filteredData.filter(inv => {
-                    const isPPN = inv.keterangan && inv.keterangan.toUpperCase() === 'PPN';
-                    const filesRequired = isPPN ? 3 : 2;
-                    // Sumber yang sama dengan badge status & tombol download:
-                    // dihitung dari kolom path (bukan kolom cache count)
-                    const filesUploaded =
-                        (inv.invoice_pdf_path || inv.uploaded_file_path ? 1 : 0) +
-                        (inv.bukti_bayar_path ? 1 : 0) +
-                        (inv.faktur_pajak_path ? 1 : 0);
-                    const isComplete = filesUploaded >= filesRequired;
-                    
-                    if (status === 'Lunas') {
-                        return isComplete;
-                    } else if (status === 'Belum Lunas') {
-                        return !isComplete;
-                    }
-                    return true;
-                });
+                // Sumber yang sama dengan badge status & tombol download
+                // (modul bersama js/invoice-table-utils.js)
+                filteredData = filterDashboardRowsByStatus(result.data || [], status);
                 
                 // Update total count based on filtered data (for table display)
                 invoiceTotalCount = filteredData.length;
@@ -4381,8 +4488,16 @@ async function applyInvoiceFilters() {
                 }
             }
             
-            // Render table with filtered data (if status filter applied) or all data
-            await renderInvoiceTable(filteredData);
+            // Render table: hanya 1 halaman yang digambar (bukan seluruh
+            // dataset) supaya DOM tetap ringan. Baris di dataset sudah
+            // difilter status; urutan (sort) diterapkan di sini.
+            const rowsToRender = useLocalDataset
+                ? (InvoiceTable
+                    ? InvoiceTable.paginate(InvoiceTable.sortInvoices(filteredData, dashboardSort.field, dashboardSort.direction), 1, INVOICE_PAGE_SIZE)
+                    : filteredData.slice(0, INVOICE_PAGE_SIZE))
+                : filteredData.slice(0, INVOICE_PAGE_SIZE);
+
+            await renderInvoiceTable(rowsToRender);
             invoiceCurrentPage = 1;
             updatePaginationInfo();
             
@@ -4989,6 +5104,100 @@ async function initInvoiceSystem() {
     
 }
 
+// Reset state invoice (dipakai initDashboard / navigasi SPA).
+// NOTE: sebelumnya initDashboard menulis window.invoiceCurrentPage yang
+// TIDAK berefek karena dashboard.js memakai binding `let` (2 sumber truth).
+window.resetInvoiceDashboardState = function () {
+    invoiceCurrentPage = 1;
+    invoiceTotalCount = 0;
+    dashboardDataset = null;
+    dashboardRows = null;
+    dashboardSort = { field: 'tanggal', direction: 'desc' };
+};
+
+// ============================================
+// SORT TABEL INVOICE
+// ============================================
+// Pengganti window.sortTable lama yang ada di dashboard.html.
+// Versi lama melakukan REQUEST KE SERVER setiap klik sort (lambat) dan
+// punya copy-paste logika badge sendiri (badge bisa berubah setelah sort,
+// filter Lunas/Belum Lunas hilang).
+// Sekarang: sort di browser dari dataset yang sudah dimuat (INSTANT).
+// Kalau dataset belum dimuat (belum tekan "Terapkan"), fallback ke
+// sort di server seperti sebelumnya.
+window.sortDashboardTable = function (field) {
+    try {
+        if (!window.sortTableState) {
+            window.sortTableState = { currentSortField: null, sortDirection: {} };
+        }
+        const state = window.sortTableState;
+
+        // Arah sort: klik pertama pada kolom baru = asc, klik berikutnya toggle
+        if (state.currentSortField === field) {
+            state.sortDirection[field] = state.sortDirection[field] === 'asc' ? 'desc' : 'asc';
+        } else {
+            state.sortDirection[field] = 'asc';
+            state.currentSortField = field;
+        }
+        const direction = state.sortDirection[field] || 'asc';
+
+        // Simpan ke filter aktif (dipakai mode server & saat pindah halaman)
+        if (typeof activeInvoiceFilters !== 'undefined') {
+            activeInvoiceFilters.sort_by = field;
+            activeInvoiceFilters.sort_order = direction;
+        }
+
+        if (dashboardDataset && dashboardRows) {
+            // MODE LOKAL: urutkan di browser - tanpa request ke server
+            dashboardSort = { field: field, direction: direction };
+            const rows = getSortedDashboardRows();
+            const pageRows = InvoiceTable
+                ? InvoiceTable.paginate(rows, 1, INVOICE_PAGE_SIZE)
+                : rows.slice(0, INVOICE_PAGE_SIZE);
+
+            invoiceTotalCount = rows.length;
+            invoiceCurrentPage = 1;
+            renderInvoiceTable(pageRows).then(() => {
+                updatePaginationInfo();
+                updateSortIndicators(field);
+            }).catch(err => console.error('[sortDashboardTable] render error:', err));
+        } else {
+            // MODE SERVER: sort dilakukan di backend
+            activeInvoiceFilters.sort_by = (field === 'status') ? 'files_uploaded_count' : field;
+            activeInvoiceFilters.sort_order = direction;
+            loadInvoicesInDashboard(1).then(() => {
+                updateSortIndicators(field);
+            }).catch(err => console.error('[sortDashboardTable] load error:', err));
+        }
+    } catch (err) {
+        console.error('[sortDashboardTable] error:', err);
+    }
+};
+
+// Indikator arah sort (versi lama di dashboard.html memakai variabel
+// yang tidak dideklarasikan -> bisa error & menulis state dobel)
+function updateSortIndicators(sortedField) {
+    const ids = { status: 'sort-status', tanggal: 'sort-tanggal', total: 'sort-total' };
+
+    document.querySelectorAll('.sort-indicator').forEach(el => {
+        el.classList.remove('fa-chevron-up');
+        el.classList.add('fa-chevron-down');
+    });
+
+    const direction = (window.sortTableState && window.sortTableState.sortDirection[sortedField]) || 'asc';
+    const el = document.getElementById(ids[sortedField]);
+    if (el) {
+        el.classList.remove('fa-chevron-down', 'fa-chevron-up');
+        el.classList.add(direction === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
+    }
+
+    // Simpan state sort ke filter aktif (dipakai pagination server)
+    if (typeof activeInvoiceFilters !== 'undefined') {
+        activeInvoiceFilters.sort_by = sortedField;
+        activeInvoiceFilters.sort_order = direction;
+    }
+}
+
 function updatePaginationInfo() {
     const paginationInfo = document.getElementById('paginationInfo');
     if (!paginationInfo) return;
@@ -5016,18 +5225,14 @@ function updatePaginationInfo() {
         nextBtn.disabled = invoiceCurrentPage >= totalPages;
     }
     
-    // UPDATE SORT HEADERS: Disable clicking on pages > 1 (no visual change)
+    // UPDATE SORT HEADERS: sort sekarang bekerja di semua halaman
+    // (data sudah ada di memory setelah filter diterapkan), jadi tidak
+    // perlu lagi dikunci di halaman > 1.
     const sortHeaders = ['th-status', 'th-tanggal', 'th-total'];
     sortHeaders.forEach(headerId => {
         const header = document.getElementById(headerId);
         if (header) {
-            if (invoiceCurrentPage > 1) {
-                // Disable sort on non-first pages
-                header.style.pointerEvents = 'none';
-            } else {
-                // Enable sort on first page
-                header.style.pointerEvents = 'auto';
-            }
+            header.style.pointerEvents = 'auto';
         }
     });
 }

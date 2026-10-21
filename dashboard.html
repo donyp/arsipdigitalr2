@@ -2621,14 +2621,14 @@
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
-                                        <th id="th-status" onclick="if(invoiceCurrentPage && invoiceCurrentPage > 1) { return false; } if(document.getElementById('invoiceTableBody')?.innerText?.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0) { return false; } window.sortTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
-                                        <th id="th-tanggal" onclick="if(invoiceCurrentPage && invoiceCurrentPage > 1) { return false; } if(document.getElementById('invoiceTableBody')?.innerText?.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0) { return false; } window.sortTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
+                                        <th id="th-status" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('status'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Status <i class="fas fa-chevron-down sort-indicator" id="sort-status"></i></th>
+                                        <th id="th-tanggal" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('tanggal'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%; cursor: pointer; user-select: none;">Tanggal <i class="fas fa-chevron-down sort-indicator" id="sort-tanggal"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 13%;">No Faktur</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 9%;">Status Bayar</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 6%;">Tipe</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 15%;">Nama Konsumen</th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 10%;">Nama Toko</th>
-                                        <th id="th-total" onclick="if(invoiceCurrentPage && invoiceCurrentPage > 1) { return false; } const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } window.sortTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
+                                        <th id="th-total" onclick="const invoiceTableBody = document.getElementById('invoiceTableBody'); if (invoiceTableBody && (invoiceTableBody.innerText.includes('Silahkan pilih') || document.querySelectorAll('#invoiceTableBody tr:not(:has(td[colspan]))').length === 0)) { return false; } sortDashboardTable('total'); return false;" style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 8%; cursor: pointer; user-select: none;">Total <i class="fas fa-chevron-down sort-indicator" id="sort-total"></i></th>
                                         <th style="padding: 16px 18px; text-align: left; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Keterangan</th>
                                         <th style="padding: 16px 18px; text-align: center; font-weight: 700; font-size: 11px; text-transform: uppercase; color: #667eea; letter-spacing: 0.08em; width: 7%;">Aksi</th>
                                     </tr>
@@ -2847,7 +2847,8 @@
     <script src="js/sidebar.js?t=1792067064.55694"></script>
     <script src="js/spa-router.js?t=1791564515"></script>
     <script src="js/invoice-stats-cache.js"></script>
-    <script src="js/dashboard.js?v=1009&t=1790611000"></script>
+    <script src="js/invoice-table-utils.js?v=1"></script>
+    <script src="js/dashboard.js?v=1010&t=1790611000"></script>
     
     <!-- Broadcast Banner Loader (Lazy-Load Option B) -->
     <script>
@@ -3498,290 +3499,20 @@
         }
     </script>
     <script>
-        // ============================================================
-        // SORTING FUNCTIONALITY FOR MODERATOR DASHBOARD
-        // ============================================================
-        // Initialize sort state only once (prevent SPA re-declaration)
-        if (typeof window.sortTableState === 'undefined') {
-            window.sortTableState = {
-                currentSortField: null,
-                sortDirection: {}
-            };
-            
-            // Define sortTable only once
-            window.sortTable = async function sortTable(field) {
-            const invoiceTableBody = document.getElementById('invoiceTableBody');
-            if (!invoiceTableBody) {
-                return;
-            }
-            
-            // CHECK: Ensure filters are applied before allowing sort
-            // Check if "Terapkan" button has been clicked (data is actually displayed)
-            const emptyStateMessage = invoiceTableBody.querySelector('td[style*="text-align: center"]');
-            if (emptyStateMessage && emptyStateMessage.textContent.includes('Silahkan pilih')) {
-                return;
-            }
-            
-            // Additional check: if no rows in table, prevent sort
-            const dataRows = invoiceTableBody.querySelectorAll('tr:not(:has(td[colspan]))');
-            if (dataRows.length === 0 || invoiceTableBody.innerText.includes('Silahkan pilih')) {
-                return;
-            }
-            
-            // Disable sort headers while sorting
-            const thStatus = document.getElementById('th-status');
-            const thTanggal = document.getElementById('th-tanggal');
-            const thTotal = document.getElementById('th-total');
-            const sortHeaders = [thStatus, thTanggal, thTotal].filter(h => h);
-            sortHeaders.forEach(header => {
-                header.style.opacity = '0.5';
-                header.style.cursor = 'wait';
-                header.style.pointerEvents = 'none';
-            });
-            
-            // Set sort direction
-            if (window.sortTableState.currentSortField === field) {
-                window.sortTableState.sortDirection[field] = window.sortTableState.sortDirection[field] === 'asc' ? 'desc' : 'asc';
-            } else {
-                window.sortTableState.sortDirection[field] = 'asc';
-                window.sortTableState.currentSortField = field;
-            }
-            
-            try {
-                // Fetch ALL invoices from selected month/year (not paginated)
-                const status = document.getElementById('filterStatus')?.value || '';
-                const toko = document.getElementById('filterToko')?.value || '';
-                const keterangan = document.getElementById('filterKeterangan')?.value || '';
-                const year = document.getElementById('filterYear')?.value || '';
-                const month = document.getElementById('filterMonth')?.value || '';
-                const search = document.getElementById('filterSearch')?.value || '';
-                
-                const token = API.getToken() || localStorage.getItem('jwt_token');
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                
-                // Build query string - same as applyInvoiceFilters but with high limit
-                const params = new URLSearchParams();
-                if (toko) params.append('toko', toko);
-                if (keterangan) params.append('keterangan', keterangan);
-                if (search) params.append('search', search);
-                
-                // Handle Year and Month filtering
-                if (year && month) {
-                    const dateFromValue = `${year}-${String(month).padStart(2, '0')}-01`;
-                    const dateToObj = new Date(parseInt(year), parseInt(month), 0);
-                    const dateToValue = `${year}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
-                    params.append('date_from', dateFromValue);
-                    params.append('date_to', dateToValue);
-                } else if (year) {
-                    const dateFromValue = `${year}-01-01`;
-                    const dateToValue = `${year}-12-31`;
-                    params.append('date_from', dateFromValue);
-                    params.append('date_to', dateToValue);
-                } else if (month) {
-                    const currentYear = new Date().getFullYear();
-                    const dateFromValue = `${currentYear}-${String(month).padStart(2, '0')}-01`;
-                    const dateToObj = new Date(currentYear, parseInt(month), 0);
-                    const dateToValue = `${currentYear}-${String(month).padStart(2, '0')}-${dateToObj.getDate()}`;
-                    params.append('date_from', dateFromValue);
-                    params.append('date_to', dateToValue);
-                }
-                
-                // Fetch invoices with same pagination as normal (20 per page)
-                // Backend will handle sorting via sort_by and sort_order parameters
-                params.append('limit', 20);  // Keep pagination at 20 per page
-                params.append('offset', 0);
-                params.append('sort_by', field);  // Pass sort field to backend
-                params.append('sort_order', window.sortTableState.sortDirection[field] || 'asc');  // Pass sort direction
-                
-                const response = await fetch(`${window.location.origin}/api/invoice/list?${params.toString()}`, {
-                    method: 'GET',
-                    headers: headers
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to fetch invoices for sorting');
-                }
-                
-                const result = await response.json();
-                const allInvoices = result.data || [];
-                
-                if (allInvoices.length === 0) {
-                    // No data to sort
-                    sortHeaders.forEach(header => {
-                        header.style.opacity = '1';
-                        header.style.cursor = 'pointer';
-                        header.style.pointerEvents = 'auto';
-                    });
-                    updateSortIndicators(field);
-                    return;
-                }
-                
-                // Render invoices directly (backend already sorted them!)
-                // NO CLIENT-SIDE SORTING - trust backend sort
-                const tbody = document.getElementById('invoiceTableBody');
-                let tableHTML = '';
-                
-                allInvoices.forEach(inv => {
-                    const requiredCount = inv.keterangan === 'PPN' ? 3 : 2;
-                    const formattedDate = inv.tanggal && inv.tanggal.includes('-') 
-                        ? (() => {
-                            const parts = inv.tanggal.split('-');
-                            return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}` : '-';
-                        })()
-                        : '-';
-                    const tipe = inv.jenis_transaksi ? inv.jenis_transaksi.charAt(0).toUpperCase() + inv.jenis_transaksi.slice(1).toLowerCase() : '-';
-                    const konsumenText = inv.konsumen || '-';
-                    const tokoText = inv.toko || '-';
-                    const konsumenFontSize = konsumenText.length > 25 ? '11px' : '14px';
-                    const tokoFontSize = tokoText.length > 20 ? '11px' : '14px';
-                    
-                    // Count actual files from API data (without file checks)
-                    let actualUploadedCount = 0;
-                    
-                    // Invoice PDF (required for all) - count only ONE invoice file
-                    if (inv.invoice_pdf_path || inv.uploaded_file_path) {
-                        actualUploadedCount++;
-                    }
-                    
-                    // Bukti Bayar (required for all)
-                    if (inv.bukti_bayar_path) {
-                        actualUploadedCount++;
-                    }
-                    
-                    // Faktur Pajak (only if PPN and file exists)
-                    if (inv.keterangan === 'PPN' && inv.faktur_pajak_path) {
-                        actualUploadedCount++;
-                    }
-                    
-                    const statusText = `${actualUploadedCount}/${requiredCount}`;
-                    const isDarkMode = document.documentElement.getAttribute('data-dark-mode') === 'true';
-                    
-                    // Color based on actual file count
-                    let statusStyle;
-                    if (isDarkMode) {
-                        statusStyle = 'background: #7c5a0a; color: #fef08a;'; // Yellow
-                        if (actualUploadedCount === requiredCount) {
-                            statusStyle = 'background: #064e3b; color: #10b981;'; // Green
-                        } else if (actualUploadedCount === 0) {
-                            statusStyle = 'background: #7f1d1d; color: #fca5a5;'; // Red
-                        } else if (actualUploadedCount === requiredCount - 1) {
-                            statusStyle = 'background: #92400e; color: #fdba74;'; // Orange
-                        }
-                    } else {
-                        statusStyle = 'background: #fff3cd; color: #000000;'; // Yellow
-                        if (actualUploadedCount === requiredCount) {
-                            statusStyle = 'background: #d4edda; color: #000000;'; // Green
-                        } else if (actualUploadedCount === 0) {
-                            statusStyle = 'background: #f8d7da; color: #000000;'; // Red
-                        } else if (actualUploadedCount === requiredCount - 1) {
-                            statusStyle = 'background: #ffe8cc; color: #000000;'; // Orange
-                        }
-                    }
-                    
-                    tableHTML += `
-                        <tr style="transition: background 0.2s; border-bottom: 2px solid #34495e;" data-faktur="${inv.faktur}" data-file-status='${JSON.stringify({
-                            hasInvoice: !!(inv.invoice_pdf_path || inv.uploaded_file_path),
-                            hasBuktiBayar: !!inv.bukti_bayar_path,
-                            hasFakturPajak: !!(inv.keterangan === 'PPN' && inv.faktur_pajak_path),
-                            isPPN: inv.keterangan === 'PPN',
-                            isComplete: actualUploadedCount === requiredCount,
-                            actualCount: actualUploadedCount,
-                            requiredCount: requiredCount
-                        })}'>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">
-                                <span style="display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; ${statusStyle}">
-                                    ${statusText}
-                                </span>
-                            </td>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${formattedDate}</td>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle; letter-spacing: 0.05em;"><strong>${inv.faktur || '-'}</strong></td>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${inv.metode_bayar || '-'}</td>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${tipe}</td>
-                            <td style="padding: 15px 12px; font-size: ${konsumenFontSize}; color: #2c3e50; vertical-align: middle;">${konsumenText}</td>
-                            <td style="padding: 15px 12px; font-size: ${tokoFontSize}; color: #2c3e50; vertical-align: middle;">${tokoText}</td>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${formatCurrency(inv.total_jumlah_jual)}</td>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${inv.keterangan || '-'}</td>
-                            <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle; text-align: center;">
-                                <button onclick="toggleActionMenu(event, '${inv.faktur}', '${inv.id}')" style="background: none; border: none; cursor: pointer; color: #7f8c8d; font-size: 18px; padding: 8px 12px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f0f0f0'; this.style.color='#2c3e50';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='#7f8c8d';" title="Aksi">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                
-                tbody.innerHTML = tableHTML;
-                
-                // Save sort state for pagination
-                if (typeof activeInvoiceFilters !== 'undefined') {
-                    activeInvoiceFilters.sort_by = field;
-                    activeInvoiceFilters.sort_order = window.sortTableState.sortDirection[field] || 'asc';
-                    console.log('[sortTable] Saved sort state:', activeInvoiceFilters.sort_by, activeInvoiceFilters.sort_order);
-                }
-                
-                // Update pagination info to show first page
-                window.invoiceTotalCount = result.count || allInvoices.length;
-                window.invoiceCurrentPage = 1;
-                if (typeof updatePaginationInfo === 'function') {
-                    updatePaginationInfo();
-                }
-                
-            } catch (error) {
-                console.error('Sort error:', error);
-            } finally {
-                // Re-enable sort headers
-                sortHeaders.forEach(header => {
-                    header.style.opacity = '1';
-                    header.style.cursor = 'pointer';
-                    header.style.pointerEvents = 'auto';
-                });
-            }
-            };
-            
-            // Define updateSortIndicators only once
-            window.updateSortIndicators = function updateSortIndicators(sortedField) {
-            const statusHeader = document.getElementById('sort-status');
-            const tanggalHeader = document.getElementById('sort-tanggal');
-            const totalHeader = document.getElementById('sort-total');
-            
-            // Reset all indicators
-            [statusHeader, tanggalHeader, totalHeader].forEach(header => {
-                if (header) {
-                    header.classList.remove('fa-chevron-up');
-                    header.classList.add('fa-chevron-down');
-                }
-            });
-            
-            // SAVE SORT STATE to activeInvoiceFilters (for pagination)
-            if (typeof activeInvoiceFilters !== 'undefined') {
-                activeInvoiceFilters.sort_by = field;
-                activeInvoiceFilters.sort_order = window.sortTableState.sortDirection[field] || 'asc';
-            }
-            
-            // Update active indicator
-            if (sortedField === 'status' && statusHeader) {
-                statusHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                statusHeader.classList.add(window.sortTableState.sortDirection['status'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
-            } else if (sortedField === 'tanggal' && tanggalHeader) {
-                tanggalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                tanggalHeader.classList.add(window.sortTableState.sortDirection['tanggal'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
-            } else if (sortedField === 'total' && totalHeader) {
-                totalHeader.classList.remove('fa-chevron-down', 'fa-chevron-up');
-                totalHeader.classList.add(window.sortTableState.sortDirection['total'] === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down');
-            }
-        };
-        } // Close if(typeof window.sortTableState === 'undefined')
-    </script>
-    <script>
         // Initialize dashboard for SPA support
         async function initDashboard() {
             
             // Reset invoice system flag for SPA navigation
             window.invoiceSystemInitialized = false;
             
-            // Reset pagination state
-            window.invoiceCurrentPage = 1;
-            window.invoiceTotalCount = 0;
+            // Reset pagination state (fungsi reset milik dashboard.js -
+            // menulis ke window.* tidak berefek ke state internal)
+            if (typeof window.resetInvoiceDashboardState === 'function') {
+                window.resetInvoiceDashboardState();
+            } else {
+                window.invoiceCurrentPage = 1;
+                window.invoiceTotalCount = 0;
+            }
             
             try {
                 // Auth
