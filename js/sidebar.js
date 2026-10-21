@@ -878,6 +878,22 @@
     };
 
     // ============================================================
+    // HOOK UNTUK SPA ROUTER
+    // ============================================================
+    // Saat navigasi SPA, sidebar TIDAK di-render ulang (supaya tidak
+    // berkedip) - hanya item aktifnya yang diperbarui.
+    window.updateSidebarActiveState = function () {
+        try {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            if (sidebar.getAttribute('data-rendered') !== 'true') return;
+            updateActiveMenuItem();
+        } catch (e) {
+            console.warn('[SIDEBAR] Gagal update item aktif:', e.message);
+        }
+    };
+
+    // ============================================================
     // INITIALIZE ON DOM READY
     // ============================================================
     if (document.readyState === 'loading') {

@@ -9,11 +9,57 @@ class SPARouter {
         this.pageCache = {};
         this.isFirstLoad = true; // Track if it's the first page load
         this.pageLoadStart = Date.now(); // Track page load start time
+
+        // ============================================================
+        // KILL SWITCH
+        // ============================================================
+        // Set false -> semua navigasi kembali ke full page reload
+        // (sidebar & konten di-load ulang seperti biasa)
+        this.spaEnabled = true;
+
+        // ============================================================
+        // DAFTAR HALAMAN SPA (whitelist)
+        // ============================================================
+        // Hanya halaman yang:
+        //   - punya sidebar yang SAMA (sidebar terlihat / tidak terlihat)
+        //     -> kalau berbeda, pindah halaman = full reload (sidebar
+        //        harus hilang / muncul, jadi tidak bisa di-swap)
+        //   - punya fungsi init yang bisa dipanggil ulang
+        //
+        // CATATAN: halaman admin zona (/zona/dashboard) TIDAK ada di sini
+        // karena halaman itu tidak punya sidebar -> transisi ke sana
+        // selalu full reload (supaya sidebar hilang dengan rapi).
         this.menuMapping = {
-            // All pages use full page navigation (no SPA routing)
-            // This ensures consistent sidebar styling across all pages
+            '/dashboard': {
+                url: '/dashboard',
+                hasSidebar: true
+            },
+            '/notifikasi': {
+                url: '/notifikasi',
+                hasSidebar: true
+            },
+            '/user': {
+                url: '/user',
+                hasSidebar: true
+            },
+            '/toko': {
+                url: '/toko',
+                hasSidebar: true
+            },
+            '/zona': {
+                url: '/zona',
+                hasSidebar: true
+            },
+            '/whatsapp-setup': {
+                url: '/whatsapp-setup',
+                hasSidebar: true
+            }
         };
-        
+
+        // Script yang TIDAK PERNAH di-inject ulang (memuat router itu
+        // sendiri -> akan membuat handler klik dobel)
+        this.neverReloadScripts = ['spa-router.js'];
+
         this.init();
     }
 
@@ -24,12 +70,24 @@ class SPARouter {
         // Setup browser back/forward button
         window.addEventListener('popstate', (e) => {
             const path = window.location.pathname;
+            const config = this.menuMapping[path];
+            if (!config) {
+                // Di luar whitelist -> muat ulang halaman
+                window.location.reload();
+                return;
+            }
             this.loadPage(path, false);
         });
 
-        // Initialize with current page
+        // Catat path aktif. Router dimuat DI DALAM halaman itu sendiri,
+        // jadi konten sudah ada di DOM - tidak perlu fetch ulang (yang
+        // duluan menyebabkan halaman termuat 2x & berkedip).
         const initialPath = window.location.pathname || '/dashboard';
-        this.loadPage(initialPath, false);
+        this.currentPage = initialPath;
+        // Halaman pertama sudah di-handle oleh halaman itu sendiri
+        // (loader-nya sendiri) -> navigasi berikutnya tidak perlu
+        // overlay loader lagi.
+        this.isFirstLoad = false;
     }
 
     handleLinkClick(e) {
@@ -46,12 +104,37 @@ class SPARouter {
     }
 
     isValidRoute(href) {
-        // Only handle routes that are in our menu mapping
+        // Hanya route yang ada di whitelist SPA
+        if (!this.spaEnabled) return false;
         return this.menuMapping.hasOwnProperty(href);
     }
 
+    /**
+     * Apakah sidebar saat ini terlihat di layar?
+     * (sidebar yang sudah dirender punya .sidebar-container di dalamnya)
+     */
+    hasVisibleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        return !!(sidebar && sidebar.querySelector('.sidebar-container'));
+    }
+
     navigate(path) {
-        // Update URL without reload
+        const config = this.menuMapping[path];
+        if (!config) {
+            // Di luar whitelist -> full page reload
+            window.location.href = path;
+            return;
+        }
+
+        // Pindah antar halaman dengan kondisi sidebar berbeda
+        // (mis. dashboard -> /zona/dashboard yang tidak punya sidebar)
+        // -> full reload supaya sidebar hilang/ muncul dengan rapi
+        if (this.hasVisibleSidebar() !== !!config.hasSidebar) {
+            window.location.href = path;
+            return;
+        }
+
+        // Update URL tanpa reload
         window.history.pushState({ page: path }, '', path);
         this.loadPage(path, true);
     }
@@ -177,12 +260,17 @@ class SPARouter {
                     continue;
                 }
                 
-                // For truly global app scripts (config, api, auth, utils, etc), DON'T reload them
-                // These load once on first page and persist
-                const globalAppScripts = ['config.js', 'api.js', 'auth.js', 'utils.js', 'supabase.js', 'auto-logout.js', 'sidebar.js', 'spa-page-handler.js', 'global-announcement.js', 'dashboard.js'];
-                if (globalAppScripts.some(name => scriptPath.includes(name))) {
+                // Skip script yang WAJIB tidak di-load ulang (mis. router
+                // itu sendiri -> handler klik dobel)
+                if (this.neverReloadScripts.some(name => scriptPath.includes(name))) {
                     continue;
                 }
+                
+                // Script global (config, auth, utils, sidebar, dll) TIDAK
+                // perlu di-load ulang - dan biasanya sudah termuat di
+                // dokumen ini. Yang BELUM termuat akan dimuat di atas
+                // (dilewati logic "already loaded" hanya kalau memang
+                // sudah ada di dokumen).
                 
                 try {
                     const script = document.createElement('script');
@@ -277,24 +365,22 @@ class SPARouter {
                 this.isFirstLoad = false;
             }
         } catch (error) {
-            mainContent.innerHTML = '<div style="padding: 2rem; color: red;">Error loading page. Please try again.</div>';
-            mainContent.style.opacity = '1';
-            mainContent.style.pointerEvents = 'auto';
-            
-            // Hide loader on error
-            const loader = document.querySelector('.page-loader');
-            if (loader) {
-                loader.classList.add('hidden');
+            // ============================================================
+            // FALLBACK AMAN
+            // ============================================================
+            // Kalau navigasi SPA gagal (mis. script halaman error),
+            // jangan tampilkan halaman kosong/error - muat ulang halaman
+            // secara penuh supaya user selalu dapat halaman yang utuh.
+            console.error('[SPA Router] Navigasi gagal, fallback ke full reload:', error);
+            try {
+                mainContent.style.opacity = '1';
+                mainContent.style.pointerEvents = 'auto';
+                const loader = document.querySelector('.page-loader');
+                if (loader) loader.classList.add('hidden');
                 document.body.classList.remove('loading-state');
                 document.documentElement.classList.remove('loading-state');
-                
-                // Remove loader from DOM after animation
-                setTimeout(() => {
-                    if (loader && loader.parentNode) {
-                        loader.remove();
-                    }
-                }, 500);
-            }
+            } catch (_) { /* abaikan */ }
+            window.location.href = path;
             this.isFirstLoad = false;
         } finally {
             this.isLoading = false;
@@ -321,7 +407,7 @@ class SPARouter {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
 
-            // Strategy 1: Look for main-content div (if page uses spa-page-handler)
+            // Strategy 1: Look for main-content div (semua halaman utama punya)
             let mainContent = doc.getElementById('main-content');
             
             // Strategy 2: Look for app div and get content (skipping sidebar)
@@ -335,14 +421,26 @@ class SPARouter {
                     if (sidebar) sidebar.remove();
                     mainContent = appClone;
                 } else {
-                    // Strategy 3: Get body content
-                    mainContent = doc.body;
+                    // Strategy 3: body content TANPA sidebar/header
+                    // (kalau sidebar ikut terbawa, sidebar akan dobel
+                    //  saat konten di-swap)
+                    const bodyClone = doc.body.cloneNode(true);
+                    bodyClone.querySelectorAll('#sidebar, #unified-header, .page-loader')
+                        .forEach(el => el.remove());
+                    mainContent = bodyClone;
                 }
             }
 
             if (!mainContent) {
                 throw new Error('Could not find main content in page');
             }
+
+            // Buang tag <script> dari konten yang disalin - script-nya
+            // di-inject terpisah (lihat executeScripts) supaya tidak
+            // dieksekusi dua kali.
+            const contentClone = mainContent.cloneNode(true);
+            contentClone.querySelectorAll('script').forEach(s => s.remove());
+            const contentHtml = contentClone.innerHTML;
 
             // Also extract all scripts from the page (both inline and external)
             const allScripts = Array.from(doc.querySelectorAll('script'));
@@ -361,7 +459,7 @@ class SPARouter {
 
             // Return both HTML, script data, and style data
             return {
-                html: mainContent.innerHTML,
+                html: contentHtml,
                 scripts: scriptData,
                 styles: styleData
             };
@@ -398,17 +496,17 @@ class SPARouter {
             });
         }
 
-        // ✅ CRITICAL: Reinitialize sidebar on every SPA route change
-        // The sidebar must be reinitialized to ensure all menu items maintain
-        // uniform styling (height, padding, font-size) via sidebar-v6.js.
-        // Without this, sidebar items lose their inline styles when navigating
-        // via SPA router instead of full page reload.
-        if (typeof window.loadSidebar === 'function') {
+        // ============================================================
+        // SIDEBAR: JANGAN render ulang saat pindah route
+        // ============================================================
+        // Sidebar tetap persis sama (tidak berkedip). Yang berubah hanya
+        // item aktifnya. Kalau sidebar belum pernah dirender (mis. halaman
+        // tanpa sidebar), skip.
+        if (typeof window.updateSidebarActiveState === 'function') {
             try {
-                console.log('[SPA Router] Reinitializing sidebar after route change');
-                await window.loadSidebar();
+                window.updateSidebarActiveState();
             } catch (e) {
-                console.error('[SPA Router] Error reinitializing sidebar:', e);
+                console.warn('[SPA Router] Gagal update status aktif sidebar:', e.message);
             }
         }
 

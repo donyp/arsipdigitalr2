@@ -1036,27 +1036,36 @@
             pointer-events: none;
         }
 
-        /* Prevent scroll and layout shift during loading */
+        /* Prevent layout shift during loading.
+           PERBAIKAN: overflow tidak lagi dikunci -> scrollbar tidak
+           hilang/tampil -> konten tidak melompat ke kanan-kiri.
+           scrollbar-gutter keeps the column width stable. */
         body.loading-state {
-            overflow: hidden !important;
             height: 100vh !important;
             width: 100% !important;
+            overflow-y: scroll !important;
+            scrollbar-gutter: stable;
         }
 
         html.loading-state {
-            overflow: hidden !important;
+            overflow-y: scroll !important;
+            scrollbar-gutter: stable;
         }
 
-        /* Blur everything behind the loader */
-        body.loading-state #sidebar,
+        /* Blur area konten saja saat loading.
+           PERBAIKAN: sidebar & header TIDAK lagi di-blur -> sidebar tetap
+           diam (tidak berkedip / tidak kabur) saat pindah menu. */
         body.loading-state #main-content,
-        body.loading-state #app,
-        body.loading-state #unified-header {
+        body.loading-state #app {
             filter: blur(8px) !important;
             transition: filter 0.5s ease-out;
         }
 
         #sidebar,
+        #unified-header {
+            filter: none !important;
+        }
+
         #main-content,
         #app {
             transition: filter 0.5s ease-out;
@@ -2862,8 +2871,8 @@
     <script src="js/auto-logout.js?t=1790610773"></script>
     <script src="js/utils.js?t=1790610773"></script>
     <script src="js/unified-header.js"></script>
-    <script src="js/sidebar.js?t=1792067064.55694"></script>
-    <script src="js/spa-router.js?t=1791564515"></script>
+    <script src="js/sidebar.js?v=2&t=1792067064.55694"></script>
+    <script src="js/spa-router.js?v=2&t=1791564515"></script>
     <script src="js/invoice-stats-cache.js"></script>
     <script src="js/invoice-table-utils.js?v=1"></script>
     <script src="js/dashboard.js?v=1010&t=1790611000"></script>
