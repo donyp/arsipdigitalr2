@@ -391,6 +391,13 @@ class SPARouter {
                 await new Promise(resolve => setTimeout(resolve, 150));
             }
 
+            // Reset style #main-content ke bersih sebelum menerapkan style
+            // halaman tujuan. Penting untuk halaman "body" (tanpa
+            // #main-content/#app) yang mengandalkan margin sendiri: kalau
+            // style dashboard (margin-left 16rem + width calc(100%-16rem))
+            // tertinggal, konten akan terpotong di kanan (double margin).
+            mainContent.removeAttribute('style');
+
             // ============================================================
             // Terapkan LAYOUT halaman tujuan
             // ============================================================
