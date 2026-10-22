@@ -447,6 +447,14 @@ class SPARouter {
                     console.warn('[SPA Router] Gagal membuat ulang unified header:', e.message);
                 }
             }
+            // unified-header.css memberi #app padding-top:80px untuk header
+            // tetap. Halaman tanpa unified header tidak boleh punya gap 80px
+            // di atas (tampil kosong). Override berdasarkan keberadaan
+            // elemen unified-header yang baru dibuat.
+            const appElPad = document.getElementById('app');
+            if (appElPad) {
+                appElPad.style.paddingTop = document.getElementById('unified-header') ? '80px' : '0px';
+            }
             
             // Inject page-specific styles into head
             const pageStyles = pageData.styles || [];
