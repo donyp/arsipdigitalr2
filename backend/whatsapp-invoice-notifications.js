@@ -328,7 +328,10 @@ async function createInvoiceNotifications(invoices, moderatorId, batchId) {
                     zona_name: entry.zona_name,
                     invoice_count: invoices.length,
                     total_nominal: totalNominal,
-                    toko_names: tokoNames
+                    toko_names: tokoNames,
+                    // Rincian per invoice dipakai pengumuman untuk baris
+                    // "• [PPN] - TOKO Rp ..." (format profesional).
+                    invoices
                 };
             });
 

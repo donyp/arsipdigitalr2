@@ -31,14 +31,83 @@ function formatRupiah(nominal) {
     return 'Rp ' + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+// Maksimal baris invoice yang ditampilkan di badan pengumuman.
+// Sisanya diringkas "+N invoice lainnya" supaya pengumuman tidak kepanjangan.
+const MAX_INVOICE_LINES = 30;
+
+// Urutan tampil: PPN dulu, lalu NON PPN, lalu tipe lain (mis. PPH).
+const TIPE_ORDER = { 'PPN': 0, 'NON PPN': 1 };
+
 /**
- * Susun isi pengumuman untuk 1 zona.
- * @param {object} zonaInfo { zona_id, zona_name, zona_kode, invoice_count, total_nominal, toko_names }
+ * Normalisasi tipe invoice: "ppn" -> "PPN", "non ppn"/"nonppn" -> "NON PPN".
+ * @param {string} tipe
+ * @returns {string}
+ */
+function normalizeTipe(tipe) {
+    const t = String(tipe || '').trim().toUpperCase().replace(/\s+/g, ' ');
+    if (!t) return 'PPN';
+    if (t === 'NONPPN' || t.startsWith('NON')) return 'NON PPN';
+    return t;
+}
+
+/**
+ * Susun isi pengumuman untuk 1 zona (format profesional):
+ *
+ *   3 File Invoice Sudah Di Upload
+ *
+ *   • [PPN] - SERANG TIMUR Rp 23.023.223
+ *   • [NON PPN] - MEGA BAJA CIRUAS Rp 5.072.977
+ *
+ * @param {object} zonaInfo { zona_id, zona_name, zona_kode, invoice_count,
+ *                            total_nominal, toko_names, invoices:[{tipe,konsumen,nominal}] }
  */
 function buildAnnouncementContent(zonaInfo) {
-    const lines = [];
-    lines.push(`${zonaInfo.invoice_count} file invoice PDF baru berhasil diupload dan tersimpan di arsip.`);
-    if (zonaInfo.total_nominal > 0) {
+    const invoices = Array.isArray(zonaInfo.invoices)
+        ? zonaInfo.invoices.filter(inv => inv && (inv.konsumen || inv.nominal || inv.tipe))
+        : [];
+    const count = Number(zonaInfo.invoice_count) || invoices.length || 0;
+    const lines = [`${count} File Invoice Sudah Di Upload`];
+
+    // ---------- Format baru: rincian per invoice ----------
+    if (invoices.length) {
+        // PPN dulu, lalu NON PPN (urutan asli dipertahankan dalam grup yg sama)
+        const ordered = invoices
+            .map((inv, index) => ({ inv, index }))
+            .sort((a, b) => {
+                const oa = TIPE_ORDER[normalizeTipe(a.inv.tipe)];
+                const ob = TIPE_ORDER[normalizeTipe(b.inv.tipe)];
+                const va = oa === undefined ? 2 : oa;
+                const vb = ob === undefined ? 2 : ob;
+                return va === vb ? a.index - b.index : va - vb;
+            })
+            .map(item => item.inv);
+
+        const shown = ordered.slice(0, MAX_INVOICE_LINES);
+        lines.push('');
+        shown.forEach(inv => {
+            const tipe = normalizeTipe(inv.tipe);
+            const konsumen = String(inv.konsumen || '-').trim();
+            const nominal = parseInt(inv.nominal) || 0;
+            lines.push(`• [${tipe}] - ${konsumen}${nominal > 0 ? ' ' + formatRupiah(nominal) : ''}`);
+        });
+        if (ordered.length > shown.length) {
+            lines.push(`• +${ordered.length - shown.length} invoice lainnya`);
+        }
+
+        // Total hanya ditampilkan kalau lebih dari 1 invoice (biar tidak mubazir)
+        if (invoices.length > 1) {
+            const total = invoices.reduce((sum, inv) => sum + (parseInt(inv.nominal) || 0), 0);
+            if (total > 0) {
+                lines.push('');
+                lines.push(`Total: ${formatRupiah(total)}`);
+            }
+        }
+        return lines.join('\n');
+    }
+
+    // ---------- Fallback: data lama tanpa rincian invoice ----------
+    if (Number(zonaInfo.total_nominal) > 0) {
+        lines.push('');
         lines.push(`Total nilai: ${formatRupiah(zonaInfo.total_nominal)}`);
     }
     const toko = (zonaInfo.toko_names || []).filter(Boolean);
@@ -46,7 +115,6 @@ function buildAnnouncementContent(zonaInfo) {
         const shown = toko.slice(0, 10);
         lines.push(`Toko: ${shown.join(', ')}${toko.length > shown.length ? ` (+${toko.length - shown.length} lainnya)` : ''}`);
     }
-    lines.push('Silakan cek halaman upload invoice bila ada file yang perlu diproses.');
     return lines.join('\n');
 }
 
@@ -195,5 +263,6 @@ async function announceInvoiceUploads({ supabase, zones = [], uploadedBy = null,
 module.exports = {
     ANNOUNCEMENT_TYPE,
     announceInvoiceUploads,
-    buildAnnouncementContent
+    buildAnnouncementContent,
+    normalizeTipe
 };

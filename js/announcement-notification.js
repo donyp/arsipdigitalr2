@@ -334,6 +334,12 @@ class AnnouncementNotification {
                 line-height: 1.6;
             }
 
+            /* Pengumuman berupa teks biasa (bukan HTML): pertahankan baris
+               baru supaya daftar invoice tampil rapi per baris. */
+            .announcement-detail-body.plain-text {
+                white-space: pre-line;
+            }
+
             .announcement-detail-body h1,
             .announcement-detail-body h2,
             .announcement-detail-body h3,
@@ -604,7 +610,20 @@ class AnnouncementNotification {
         });
         document.getElementById('detailDate').textContent = `Di release Pada: ${formattedDate} WIB`;
         
-        document.getElementById('detailContent').innerHTML = `${ann.content}`;
+        // Konten pengumuman bisa berupa HTML (dibuat admin) atau teks biasa
+        // (mis. pengumuman upload invoice). Untuk teks biasa, render sebagai
+        // textContent + pertahankan baris baru -> aman dari HTML injection
+        // dan daftar invoice tampil per baris.
+        const detailContent = document.getElementById('detailContent');
+        const rawContent = String(ann.content || '');
+        const looksLikeHtml = /<\/?[a-z][^>]*>/i.test(rawContent);
+        if (looksLikeHtml) {
+            detailContent.classList.remove('plain-text');
+            detailContent.innerHTML = rawContent;
+        } else {
+            detailContent.classList.add('plain-text');
+            detailContent.textContent = rawContent;
+        }
 
         document.getElementById('announcementDetailModal').classList.remove('hidden');
         

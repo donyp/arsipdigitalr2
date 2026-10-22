@@ -21,7 +21,7 @@ const {
     isBotEnabled
 } = require('../wa-notification-settings');
 
-const { buildAnnouncementContent, ANNOUNCEMENT_TYPE } = require('../invoice-upload-announcement');
+const { buildAnnouncementContent, ANNOUNCEMENT_TYPE, normalizeTipe } = require('../invoice-upload-announcement');
 
 describe('WA Notification Settings', () => {
 
@@ -110,14 +110,50 @@ describe('Isi Pengumuman Upload Invoice', () => {
         zona_name: 'Zona 07',
         invoice_count: 2,
         total_nominal: 36333424,
-        toko_names: ['MEGA BAJA CIREBON']
+        toko_names: ['MEGA BAJA CIREBON'],
+        invoices: [
+            { tipe: 'PPN', konsumen: 'MEGA BAJA CIREBON', nominal: 23023223 },
+            { tipe: 'NON PPN', konsumen: 'MEGA BAJA CIRUAS', nominal: 13310201 }
+        ]
     };
 
-    test('memuat jumlah file, total nominal, dan nama toko', () => {
+    test('format profesional: header jumlah file + baris invoice', () => {
         const content = buildAnnouncementContent(zona);
-        expect(content).toContain('2 file invoice PDF baru');
-        expect(content).toContain('Rp 36.333.424');
-        expect(content).toContain('MEGA BAJA CIREBON');
+        const lines = content.split('\n');
+        expect(lines[0]).toBe('2 File Invoice Sudah Di Upload');
+        expect(content).toContain('• [PPN] - MEGA BAJA CIREBON Rp 23.023.223');
+        expect(content).toContain('• [NON PPN] - MEGA BAJA CIRUAS Rp 13.310.201');
+    });
+
+    test('tidak lagi memakai kalimat lama yang bertele-tele', () => {
+        const content = buildAnnouncementContent(zona);
+        expect(content).not.toContain('baru berhasil diupload dan tersimpan di arsip');
+        expect(content).not.toContain('Silakan cek halaman upload invoice');
+        expect(content).not.toContain('Toko:');
+    });
+
+    test('urutan: PPN tampil sebelum NON PPN', () => {
+        const content = buildAnnouncementContent({
+            ...zona,
+            invoices: [
+                { tipe: 'NON PPN', konsumen: 'TOKO B', nominal: 2000 },
+                { tipe: 'PPN', konsumen: 'TOKO A', nominal: 1000 }
+            ]
+        });
+        expect(content.indexOf('[PPN] - TOKO A')).toBeLessThan(content.indexOf('[NON PPN] - TOKO B'));
+    });
+
+    test('total hanya muncul kalau lebih dari 1 invoice', () => {
+        const banyak = buildAnnouncementContent(zona);
+        expect(banyak).toContain('Total: Rp 36.333.424');
+
+        const satu = buildAnnouncementContent({
+            ...zona,
+            invoice_count: 1,
+            invoices: [{ tipe: 'PPN', konsumen: 'TOKO A', nominal: 1000 }]
+        });
+        expect(satu).not.toContain('Total:');
+        expect(satu).toContain('1 File Invoice Sudah Di Upload');
     });
 
     test('HANYA berisi data zona tsb (tidak ada zona lain)', () => {
@@ -125,16 +161,53 @@ describe('Isi Pengumuman Upload Invoice', () => {
         expect(content).not.toMatch(/Zona 0[1-69]|Zona 1[0-8]/);
     });
 
-    test('nama toko dibatasi 10 + penanda sisanya', () => {
-        const banyak = { ...zona, toko_names: Array.from({ length: 15 }, (_, i) => `TOKO ${i + 1}`) };
+    test('rincian dibatasi 30 baris + penanda sisanya', () => {
+        const banyak = {
+            ...zona,
+            invoice_count: 35,
+            invoices: Array.from({ length: 35 }, (_, i) => ({
+                tipe: 'PPN', konsumen: `TOKO ${i + 1}`, nominal: 1000
+            }))
+        };
         const content = buildAnnouncementContent(banyak);
-        expect(content).toContain('TOKO 10');
-        expect(content).not.toContain('TOKO 11');
-        expect(content).toContain('(+5 lainnya)');
+        expect(content).toContain('• [PPN] - TOKO 30 Rp 1.000');
+        expect(content).not.toContain('• [PPN] - TOKO 31 Rp 1.000');
+        expect(content).toContain('• +5 invoice lainnya');
+    });
+
+    test('fallback data lama (tanpa rincian invoice) tetap jalan', () => {
+        const content = buildAnnouncementContent({
+            zona_id: 129,
+            zona_name: 'Zona 07',
+            invoice_count: 2,
+            total_nominal: 36333424,
+            toko_names: ['MEGA BAJA CIREBON']
+        });
+        expect(content.split('\n')[0]).toBe('2 File Invoice Sudah Di Upload');
+        expect(content).toContain('Total nilai: Rp 36.333.424');
+        expect(content).toContain('Toko: MEGA BAJA CIREBON');
+    });
+
+    test('normalisasi tipe: nonppn -> NON PPN', () => {
+        expect(normalizeTipe('ppn')).toBe('PPN');
+        expect(normalizeTipe('nonppn')).toBe('NON PPN');
+        expect(normalizeTipe('Non PPN')).toBe('NON PPN');
+        expect(normalizeTipe('')).toBe('PPN');
     });
 
     test('tipe pengumuman punya ikon khusus (bertipe Upload Invoice)', () => {
         expect(ANNOUNCEMENT_TYPE).toBe('Upload Invoice');
+    });
+
+    test('pengumuman menerima rincian invoice dari pembuat notifikasi WA', () => {
+        const src = fs.readFileSync(path.join(__dirname, '..', 'whatsapp-invoice-notifications.js'), 'utf8');
+        expect(src).toMatch(/toko_names: tokoNames[\s\S]{0,300}invoices/);
+    });
+
+    test('UI pengumuman menampilkan teks biasa per baris (white-space: pre-line)', () => {
+        const src = fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'announcement-notification.js'), 'utf8');
+        expect(src).toMatch(/white-space:\s*pre-line/);
+        expect(src).toContain('detailContent.textContent = rawContent');
     });
 });
 
