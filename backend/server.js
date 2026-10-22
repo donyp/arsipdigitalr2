@@ -8338,6 +8338,34 @@ app.post('/api/whatsapp/mark-invoice-zona-sent', authenticateToken, async (req, 
     }
 });
 
+// ============================================================
+// PENGATURAN NOTIFIKASI WHATSAPP
+// ============================================================
+// Dipakai dashboard setup bot WA: toggle pengumuman otomatis, toggle kirim
+// otomatis per zona, dan pengaturan anti-ban nomor bot.
+const { getWaSettings, saveWaSettings } = require('./wa-notification-settings');
+
+app.get('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+    try {
+        const settings = await getWaSettings(supabase);
+        res.json({ success: true, settings });
+    } catch (error) {
+        console.error('[WA-Settings] Error:', error);
+        res.status(500).json({ error: error.message || 'Gagal memuat pengaturan' });
+    }
+});
+
+app.put('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+    try {
+        const settings = await saveWaSettings(supabase, req.body || {});
+        console.log('[WA-Settings] ✅ Pengaturan disimpan oleh', req.user.userId);
+        res.json({ success: true, settings });
+    } catch (error) {
+        console.error('[WA-Settings] Error simpan:', error);
+        res.status(500).json({ error: error.message || 'Gagal menyimpan pengaturan' });
+    }
+});
+
 // POST /api/whatsapp/delete-invoice-message
 // Delete an invoice WhatsApp notification
 app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, res) => {

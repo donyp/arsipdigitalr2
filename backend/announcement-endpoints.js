@@ -116,12 +116,18 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
 
             console.log('[Announcements] Fetching announcements - userId:', userId, 'userZonaId:', userZonaId);
 
-            // Get announcements with read status in ONE query using LEFT JOIN
+            // Get announcements with read status in ONE query.
+            // PAKAI INNER JOIN ke announcement_reads: pengumuman HANYA muncul
+            // untuk user yang punya read record -> ini yang membatasi
+            // visibility per zona / per user (announcement_reads dibuat hanya
+            // untuk penerima yang dituju).
+            // Catatan: dengan LEFT JOIN, pengumuman milik zona lain ikut
+            // terlihat karena tidak ada record read untuk user tersebut.
             const { data, error } = await supabase
                 .from('announcements')
                 .select(`
                     *,
-                    announcement_reads!left(is_read)
+                    announcement_reads!inner(is_read)
                 `)
                 .eq('is_active', true)
                 .eq('announcement_reads.user_id', userId)
@@ -132,38 +138,20 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
 
             console.log('[Announcements] Total fetched announcements:', data?.length);
 
-            // First pass: Filter basic types and collect specific_zonas
+            // Filter basic types. Scope per user/per zona sudah dijamin oleh
+            // INNER JOIN announcement_reads (hanya user penerima yg punya read
+            // record), jadi pengumuman 'specific_zonas' / 'specific_users'
+            // pun otomatis benar.
             let announcements = [];
-            const specificZonasAnnouncements = [];
-
             for (const a of data) {
                 if (a.recipient_type === 'all_users') {
-                    console.log('[Announcements] Including all_users announcement:', a.id);
                     announcements.push(a);
                 } else if (a.recipient_type === 'all_zonas' && userZonaId) {
-                    console.log('[Announcements] Including all_zonas announcement:', a.id);
                     announcements.push(a);
-                } else if (a.recipient_type === 'specific_zonas') {
-                    console.log('[Announcements] Checking specific_zonas announcement:', a.id);
-                    specificZonasAnnouncements.push(a);
-                }
-            }
-
-            // Check which specific_zonas announcements are for this user's zona
-            if (specificZonasAnnouncements.length > 0 && userZonaId) {
-                const { data: recipients, error: recipientError } = await supabase
-                    .from('announcement_recipients')
-                    .select('announcement_id')
-                    .eq('recipient_type', 'zona')
-                    .eq('recipient_id', userZonaId)
-                    .in('announcement_id', specificZonasAnnouncements.map(a => a.id));
-
-                if (!recipientError && recipients) {
-                    const recipientIds = new Set(recipients.map(r => r.announcement_id));
-                    announcements = announcements.concat(
-                        specificZonasAnnouncements.filter(a => recipientIds.has(a.id))
-                    );
-                    console.log('[Announcements] Included specific_zonas for user zona:', recipients.length);
+                } else if (a.recipient_type === 'specific_zonas' || a.recipient_type === 'specific_users') {
+                    //-user ini punya read record (INNER JOIN) -> dia adalah
+                    // penerima yang dituju
+                    announcements.push(a);
                 }
             }
 
@@ -354,61 +342,17 @@ module.exports = (app, supabase, verifyToken, authorizeRole) => {
     app.get('/api/announcements/unread/count', verifyToken, async (req, res) => {
         try {
             const userId = req.user.id;
-            const userZonaId = req.user.zona_id;
 
-            // Get active announcements
-            const { data: announcements, error } = await supabase
-                .from('announcements')
-                .select('id, recipient_type')
-                .eq('is_active', true);
-
-            if (error) throw error;
-
-            // Collect all eligible announcement IDs
-            let eligibleIds = [];
-
-            // Add all_users announcements
-            const allUsersIds = announcements
-                .filter(a => a.recipient_type === 'all_users')
-                .map(a => a.id);
-            eligibleIds = eligibleIds.concat(allUsersIds);
-
-            // Add all_zonas announcements if user has a zona
-            if (userZonaId) {
-                const allZonasIds = announcements
-                    .filter(a => a.recipient_type === 'all_zonas')
-                    .map(a => a.id);
-                eligibleIds = eligibleIds.concat(allZonasIds);
-
-                // Add specific_zonas announcements for this user's zona
-                const specificZonaAnnouncements = announcements.filter(a => a.recipient_type === 'specific_zonas');
-                
-                if (specificZonaAnnouncements.length > 0) {
-                    const { data: zoneRecipients, error: recipientError } = await supabase
-                        .from('announcement_recipients')
-                        .select('announcement_id')
-                        .eq('recipient_type', 'zona')
-                        .eq('recipient_id', userZonaId)
-                        .in('announcement_id', specificZonaAnnouncements.map(a => a.id));
-                    
-                    if (!recipientError && zoneRecipients) {
-                        const zoneAnnouncementIds = zoneRecipients.map(r => r.announcement_id);
-                        eligibleIds = eligibleIds.concat(zoneAnnouncementIds);
-                    }
-                }
-            }
-
-            if (eligibleIds.length === 0) {
-                return res.json({ unread_count: 0 });
-            }
-
-            // Count unread - announcements that don't have a read record OR are marked as unread
+            // Pengumuman "belum dibaca" = pengumuman aktif yang punya read
+            // record untuk user ini dengan is_read = false.
+            // Read record hanya dibuat untuk PENERIMA yang dituju (mis. hanya
+            // user zona tsb) -> hitungannya otomatis tidak bocor ke zona lain.
             const { data: unread, error: countError } = await supabase
-                .from('announcement_reads')
-                .select('announcement_id')
-                .eq('user_id', userId)
-                .eq('is_read', false)
-                .in('announcement_id', eligibleIds);
+                .from('announcements')
+                .select('id, announcement_reads!inner(is_read)')
+                .eq('is_active', true)
+                .eq('announcement_reads.user_id', userId)
+                .eq('announcement_reads.is_read', false);
 
             if (countError) throw countError;
 

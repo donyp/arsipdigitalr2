@@ -310,6 +310,54 @@ async function createInvoiceNotifications(invoices, moderatorId, batchId) {
             }
         }
 
+        // ============================================================
+        // PENGUMUMAN OTOMATIS per zona (Fase 2)
+        // ============================================================
+        // Setelah pesan WA per zona siap, buat 1 pengumuman untuk zona tsb
+        // supaya muncul di tombol "Pengumuman" dashboard admin zona.
+        // Pengumuman scoped ke 1 zona (specific_zonas) -> tidak ada kebocoran
+        // data ke zona lain. Kalau fitur dimatikan di pengaturan, dilewati.
+        try {
+            const { announceInvoiceUploads } = require('./invoice-upload-announcement');
+            const zonesForAnnouncement = Object.values(notifications).map(entry => {
+                const invoices = Array.isArray(entry.invoices) ? entry.invoices : [];
+                const totalNominal = invoices.reduce((sum, inv) => sum + (parseInt(inv.nominal) || 0), 0);
+                const tokoNames = [...new Set(invoices.map(i => i.konsumen).filter(Boolean))];
+                return {
+                    zona_id: entry.zona_id,
+                    zona_name: entry.zona_name,
+                    invoice_count: invoices.length,
+                    total_nominal: totalNominal,
+                    toko_names: tokoNames
+                };
+            });
+
+            if (zonesForAnnouncement.length) {
+                const annResult = await announceInvoiceUploads({
+                    supabase,
+                    zones: zonesForAnnouncement,
+                    uploadedBy: moderatorId,
+                    batchId
+                });
+
+                // Simpan id pengumuman di baris notifikasi (bila kolom ada)
+                if (canUseChannelCols && annResult.announcements) {
+                    for (const [zonaId, annId] of Object.entries(annResult.announcements)) {
+                        const entry = Object.values(notifications).find(e => String(e.zona_id) === String(zonaId));
+                        if (entry && entry.notification_id) {
+                            await supabase
+                                .from('whatsapp_invoice_notifications')
+                                .update({ announcement_id: annId })
+                                .eq('id', entry.notification_id);
+                        }
+                    }
+                }
+            }
+        } catch (annError) {
+            // Pengumuman gagal TIDAK boleh menggagalkan pembuatan pesan WA
+            console.error('[WA-Invoice] Gagal membuat pengumuman otomatis:', annError.message);
+        }
+
         return { notifications, merged: mergedMessages };
     } catch (error) {
         console.error('[WA-Invoice] Error creating notifications:', error);
