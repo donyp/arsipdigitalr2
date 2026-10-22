@@ -55,11 +55,9 @@ html.dark-mode {
     filter: blur(0px) !important;
 }
 
-/* Push content below fixed header */
-#app {
-    padding-top: 80px;
-    margin-top: 0;
-}
+/* Push content below fixed header — diterapkan inline di dashboard.html
+   (#app style="padding-top: 80px;") supaya halaman lain (tanpa unified
+   header) tidak mewarisi gap 80px saat navigasi SPA. */
 
 .unified-header-content {
     max-width: 100%;
