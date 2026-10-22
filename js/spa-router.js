@@ -431,7 +431,7 @@ class SPARouter {
                 if (pageData.bodyFallback) {
                     mainContent.style.marginLeft = '0';
                     mainContent.style.width = '100%';
-                    mainContent.style.flex = '1 1 auto';
+                    mainContent.style.flex = 'none';
                     mainContent.style.minWidth = '0';
                 }
             }
