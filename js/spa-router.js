@@ -601,30 +601,15 @@ class SPARouter {
                 }
             }
 
-            // Execute inline scripts after content and external scripts.
-            // Hanya pada kunjungan PERTAMA ke halaman ini. Pada kunjungan
-            // berikutnya, script tidak di-inject ulang (hindari SyntaxError
-            // "Identifier 'x' has already been declared" karena let/const
-            // halaman tetap di global lexical scope). Page init-nya tetap
-            // dijalankan lewat callback yang disimpan.
-            const isFirstInlineRun = !this.executedInlinePaths.has(path);
-            if (isFirstInlineRun) {
-                for (const scriptData of inlineScripts) {
-                    try {
-                        const newScript = document.createElement('script');
-                        newScript.textContent = scriptData.textContent;
-                        newScript.setAttribute('data-spa-inline-script', 'true');
-                        newScript.setAttribute('data-page', path);
-                        document.body.appendChild(newScript);
-                        // Script inline dieksekusi sinkron saat appendChild,
-                        // jadi jeda 50 ms per script tidak perlu (dulu total
-                        // bisa 400-500 ms untuk halaman dengan banyak script)
-                        await new Promise(resolve => setTimeout(resolve, 5));
-                    } catch (e) {
-                        console.warn('[SPA] Inline script error:', e.message);
-                    }
-                }
-                this.executedInlinePaths.add(path);
+            // Execute inline scripts. Selalu dijalankan (termasuk kunjungan
+            // berulang) supaya init top-level (mis. loadLogs(1), loadDashboard)
+            // tembak lagi. Untuk menghindari SyntaxError "Identifier 'x' has
+            // already been declared" (let/const top-level tetap di global
+            // lexical scope), script dijalankan di scope BARU (new Function)
+            // lalu function declaration-nya dipublikasikan ke window agar
+            // tetap bisa dipanggil oleh atribut onclick HTML.
+            for (const scriptData of inlineScripts) {
+                await this.runInlineScriptFresh(scriptData.textContent, capturedInitCallbacks);
             }
 
             // Kembalikan document.addEventListener asli
@@ -874,6 +859,55 @@ class SPARouter {
             };
         } catch (error) {
             throw error;
+        }
+    }
+
+    /**
+     * Jalankan inline script di scope BARU (new Function) supaya
+     * deklarasi let/const/var top-level tidak bentrok dengan yang sudah
+     * ada dari kunjungan sebelumnya (yang tetap hidup di global lexical
+     * scope). Function declaration yang didefinisikan di script
+     * dipublikasikan ke window agar tetap bisa dipanggil oleh atribut
+     * onclick di HTML. Callback DOMContentLoaded yang didaftarkan selama
+     * eksekusi ditangkap (push ke capturedInitCallbacks) supaya bisa
+     * dijalankan manual.
+     */
+    async runInlineScriptFresh(src, capturedInitCallbacks) {
+        if (!src || !src.trim()) return;
+        // Tangkap nama function declaration untuk dipublikasikan
+        const fnNames = new Set();
+        const re = /(?:^|[\\n;{}])\\s*(?:async\\s+)?function\\s+([A-Za-z_$][\\w$]*)/g;
+        let m;
+        while ((m = re.exec(src)) !== null) fnNames.add(m[1]);
+
+        // Shim document.addEventListener selama eksekusi
+        const origAEL = document.addEventListener.bind(document);
+        document.addEventListener = function(type, fn, opts) {
+            if (type === 'DOMContentLoaded' && document.readyState !== 'loading') {
+                if (typeof fn === 'function' && capturedInitCallbacks) capturedInitCallbacks.push(fn);
+                return;
+            }
+            return origAEL(type, fn, opts);
+        };
+
+        const returnStmt = fnNames.size
+            ? '\\n; return { ' + [...fnNames].join(', ') + ' };'
+            : '';
+        try {
+            // eslint-disable-next-line no-new-func
+            const fn = new Function(src + returnStmt);
+            const result = fn.call(window);
+            if (result && typeof result === 'object') {
+                for (const k of Object.keys(result)) {
+                    if (typeof result[k] === 'function') {
+                        window[k] = result[k];
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[SPA] Inline script (fresh) error:', e && e.message);
+        } finally {
+            document.addEventListener = origAEL;
         }
     }
 
