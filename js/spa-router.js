@@ -51,10 +51,12 @@ class SPARouter {
                 url: '/zona',
                 hasSidebar: true
             },
-            '/whatsapp-setup': {
-                url: '/whatsapp-setup',
-                hasSidebar: true
-            },
+            // Catatan: halaman setup bot WA (/whatsapp-bot) SENGAJA di luar
+            // whitelist -> dibuka dengan full page load. Halaman itu punya
+            // init sendiri (pairing QR + dashboard pengaturan) dan lebih
+            // aman dimuat ulang penuh daripada di-swap.
+            // Halaman /whatsapp-setup lama sudah DIHAPUS (semua fiturnya
+            // sudah ada di /whatsapp-bot).
             // Halaman upload & alat - punya sidebar (layout margin-left 16rem)
             '/excel': {
                 url: '/excel',

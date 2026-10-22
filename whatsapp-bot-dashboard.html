@@ -109,7 +109,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <a href="/whatsapp-setup" class="btn-secondary"><i class="fas fa-qrcode"></i> Scan QR / Pairing</a>
+                            <button class="btn-primary" onclick="scrollToPairing()"><i class="fas fa-qrcode"></i> Scan QR / Pairing</button>
                             <button class="btn-primary" onclick="loadAll()"><i class="fas fa-rotate"></i> Muat Ulang</button>
                         </div>
                     </div>
@@ -125,7 +125,58 @@
                     </div>
                 </div>
 
-                <!-- 2. Mapping zona -> grup -->
+                <!-- 2. Pairing / koneksi bot (QR) -->
+                <div class="glass-card rounded-2xl p-8 mb-8" id="pairing-section">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-lg" style="background:linear-gradient(135deg,#25d366,#128c7e);"><i class="fas fa-qrcode"></i></span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">Pairing Bot WhatsApp</h3>
+                                <p class="text-sm text-gray-600">Scan QR dengan ponsel: WhatsApp → Settings → Linked Devices → Link a Device</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-primary" onclick="loadQr()"><i class="fas fa-qrcode"></i> Tampilkan QR</button>
+                            <button class="btn-secondary" onclick="refreshQr()"><i class="fas fa-rotate"></i> Putuskan &amp; QR Baru</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div id="qr-display" class="rounded-xl p-6 text-center" style="background:var(--color-bg-secondary); min-height:320px; display:flex; align-items:center; justify-content:center;">
+                            <div>
+                                <i class="fas fa-spinner fa-spin text-5xl text-gray-400 mb-3"></i>
+                                <p class="text-sm text-gray-500">Klik "Tampilkan QR" untuk memuat QR pairing</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="info-box mb-4">
+                                <div class="flex gap-3">
+                                    <i class="fas fa-circle-info text-blue-600 flex-shrink-0 mt-0.5"></i>
+                                    <div class="text-sm">
+                                        <p class="font-semibold text-gray-900 mb-1">Cara pairing (sekali saja)</p>
+                                        <ol class="text-gray-700 space-y-1 ml-5 list-decimal">
+                                            <li>Klik <b>Tampilkan QR</b> lalu pindai QR dari ponsel</li>
+                                            <li>Di WhatsApp: Settings → Linked Devices → Link a Device</li>
+                                            <li>Tunggu sampai status jadi <b>Terhubung</b></li>
+                                            <li>Session tersimpan otomatis di server → bot siap dipakai</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 class="text-sm font-black text-gray-700 uppercase tracking-wider mb-2">Kirim pesan uji ke nomor</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="test-phone" placeholder="6281234567890" class="mono">
+                                <button class="btn-primary" onclick="sendTestMessage()"><i class="fas fa-paper-plane"></i> Kirim</button>
+                            </div>
+                            <textarea id="test-message" rows="2" placeholder="Isi pesan uji (opsional)">Tes notifikasi Arsip Digital ANKA</textarea>
+                            <p class="text-xs text-gray-500 mt-2">Pesan uji diproses lewat antrean anti-ban (ada jeda + simulasi mengetik).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Mapping zona -> grup -->
                 <div class="glass-card rounded-2xl p-8 mb-8">
                     <h3 class="text-xl font-bold text-gray-900 mb-1">Grup WhatsApp per Zona</h3>
                     <p class="text-sm text-gray-600 mb-6">Isi <span class="mono">Group ID</span> (format <span class="mono">1203630...@g.us</span>) agar zona bisa menerima pesan otomatis.</p>
@@ -145,7 +196,7 @@
                     </div>
                 </div>
 
-                <!-- 3. Anti-ban -->
+                <!-- 4. Anti-ban -->
                 <div class="glass-card rounded-2xl p-8 mb-8">
                     <h3 class="text-xl font-bold text-gray-900 mb-1">Pengaturan Anti-ban Nomor Bot</h3>
                     <p class="text-sm text-gray-600 mb-6">Atur seberapa "manusiawi" dan seberapa sering bot boleh mengirim pesan.</p>
@@ -200,7 +251,7 @@
                     </div>
                 </div>
 
-                <!-- 4. Per zona: pengumuman + kirim otomatis -->
+                <!-- 5. Per zona: pengumuman + kirim otomatis -->
                 <div class="glass-card rounded-2xl p-8 mb-8">
                     <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
                         <div>
@@ -227,7 +278,7 @@
                     <p class="text-xs text-gray-500 mt-3"><i class="fas fa-info-circle"></i> "Kirim otomatis" butuh grup WA yang sudah dipetakan + bot terhubung. Kalau tidak, pesannya tetap muncul di halaman WA Messages untuk dikirim manual.</p>
                 </div>
 
-                <!-- 5. Log -->
+                <!-- 6. Log -->
                 <div class="glass-card rounded-2xl p-8">
                     <h3 class="text-xl font-bold text-gray-900 mb-1">Log Pengiriman ke Grup</h3>
                     <p class="text-sm text-gray-600 mb-6">30 pengiriman terakhir (otomatis & manual).</p>
@@ -274,10 +325,119 @@
                 window.__waBotInitState = 'sidebar-ok';
                 await loadAll();
                 window.__waBotInitState = 'loaded';
+                startStatusPolling();
             } catch (e) {
-                window.__waBotInitState = 'error: ' + (e && e.message);
+                window.__waBotInitState = 'error: + ' + (e && e.message);
                 console.error('[WaBotDash] init error:', e);
             }
+        }
+
+        // ---- Pairing QR (inline, tanpa pindah halaman) ----
+        let qrPollTimer = null;
+        let statusPollTimer = null;
+
+        function scrollToPairing() {
+            const el = document.getElementById('pairing-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            loadQr();
+        }
+
+        function qrPlaceholder(html) {
+            const box = document.getElementById('qr-display');
+            if (box) box.innerHTML = html;
+        }
+
+        async function loadQr() {
+            qrPlaceholder(`
+                <div>
+                    <i class="fas fa-spinner fa-spin text-5xl text-purple-600 mb-3"></i>
+                    <p class="text-sm text-gray-500">Memuat QR pairing...</p>
+                </div>`);
+            try {
+                const res = await fetch('/api/whatsapp/qr');
+                const data = await res.json().catch(() => ({}));
+
+                if (res.ok && data.qr) {
+                    const isImg = String(data.qr).startsWith('data:image');
+                    qrPlaceholder(`
+                        <div class="text-center">
+                            <div class="bg-white rounded-2xl p-6 border-2 border-gray-200 inline-block">
+                                ${isImg
+                                    ? `<img src="${data.qr}" alt="WhatsApp QR Code" style="width:260px;height:260px;">`
+                                    : `<pre class="mono" style="white-space:pre-wrap;word-break:break-all;max-width:300px;">${String(data.qr)}</pre>`}
+                            </div>
+                            <p class="text-sm text-gray-700 mt-4 font-semibold">Pindai QR ini di WhatsApp</p>
+                            <p class="text-xs text-gray-500">Settings → Linked Devices → Link a Device</p>
+                        </div>`);
+                } else {
+                    qrPlaceholder(`
+                        <div class="text-center">
+                            <i class="fas fa-info-circle text-5xl text-blue-500 mb-3"></i>
+                            <p class="text-gray-700 font-semibold">QR belum siap</p>
+                            <p class="text-sm text-gray-500 mt-1">${(data && data.error) || 'Server WhatsApp belum siap'}</p>
+                            <p class="text-xs text-gray-400 mt-2">${(data && data.hint) || 'Tunggu sebentar lalu coba lagi'}</p>
+                        </div>`);
+                }
+            } catch (e) {
+                qrPlaceholder(`
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-circle text-5xl text-red-500 mb-3"></i>
+                        <p class="text-gray-700 font-semibold">Gagal memuat QR</p>
+                        <p class="text-sm text-red-500 mt-1">${e.message}</p>
+                    </div>`);
+            }
+        }
+
+        async function refreshQr() {
+            try {
+                Toast.info('Meminta QR baru...');
+                const res = await fetch('/api/whatsapp/refresh-qr', { method: 'POST' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || 'Gagal memperbarui QR');
+                Toast.success('QR diperbarui, tunggu beberapa detik');
+                setTimeout(loadQr, 1500);
+            } catch (e) {
+                Toast.error('Gagal: ' + e.message);
+            }
+        }
+
+        async function sendTestMessage() {
+            const phone = (document.getElementById('test-phone').value || '').trim();
+            const message = (document.getElementById('test-message').value || '').trim() || 'Tes notifikasi Arsip Digital ANKA';
+            if (!phone) {
+                Toast.error('Nomor tujuan wajib diisi');
+                return;
+            }
+            try {
+                const res = await API.post('/api/whatsapp/send', { to: phone, message: message });
+                Toast.success(res.message || 'Pesan uji diantrikan');
+            } catch (e) {
+                Toast.error('Gagal: ' + e.message);
+            }
+        }
+
+        // Polling status bot (ringan, tiap 10 detik)
+        function startStatusPolling() {
+            if (statusPollTimer) clearInterval(statusPollTimer);
+            statusPollTimer = setInterval(async () => {
+                try {
+                    const token = localStorage.getItem('jwt_token');
+                    if (!token) return;
+                    const res = await fetch('/api/whatsapp/bot-status', { headers: { Authorization: 'Bearer ' + token } });
+                    const data = await res.json();
+                    const badge = document.getElementById('bot-status-badge');
+                    if (badge && data.bot) {
+                        if (data.bot.ready) {
+                            badge.className = 'badge badge-ok';
+                            badge.innerHTML = '<i class="fas fa-circle"></i> <span>Bot Terhubung</span>';
+                            if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
+                        } else {
+                            badge.className = 'badge badge-warn';
+                            badge.innerHTML = '<i class="fas fa-circle"></i> <span>Bot Belum Terhubung</span>';
+                        }
+                    }
+                } catch (e) { /* abaikan */ }
+            }, 10000);
         }
 
         // Jalankan init: kalau DOM sudah siap -> langsung, else saat DOMContentLoaded
@@ -294,6 +454,10 @@
         window.testGroup = testGroup;
         window.saveZonaToggles = saveZonaToggles;
         window.applyToAll = applyToAll;
+        window.loadQr = loadQr;
+        window.refreshQr = refreshQr;
+        window.sendTestMessage = sendTestMessage;
+        window.scrollToPairing = scrollToPairing;
 
         async function loadAll() {
             try {

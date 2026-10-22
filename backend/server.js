@@ -863,6 +863,13 @@ app.get('/whatsapp-bot', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'whatsapp-bot-dashboard.html'));
 });
 
+// Halaman /whatsapp-setup lama sudah DIHAPUS (semua setup bot WA - pairing
+// QR, status, tes kirim, mapping grup, anti-ban - sekarang ada di
+// /whatsapp-bot). Redirect supaya bookmark lama tetap sampai ke tujuan.
+app.get('/whatsapp-setup', (req, res) => {
+    res.redirect(301, '/whatsapp-bot');
+});
+
 // Support
 app.get('/support/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));

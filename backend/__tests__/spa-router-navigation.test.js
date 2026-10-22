@@ -74,7 +74,9 @@ describe('SPA Router - keputusan navigasi', () => {
         expect(router.isValidRoute('/user')).toBe(true);
         expect(router.isValidRoute('/zona')).toBe(true);
         expect(router.isValidRoute('/notifikasi')).toBe(true);
-        expect(router.isValidRoute('/whatsapp-setup')).toBe(true);
+        // Halaman setup bot WA dihapus -> full reload (dan redirect ke /whatsapp-bot)
+        expect(router.isValidRoute('/whatsapp-setup')).toBe(false);
+        expect(router.isValidRoute('/whatsapp-bot')).toBe(false);
 
         // Halaman upload & alat sekarang ikut SPA (tidak full reload)
         expect(router.isValidRoute('/excel')).toBe(true);
