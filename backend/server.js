@@ -1702,14 +1702,20 @@ function authorizeRole(...allowedRoles) {
         });
         
         if (!req.user || !allowedRoles.includes(req.user.role)) {
-            return res.status(403).json({ 
+            const payload = {
                 error: 'Anda tidak memiliki akses ke fitur ini.',
-                debug: {
+                requiredRole: allowedRoles.join(' atau '),
+                yourRole: req.user?.role || null
+            };
+            // Detail debug hanya untuk development (jangan bocorkan di produksi)
+            if (process.env.NODE_ENV !== 'production') {
+                payload.debug = {
                     userRole: req.user?.role,
                     allowedRoles,
                     path: req.path
-                }
-            });
+                };
+            }
+            return res.status(403).json(payload);
         }
         next();
     };
@@ -8448,36 +8454,53 @@ app.get('/api/whatsapp/diagnose', authenticateToken, authorizeRole('super_admin'
         const dns = require('dns').promises;
         const net = require('net');
 
-        const results = { dns: null, tcp443: null, whatsapp: null };
+        const results = { dns: null, dns4: null, tcp443: null, tcp443v4: null, whatsapp: null };
 
-        // 1) DNS resolve web.whatsapp.com
+        const tcpCheck = (host) => new Promise((resolve) => {
+            const socket = net.connect({ host, port: 443 });
+            const timer = setTimeout(() => {
+                socket.destroy();
+                resolve({ ok: false, error: 'Timeout 8 detik (outbound HTTPS ke WhatsApp diblokir?)' });
+            }, 8000);
+            socket.on('connect', () => {
+                clearTimeout(timer);
+                socket.destroy();
+                resolve({ ok: true });
+            });
+            socket.on('error', (err) => {
+                clearTimeout(timer);
+                resolve({ ok: false, error: err.message });
+            });
+        });
+
+        // 1) DNS resolve web.whatsapp.com (default bisa IPv6)
         try {
             const addr = await dns.lookup('web.whatsapp.com');
-            results.dns = { ok: true, address: addr.address };
+            results.dns = { ok: true, address: addr.address, family: addr.family };
         } catch (e) {
             results.dns = { ok: false, error: e.message };
         }
 
-        // 2) TCP connect ke web.whatsapp.com:443 (outbound HTTPS)
+        // 1b) DNS khusus IPv4 (A record) - sering lebih stabil di VPS
+        try {
+            const addr4 = await dns.lookup('web.whatsapp.com', { family: 4 });
+            results.dns4 = { ok: true, address: addr4.address };
+        } catch (e) {
+            results.dns4 = { ok: false, error: e.message };
+        }
+
+        // 2) TCP connect ke web.whatsapp.com:443
         if (results.dns?.ok) {
-            results.tcp443 = await new Promise((resolve) => {
-                const socket = net.connect({ host: 'web.whatsapp.com', port: 443 });
-                const timer = setTimeout(() => {
-                    socket.destroy();
-                    resolve({ ok: false, error: 'Timeout 8 detik (outbound HTTPS ke WhatsApp diblokir?)' });
-                }, 8000);
-                socket.on('connect', () => {
-                    clearTimeout(timer);
-                    socket.destroy();
-                    resolve({ ok: true });
-                });
-                socket.on('error', (err) => {
-                    clearTimeout(timer);
-                    resolve({ ok: false, error: err.message });
-                });
-            });
+            results.tcp443 = await tcpCheck('web.whatsapp.com');
         } else {
             results.tcp443 = { ok: false, error: 'DNS gagal, tidak diuji' };
+        }
+
+        // 2b) TCP connect ke alamat IPv4
+        if (results.dns4?.ok) {
+            results.tcp443v4 = await tcpCheck(results.dns4.address);
+        } else {
+            results.tcp443v4 = { ok: false, error: 'DNS IPv4 gagal, tidak diuji' };
         }
 
         // 3) Status pairing / sesi bot
@@ -8486,6 +8509,12 @@ app.get('/api/whatsapp/diagnose', authenticateToken, authorizeRole('super_admin'
         results.whatsapp = service && typeof service.getDiagnostics === 'function'
             ? service.getDiagnostics()
             : { connected: false, ready: false, hint: 'Service WhatsApp belum terinisialisasi' };
+
+        // Catatan khusus IPv6: di banyak VPS, DNS mengembalikan IPv6 Meta tapi
+        // rute IPv6-nya tidak stabil -> koneksi Baileys gagal (401).
+        if (results.dns?.address && results.dns.address.includes(':') && results.dns4?.ok) {
+            results.ipv6Note = 'Server memilih IPv6 untuk WhatsApp sementara IPv4 tersedia. Jika koneksi tetap gagal, jalankan Node dengan --dns-result-order=ipv4first.';
+        }
 
         res.json({ success: true, results });
     } catch (error) {
@@ -8496,7 +8525,8 @@ app.get('/api/whatsapp/diagnose', authenticateToken, authorizeRole('super_admin'
 
 // POST /api/whatsapp/reset-session
 // Hapus kredensial sesi bot (logout total) supaya bisa pairing ulang dari nol.
-app.post('/api/whatsapp/reset-session', authenticateToken, authorizeRole('super_admin'), async (req, res) => {
+// Akses: super_admin + moderator (sama seperti pengaturan & mapping grup).
+app.post('/api/whatsapp/reset-session', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { getWaService } = require('./whatsapp-zona-endpoints');
         const service = getWaService();
@@ -8517,7 +8547,7 @@ app.post('/api/whatsapp/reset-session', authenticateToken, authorizeRole('super_
 
 // POST /api/whatsapp/bot-test
 // Kirim pesan uji ke grup WA sebuah zona (untuk cek mapping + koneksi)
-app.post('/api/whatsapp/bot-test', authenticateToken, authorizeRole('super_admin'), async (req, res) => {
+app.post('/api/whatsapp/bot-test', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const { zona_id, message } = req.body;
         if (!zona_id) {

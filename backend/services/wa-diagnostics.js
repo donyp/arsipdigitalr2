@@ -10,11 +10,20 @@
  * Saran berdasarkan kode error dari WhatsApp.
  * @param {number|null} statusCode
  * @param {string} message
+ * @param {object} opts - { hasCreds, recentlyReset }
  * @returns {string|null}
  */
-function getDisconnectHint(statusCode, message) {
+function getDisconnectHint(statusCode, message, opts = {}) {
+    const recentlyReset = !!opts.recentlyReset;
+
     if (statusCode === 401) {
-        return 'WhatsApp menolak koneksi (401). Biasanya IP server diblokir/blacklist. Solusi: ganti IP (VPS lain) atau jalankan dari jaringan dengan IP residential.';
+        if (recentlyReset) {
+            return 'Sesi bot sudah dibuat BARU (reset < 20 menit lalu) tapi WhatsApp tetap menolak (401) -> berarti IP server diblokir/blacklist. Solusi: ganti IP (VPS lain) atau pakai IP residential, lalu scan QR ulang.';
+        }
+        if (opts.hasCreds) {
+            return 'WhatsApp menolak koneksi (401). Sesi tersimpan sudah tidak valid -> klik "Reset Sesi Bot" lalu scan QR ulang. Kalau tetap 401 setelah reset, berarti IP server diblokir -> ganti IP.';
+        }
+        return 'WhatsApp menolak koneksi (401). Umumnya IP server diblokir/blacklist. Solusi: ganti IP (VPS lain) atau jalankan dari jaringan dengan IP residential.';
     }
     if (statusCode === 403) {
         return 'WhatsApp menolak koneksi (403). IP server kemungkinan diblokir untuk akun WhatsApp Web. Coba IP lain atau tunggu 24-48 jam.';
@@ -45,7 +54,14 @@ function buildDiagnostics(state = {}, session = {}) {
     const statusCode = lastError ? lastError.statusCode : null;
     const message = lastError ? lastError.message : null;
 
-    let hint = getDisconnectHint(statusCode, message);
+    // Sesi baru saja di-reset (< 20 menit lalu)? Kalau tetap 401 -> kemungkinan besar IP diblokir
+    const sessionResetAt = state.sessionResetAt || null;
+    const recentlyReset = !!sessionResetAt && (Date.now() - sessionResetAt) < 20 * 60 * 1000;
+
+    let hint = getDisconnectHint(statusCode, message, {
+        hasCreds: (session.sessionFileCount || 0) > 0,
+        recentlyReset
+    });
 
     // Belum ada error tapi tetap tidak ada QR -> jangan diam, beri arah
     if (!hint && !state.connected && !state.qrAvailable) {
@@ -65,6 +81,8 @@ function buildDiagnostics(state = {}, session = {}) {
         lastDisconnectAt: state.lastDisconnectAt || null,
         lastQrAt: state.lastQrAt || null,
         connectAttempts: state.connectAttempts || 0,
+        sessionResetAt,
+        recentlyReset,
         phone: state.phone || null,
         sessionPath: session.sessionPath || null,
         sessionExists: !!session.sessionExists,

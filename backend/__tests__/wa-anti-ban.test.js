@@ -143,6 +143,40 @@ describe('Diagnostik Koneksi Bot WhatsApp', () => {
         expect(d.hint).toBeNull();
     });
 
+    test('401 + sesi SUDAH di-reset recently -> hint blames IP server', () => {
+        const d = buildDiagnostics({
+            connected: false,
+            lastError: { statusCode: 401, message: 'Connection Failure' },
+            sessionResetAt: Date.now() - 5 * 60 * 1000
+        }, { sessionFileCount: 0 });
+        expect(d.recentlyReset).toBe(true);
+        expect(d.hint).toMatch(/IP server diblokir/i);
+        expect(d.hint).not.toMatch(/Reset Sesi Bot/);
+    });
+
+    test('401 + sesi lama masih ada -> hint menyuruh reset sesi', () => {
+        const d = buildDiagnostics({
+            connected: false,
+            lastError: { statusCode: 401, message: 'Connection Failure' }
+        }, { sessionFileCount: 41 });
+        expect(d.hint).toMatch(/Reset Sesi Bot/i);
+    });
+
+    test('endpoint setup WA boleh dipakai moderator (bukan hanya super_admin)', () => {
+        const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+        const resetBlock = server.match(/app\.post\('\/api\/whatsapp\/reset-session'[\s\S]{0,160}/)[0];
+        const testBlock = server.match(/app\.post\('\/api\/whatsapp\/bot-test'[\s\S]{0,160}/)[0];
+        expect(resetBlock).toContain("authorizeRole('super_admin', 'moderator')");
+        expect(testBlock).toContain("authorizeRole('super_admin', 'moderator')");
+    });
+
+    test('diagnose mengecek IPv4 + TCP IPv4 (umumnya lebih stabil di VPS)', () => {
+        const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+        expect(server).toContain('dns4');
+        expect(server).toContain('tcp443v4');
+        expect(server).toContain('family: 4');
+    });
+
     test('source: reconnect pakai backoff (tidak bombardir WhatsApp)', () => {
         const src = fs.readFileSync(path.join(__dirname, '..', 'services', 'whatsapp-baileys.js'), 'utf8');
         expect(src).toContain('connectAttempts');

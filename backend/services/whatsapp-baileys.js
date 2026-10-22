@@ -48,6 +48,7 @@ class WhatsAppService {
         this.lastDisconnectAt = null;
         this.lastQrAt = null;
         this.connectAttempts = 0;
+        this.sessionResetAt = null;    // kapan sesi terakhir di-reset (untuk diagnosa)
     }
 
     async initialize() {
@@ -289,6 +290,7 @@ class WhatsAppService {
             lastDisconnectAt: this.lastDisconnectAt,
             lastQrAt: this.lastQrAt,
             connectAttempts: this.connectAttempts,
+            sessionResetAt: this.sessionResetAt,
             phone: this.connectedPhoneNumber
         }, {
             sessionPath: this.sessionPath,
@@ -314,6 +316,7 @@ class WhatsAppService {
             this.connectedPhoneNumber = null;
             this.connectionState = 'idle';
             this.connectAttempts = 0;
+            this.sessionResetAt = Date.now();
 
             if (fs.existsSync(this.sessionPath)) {
                 for (const file of fs.readdirSync(this.sessionPath)) {

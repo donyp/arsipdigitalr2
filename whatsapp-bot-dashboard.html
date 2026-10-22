@@ -470,11 +470,15 @@
                 box2.innerHTML = `
                     <div class="info-box">
                         <p class="font-bold text-gray-900 mb-2"><i class="fas fa-stethoscope mr-1"></i>Hasil diagnosa</p>
-                        ${line(r.dns && r.dns.ok, 'DNS web.whatsapp.com', r.dns && r.dns.ok ? 'Ter-resolve: ' + r.dns.address : (r.dns && r.dns.error))}
+                        ${line(r.dns && r.dns.ok, 'DNS web.whatsapp.com', r.dns && r.dns.ok ? 'Ter-resolve: ' + r.dns.address + (r.dns.family === 6 ? ' (IPv6)' : ' (IPv4)') : (r.dns && r.dns.error))}
+                        ${r.dns4 ? line(r.dns4.ok, 'DNS IPv4 (A record)', r.dns4.ok ? 'Ter-resolve: ' + r.dns4.address : r.dns4.error) : ''}
                         ${line(r.tcp443 && r.tcp443.ok, 'Koneksi TCP :443 ke WhatsApp', r.tcp443 && r.tcp443.ok ? 'Bisa keluar ke server WhatsApp' : (r.tcp443 && r.tcp443.error))}
+                        ${r.tcp443v4 ? line(r.tcp443v4.ok, 'Koneksi TCP :443 via IPv4', r.tcp443v4.ok ? 'Bisa keluar (jalur IPv4 aman)' : (r.tcp443v4.error)) : ''}
                         ${line(wa.connected, 'Sesi bot WhatsApp', wa.connected ? 'Terhubung' + (wa.phone ? ' (' + wa.phone + ')' : '') : (wa.lastError ? 'Gagal: ' + wa.lastError.message + (wa.lastError.statusCode ? ' (kode ' + wa.lastError.statusCode + ')' : '') : 'Belum terhubung'))}
                         ${line(wa.hasCreds, 'Kredensial sesi di server', wa.hasCreds ? wa.sessionFileCount + ' file kredensial ada di ' + wa.sessionPath : 'Belum ada kredensial (scan QR dulu)')}
                         ${wa.hint ? `<div class="mt-2 p-3 rounded-lg" style="background:rgba(245,158,11,.12);color:#92400e;font-size:.8rem;"><b>Catatan:</b> ${wa.hint}</div>` : ''}
+                        ${r.ipv6Note ? `<div class="mt-2 p-3 rounded-lg" style="background:rgba(59,130,246,.1);color:#1e40af;font-size:.8rem;"><b>Info IPv6:</b> ${r.ipv6Note}</div>` : ''}
+                        ${(!wa.connected && wa.hasCreds) ? `<div class="mt-2"><button class="btn-primary" onclick="resetSession()"><i class="fas fa-trash"></i> Reset Sesi Bot &amp; Scan Ulang</button></div>` : ''}
                     </div>`;
             } catch (e) {
                 const box2 = document.getElementById('diag-result');
