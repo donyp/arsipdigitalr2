@@ -538,17 +538,23 @@ async function uploadValidFiles(onlyFailed = false) {
         return;
     }
 
+    // PENTING: hanya boleh true kalau dipanggil secara EKSPLISIT.
+    // Kalau handler klik diserahkan langsung ke fungsi ini, objek Event
+    // otomatis jadi argumen pertama -> upload selalu masuk mode "hanya file
+    // gagal" dan tidak ada file yang terupload sama sekali.
+    const onlyFailedMode = onlyFailed === true;
+
     // Filter only valid files for upload (invalid files stay in the list but are skipped)
     const allValidFiles = validationResults.filter(r => r.valid);
     // Mode "upload ulang": hanya file yang GAGAL di percobaan sebelumnya.
     // File yang sudah berhasil TIDAK diupload lagi (menghindari batch kedua).
-    const validFiles = onlyFailed
+    const validFiles = onlyFailedMode
         ? allValidFiles.filter(r => r.uploadStatus === 'failed')
         : allValidFiles;
 
     if (validFiles.length === 0) {
         showNotification(
-            onlyFailed ? 'Tidak ada file yang gagal diupload.' : 'Tidak ada file valid untuk diupload',
+            onlyFailedMode ? 'Tidak ada file yang gagal diupload.' : 'Tidak ada file valid untuk diupload',
             'error'
         );
         return;
@@ -828,7 +834,10 @@ function resetUpload() {
 document.addEventListener('DOMContentLoaded', () => {
     const btnUpload = document.getElementById('btnUpload');
     if (btnUpload) {
-        btnUpload.addEventListener('click', uploadValidFiles);
+        // Jangan langsung pakai uploadValidFiles sebagai handler: fungsi
+        // menerima argumen, dan Event klik akan otomatis jadi argumen
+        // pertama -> upload salah masuk mode "hanya file gagal".
+        btnUpload.addEventListener('click', () => uploadValidFiles(false));
     }
 });
 
