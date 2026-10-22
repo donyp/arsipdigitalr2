@@ -40,10 +40,17 @@ function registerWhatsAppEndpoints(app, createAuth) {
 
             const qr = waService.lastQR;
             if (!qr) {
+                // Beri alasan yang JELAS supaya admin tahu harus apa.
+                const diag = typeof waService.getDiagnostics === 'function' ? waService.getDiagnostics() : {};
                 return res.status(404).json({
-                    error: 'No QR code available',
+                    error: 'QR belum tersedia',
                     qr: null,
-                    hint: 'Session already authenticated, or WhatsApp service not ready yet'
+                    state: diag.connectionState || 'unknown',
+                    reason: diag.lastError ? diag.lastError.message : null,
+                    statusCode: diag.lastError ? diag.lastError.statusCode : null,
+                    hint: diag.hint || (diag.hasCreds
+                        ? 'Sesi bot sudah ada tapi belum tersambung ke WhatsApp. Coba "Reset Sesi Bot" lalu scan QR ulang, atau cek Diagnosa Koneksi.'
+                        : 'Server WhatsApp belum siap. Tunggu beberapa detik lalu klik "Tampilkan QR" lagi, atau cek "Diagnosa Koneksi".')
                 });
             }
 

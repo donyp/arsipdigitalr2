@@ -114,6 +114,7 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="bot-stats"></div>
+                    <div id="bot-connection-warning" class="mt-5" style="display:none;"></div>
                     <div class="info-box mt-6">
                         <div class="flex gap-3">
                             <i class="fas fa-shield-halved text-blue-600 flex-shrink-0 mt-0.5"></i>
@@ -135,9 +136,11 @@
                                 <p class="text-sm text-gray-600">Scan QR dengan ponsel: WhatsApp → Settings → Linked Devices → Link a Device</p>
                             </div>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-wrap">
                             <button class="btn-primary" onclick="loadQr()"><i class="fas fa-qrcode"></i> Tampilkan QR</button>
                             <button class="btn-secondary" onclick="refreshQr()"><i class="fas fa-rotate"></i> Putuskan &amp; QR Baru</button>
+                            <button class="btn-secondary" onclick="resetSession()"><i class="fas fa-trash"></i> Reset Sesi Bot</button>
+                            <button class="btn-secondary" onclick="runDiagnose()"><i class="fas fa-stethoscope"></i> Diagnosa Koneksi</button>
                         </div>
                     </div>
 
@@ -174,6 +177,9 @@
                             <p class="text-xs text-gray-500 mt-2">Pesan uji diproses lewat antrean anti-ban (ada jeda + simulasi mengetik).</p>
                         </div>
                     </div>
+
+                    <!-- Hasil diagnosa koneksi -->
+                    <div id="diag-result" class="mt-5" style="display:none;"></div>
                 </div>
 
                 <!-- 3. Mapping zona -> grup -->
@@ -368,15 +374,25 @@
                             </div>
                             <p class="text-sm text-gray-700 mt-4 font-semibold">Pindai QR ini di WhatsApp</p>
                             <p class="text-xs text-gray-500">Settings → Linked Devices → Link a Device</p>
+                            <p class="text-xs text-gray-400 mt-2">QR diperbarui otomatis tiap 15 detik</p>
                         </div>`);
+                    startQrAutoRefresh();
                 } else {
+                    // Tampilkan alasan yang JELAS (bukan pesan generik)
+                    const reason = data.reason ? ` (<code class="mono">${data.reason}</code>)` : '';
+                    const code = data.statusCode ? ` (kode ${data.statusCode})` : '';
                     qrPlaceholder(`
                         <div class="text-center">
                             <i class="fas fa-info-circle text-5xl text-blue-500 mb-3"></i>
-                            <p class="text-gray-700 font-semibold">QR belum siap</p>
-                            <p class="text-sm text-gray-500 mt-1">${(data && data.error) || 'Server WhatsApp belum siap'}</p>
-                            <p class="text-xs text-gray-400 mt-2">${(data && data.hint) || 'Tunggu sebentar lalu coba lagi'}</p>
+                            <p class="text-gray-700 font-semibold">${data.error || 'QR belum siap'}${code}</p>
+                            ${reason}
+                            <p class="text-sm text-gray-600 mt-3 max-w-md mx-auto">${data.hint || 'Tunggu sebentar lalu coba lagi.'}</p>
+                            <div class="flex gap-2 justify-center mt-4">
+                                <button class="btn-secondary" onclick="runDiagnose()"><i class="fas fa-stethoscope"></i> Diagnosa Koneksi</button>
+                                <button class="btn-secondary" onclick="resetSession()"><i class="fas fa-trash"></i> Reset Sesi Bot</button>
+                            </div>
                         </div>`);
+                    stopQrAutoRefresh();
                 }
             } catch (e) {
                 qrPlaceholder(`
@@ -385,6 +401,84 @@
                         <p class="text-gray-700 font-semibold">Gagal memuat QR</p>
                         <p class="text-sm text-red-500 mt-1">${e.message}</p>
                     </div>`);
+                stopQrAutoRefresh();
+            }
+        }
+
+        // Auto-refresh QR (QR WhatsApp expired ~20 detik)
+        function startQrAutoRefresh() {
+            stopQrAutoRefresh();
+            qrPollTimer = setInterval(async () => {
+                try {
+                    const res = await fetch('/api/whatsapp/qr');
+                    if (!res.ok) { stopQrAutoRefresh(); return; }
+                    const data = await res.json();
+                    if (!data.qr) { stopQrAutoRefresh(); return; }
+                    const img = document.querySelector('#qr-display img');
+                    if (img && String(data.qr).startsWith('data:image') && img.src !== data.qr) {
+                        img.src = data.qr;
+                    }
+                } catch (e) { /* abaikan */ }
+            }, 15000);
+        }
+
+        function stopQrAutoRefresh() {
+            if (qrPollTimer) { clearInterval(qrPollTimer); qrPollTimer = null; }
+        }
+
+        /**
+         * Reset sesi bot: hapus kredensial lalu pairing ulang dari nol.
+         * Dipakai kalau sesi rusak / WhatsApp menolak koneksi.
+         */
+        async function resetSession() {
+            if (!confirm('Reset sesi bot?\n\nBot akan logout dari WhatsApp dan semua kredensial di server dihapus. Anda harus scan QR ulang setelahnya.\n\nLanjutkan?')) {
+                return;
+            }
+            try {
+                const res = await API.post('/api/whatsapp/reset-session', {});
+                Toast.success(res.message || 'Sesi bot direset');
+                setTimeout(loadQr, 2500);
+                setTimeout(loadAll, 4000);
+            } catch (e) {
+                Toast.error('Gagal: ' + e.message);
+            }
+        }
+
+        /**
+         * Diagnosa: cek apakah server bisa keluar ke WhatsApp + status pairing.
+         */
+        async function runDiagnose() {
+            const box = document.getElementById('diag-result');
+            if (box) {
+                box.style.display = 'block';
+                box.innerHTML = '<div class="info-box"><i class="fas fa-spinner fa-spin mr-2"></i>Menjalankan diagnosa...</div>';
+            }
+            try {
+                const res = await API.get('/api/whatsapp/diagnose');
+                const r = res.results || {};
+                const wa = r.whatsapp || {};
+                const line = (ok, title, detail) => `
+                    <div style="display:flex;gap:.6rem;align-items:flex-start;padding:.35rem 0;">
+                        <i class="fas ${ok ? 'fa-circle-check text-green-600' : 'fa-circle-xmark text-red-500'}" style="margin-top:.15rem;"></i>
+                        <div>
+                            <p class="font-bold text-sm">${title}</p>
+                            <p class="text-xs text-gray-600">${detail || ''}</p>
+                        </div>
+                    </div>`;
+
+                const box2 = document.getElementById('diag-result');
+                box2.innerHTML = `
+                    <div class="info-box">
+                        <p class="font-bold text-gray-900 mb-2"><i class="fas fa-stethoscope mr-1"></i>Hasil diagnosa</p>
+                        ${line(r.dns && r.dns.ok, 'DNS web.whatsapp.com', r.dns && r.dns.ok ? 'Ter-resolve: ' + r.dns.address : (r.dns && r.dns.error))}
+                        ${line(r.tcp443 && r.tcp443.ok, 'Koneksi TCP :443 ke WhatsApp', r.tcp443 && r.tcp443.ok ? 'Bisa keluar ke server WhatsApp' : (r.tcp443 && r.tcp443.error))}
+                        ${line(wa.connected, 'Sesi bot WhatsApp', wa.connected ? 'Terhubung' + (wa.phone ? ' (' + wa.phone + ')' : '') : (wa.lastError ? 'Gagal: ' + wa.lastError.message + (wa.lastError.statusCode ? ' (kode ' + wa.lastError.statusCode + ')' : '') : 'Belum terhubung'))}
+                        ${line(wa.hasCreds, 'Kredensial sesi di server', wa.hasCreds ? wa.sessionFileCount + ' file kredensial ada di ' + wa.sessionPath : 'Belum ada kredensial (scan QR dulu)')}
+                        ${wa.hint ? `<div class="mt-2 p-3 rounded-lg" style="background:rgba(245,158,11,.12);color:#92400e;font-size:.8rem;"><b>Catatan:</b> ${wa.hint}</div>` : ''}
+                    </div>`;
+            } catch (e) {
+                const box2 = document.getElementById('diag-result');
+                box2.innerHTML = `<div class="info-box" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.3);">Diagnosa gagal: ${e.message}</div>`;
             }
         }
 
@@ -458,6 +552,8 @@
         window.refreshQr = refreshQr;
         window.sendTestMessage = sendTestMessage;
         window.scrollToPairing = scrollToPairing;
+        window.resetSession = resetSession;
+        window.runDiagnose = runDiagnose;
 
         async function loadAll() {
             try {
@@ -485,6 +581,7 @@
         function renderBotStats(statusRes) {
             const bot = statusRes.bot || {};
             const queue = statusRes.queue || {};
+            const diag = statusRes.diagnostics || {};
             const badge = document.getElementById('bot-status-badge');
             if (bot.ready) {
                 badge.className = 'badge badge-ok';
@@ -508,6 +605,29 @@
                     </div>
                     <p class="text-lg font-black" style="color:${c.warn ? '#b45309' : 'var(--color-text-primary)'};">${c.value}</p>
                 </div>`).join('');
+
+            // Alasan kegagalan koneksi (kalau ada) -> tampilkan jelas, bukan generik
+            const warn = document.getElementById('bot-connection-warning');
+            if (warn) {
+                if (!bot.ready && (diag.lastError || diag.hint)) {
+                    const err = diag.lastError;
+                    warn.style.display = 'block';
+                    warn.innerHTML = `
+                        <div class="info-box" style="background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.25);">
+                            <div class="flex gap-3">
+                                <i class="fas fa-triangle-exclamation text-red-500 flex-shrink-0 mt-0.5"></i>
+                                <div class="text-sm">
+                                    <p class="font-semibold text-gray-900 mb-1">Koneksi bot ke WhatsApp belum berhasil</p>
+                                    ${err ? `<p class="text-gray-700">Alasan: ${err.message}${err.statusCode ? ' (kode ' + err.statusCode + ')' : ''}</p>` : ''}
+                                    ${diag.hint ? `<p class="text-gray-600 mt-1">${diag.hint}</p>` : ''}
+                                    <p class="text-gray-500 mt-1 text-xs">Klik "Diagnosa Koneksi" di section Pairing untuk memastikan jaringan server bisa menghubungi WhatsApp.</p>
+                                </div>
+                            </div>
+                        </div>`;
+                } else {
+                    warn.style.display = 'none';
+                }
+            }
         }
 
         function groupFor(zonaId) {

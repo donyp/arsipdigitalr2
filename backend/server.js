@@ -453,8 +453,12 @@ app.use((req, res, next) => {
     const originalJson = res.json.bind(res);
     
     res.json = function(data) {
-        // In production, don't expose internal error details
-        if (process.env.NODE_ENV === 'production' && data && data.error) {
+        // Di produksi, jangan bocorkan detail internal error.
+        // Pengecualian: endpoint /api/whatsapp/* (setup bot WA) - pesannya
+        // memang untuk ditampilkan ke admin (mis. "IP server diblokir
+        // WhatsApp") dan tidak memuat data sensitif.
+        const isWhatsAppSetup = (req.path || '').startsWith('/api/whatsapp');
+        if (process.env.NODE_ENV === 'production' && data && data.error && !isWhatsAppSetup) {
             // Log actual error server-side
             if (data.error && data.error.message) {
                 console.error('[ERROR]', data.error.message);
@@ -8403,6 +8407,9 @@ app.get('/api/whatsapp/bot-status', authenticateToken, authorizeRole('super_admi
         const service = getWaService();
         const queue = getWaQueue();
         const status = service && typeof service.getStatus === 'function' ? service.getStatus() : { connected: false, ready: false };
+        const diagnostics = service && typeof service.getDiagnostics === 'function'
+            ? service.getDiagnostics()
+            : { connected: false, ready: false, hint: 'Service WhatsApp belum terinisialisasi (cek log server)' };
 
         const { data: groups } = await supabase
             .from('whatsapp_zona_groups')
@@ -8422,6 +8429,7 @@ app.get('/api/whatsapp/bot-status', authenticateToken, authorizeRole('super_admi
                 ready: !!status.ready,
                 phone: service && service.connectedPhoneNumber ? service.connectedPhoneNumber : null
             },
+            diagnostics: diagnostics,
             queue: queue ? queue.getStats() : null,
             groups: groups || [],
             logs: logs || []
@@ -8429,6 +8437,81 @@ app.get('/api/whatsapp/bot-status', authenticateToken, authorizeRole('super_admi
     } catch (error) {
         console.error('[WA-BotStatus] Error:', error);
         res.status(500).json({ error: error.message || 'Gagal memuat status bot' });
+    }
+});
+
+// POST /api/whatsapp/diagnose
+// Diagnosa konektivitas server ke WhatsApp + status pairing.
+// Helps figure out WHY the QR doesn't appear (network / IP blocked / session).
+app.get('/api/whatsapp/diagnose', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+    try {
+        const dns = require('dns').promises;
+        const net = require('net');
+
+        const results = { dns: null, tcp443: null, whatsapp: null };
+
+        // 1) DNS resolve web.whatsapp.com
+        try {
+            const addr = await dns.lookup('web.whatsapp.com');
+            results.dns = { ok: true, address: addr.address };
+        } catch (e) {
+            results.dns = { ok: false, error: e.message };
+        }
+
+        // 2) TCP connect ke web.whatsapp.com:443 (outbound HTTPS)
+        if (results.dns?.ok) {
+            results.tcp443 = await new Promise((resolve) => {
+                const socket = net.connect({ host: 'web.whatsapp.com', port: 443 });
+                const timer = setTimeout(() => {
+                    socket.destroy();
+                    resolve({ ok: false, error: 'Timeout 8 detik (outbound HTTPS ke WhatsApp diblokir?)' });
+                }, 8000);
+                socket.on('connect', () => {
+                    clearTimeout(timer);
+                    socket.destroy();
+                    resolve({ ok: true });
+                });
+                socket.on('error', (err) => {
+                    clearTimeout(timer);
+                    resolve({ ok: false, error: err.message });
+                });
+            });
+        } else {
+            results.tcp443 = { ok: false, error: 'DNS gagal, tidak diuji' };
+        }
+
+        // 3) Status pairing / sesi bot
+        const { getWaService } = require('./whatsapp-zona-endpoints');
+        const service = getWaService();
+        results.whatsapp = service && typeof service.getDiagnostics === 'function'
+            ? service.getDiagnostics()
+            : { connected: false, ready: false, hint: 'Service WhatsApp belum terinisialisasi' };
+
+        res.json({ success: true, results });
+    } catch (error) {
+        console.error('[WA-Diagnose] Error:', error);
+        res.status(500).json({ error: error.message || 'Gagal menjalankan diagnosa' });
+    }
+});
+
+// POST /api/whatsapp/reset-session
+// Hapus kredensial sesi bot (logout total) supaya bisa pairing ulang dari nol.
+app.post('/api/whatsapp/reset-session', authenticateToken, authorizeRole('super_admin'), async (req, res) => {
+    try {
+        const { getWaService } = require('./whatsapp-zona-endpoints');
+        const service = getWaService();
+        if (!service || typeof service.resetSession !== 'function') {
+            return res.status(503).json({ error: 'Service WhatsApp belum tersedia' });
+        }
+        const result = await service.resetSession();
+        // Paksa inisialisasi ulang -> WhatsApp akan mengirim QR baru
+        setTimeout(() => {
+            service.initialize().catch(e => console.error('[WA-Reset] Gagal inisialisasi ulang:', e.message));
+        }, 800);
+        res.json({ success: true, message: `Sesi bot direset (${result.removedFiles} file kredensial dihapus). QR baru akan dibuat dalam beberapa detik.`, ...result });
+    } catch (error) {
+        console.error('[WA-Reset] Error:', error);
+        res.status(500).json({ error: error.message || 'Gagal mereset sesi' });
     }
 });
 

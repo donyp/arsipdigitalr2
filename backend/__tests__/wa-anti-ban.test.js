@@ -102,8 +102,66 @@ describe('WA Message Queue - guard anti-ban', () => {
     });
 });
 
-describe('Auto Dispatch ke Grup WhatsApp', () => {
-    test('auto-send nonaktif -> dilewati, pesan tetap manual', async () => {
+describe('Diagnostik Koneksi Bot WhatsApp', () => {
+    const { getDisconnectHint, buildDiagnostics } = require('../services/wa-diagnostics');
+
+    test('diagnostics memuat alasan disconnect + status', () => {
+        const d = buildDiagnostics({
+            connected: false,
+            connectionState: 'closed',
+            lastError: { statusCode: 401, message: 'unauthorized' }
+        }, { sessionPath: '/tmp/wa-auth', sessionFileCount: 0 });
+        expect(d.connectionState).toBe('closed');
+        expect(d.lastError.statusCode).toBe(401);
+        expect(d.hint).toMatch(/IP server diblokir|ditolak/i);
+        expect(d.hasCreds).toBe(false);
+    });
+
+    test('401 / 403 / 405 / 428 / 515 punya saran yang berbeda & jelas', () => {
+        const hints = [401, 403, 405, 428, 515].map(code => getDisconnectHint(code, 'x'));
+        hints.forEach(h => expect(typeof h).toBe('string'));
+        expect(new Set(hints).size).toBe(5);
+    });
+
+    test('error tanpa kode -> saran jaringan', () => {
+        expect(getDisconnectHint(null, 'socket hang up')).toMatch(/jaringan|firewall|DNS/i);
+    });
+
+    test('tanpa error & tanpa QR -> saran "belum siap"', () => {
+        const d = buildDiagnostics({ connected: false, qrAvailable: false }, { sessionFileCount: 0 });
+        expect(d.hint).toMatch(/belum siap/i);
+    });
+
+    test('ada kredensial tapi tidak connect -> saran reset sesi', () => {
+        const d = buildDiagnostics({ connected: false, qrAvailable: false }, { sessionFileCount: 3 });
+        expect(d.hint).toMatch(/Reset Sesi Bot/i);
+        expect(d.hasCreds).toBe(true);
+    });
+
+    test('terhubung -> tidak ada hint', () => {
+        const d = buildDiagnostics({ connected: true, ready: true, qrAvailable: false }, { sessionFileCount: 2 });
+        expect(d.hint).toBeNull();
+    });
+
+    test('source: reconnect pakai backoff (tidak bombardir WhatsApp)', () => {
+        const src = fs.readFileSync(path.join(__dirname, '..', 'services', 'whatsapp-baileys.js'), 'utf8');
+        expect(src).toContain('connectAttempts');
+        expect(src).toMatch(/Math\.min\(5000 \* Math\.pow\(2/);
+    });
+
+    test('source: endpoint QR pesan error tidak generik & ada reset sesi', () => {
+        const ep = fs.readFileSync(path.join(__dirname, '..', 'whatsapp-endpoints.js'), 'utf8');
+        expect(ep).toContain('getDiagnostics');
+        expect(ep).not.toContain('No QR code available');
+        const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+        expect(server).toContain("/api/whatsapp/diagnose");
+        expect(server).toContain("/api/whatsapp/reset-session");
+        // pesan error /api/whatsapp tidak disamarkan di produksi
+        expect(server).toContain("isWhatsAppSetup");
+    });
+});
+
+describe('Auto Dispatch ke Grup WhatsApp', () => {    test('auto-send nonaktif -> dilewati, pesan tetap manual', async () => {
         const supabase = {
             from: () => ({
                 select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) })

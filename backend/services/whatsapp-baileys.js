@@ -41,6 +41,13 @@ class WhatsAppService {
             typing_min_ms: 800,
             typing_max_ms: 2500
         };
+
+        // Diagnostik koneksi (ditampilkan di dashboard Bot WA)
+        this.connectionState = 'idle';   // idle | connecting | open | closed
+        this.lastError = null;           // { statusCode, message, at }
+        this.lastDisconnectAt = null;
+        this.lastQrAt = null;
+        this.connectAttempts = 0;
     }
 
     async initialize() {
@@ -69,18 +76,25 @@ class WhatsAppService {
 
                 if (qr) {
                     this.lastQR = qr;
+                    this.lastQrAt = Date.now();
+                    this.lastError = null;
+                    this.connectAttempts = 0;
                     console.log('[WhatsApp] ⏳ QR Code generated - Scan with your phone to authenticate');
                 }
 
                 if (connection === 'connecting') {
                     console.log('[WhatsApp] 🔄 Connecting...');
                     this.isConnected = false;
+                    this.connectionState = 'connecting';
                 }
 
                 if (connection === 'open') {
                     console.log('[WhatsApp] ✅ Connected to WhatsApp');
                     this.isConnected = true;
                     this.lastQR = null;
+                    this.lastError = null;
+                    this.connectionState = 'open';
+                    this.connectAttempts = 0;
                     
                     // Get the connected phone number from socket
                     try {
@@ -97,13 +111,30 @@ class WhatsAppService {
                 }
 
                 if (connection === 'close') {
-                    if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
-                        console.log('[WhatsApp] ⚠️ Disconnected - reconnecting in 5s...');
+                    // Simpan alasan disconnect supaya bisa ditampilkan di dashboard
+                    const statusCode = lastDisconnect?.error?.output?.statusCode;
+                    const disconnectError = lastDisconnect?.error;
+                    this.lastDisconnectAt = Date.now();
+                    this.connectionState = 'closed';
+                    this.lastError = {
+                        statusCode: statusCode || null,
+                        message: disconnectError?.message || 'Koneksi ke WhatsApp terputus',
+                        output: disconnectError?.output?.payload || null,
+                        at: this.lastDisconnectAt
+                    };
+
+                    if (statusCode !== DisconnectReason.loggedOut) {
+                        // Backoff progressively: jangan bombardir WhatsApp kalau
+                        // IP server diblokir (bisa memperburuk reputasi IP).
+                        this.connectAttempts = (this.connectAttempts || 0) + 1;
+                        const backoff = Math.min(5000 * Math.pow(2, this.connectAttempts - 1), 300000);
+                        console.error(`[WhatsApp] ⚠️ Disconnected (${statusCode || 'no-code'}): ${this.lastError.message} - reconnect in ${Math.round(backoff / 1000)}s`);
                         this.isConnected = false;
-                        setTimeout(() => this.initialize(), 5000);
+                        setTimeout(() => this.initialize(), backoff);
                     } else {
-                        console.log('[WhatsApp] 🚪 Logged out');
+                        console.log('[WhatsApp] 🚪 Logged out (perlu scan QR ulang)');
                         this.isConnected = false;
+                        this.lastQR = null;
                     }
                 }
             });
@@ -222,8 +253,81 @@ class WhatsAppService {
     getStatus() {
         return {
             connected: this.isConnected,
-            ready: this.isReady()
+            ready: this.isReady(),
+            connectionState: this.connectionState,
+            qrAvailable: !!this.lastQR,
+            lastError: this.lastError,
+            lastDisconnectAt: this.lastDisconnectAt,
+            lastQrAt: this.lastQrAt,
+            connectAttempts: this.connectAttempts
         };
+    }
+
+    /**
+     * Diagnostik lengkap (untuk tombol "Diagnosa" di dashboard).
+     * Mencheckmark: apakah file sesi ada, apakah QR pernah dibuat, dan
+     * alasan disconnect terakhir.
+     */
+    getDiagnostics() {
+        let sessionFiles = [];
+        let sessionExists = false;
+        try {
+            if (fs.existsSync(this.sessionPath)) {
+                sessionExists = true;
+                sessionFiles = fs.readdirSync(this.sessionPath).filter(f => f.endsWith('.json'));
+            }
+        } catch (e) { /* abaikan */ }
+
+        const { buildDiagnostics } = require('./wa-diagnostics');
+
+        return buildDiagnostics({
+            connected: this.isConnected,
+            ready: this.isReady(),
+            connectionState: this.connectionState,
+            qrAvailable: !!this.lastQR,
+            lastError: this.lastError,
+            lastDisconnectAt: this.lastDisconnectAt,
+            lastQrAt: this.lastQrAt,
+            connectAttempts: this.connectAttempts,
+            phone: this.connectedPhoneNumber
+        }, {
+            sessionPath: this.sessionPath,
+            sessionExists,
+            sessionFileCount: sessionFiles.length
+        });
+    }
+
+    /**
+     * Hapus kredensial sesi (logout total) supaya pairing baru bisa dibuat.
+     * Dipakai saat sesi rusak / ingin scan QR baru dari nol.
+     */
+    async resetSession() {
+        const result = { removedFiles: 0, sessionPath: this.sessionPath };
+        try {
+            if (this.socket) {
+                try { await this.socket.logout(); } catch (e) { /* abaikan */ }
+                try { this.socket.ev.removeAllListeners?.('connection.update'); } catch (e) { /* abaikan */ }
+                this.socket = null;
+            }
+            this.isConnected = false;
+            this.lastQR = null;
+            this.connectedPhoneNumber = null;
+            this.connectionState = 'idle';
+            this.connectAttempts = 0;
+
+            if (fs.existsSync(this.sessionPath)) {
+                for (const file of fs.readdirSync(this.sessionPath)) {
+                    if (!file.endsWith('.json')) continue;
+                    fs.unlinkSync(path.join(this.sessionPath, file));
+                    result.removedFiles++;
+                }
+            }
+            console.log(`[WhatsApp] Sesi direset (${result.removedFiles} file kredensial dihapus)`);
+        } catch (e) {
+            console.error('[WhatsApp] Gagal reset sesi:', e.message);
+            throw e;
+        }
+        return result;
     }
 
     getLastQR() {
