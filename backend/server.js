@@ -8045,10 +8045,22 @@ console.log(`🚀 Backend starting on port ${PORT}`);
 // WhatsApp Notification Endpoints
 // ============================================================
 const { createWANotifications, getPendingNotifications, markAsSent, markBatchAsSent } = require('./whatsapp-notification-handler');
-const { createInvoiceNotifications, getPendingInvoiceNotifications, getAllInvoiceNotifications, markInvoiceAsSent, markInvoiceBatchAsSent, deleteInvoiceNotification } = require('./whatsapp-invoice-notifications');
+const { createInvoiceNotifications, getPendingInvoiceNotifications, getAllInvoiceNotifications, markInvoiceAsSent, markInvoiceBatchAsSent, markInvoiceZonaAsSent, deleteInvoiceNotification } = require('./whatsapp-invoice-notifications');
 
 // POST /api/whatsapp/generate-messages
 // Generate WhatsApp messages after bulk upload
+//
+// DINONAKTIFKAN (keputusan user): notifikasi WhatsApp hanya dibuat untuk
+// upload invoice PDF. Upload Excel (tabel invoice) tidak lagi membuat pesan
+// WA -> tidak ada lagi jalur yang bisa membuat notifikasi ganda/berantakan.
+app.post('/api/whatsapp/generate-messages', authenticateToken, async (req, res) => {
+    return res.status(410).json({
+        success: false,
+        error: 'Notifikasi WhatsApp untuk upload Excel sudah dinonaktifkan. Notifikasi WA hanya dibuat saat upload invoice PDF.'
+    });
+});
+
+/*
 app.post('/api/whatsapp/generate-messages', authenticateToken, async (req, res) => {
     try {
         const { invoices, batchId } = req.body;
@@ -8079,6 +8091,7 @@ app.post('/api/whatsapp/generate-messages', authenticateToken, async (req, res) 
         });
     }
 });
+*/
 
 // GET /api/whatsapp/pending-messages
 // Get all pending WhatsApp notifications
@@ -8181,12 +8194,17 @@ app.post('/api/whatsapp/generate-invoice-messages', authenticateToken, async (re
         console.log('[API] POST /api/whatsapp/generate-invoice-messages - User:', req.user.userId, 'Invoices:', invoices.length);
 
         // Create invoice notifications
-        const notifications = await createInvoiceNotifications(invoices, req.user.userId, batchId);
+        // (kalau zona tsb masih punya pesan pending, invoice baru DIGABUNG ke
+        //  pesan itu -> selalu 1 pesan aktif per zona)
+        const result = await createInvoiceNotifications(invoices, req.user.userId, batchId);
+        const notifications = result.notifications || {};
+        const merged = result.merged || [];
 
         res.json({
             success: true,
-            message: `Generated ${Object.keys(notifications).length} WhatsApp messages for ${Object.keys(notifications).length} zonas`,
-            notifications: notifications
+            message: `Generated ${Object.keys(notifications).length} WhatsApp messages for ${Object.keys(notifications).length} zones`,
+            notifications: notifications,
+            merged_count: merged.length
         });
     } catch (error) {
         console.error('[API] WhatsApp invoice generate error:', error);
@@ -8207,7 +8225,9 @@ app.get('/api/whatsapp/pending-invoice-messages', authenticateToken, async (req,
 
         console.log('[API] GET /api/whatsapp/pending-invoice-messages - User:', req.user.userId, 'Status:', status);
 
-        const result = await getAllInvoiceNotifications(moderatorId, status);
+        // viewer dipakai untuk filter zona: admin_zona hanya melihat
+        // pesan zonanya sendiri (anti kebocoran data antar zona)
+        const result = await getAllInvoiceNotifications(moderatorId, status, req.user);
 
         res.json({
             success: true,
@@ -8230,15 +8250,19 @@ app.get('/api/whatsapp/pending-invoice-messages', authenticateToken, async (req,
 // Mark a single invoice WhatsApp notification as sent
 app.post('/api/whatsapp/mark-invoice-sent', authenticateToken, async (req, res) => {
     try {
-        const { notificationId } = req.body;
+        const { notificationId, via } = req.body;
 
         if (!notificationId) {
             return res.status(400).json({ error: 'notificationId required' });
         }
 
-        console.log('[API] POST /api/whatsapp/mark-invoice-sent - Notification:', notificationId);
+        // via: 'copy' (default, user klik "Salin Pesan") atau 'manual'
+        // (user menandai terkirim tanpa copy, mis. sudah dikirim di luar sistem)
+        const sentVia = via === 'manual' ? 'manual' : 'copy';
 
-        await markInvoiceAsSent(notificationId);
+        console.log('[API] POST /api/whatsapp/mark-invoice-sent - Notification:', notificationId, '| via:', sentVia);
+
+        await markInvoiceAsSent(notificationId, sentVia);
 
         res.json({
             success: true,
@@ -8275,6 +8299,40 @@ app.post('/api/whatsapp/mark-invoice-batch-sent', authenticateToken, async (req,
         console.error('[API] WhatsApp mark-invoice-batch-sent error:', error);
         res.status(500).json({ 
             error: error.message || 'Failed to mark invoice batch as sent',
+            details: error.message
+        });
+    }
+});
+
+// POST /api/whatsapp/mark-invoice-zona-sent
+// Mark SEMUA pesan pending dalam satu zona sebagai terkirim
+// (tombol "Tandai semua terkirim" di halaman WA Messages)
+app.post('/api/whatsapp/mark-invoice-zona-sent', authenticateToken, async (req, res) => {
+    try {
+        const { zona_id } = req.body;
+
+        if (!zona_id) {
+            return res.status(400).json({ error: 'zona_id required' });
+        }
+
+        // Admin zona hanya boleh menutup pesan zonanya sendiri
+        if (req.user.role === 'admin_zona' && Number(req.user.zona_id) !== Number(zona_id)) {
+            return res.status(403).json({ error: 'Akses ditolak' });
+        }
+
+        console.log('[API] POST /api/whatsapp/mark-invoice-zona-sent - Zona:', zona_id, '| User:', req.user.userId);
+
+        const count = await markInvoiceZonaAsSent(zona_id);
+
+        res.json({
+            success: true,
+            message: `Marked ${count} invoice notifications as sent`,
+            count: count
+        });
+    } catch (error) {
+        console.error('[API] WhatsApp mark-invoice-zona-sent error:', error);
+        res.status(500).json({ 
+            error: error.message || 'Failed to mark zona messages as sent',
             details: error.message
         });
     }

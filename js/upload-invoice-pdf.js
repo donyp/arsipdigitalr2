@@ -475,6 +475,16 @@ function renderValidationResults() {
         const status = result.valid ? 'VALID' : 'INVALID';
         const statusText = result.valid ? 'Faktur ditemukan' : (result.error || 'Faktur tidak ditemukan');
         const fakturText = result.faktur && result.faktur.trim() ? result.faktur : '(tidak terdeteksi)';
+
+        // Badge status upload (setelah percobaan upload)
+        let uploadBadge = '';
+        if (result.uploadStatus === 'success') {
+            uploadBadge = '<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:#dcfce7;color:#166534;font-size:11px;font-weight:700;">✓ Terupload</span>';
+        } else if (result.uploadStatus === 'duplicate') {
+            uploadBadge = '<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#92400e;font-size:11px;font-weight:700;">ℹ Sudah ada</span>';
+        } else if (result.uploadStatus === 'failed') {
+            uploadBadge = '<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;">✗ Gagal</span>';
+        }
         
         let konsumenText = '';
         let nominalText = '';
@@ -499,7 +509,7 @@ function renderValidationResults() {
                         Faktur: ${fakturText} ${result.valid ? `| ${konsumenText} | ${nominalText} | ${(result.file.size / 1024 / 1024).toFixed(2)} MB ${result.file.size > 2 * 1024 * 1024 ? '| 📦 Will compress' : '| ✓ No compression'}` : `| ${statusText}`}
                     </div>
                 </div>
-                <div class="file-item-status">${status}</div>
+                <div class="file-item-status">${status}${uploadBadge}</div>
                 ${deleteBtn}
             </div>
         `;
@@ -510,14 +520,37 @@ function renderValidationResults() {
 
     // Enable/disable upload button
     document.getElementById('btnUpload').disabled = validCount === 0;
+
+    // Tombol "upload ulang yang gagal" hanya tampil kalau ada file gagal
+    if (typeof updateRetryButton === 'function') updateRetryButton();
 }
 
-async function uploadValidFiles() {
+// ============================================================
+// Anti double-submit: kalau upload sedang berjalan, klik lagi diabaikan.
+// Tanpa ini, satu proses upload bisa jadi 2 batch (dan 2 pesan WA untuk
+// zona yang sama).
+// ============================================================
+let isUploading = false;
+
+async function uploadValidFiles(onlyFailed = false) {
+    if (isUploading) {
+        showNotification('Upload sedang berjalan, mohon tunggu selesai.', 'warning');
+        return;
+    }
+
     // Filter only valid files for upload (invalid files stay in the list but are skipped)
-    const validFiles = validationResults.filter(r => r.valid);
-    
+    const allValidFiles = validationResults.filter(r => r.valid);
+    // Mode "upload ulang": hanya file yang GAGAL di percobaan sebelumnya.
+    // File yang sudah berhasil TIDAK diupload lagi (menghindari batch kedua).
+    const validFiles = onlyFailed
+        ? allValidFiles.filter(r => r.uploadStatus === 'failed')
+        : allValidFiles;
+
     if (validFiles.length === 0) {
-        showNotification('Tidak ada file valid untuk diupload', 'error');
+        showNotification(
+            onlyFailed ? 'Tidak ada file yang gagal diupload.' : 'Tidak ada file valid untuk diupload',
+            'error'
+        );
         return;
     }
 
@@ -528,6 +561,7 @@ async function uploadValidFiles() {
     btnUpload.disabled = true;
     btnUpload.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i>Processing...';
     btnUpload.style.opacity = '0.8';
+    isUploading = true;
 
     // Initialize fresh batch array for this upload session (thread-safe)
     const uploadBatch = [];
@@ -559,6 +593,7 @@ async function uploadValidFiles() {
         const UPLOAD_CONCURRENCY = 6;
         let successCount = 0;
         let failCount = 0;
+        let duplicateCount = 0;
         let currentProgress = 0;
 
         let cursor = 0;
@@ -600,6 +635,8 @@ async function uploadValidFiles() {
 
                 if (response.ok && result.success) {
                     successCount++;
+                    fileResult.uploadStatus = 'success';
+                    fileResult.uploadError = null;
 
                     // Display compression note if available
                     let compressionMsg = '';
@@ -617,12 +654,24 @@ async function uploadValidFiles() {
                             nominal: result.nominal
                         });
                     }
+                } else if (response.status === 409) {
+                    // File sudah ada di storage (upload sebelumnya).
+                    // Ini BUKAN kegagalan -> tandai "sudah ada" supaya tidak
+                    // ikut diupload ulang dan tidak dihitung sebagai error.
+                    duplicateCount++;
+                    fileResult.uploadStatus = 'duplicate';
+                    fileResult.uploadError = result.message || 'File sudah ada';
+                    showNotification(`ℹ ${fileResult.faktur}: file sudah ada (dilewati)`, 'warning', 2500);
                 } else {
                     failCount++;
+                    fileResult.uploadStatus = 'failed';
+                    fileResult.uploadError = result.error || ('HTTP ' + response.status);
                     showNotification(`✗ ${fileResult.faktur}: ${result.error || ('HTTP ' + response.status)}`, 'error', 2000);
                 }
             } catch (error) {
                 failCount++;
+                fileResult.uploadStatus = 'failed';
+                fileResult.uploadError = error.message;
                 showNotification(`✗ ${fileResult.faktur}: ${error.message}`, 'error', 2000);
             }
         };
@@ -669,9 +718,16 @@ async function uploadValidFiles() {
         }
 
         // Show final result message
-        const message = `✅ ${successCount}/${validFiles.length} file berhasil diupload${failCount > 0 ? ` (${failCount} gagal)` : ''}`;
+        const parts = [`${successCount}/${validFiles.length} file berhasil diupload`];
+        if (duplicateCount > 0) parts.push(`${duplicateCount} sudah ada (dilewati)`);
+        if (failCount > 0) parts.push(`${failCount} gagal`);
+        const message = `✅ ${parts.join(' • ')}`;
         showNotification(message, successCount > 0 ? 'success' : 'error', 5000);
         // Note: WhatsApp notifications are now shown only in Notify Zona dashboard
+
+        // Perbarui tampilan status per file + tombol "upload ulang yang gagal"
+        renderValidationResults();
+        updateRetryButton();
 
         // Refresh invoice list to show updated status with file counts
         if (successCount > 0) {
@@ -688,7 +744,7 @@ async function uploadValidFiles() {
             }, 2000);
         }
 
-        // Reset if all successful
+        // Reset if all successful (tidak ada file yang gagal)
         if (failCount === 0) {
             setTimeout(() => {
                 resetUpload();
@@ -699,10 +755,36 @@ async function uploadValidFiles() {
         showNotification('Error: ' + error.message, 'error', 5000);
         window.hideLoadingOverlay();
     } finally {
+        isUploading = false;
         btnUpload.disabled = originalDisabled;
         btnUpload.innerHTML = originalText;
         btnUpload.style.opacity = '1';
     }
+}
+
+/**
+ * Upload ulang HANYA file yang gagal di percobaan sebelumnya.
+ * Ini mencegah bug "1 upload jadi 2 batch" (file yang sudah berhasil tidak
+ * diupload lagi -> tidak ada batch kedua -> tidak ada pesan WA ganda).
+ */
+async function uploadFailedFiles() {
+    const failed = validationResults.filter(r => r.valid && r.uploadStatus === 'failed');
+    if (failed.length === 0) {
+        showNotification('Tidak ada file yang gagal diupload', 'warning');
+        return;
+    }
+    await uploadValidFiles(true);
+}
+
+/**
+ * Tampilkan tombol "Upload Ulang yang Gagal" hanya jika ada file gagal.
+ */
+function updateRetryButton() {
+    const btn = document.getElementById('btnRetryFailed');
+    if (!btn) return;
+    const failedCount = validationResults.filter(r => r.valid && r.uploadStatus === 'failed').length;
+    btn.style.display = failedCount > 0 ? 'inline-flex' : 'none';
+    btn.innerHTML = `<i class="fas fa-rotate-right"></i><span>Upload Ulang Gagal (${failedCount})</span>`;
 }
 
 function removeInvalidFile(index) {

@@ -492,7 +492,14 @@
                         </div>
                     `;
                 } else {
-                    html += `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    html += `
+                    <div class="flex justify-end mb-4">
+                        <button class="btn-mark-all bg-gradient-primary text-white font-bold py-2.5 px-5 rounded-xl shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2">
+                            <i class="fas fa-check-double"></i>
+                            <span>Tandai Semua Terkirim</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         ${activeMessages.map(msg => renderMessageCard(msg)).join('')}
                     </div>`;
                 }
@@ -591,6 +598,24 @@
         function renderMessageCard(msg) {
             const isPending = !msg.sent_at;
             const zonaName = msg.zonas?.nama || `Zona ${msg.zona_id}`;
+
+            // Badge kanal pengiriman (kolom opsional - hanya ada setelah migrasi SQL)
+            let channelBadge = '';
+            if (!isPending) {
+                const via = msg.sent_via;
+                const viaLabel = via === 'copy' ? 'Terkirim (Salin)'
+                    : via === 'bot' ? 'Terkirim (Otomatis)'
+                    : via === 'manual' ? 'Terkirim (Manual)'
+                    : 'Terkirim';
+                const sentTime = msg.sent_at
+                    ? new Date(msg.sent_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+                    : '';
+                channelBadge = `
+                    <span class="status-badge bg-green-500 text-white" style="margin-top:4px;">
+                        <i class="fas fa-check-double"></i> ${viaLabel}
+                        ${sentTime ? `<span style="opacity:0.85;font-weight:500;"> • ${sentTime}</span>` : ''}
+                    </span>`;
+            }
             
             return `
                 <div class="glass-card rounded-2xl p-6 transition-all duration-300">
@@ -608,9 +633,12 @@
                                 </p>
                             </div>
                         </div>
-                        <span class="status-badge ${isPending ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'}">
-                            ${isPending ? '<i class="fas fa-hourglass-half"></i> Aktif' : '<i class="fas fa-check-double"></i> Terkirim'}
-                        </span>
+                        <div class="text-right">
+                            <span class="status-badge ${isPending ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'}">
+                                ${isPending ? '<i class="fas fa-hourglass-half"></i> Aktif' : '<i class="fas fa-check-double"></i> Terkirim'}
+                            </span>
+                            ${channelBadge}
+                        </div>
                     </div>
 
                     <!-- Message Box -->
@@ -619,11 +647,16 @@ ${msg.message || 'N/A'}
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="flex gap-3">
-                        <button class="btn-copy btn-modern flex-1 bg-gradient-success text-white font-bold py-3 px-5 rounded-xl shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2" data-msg-id="${msg.id}" data-message="${escapeHtml(msg.message)}">
+                    <div class="flex gap-3 flex-wrap">
+                        <button class="btn-copy btn-modern flex-1 bg-gradient-success text-white font-bold py-3 px-5 rounded-xl shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2" style="min-width:170px;" data-msg-id="${msg.id}" data-message="${escapeHtml(msg.message)}">
                             <i class="fas fa-copy text-lg"></i>
                             <span>Salin Pesan</span>
                         </button>
+                        ${isPending ? `
+                        <button class="btn-mark btn-modern flex-1 bg-gradient-primary text-white font-bold py-3 px-5 rounded-xl shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2" style="min-width:170px;" data-msg-id="${msg.id}">
+                            <i class="fas fa-check-double text-lg"></i>
+                            <span>Tandai Terkirim</span>
+                        </button>` : ''}
                         <button class="btn-delete btn-modern bg-gradient-danger text-white font-bold py-3 px-5 rounded-xl shadow-lg hover:shadow-xl text-sm flex items-center justify-center gap-2" data-msg-id="${msg.id}">
                             <i class="fas fa-trash text-lg"></i>
                             <span>Hapus</span>
@@ -802,12 +835,76 @@ ${msg.message || 'N/A'}
                 const message = btn.getAttribute('data-message');
                 copyMessage(msgId, message);
             }
+            if (e.target.closest('.btn-mark')) {
+                const btn = e.target.closest('.btn-mark');
+                markMessageAsSent(btn.getAttribute('data-msg-id'));
+            }
+            if (e.target.closest('.btn-mark-all')) {
+                markAllActiveAsSent();
+            }
             if (e.target.closest('.btn-delete')) {
                 const btn = e.target.closest('.btn-delete');
                 const msgId = btn.getAttribute('data-msg-id');
                 deleteInvoiceMessage(msgId);
             }
         });
+
+        /**
+         * Tandai terkirim TANPA copy.
+         * Dipakai kalau pesan sudah dikirim manual di luar sistem (mis. via
+         * bot /_group lain) supaya tidak menggantung di tab "Pesan Aktif".
+         */
+        async function markMessageAsSent(msgId) {
+            try {
+                await API.post('/api/whatsapp/mark-invoice-sent', { notificationId: msgId, via: 'manual' });
+                await loadMessages();
+                if (typeof Toast !== 'undefined') {
+                    Toast.success('Pesan ditandai sudah terkirim');
+                } else {
+                    Notify.success('Pesan ditandai sudah terkirim');
+                }
+            } catch (err) {
+                if (typeof Toast !== 'undefined') {
+                    Toast.error('Error: ' + err.message);
+                } else {
+                    Notify.error('Error: ' + err.message);
+                }
+            }
+        }
+
+        /**
+         * Tandai SEMUA pesan aktif (yang di layar) sebagai terkirim.
+         * Dikerjakan per zona supaya tidak menandai pesan zona lain.
+         */
+        async function markAllActiveAsSent() {
+            const zonaIds = [...new Set(currentInvoiceMessages.filter(m => !m.sent_at).map(m => m.zona_id))];
+            if (zonaIds.length === 0) {
+                if (typeof Toast !== 'undefined') Toast.warning('Tidak ada pesan aktif');
+                return;
+            }
+            if (!confirm(`Tandai semua pesan aktif (${zonaIds.length} zona) sebagai sudah terkirim?`)) {
+                return;
+            }
+            try {
+                let total = 0;
+                for (const zonaId of zonaIds) {
+                    const res = await API.post('/api/whatsapp/mark-invoice-zona-sent', { zona_id: zonaId });
+                    total += (res && res.count) ? res.count : 0;
+                }
+                await loadMessages();
+                if (typeof Toast !== 'undefined') {
+                    Toast.success(`${total} pesan ditandai sudah terkirim`);
+                } else {
+                    Notify.success(`${total} pesan ditandai sudah terkirim`);
+                }
+            } catch (err) {
+                if (typeof Toast !== 'undefined') {
+                    Toast.error('Error: ' + err.message);
+                } else {
+                    Notify.error('Error: ' + err.message);
+                }
+            }
+        }
 
         async function copyMessage(msgId, message) {
             try {
