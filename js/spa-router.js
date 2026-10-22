@@ -477,10 +477,12 @@ class SPARouter {
             // unified-header.css memberi #app padding-top:80px untuk header
             // tetap. Halaman tanpa unified header tidak boleh punya gap 80px
             // di atas (tampil kosong). Override berdasarkan keberadaan
-            // elemen unified-header yang baru dibuat.
+            // elemen unified-header yang baru dibuat. (Pengaturan final
+            // dilakukan lagi di akhir loadPage, setelah semua init selesai,
+            // karena init halaman bisa menimpa style ini.)
             const appElPad = document.getElementById('app');
             if (appElPad) {
-                appElPad.style.paddingTop = document.getElementById('unified-header') ? '80px' : '0px';
+                appElPad.style.setProperty('padding-top', document.getElementById('unified-header') ? '80px' : '0px', 'important');
             }
             
             // Inject page-specific styles into head
@@ -721,6 +723,15 @@ class SPARouter {
 
             // Re-initialize any scripts that need to run
             await this.reinitializePageScripts();
+
+            // FINAL: pastikan #app padding-top sesuai unified header.
+            // (init halaman / reinitialize bisa menimpa override awal)
+            try {
+                const appElFinal = document.getElementById('app');
+                if (appElFinal) {
+                    appElFinal.style.setProperty('padding-top', document.getElementById('unified-header') ? '80px' : '0px', 'important');
+                }
+            } catch (e) { /* abaikan */ }
 
             // Hide loader only AFTER page scripts are initialized (data loaded)
             if (isFirstLoadOfSession && loader) {
