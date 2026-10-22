@@ -8399,6 +8399,14 @@ app.put('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin'
             applyAntiBanConfig(settings.antiban);
         } catch (e) { /* abaikan */ }
 
+        // Jeda gabung untuk kirim otomatis (bisa diubah dari dashboard)
+        try {
+            const { setDelayMs } = require('./wa-auto-dispatch');
+            if (settings.auto_send_delay_ms !== undefined) {
+                setDelayMs(settings.auto_send_delay_ms);
+            }
+        } catch (e) { /* abaikan */ }
+
         // Terapkan switch koneksi bot (ON/OFF) langsung
         let botAction = 'tidak berubah';
         try {
@@ -8572,6 +8580,81 @@ app.post('/api/whatsapp/reset-session', authenticateToken, authorizeRole('super_
     } catch (error) {
         console.error('[WA-Reset] Error:', error);
         res.status(500).json({ error: error.message || 'Gagal mereset sesi' });
+    }
+});
+
+// GET /api/whatsapp/auto-send-status
+// Diagnosa kirim otomatis: zona mana yang siap, apa yang sedang dijadwalkan,
+// dan riwayat kejadian (termasuk alasan kalau dilewati).
+app.get('/api/whatsapp/auto-send-status', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+    try {
+        const { getDispatchStatus } = require('./wa-auto-dispatch');
+        const { getWaService } = require('./whatsapp-zona-endpoints');
+        const service = getWaService();
+
+        const settings = await getWaSettings(supabase);
+        const { data: groups } = await supabase
+            .from('whatsapp_zona_groups')
+            .select('zona_id, group_id, group_name, is_active');
+        const { data: zonas } = await supabase.from('zonas').select('id, nama, kode').order('id');
+
+        const groupMap = new Map((groups || []).map(g => [String(g.zona_id), g]));
+        const zones = (zonas || []).map(z => {
+            const key = String(z.id);
+            const g = groupMap.get(key);
+            const perZone = settings.auto_send_zonas || {};
+            const enabled = Object.prototype.hasOwnProperty.call(perZone, key)
+                ? !!perZone[key]
+                : settings.auto_send_enabled === true;
+            let blocker = null;
+            if (settings.system_enabled === false) blocker = 'Sistem notifikasi dimatikan';
+            else if (!enabled) blocker = 'Kirim otomatis mati untuk zona ini';
+            else if (!g) blocker = 'Grup WA belum dipetakan';
+            else if (!g.is_active) blocker = 'Mapping grup nonaktif';
+            else if (!service || !service.isReady()) blocker = 'Bot belum terhubung';
+            return {
+                zona_id: z.id,
+                zona_nama: z.nama,
+                enabled,
+                group_id: g ? g.group_id : null,
+                group_active: g ? !!g.is_active : false,
+                ready: !blocker,
+                blocker
+            };
+        });
+
+        res.json({
+            success: true,
+            zones,
+            dispatch: getDispatchStatus(),
+            botReady: !!(service && service.isReady()),
+            systemEnabled: settings.system_enabled !== false,
+            globalAutoSend: settings.auto_send_enabled === true
+        });
+    } catch (error) {
+        console.error('[WA-AutoSendStatus] Error:', error);
+        res.status(500).json({ error: error.message || 'Gagal memuat status kirim otomatis' });
+    }
+});
+
+// POST /api/whatsapp/auto-send-now
+// Kirim pesan ke grup SEKARANG (lewati jeda gabung) - untuk pesan yang
+// masih terjadwal.
+app.post('/api/whatsapp/auto-send-now', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+    try {
+        const { notification_id } = req.body;
+        if (!notification_id) {
+            return res.status(400).json({ error: 'notification_id required' });
+        }
+        const { sendScheduledNow } = require('./wa-auto-dispatch');
+        const result = await sendScheduledNow(notification_id);
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+        res.json({ success: true, message: 'Pesan diantrikan ke antrean (kirim segera)', messageId: result.message_id });
+    } catch (error) {
+        console.error('[WA-AutoSendNow] Error:', error);
+        res.status(500).json({ error: error.message || 'Gagal mengirim pesan' });
     }
 });
 

@@ -202,6 +202,31 @@ describe('Auto Dispatch - template & duplikasi', () => {
         const src = fs.readFileSync(path.join(__dirname, '..', 'wa-auto-dispatch.js'), 'utf8');
         expect(src).toContain('WA_AUTO_SEND_DELAY_MS');
         expect(src).toContain("from('whatsapp_invoice_notifications')");
-        expect(src).toContain('auto-send dibatalkan');
+        expect(src).toContain("logDispatch('dibatalkan'");
+    });
+
+    test('riwayat dispatch tercatat + status bisa dipantau', () => {
+        const { getDispatchStatus, logDispatch } = require('../wa-auto-dispatch');
+        logDispatch('dilewati', { zona_id: 129, zona_name: 'Zona 07' }, { reason: 'bot belum terhubung' });
+        const st = getDispatchStatus();
+        expect(Array.isArray(st.log)).toBe(true);
+        expect(st.log.length).toBeGreaterThan(0);
+        expect(st.log[0].action).toBe('dilewati');
+        expect(st.log[0].zona_name).toBe('Zona 07');
+        expect(st.log[0].reason).toMatch(/terhubung/);
+        expect(typeof st.delay_ms).toBe('number');
+        expect(Array.isArray(st.pending)).toBe(true);
+    });
+
+    test('source: server punya endpoint status & kirim-sekarang', () => {
+        const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+        expect(server).toContain("/api/whatsapp/auto-send-status");
+        expect(server).toContain("/api/whatsapp/auto-send-now");
+        expect(server).toContain('auto_send_delay_ms');
+    });
+
+    test('default: jeda gabung 60 detik (bisa diubah dari dashboard)', () => {
+        const { DEFAULT_SETTINGS } = require('../wa-notification-settings');
+        expect(DEFAULT_SETTINGS.auto_send_delay_ms).toBe(60000);
     });
 });

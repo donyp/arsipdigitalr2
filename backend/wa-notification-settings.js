@@ -50,6 +50,10 @@ const DEFAULT_SETTINGS = {
     // default false: harus dinyalakan manual per zona lewat dashboard
     auto_send_enabled: false,
     auto_send_zonas: {},
+    // Jeda gabung sebelum pesan dikirim ke grup (ms).
+    // Upload yang berdekatan digabung jadi 1 pesan -> grup tidak dapat 2x.
+    // 0 = langsung kirim (tidak disarankan).
+    auto_send_delay_ms: 60000,
 
     // --- Guard anti-ban nomor bot ---
     antiban: {

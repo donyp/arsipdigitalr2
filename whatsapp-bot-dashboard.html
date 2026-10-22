@@ -328,7 +328,50 @@
                     <p class="text-xs text-gray-500 mt-3"><i class="fas fa-info-circle"></i> "Kirim otomatis" butuh grup WA yang sudah dipetakan + bot terhubung. Kalau tidak, pesannya tetap muncul di halaman WA Messages untuk dikirim manual.</p>
                 </div>
 
-                <!-- 6. Log -->
+                <!-- 6. Auto-send (kirim otomatis ke grup) -->
+                <div class="glass-card rounded-2xl p-8 mb-8" id="autosend-card">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-lg" style="background:linear-gradient(135deg,#10b981,#059669);"><i class="fas fa-paper-plane"></i></span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">Kirim Otomatis ke Grup WA</h3>
+                                <p class="text-sm text-gray-600">Status kirim otomatis per zona, antrean menunggu, dan riwayat kejadian</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 items-end">
+                            <div>
+                                <label class="text-xs font-bold text-gray-600 uppercase block mb-1">Jeda gabung (detik)</label>
+                                <input type="number" id="autosend_delay" min="0" step="5" style="width:110px;">
+                            </div>
+                            <button class="btn-primary" onclick="saveAutoSendDelay()"><i class="fas fa-save"></i> Simpan</button>
+                            <button class="btn-secondary" onclick="loadAutoSendStatus()"><i class="fas fa-rotate"></i> Muat</button>
+                        </div>
+                    </div>
+
+                    <div id="autosend-summary" class="mb-4 text-sm"></div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Kesiapan per zona</p>
+                            <div class="overflow-x-auto" style="max-height:320px;overflow-y:auto;">
+                                <table>
+                                    <thead>
+                                        <tr><th>Zona</th><th>Kirim</th><th>Grup</th><th>Status</th></tr>
+                                    </thead>
+                                    <tbody id="autosend-zones-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Menunggu dikirim</p>
+                            <div id="autosend-pending" class="mb-4"></div>
+                            <p class="text-xs font-black text-gray-600 uppercase tracking-wider mb-2">Riwayat 10 terakhir</p>
+                            <div id="autosend-log" class="overflow-y-auto" style="max-height:220px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. Log -->
                 <div class="glass-card rounded-2xl p-8">
                     <h3 class="text-xl font-bold text-gray-900 mb-1">Log Pengiriman ke Grup</h3>
                     <p class="text-sm text-gray-600 mb-6">30 pengiriman terakhir (otomatis & manual).</p>
@@ -385,6 +428,7 @@
         // ---- Pairing QR (inline, tanpa pindah halaman) ----
         let qrPollTimer = null;
         let statusPollTimer = null;
+        let autoSendPollTimer = null;
 
         function scrollToPairing() {
             const el = document.getElementById('pairing-section');
@@ -580,6 +624,10 @@
                     }
                 } catch (e) { /* abaikan */ }
             }, 10000);
+
+            // Refresh status kirim otomatis (countdown + riwayat) tiap 15 detik
+            if (autoSendPollTimer) clearInterval(autoSendPollTimer);
+            autoSendPollTimer = setInterval(() => { loadAutoSendStatus(); }, 15000);
         }
 
         // Jalankan init: kalau DOM sudah siap -> langsung, else saat DOMContentLoaded
@@ -597,6 +645,9 @@
         window.saveZonaToggles = saveZonaToggles;
         window.applyToAll = applyToAll;
         window.saveSwitches = saveSwitches;
+        window.loadAutoSendStatus = loadAutoSendStatus;
+        window.sendAutoSendNow = sendAutoSendNow;
+        window.saveAutoSendDelay = saveAutoSendDelay;
         window.loadQr = loadQr;
         window.refreshQr = refreshQr;
         window.sendTestMessage = sendTestMessage;
@@ -623,8 +674,98 @@
                 renderAntiBan();
                 renderZonaNotif();
                 renderLogs(statusRes.logs || []);
+                loadAutoSendStatus();
             } catch (e) {
                 console.error('[WaBotDash] gagal memuat data:', e);
+            }
+        }
+
+        /**
+         * Muat status kirim otomatis (kesiapan per zona, antrean, riwayat).
+         */
+        async function loadAutoSendStatus() {
+            try {
+                const res = await API.get('/api/whatsapp/auto-send-status');
+                const zones = res.zones || [];
+                const dispatch = res.dispatch || {};
+
+                const ready = zones.filter(z => z.ready).length;
+                const blocked = zones.filter(z => !z.ready);
+                const summary = document.getElementById('autosend-summary');
+                if (summary) {
+                    summary.innerHTML = `
+                        <span class="badge ${res.systemEnabled ? 'badge-ok' : 'badge-off'}">Sistem ${res.systemEnabled ? 'ON' : 'OFF'}</span>
+                        <span class="badge ${res.botReady ? 'badge-ok' : 'badge-warn'}">Bot ${res.botReady ? 'terhubung' : 'belum terhubung'}</span>
+                        <span class="badge ${ready ? 'badge-ok' : 'badge-warn'}">${ready} zona siap kirim</span>
+                        <span class="badge badge-off">Jeda gabung ${Math.round((dispatch.delay_ms || 0) / 1000)} detik</span>
+                        ${blocked.length ? `<span class="badge badge-warn">${blocked.length} zona belum siap</span>` : ''}`;
+                }
+
+                const delayInput = document.getElementById('autosend_delay');
+                if (delayInput && document.activeElement !== delayInput) {
+                    delayInput.value = Math.round((dispatch.delay_ms || 0) / 1000);
+                }
+
+                const zBody = document.getElementById('autosend-zones-body');
+                if (zBody) {
+                    zBody.innerHTML = zones.map(z => `
+                        <tr>
+                            <td class="font-semibold">${z.zona_nama || ('Zona ' + z.zona_id)}</td>
+                            <td>${z.enabled ? '<span class="badge badge-ok">ON</span>' : '<span class="badge badge-off">OFF</span>'}</td>
+                            <td class="mono text-xs">${z.group_id ? z.group_id.slice(0, 18) + '…' : '-'}</td>
+                            <td>${z.ready
+                                ? '<span class="badge badge-ok">Siap</span>'
+                                : `<span class="badge badge-warn" title="${z.blocker || ''}">${z.blocker || 'Belum siap'}</span>`}</td>
+                        </tr>`).join('');
+                }
+
+                const pendBox = document.getElementById('autosend-pending');
+                if (pendBox) {
+                    const pending = dispatch.pending || [];
+                    pendBox.innerHTML = pending.length ? pending.map(p => `
+                        <div class="flex items-center justify-between gap-2 p-2 mb-1 rounded-lg" style="background:var(--color-bg-secondary);">
+                            <div>
+                                <p class="text-xs font-bold">${p.zona_name || ('Zona ' + p.zona_id)}</p>
+                                <p class="text-xs text-gray-500">kirim dalam ${p.seconds_left} detik</p>
+                            </div>
+                            <button class="btn-primary" style="padding:.3rem .6rem;font-size:.75rem;" onclick="sendAutoSendNow(${p.notification_id})"><i class="fas fa-bolt"></i> Kirim Sekarang</button>
+                        </div>`).join('') : '<p class="text-xs text-gray-500">Tidak ada pesan yang menunggu.</p>';
+                }
+
+                const logBox = document.getElementById('autosend-log');
+                if (logBox) {
+                    const log = dispatch.log || [];
+                    logBox.innerHTML = log.length ? log.map(e => `
+                        <div class="text-xs py-1 border-b" style="border-color:var(--color-border);">
+                            <span class="text-gray-400">${new Date(e.at).toLocaleTimeString('id-ID')}</span>
+                            <b>${e.action}</b>
+                            ${e.zona_name ? ' · ' + e.zona_name : ''}
+                            ${e.reason ? `<div class="text-gray-500">${e.reason}</div>` : ''}
+                        </div>`).join('') : '<p class="text-xs text-gray-500">Belum ada riwayat.</p>';
+                }
+            } catch (e) {
+                console.error('[WaBotDash] status auto-send gagal:', e);
+            }
+        }
+
+        async function sendAutoSendNow(notificationId) {
+            try {
+                const res = await API.post('/api/whatsapp/auto-send-now', { notification_id: notificationId });
+                Toast.success(res.message || 'Pesan diantrikan');
+                setTimeout(loadAutoSendStatus, 1200);
+            } catch (e) {
+                Toast.error('Gagal: ' + e.message);
+            }
+        }
+
+        async function saveAutoSendDelay() {
+            const seconds = Number((document.getElementById('autosend_delay') || {}).value) || 0;
+            try {
+                await API.put('/api/whatsapp/settings', { auto_send_delay_ms: seconds * 1000 });
+                Toast.success(`Jeda gabung disetel ${seconds} detik`);
+                loadAutoSendStatus();
+            } catch (e) {
+                Toast.error('Gagal menyimpan: ' + e.message);
             }
         }
 

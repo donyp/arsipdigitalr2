@@ -31,6 +31,66 @@ let reconcileTimer = null;
 const scheduled = new Set();
 // peta: id antrean (queue message id) -> id notifikasi
 const queueToNotification = new Map();
+// daftar pengiriman yang SEDANG dijadwalkan (untuk monitoring di dashboard)
+const pendingSends = new Map();
+// riwayat 50 kejadian terakhir (untuk monitoring & audit)
+const dispatchLog = [];
+
+/**
+ * Catat kejadian dispatch (terlihat di dashboard + log server).
+ */
+function logDispatch(action, zona, extra = {}) {
+    const entry = {
+        at: new Date().toISOString(),
+        action,
+        zona_id: zona?.zona_id ?? null,
+        zona_name: zona?.zona_name ?? null,
+        ...extra
+    };
+    dispatchLog.unshift(entry);
+    if (dispatchLog.length > 50) dispatchLog.pop();
+    console.log(`[WA-AutoSend] ${action}${zona?.zona_name ? ' | ' + zona.zona_name : ''}${extra.reason ? ' | ' + extra.reason : ''}`);
+    return entry;
+}
+
+/**
+ * Jeda gabung saat ini (dari setting dashboard, fallback ke env).
+ */
+let delayOverrideMs = null;
+function currentDelayMs() {
+    if (delayOverrideMs !== null) return delayOverrideMs;
+    return Number(process.env.WA_AUTO_SEND_DELAY_MS || 60000);
+}
+
+/**
+ * Set jeda gabung (dari dashboard / settings).
+ */
+function setDelayMs(ms) {
+    const v = Number(ms);
+    if (!isNaN(v) && v >= 0) delayOverrideMs = v;
+    return currentDelayMs();
+}
+
+/**
+ * Status dispatch untuk dashboard: apa yang dijadwalkan & riwayatnya.
+ */
+function getDispatchStatus() {
+    const now = Date.now();
+    const pending = Array.from(pendingSends.values()).map(p => ({
+        notification_id: p.notification_id,
+        zona_id: p.zona_id,
+        zona_name: p.zona_name,
+        group_id: p.group_id,
+        scheduled_at: p.scheduledAt,
+        send_at: p.sendAt,
+        seconds_left: Math.max(0, Math.round((p.sendAt - now) / 1000))
+    }));
+    return {
+        pending,
+        log: dispatchLog.slice(0, 20),
+        delay_ms: currentDelayMs()
+    };
+}
 
 /**
  * Simpan reference supabase (dipanggil sekali dari server).
@@ -91,7 +151,9 @@ async function dispatchInvoiceToZonaGroups({ supabase, zones = [] }) {
     for (const zona of zones) {
         try {
             if (!isAutoSendEnabledForZone(settings, zona.zona_id)) {
-                result.skipped.push({ zona_id: zona.zona_id, reason: 'kirim otomatis nonaktif untuk zona ini' });
+                const reason = 'kirim otomatis nonaktif untuk zona ini (switch per-zona di dashboard)';
+                result.skipped.push({ zona_id: zona.zona_id, reason });
+                logDispatch('dilewati', zona, { reason });
                 continue;
             }
 
@@ -103,39 +165,49 @@ async function dispatchInvoiceToZonaGroups({ supabase, zones = [] }) {
                 .maybeSingle();
 
             if (!groupRow) {
-                result.skipped.push({ zona_id: zona.zona_id, reason: 'grup WhatsApp zona ini belum dipetakan' });
+                const reason = 'grup WhatsApp zona ini belum dipetakan (dashboard > Grup WA per Zona)';
+                result.skipped.push({ zona_id: zona.zona_id, reason });
+                logDispatch('dilewati', zona, { reason });
                 continue;
             }
 
             if (!service || !service.isReady()) {
-                result.skipped.push({ zona_id: zona.zona_id, reason: 'bot WhatsApp belum terhubung' });
+                const reason = 'bot WhatsApp belum terhubung (cek switch Koneksi Bot)';
+                result.skipped.push({ zona_id: zona.zona_id, reason });
+                logDispatch('dilewati', zona, { reason });
                 continue;
             }
 
             if (!queue) {
-                result.skipped.push({ zona_id: zona.zona_id, reason: 'antrean pesan tidak tersedia' });
+                const reason = 'antrean pesan tidak tersedia';
+                result.skipped.push({ zona_id: zona.zona_id, reason });
+                logDispatch('dilewati', zona, { reason });
                 continue;
             }
 
             // Jangan jadwalkan 2x untuk notifikasi yang sama
             if (zona.notification_id && scheduled.has(zona.notification_id)) {
-                result.skipped.push({ zona_id: zona.zona_id, reason: 'sudah dijadwalkan (menunggu jeda gabung)' });
+                const reason = 'sudah dijadwalkan (menunggu jeda gabung)';
+                result.skipped.push({ zona_id: zona.zona_id, reason });
+                logDispatch('dilewati', zona, { reason });
                 continue;
             }
             if (zona.notification_id) scheduled.add(zona.notification_id);
 
-            scheduleSend({ supabase, queue, zona, groupRow });
+            const delayMs = currentDelayMs();
+            scheduleSend({ supabase, queue, zona, groupRow, delayMs });
             result.queued.push({
                 zona_id: zona.zona_id,
                 zona_name: zona.zona_name,
                 group_id: groupRow.group_id,
                 scheduled: true,
-                delay_ms: WA_AUTO_SEND_DELAY_MS
+                delay_ms: delayMs
             });
-            console.log(`[WA-AutoSend] ⏱ Pesan zona ${zona.zona_name} dijadwalkan kirim ke ${groupRow.group_id} (dalam ${Math.round(WA_AUTO_SEND_DELAY_MS / 1000)} detik)`);
+            logDispatch('dijadwalkan', zona, { group_id: groupRow.group_id, delay_ms: delayMs });
         } catch (e) {
             console.error('[WA-AutoSend] Error:', e.message);
             result.skipped.push({ zona_id: zona.zona_id, reason: e.message });
+            logDispatch('error', zona, { reason: e.message });
         }
     }
 
@@ -151,7 +223,19 @@ async function dispatchInvoiceToZonaGroups({ supabase, zones = [] }) {
  * Saat dikirim, pesan diambil ulang dari DB -> PERSIS sama dengan yang
  * tampil di halaman "WA Messages".
  */
-function scheduleSend({ supabase, queue, zona, groupRow }) {
+function scheduleSend({ supabase, queue, zona, groupRow, delayMs }) {
+    const sendAt = Date.now() + (delayMs || currentDelayMs());
+    if (zona.notification_id) {
+        pendingSends.set(zona.notification_id, {
+            notification_id: zona.notification_id,
+            zona_id: zona.zona_id,
+            zona_name: zona.zona_name,
+            group_id: groupRow.group_id,
+            scheduledAt: new Date().toISOString(),
+            sendAt
+        });
+    }
+
     const timer = setTimeout(async () => {
         try {
             let message = zona.message;
@@ -166,11 +250,11 @@ function scheduleSend({ supabase, queue, zona, groupRow }) {
                     .maybeSingle();
 
                 if (!row) {
-                    console.log(`[WA-AutoSend] Notifikasi ${notificationId} tidak ada -> dibatalkan`);
+                    logDispatch('dibatalkan', zona, { reason: 'notifikasi tidak ada' });
                     return;
                 }
                 if (row.sent_at) {
-                    console.log(`[WA-AutoSend] Pesan zona ${zona.zona_id} sudah terkirim (manual) -> auto-send dibatalkan agar grup tidak dapat 2x`);
+                    logDispatch('dibatalkan', zona, { reason: 'pesan sudah terkirim manual (dilewati agar grup tidak dapat 2x)' });
                     return;
                 }
                 message = row.message;
@@ -179,7 +263,7 @@ function scheduleSend({ supabase, queue, zona, groupRow }) {
 
             const enqueued = await queue.enqueue(groupRow.group_id, message, 'group');
             if (!enqueued || !enqueued.id) {
-                console.warn(`[WA-AutoSend] Antrean menolak (circuit breaker) - zona ${zona.zona_id}`);
+                logDispatch('gagal', zona, { reason: 'antrean menolak (circuit breaker)' });
                 return;
             }
             if (notificationId) queueToNotification.set(enqueued.id, notificationId);
@@ -213,16 +297,71 @@ function scheduleSend({ supabase, queue, zona, groupRow }) {
                 console.warn('[WA-AutoSend] Gagal update kanal notifikasi:', e.message);
             }
 
-            console.log(`[WA-AutoSend] ✅ Pesan zona ${zona.zona_name} diantrikan ke grup ${groupRow.group_id}`);
+            logDispatch('diantrikan', zona, { group_id: groupRow.group_id, message_id: enqueued.id });
         } catch (e) {
             console.error('[WA-AutoSend] Error saat kirim:', e.message);
+            logDispatch('error', zona, { reason: e.message });
         } finally {
-            if (zona.notification_id) scheduled.delete(zona.notification_id);
+            if (zona.notification_id) {
+                scheduled.delete(zona.notification_id);
+                pendingSends.delete(zona.notification_id);
+            }
         }
-    }, WA_AUTO_SEND_DELAY_MS);
+    }, delayMs || currentDelayMs());
 
     if (timer.unref) timer.unref();
     return timer;
+}
+
+/**
+ * Kirim SEKARANG (lewati jeda gabung) untuk satu pesan yang terjadwal.
+ * Dipakai dari dashboard saat admin mau pesan langsung masuk grup.
+ * @param {number} notificationId
+ */
+async function sendScheduledNow(notificationId) {
+    const supabase = supabaseRef;
+    const { service, queue } = getBotDeps();
+    if (!supabase || !queue || !service || !service.isReady()) {
+        return { success: false, error: 'Bot belum terhubung / antrean tidak tersedia' };
+    }
+
+    const { data: row } = await supabase
+        .from('whatsapp_invoice_notifications')
+        .select('id, zona_id, message, sent_at')
+        .eq('id', notificationId)
+        .maybeSingle();
+
+    if (!row) return { success: false, error: 'Pesan tidak ditemukan' };
+    if (row.sent_at) return { success: false, error: 'Pesan sudah ditandai terkirim' };
+
+    const { data: groupRow } = await supabase
+        .from('whatsapp_zona_groups')
+        .select('*')
+        .eq('zona_id', row.zona_id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+    if (!groupRow) return { success: false, error: 'Grup WhatsApp zona ini belum dipetakan' };
+
+    const enqueued = await queue.enqueue(groupRow.group_id, row.message, 'group');
+    if (!enqueued || !enqueued.id) {
+        return { success: false, error: 'Antrean menolak (circuit breaker)' };
+    }
+    queueToNotification.set(enqueued.id, row.id);
+
+    try {
+        await supabase.from('whatsapp_zona_messages').insert({
+            zona_id: row.zona_id,
+            group_id: groupRow.group_id,
+            message: row.message,
+            message_type: 'auto_trigger',
+            trigger_source: 'manual_send_now',
+            queue_status: 'queued'
+        });
+    } catch (e) { /* abaikan */ }
+
+    logDispatch('diantrikan (kirim sekarang)', { zona_id: row.zona_id }, { group_id: groupRow.group_id });
+    return { success: true, message_id: enqueued.id };
 }
 
 /**
@@ -301,5 +440,10 @@ module.exports = {
     dispatchInvoiceToZonaGroups,
     reconcileAutoSentMessages,
     startReconciler,
+    getDispatchStatus,
+    logDispatch,
+    sendScheduledNow,
+    setDelayMs,
+    currentDelayMs,
     WA_AUTO_SEND_DELAY_MS
 };
