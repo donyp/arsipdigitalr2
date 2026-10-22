@@ -423,10 +423,16 @@ class SPARouter {
                     mainContent.style.pointerEvents = 'none';
                 }
                 // Konten "body" sudah punya margin sendiri -> container
-                // tidak boleh menambah offset lagi (hindari dobel 16rem)
+                // tidak boleh menambah offset lagi (hindari dobel 16rem).
+                // #main-content juga harus full-width (flex:1) supaya
+                // .container di dalamnya punya ruang penuh; kalau tidak,
+                // flex item menyusut ke lebar konten -> konten terpotong
+                // di kanan.
                 if (pageData.bodyFallback) {
                     mainContent.style.marginLeft = '0';
-                    mainContent.style.width = 'auto';
+                    mainContent.style.width = '100%';
+                    mainContent.style.flex = '1 1 auto';
+                    mainContent.style.minWidth = '0';
                 }
             }
 
