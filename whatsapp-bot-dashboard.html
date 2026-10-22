@@ -402,6 +402,9 @@
     <script src="/js/sidebar.js?v=7&t=1792067064.55694"></script>
     <script src="/js/spa-page-handler.js"></script>
     <script>
+    // State daftar pengiriman yang dijadwalkan (global agar bisa diakses
+    // dari console & di-refresh tanpa reload halaman)
+    window.AUTO_SEND_PENDING = window.AUTO_SEND_PENDING || [];
     if (typeof window._waBotDashLoaded === 'undefined') {
         window._waBotDashLoaded = true;
 
@@ -429,6 +432,7 @@
         let qrPollTimer = null;
         let statusPollTimer = null;
         let autoSendPollTimer = null;
+        let countdownTimer = null;
 
         function scrollToPairing() {
             const el = document.getElementById('pairing-section');
@@ -628,6 +632,12 @@
             // Refresh status kirim otomatis (countdown + riwayat) tiap 15 detik
             if (autoSendPollTimer) clearInterval(autoSendPollTimer);
             autoSendPollTimer = setInterval(() => { loadAutoSendStatus(); }, 15000);
+
+            // Tick countdown 1 detik (realtime, tanpa refresh server)
+            if (countdownTimer) clearInterval(countdownTimer);
+            countdownTimer = setInterval(() => {
+                if (window.AUTO_SEND_PENDING && window.AUTO_SEND_PENDING.length) renderPendingCountdown();
+            }, 1000);
         }
 
         // Jalankan init: kalau DOM sudah siap -> langsung, else saat DOMContentLoaded
@@ -721,15 +731,8 @@
 
                 const pendBox = document.getElementById('autosend-pending');
                 if (pendBox) {
-                    const pending = dispatch.pending || [];
-                    pendBox.innerHTML = pending.length ? pending.map(p => `
-                        <div class="flex items-center justify-between gap-2 p-2 mb-1 rounded-lg" style="background:var(--color-bg-secondary);">
-                            <div>
-                                <p class="text-xs font-bold">${p.zona_name || ('Zona ' + p.zona_id)}</p>
-                                <p class="text-xs text-gray-500">kirim dalam ${p.seconds_left} detik</p>
-                            </div>
-                            <button class="btn-primary" style="padding:.3rem .6rem;font-size:.75rem;" onclick="sendAutoSendNow(${p.notification_id})"><i class="fas fa-bolt"></i> Kirim Sekarang</button>
-                        </div>`).join('') : '<p class="text-xs text-gray-500">Tidak ada pesan yang menunggu.</p>';
+                    window.AUTO_SEND_PENDING = pending;
+                    renderPendingCountdown();
                 }
 
                 const logBox = document.getElementById('autosend-log');
@@ -746,6 +749,36 @@
             } catch (e) {
                 console.error('[WaBotDash] status auto-send gagal:', e);
             }
+        }
+
+        /**
+         * Render countdown "menunggu dikirim" TANPA refresh server.
+         * Hitungan dihitung di browser dari timestamp server (send_at),
+         * jadi Angka turun setiap detik (realtime).
+         */
+        function renderPendingCountdown() {
+            const box = document.getElementById('autosend-pending');
+            if (!box) return;
+            const list = window.AUTO_SEND_PENDING || [];
+            if (!list.length) {
+                box.innerHTML = '<p class="text-xs text-gray-500">Tidak ada pesan yang menunggu.</p>';
+                return;
+            }
+            const now = Date.now();
+            box.innerHTML = list.map(p => {
+                const left = Math.max(0, Math.round((p.send_at - now) / 1000));
+                const mm = Math.floor(left / 60);
+                const ss = String(left % 60).padStart(2, '0');
+                const label = left > 0 ? `kirim dalam ${mm}:${ss}` : 'sedang dikirim...';
+                return `
+                <div class="flex items-center justify-between gap-2 p-2 mb-1 rounded-lg" style="background:var(--color-bg-secondary);">
+                    <div>
+                        <p class="text-xs font-bold">${p.zona_name || ('Zona ' + p.zona_id)}</p>
+                        <p class="text-xs text-gray-500 mono" data-countdown="${p.notification_id}">${label}</p>
+                    </div>
+                    <button class="btn-primary" style="padding:.3rem .6rem;font-size:.75rem;" onclick="sendAutoSendNow(${p.notification_id})"><i class="fas fa-bolt"></i> Kirim Sekarang</button>
+                </div>`;
+            }).join('');
         }
 
         async function sendAutoSendNow(notificationId) {
@@ -1021,6 +1054,14 @@
         }
 
         async function testGroup(zonaId) {
+            const zona = ZONAS.find(z => String(z.id) === String(zonaId));
+            const namaZona = zona ? zona.nama : ('Zona ' + zonaId);
+            const ok = confirm(
+                `Kirim pesan UJI ke grup WhatsApp ${namaZona}?\n\n` +
+                `⚠️ Pesan ini BENAR-BENAR terkirim ke grup dan akan terlihat oleh anggota grup.\n` +
+                `Jangan pakai grup zona produksi untuk pengujian.`
+            );
+            if (!ok) return;
             try {
                 const res = await API.post('/api/whatsapp/bot-test', { zona_id: zonaId });
                 Toast.success(res.message || 'Pesan uji diantrikan');

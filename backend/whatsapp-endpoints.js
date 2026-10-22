@@ -292,6 +292,16 @@ function registerWhatsAppEndpoints(app, createAuth) {
                 return res.status(400).json({ error: 'Invalid recipients array' });
             }
 
+            // Keamanan: broadcast HANYA untuk nomor individual.
+            // Kirim ke grup WA harus lewat flow notifikasi upload (atau
+            // tombol manual di dashboard), supaya tidak ada pesan liar yang
+            // masuk ke grup zona.
+            if (type === 'group' || recipients.some(r => String(r).includes('@g.us'))) {
+                return res.status(400).json({
+                    error: 'Broadcast ke grup tidak diizinkan. Gunakan sistem notifikasi upload invoice atau tombol "Kirim Manual" di dashboard.'
+                });
+            }
+
             if (!message) {
                 return res.status(400).json({ error: 'Missing message' });
             }

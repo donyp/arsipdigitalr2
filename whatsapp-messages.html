@@ -713,6 +713,16 @@ ${msg.message || 'N/A'}
                 return;
             }
 
+            // Pengaman: pesan ini BENAR-BENAR terkirim ke grup zona
+            const zonaName = document.getElementById('zona-selector').options[document.getElementById('zona-selector').selectedIndex].text;
+            if (!confirm(
+                `Kirim pesan ke grup WhatsApp ${zonaName}?\n\n` +
+                `⚠️ Pesan ini akan langsung terkirim dan terlihat oleh anggota grup.\n\n` +
+                `"${message.substring(0, 120)}${message.length > 120 ? '...' : ''}"`
+            )) {
+                return;
+            }
+
             try {
                 const btn = event.target;
                 btn.disabled = true;
@@ -776,6 +786,15 @@ ${msg.message || 'N/A'}
 
             if (!message) {
                 Notify.error('Pesan tidak boleh kosong');
+                return;
+            }
+
+            // Pengaman: pesan ini akan dikirim ke grup zona (antrean)
+            const zonaNameQ = document.getElementById('zona-selector').options[document.getElementById('zona-selector').selectedIndex].text;
+            if (!confirm(
+                `Queue pesan ke grup WhatsApp ${zonaNameQ}?\n\n` +
+                `⚠️ Pesan ini akan dikirim ke grup (antrean anti-ban) dan terlihat oleh anggota grup.`
+            )) {
                 return;
             }
 

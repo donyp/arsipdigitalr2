@@ -153,28 +153,44 @@ describe('Auto Dispatch - template & duplikasi', () => {
         const queue = fakeQueue();
         setBotDeps({ service: { isReady: () => true }, queue });
         // Pesan di DB sudah digabung (berbeda dari pesan saat pemanggilan)
+        const pesanFinal = '*UPDATE INVOICE ZONA 7*\n\n- [PPN] TOKO A - Rp 1.000.000\n- [NON PPN] TOKO A - Rp 2.000.000\n\n_@adminanka_';
         const supabase = fakeSupabase({
-            notification: { id: 7, message: 'PESAN FINAL SETELAH DIGABUNG', sent_at: null }
+            notification: { id: 7, message: pesanFinal, sent_at: null }
         });
         await dispatchInvoiceToZonaGroups({
             supabase,
-            zones: [{ zona_id: 129, zona_name: 'Zona 07', message: 'PESAN AWAL', notification_id: 7 }]
+            zones: [{ zona_id: 129, zona_name: 'Zona 07', message: '*UPDATE INVOICE ZONA 7*\n\n- [PPN] TOKO A - Rp 1.000.000\n\n_@adminanka_', notification_id: 7 }]
         });
         await new Promise(r => setTimeout(r, 120));
         expect(queue.sent.length).toBe(1);
-        expect(queue.sent[0].message).toBe('PESAN FINAL SETELAH DIGABUNG');
+        expect(queue.sent[0].message).toBe(pesanFinal);
         expect(queue.sent[0].type).toBe('group');
+    });
+
+    test('guard: pesan bukan notifikasi DITOLAK (tidak masuk grup)', async () => {
+        const queue = fakeQueue();
+        setBotDeps({ service: { isReady: () => true }, queue });
+        const supabase = fakeSupabase({
+            notification: { id: 8, message: 'Error: something went wrong on server', sent_at: null }
+        });
+        await dispatchInvoiceToZonaGroups({
+            supabase,
+            zones: [{ zona_id: 129, zona_name: 'Zona 07', message: 'Error: something went wrong on server', notification_id: 8 }]
+        });
+        await new Promise(r => setTimeout(r, 120));
+        expect(queue.sent.length).toBe(0);
     });
 
     test('kalau pesan sudah terkirim manual -> auto-send dibatalkan (grup tidak dapat 2x)', async () => {
         const queue = fakeQueue();
         setBotDeps({ service: { isReady: () => true }, queue });
+        const pesanNotif = '*UPDATE INVOICE ZONA 7*\n\n- [PPN] TOKO A - Rp 1.000.000\n\n_@adminanka_';
         const supabase = fakeSupabase({
-            notification: { id: 7, message: 'SUDAH TERKIRIM', sent_at: new Date().toISOString() }
+            notification: { id: 7, message: pesanNotif, sent_at: new Date().toISOString() }
         });
         await dispatchInvoiceToZonaGroups({
             supabase,
-            zones: [{ zona_id: 129, zona_name: 'Zona 07', message: 'SUDAH TERKIRIM', notification_id: 7 }]
+            zones: [{ zona_id: 129, zona_name: 'Zona 07', message: pesanNotif, notification_id: 7 }]
         });
         await new Promise(r => setTimeout(r, 120));
         expect(queue.sent.length).toBe(0);

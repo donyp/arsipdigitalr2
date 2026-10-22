@@ -102,8 +102,89 @@ describe('WA Message Queue - guard anti-ban', () => {
     });
 });
 
-describe('Diagnostik Koneksi Bot WhatsApp', () => {
-    const { getDisconnectHint, buildDiagnostics } = require('../services/wa-diagnostics');
+describe('GUARD: bot hanya boleh mengirim pesan notifikasi', () => {
+    const { isValidNotificationMessage } = require('../wa-auto-dispatch');
+
+    test('pesan notifikasi format UPDATE INVOICE ZONA diterima', () => {
+        const msg = '*UPDATE INVOICE ZONA 7*\n\n- [PPN] MEGA BAJA - Rp 1.000.000\n\n_@adminanka_';
+        expect(isValidNotificationMessage(msg)).toBe(true);
+    });
+
+    test('pesan kosong / bukan string ditolak', () => {
+        expect(isValidNotificationMessage('')).toBe(false);
+        expect(isValidNotificationMessage('   ')).toBe(false);
+        expect(isValidNotificationMessage(null)).toBe(false);
+        expect(isValidNotificationMessage(undefined)).toBe(false);
+        expect(isValidNotificationMessage(12345)).toBe(false);
+    });
+
+    test('pesan log/error TIDAK boleh keluar ke grup', () => {
+        const junk = [
+            'Error: Cannot read properties of undefined',
+            '[WAQueue] Message failed (dropped)',
+            'Gagal kirim pesan',
+            'stack trace: at Object.<anonymous>',
+            'DEBUG: socket closed'
+        ];
+        junk.forEach(m => expect(isValidNotificationMessage(m)).toBe(false));
+    });
+
+    test('pesan terlalu panjang ditolak (batas WhatsApp)', () => {
+        const panjang = '*UPDATE INVOICE ZONA 7*\n' + 'x'.repeat(5000);
+        expect(isValidNotificationMessage(panjang)).toBe(false);
+    });
+
+    test('source: auto dispatch memakai guard sebelum enqueue', () => {
+        const src = fs.readFileSync(path.join(__dirname, '..', 'wa-auto-dispatch.js'), 'utf8');
+        expect(src).toContain('isValidNotificationMessage');
+        expect(src).toMatch(/if \(!isValidNotificationMessage\(message\)\)/);
+    });
+
+    test('source: endpoint lama "trigger-invoice-upload" dimatikan (410)', () => {
+        const src = fs.readFileSync(path.join(__dirname, '..', 'whatsapp-zona-endpoints.js'), 'utf8');
+        expect(src).toContain('/api/whatsapp/trigger-invoice-upload');
+        expect(src).toMatch(/trigger-invoice-upload[\s\S]{0,400}status\(410\)/);
+        // pesan "Invoice Baru" yang dulu dikirim ke grup harus hilang
+        expect(src).not.toContain('*Invoice Baru*');
+    });
+
+    test('source: broadcast ke grup ditolak', () => {
+        const src = fs.readFileSync(path.join(__dirname, '..', 'whatsapp-endpoints.js'), 'utf8');
+        expect(src).toMatch(/broadcast[\s\S]{0,1200}Broadcast ke grup tidak diizinkan/);
+    });
+});
+
+describe('Ketahanan 24 jam', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'services', 'whatsapp-baileys.js'), 'utf8');
+
+    test('ada heartbeat (presence, bukan pesan) + supervisor reconnect', () => {
+        expect(src).toContain('startHeartbeat');
+        expect(src).toContain("sendPresenceUpdate('available')");
+        expect(src).toContain('startSupervisor');
+        expect(src).toContain('forceReconnect');
+    });
+
+    test('file-lock: hanya 1 proses yang menyambung bot (aman utk mode cluster)', () => {
+        expect(src).toContain('acquireBotLock');
+        expect(src).toContain('.bot-lock');
+        expect(src).toContain('isLockOwner');
+    });
+
+    test('source: pm2 punya restart policy untuk 24 jam', () => {
+        const pm2 = fs.readFileSync(path.join(__dirname, '..', '..', 'ecosystem.config.js'), 'utf8');
+        expect(pm2).toContain('restart_delay');
+        expect(pm2).toContain('exp_backoff');
+        expect(pm2).toContain('max_restarts: 50');
+    });
+
+    test('source: dashboard punya countdown realtime (tick 1 detik)', () => {
+        const html = fs.readFileSync(path.join(__dirname, '..', '..', 'whatsapp-bot-dashboard.html'), 'utf8');
+        expect(html).toContain('renderPendingCountdown');
+        expect(html).toMatch(/setInterval\([\s\S]{0,200}renderPendingCountdown[\s\S]{0,40}, 1000\)/);
+    });
+});
+
+describe('Diagnostik Koneksi Bot WhatsApp', () => {    const { getDisconnectHint, buildDiagnostics } = require('../services/wa-diagnostics');
 
     test('diagnostics memuat alasan disconnect + status', () => {
         const d = buildDiagnostics({

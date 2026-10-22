@@ -229,85 +229,18 @@ function registerZonaEndpoints(app, supabase, createAuth) {
     // ====================================================================
     // POST: Auto-Send on Invoice Upload
     // ====================================================================
+    // DINONAKTIFKAN: endpoint lama ini mengirim pesan "Invoice Baru" (bukan
+    // format notifikasi upload) ke grup zona. sekarang alurnya:
+    //   upload -> createInvoiceNotifications() -> wa-auto-dispatch (pesan
+    //   notifikasi yang sama persis dengan di halaman "WA Messages").
+    // Supaya tidak ada pesan liar yang masuk ke grup zona, endpoint ini
+    // dimatikan.
     app.post('/api/whatsapp/trigger-invoice-upload', createAuth(), async (req, res) => {
-        try {
-            if (!waService?.isReady()) {
-                return res.status(503).json({ error: 'WhatsApp not connected', queued: false });
-            }
-
-            const { zona_id, invoice_name, file_count, total_jumlah_jual } = req.body;
-
-            if (!zona_id || !invoice_name) {
-                return res.status(400).json({ error: 'zona_id and invoice_name required' });
-            }
-
-            // Get zona group config
-            const { data: groupData, error: groupError } = await supabase
-                .from('whatsapp_zona_groups')
-                .select('*')
-                .eq('zona_id', zona_id)
-                .eq('is_active', true)
-                .single();
-
-            if (groupError || !groupData) {
-                console.warn(`[Zona Trigger] No WA group configured for zona ${zona_id}`);
-                return res.json({ 
-                    success: false,
-                    queued: false,
-                    message: 'WhatsApp group not configured for this zona'
-                });
-            }
-
-            // Format message
-            const uploadTime = new Date().toLocaleString('id-ID', { 
-                day: '2-digit', 
-                month: '2-digit', 
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-
-            const message = `📦 *Invoice Baru*
-📋 File: ${invoice_name}
-📊 Jumlah: ${file_count} file
-💰 Total: Rp ${total_jumlah_jual?.toLocaleString('id-ID') || '0'}
-🕐 Waktu: ${uploadTime}
-
-Silakan cek dashboard untuk detail lebih lanjut.`;
-
-            // Enqueue auto-trigger message
-            const result = await waQueue.enqueue(groupData.group_id, message, 'group');
-
-            // Track in database
-            await supabase
-                .from('whatsapp_zona_messages')
-                .insert({
-                    zona_id,
-                    group_id: groupData.group_id,
-                    message,
-                    message_type: 'auto_trigger',
-                    trigger_source: 'invoice_upload',
-                    queue_status: 'queued'
-                });
-
-            console.log(`[Zona Trigger] Auto-send message for invoice: ${invoice_name}`);
-
-            res.json({
-                success: true,
-                messageId: result.id,
-                status: result.status,
-                queued: true
-            });
-        } catch (error) {
-            console.error('[Zona Trigger] Error:', error);
-            // Don't fail invoice upload if WA fails
-            res.json({ 
-                success: false,
-                queued: false,
-                error: error.message 
-            });
-        }
+        return res.status(410).json({
+            success: false,
+            queued: false,
+            error: 'Endpoint ini dinonaktifkan. Notifikasi upload invoice dikirim otomatis oleh sistem notifikasi (format UPDATE INVOICE ZONA).'
+        });
     });
 
     // ====================================================================

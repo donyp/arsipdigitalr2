@@ -84,6 +84,7 @@ function buildDiagnostics(state = {}, session = {}) {
         sessionResetAt,
         recentlyReset,
         phone: state.phone || null,
+        lockOwner: state.lockOwner !== false,
         sessionPath: session.sessionPath || null,
         sessionExists: !!session.sessionExists,
         sessionFileCount: session.sessionFileCount || 0,

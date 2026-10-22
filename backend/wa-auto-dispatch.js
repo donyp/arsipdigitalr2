@@ -24,6 +24,33 @@ const { getWaSettings, isAutoSendEnabledForZone } = require('./wa-notification-s
 // Jeda sebelum mengirim (ms) - memberi waktu upload berdekatan digabung
 const WA_AUTO_SEND_DELAY_MS = Number(process.env.WA_AUTO_SEND_DELAY_MS || 60000);
 
+// ============================================================
+// GUARD "HANYA PESAN NOTIFIKASI"
+// ============================================================
+// Keamanan utama: bot TIDAK BOLEH mengirim apa pun ke grup zona kecuali
+// pesan notifikasi upload invoice. Guard ini acts as pengaman terakhir:
+// kalau ada bug / data aneh, pesan TIDAK akan keluar ke grup.
+// Pola pesan notifikasi: "*UPDATE INVOICE ZONA 7* ..." (dibuat oleh
+// generateZonaInvoiceMessage).
+const NOTIFICATION_HEADER = /^\s*\*UPDATE INVOICE ZONA\s+[^*]+\*/i;
+// Bypass hanya untuk pengembangan (JANGAN diaktifkan di produksi)
+const ALLOW_ANY_MESSAGE = process.env.WA_ALLOW_ANY_MESSAGE === 'true';
+
+/**
+ * Apakah pesan ini sah sebagai notifikasi upload invoice?
+ * @param {string} message
+ * @returns {boolean}
+ */
+function isValidNotificationMessage(message) {
+    if (ALLOW_ANY_MESSAGE) return true;
+    if (typeof message !== 'string') return false;
+    const m = message.trim();
+    if (!m) return false;                       // jangan kirim pesan kosong
+    if (m.length > 4096) return false;          // batas WhatsApp
+    if (!NOTIFICATION_HEADER.test(m)) return false; // harus berformat notifikasi
+    return true;
+}
+
 let supabaseRef = null;
 let reconcileTimer = null;
 
@@ -81,7 +108,7 @@ function getDispatchStatus() {
         zona_id: p.zona_id,
         zona_name: p.zona_name,
         group_id: p.group_id,
-        scheduled_at: p.scheduledAt,
+        scheduled_at: new Date(p.scheduledAt).getTime(),
         send_at: p.sendAt,
         seconds_left: Math.max(0, Math.round((p.sendAt - now) / 1000))
     }));
@@ -261,6 +288,12 @@ function scheduleSend({ supabase, queue, zona, groupRow, delayMs }) {
                 notificationId = row.id;
             }
 
+            // GUARD: hanya pesan notifikasi yang boleh masuk grup
+            if (!isValidNotificationMessage(message)) {
+                logDispatch('dibatalkan', zona, { reason: 'pesan tidak valid sebagai notifikasi (tidak dikirim ke grup)' });
+                return;
+            }
+
             const enqueued = await queue.enqueue(groupRow.group_id, message, 'group');
             if (!enqueued || !enqueued.id) {
                 logDispatch('gagal', zona, { reason: 'antrean menolak (circuit breaker)' });
@@ -342,6 +375,12 @@ async function sendScheduledNow(notificationId) {
         .maybeSingle();
 
     if (!groupRow) return { success: false, error: 'Grup WhatsApp zona ini belum dipetakan' };
+
+    // GUARD: hanya pesan notifikasi yang boleh masuk grup
+    if (!isValidNotificationMessage(row.message)) {
+        logDispatch('dibatalkan', { zona_id: row.zona_id }, { reason: 'pesan tidak valid sebagai notifikasi (tidak dikirim ke grup)' });
+        return { success: false, error: 'Pesan bukan format notifikasi upload - tidak dikirim ke grup' };
+    }
 
     const enqueued = await queue.enqueue(groupRow.group_id, row.message, 'group');
     if (!enqueued || !enqueued.id) {
@@ -445,5 +484,6 @@ module.exports = {
     sendScheduledNow,
     setDelayMs,
     currentDelayMs,
+    isValidNotificationMessage,
     WA_AUTO_SEND_DELAY_MS
 };

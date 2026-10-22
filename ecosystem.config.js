@@ -37,6 +37,13 @@ module.exports = {
     ignore_watch: ['node_modules', 'logs', 'data', 'cache', 'tmp'],
     autorestart: true,
     
+    // Restart policy untuk operasi 24 jam:
+    // - restart_delay : jeda antar restart (jangan restart beruntun)
+    // - exp_backoff  : jedarestart bertambah otomatis (backoff)
+    // - max_restarts : lebih toleran (restart atas error sementara)
+    restart_delay: 5000,
+    exp_backoff: true,
+    
     // Graceful shutdown
     kill_timeout: 5000,
     wait_ready: true,
@@ -49,11 +56,18 @@ module.exports = {
     merge_logs: true,
     
     // Max number of retries on crashes
-    max_restarts: 10,
+    max_restarts: 50,
     
     // Time window for the max_restarts to work
-    min_uptime: '10s',
+    min_uptime: '60s',
     
+    // CATATAN BOT WHATSAPP:
+    // Kalau `instances: 'max'` dipakai, setiap instance akan mencoba
+    // menyambung bot WA. Ini ditangani aman oleh file-lock di
+    // backend/data/wa-auth/.bot-lock -> hanya 1 instance yang memegang
+    // koneksi bot, instance lain standby (tidak merusak file sesi).
+    // Tetap disarankan `instances: 1` bila bot WA dipakai rutin.
+    //
     // Listen for SIGTERM
     signal: 'SIGTERM',
     

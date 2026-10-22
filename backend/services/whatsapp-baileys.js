@@ -50,6 +50,96 @@ class WhatsAppService {
         this.connectAttempts = 0;
         this.sessionResetAt = null;    // kapan sesi terakhir di-reset (untuk diagnosa)
         this.enabled = options.enabled !== false; // switch koneksi bot dari dashboard
+        this.lastActivityAt = Date.now();
+        this.heartbeatTimer = null;
+        this.supervisorTimer = null;
+        this.ownsLock = false;
+        this.lockPath = null;
+        this.lockTimer = null;
+
+        // Lepas lock saat proses keluar (agar instance lain bisa mengambil alih)
+        process.on('exit', () => this.releaseBotLock());
+    }
+
+    /**
+     * Heartbeat: kirim presence 'available' secara berkala.
+     * Fungsinya:
+     *  1. Menjaga koneksi WebSocket tetap hidup (idle bot tetap terkoneksi)
+     *  2. Deteksi koneksi yang "membeku" (socket ada tapi tidak respons)
+     *     -> memicu reconnect otomatis
+     * CATATAN: presence BUKAN pesan -> tidak pernah muncul di grup.
+     */
+    startHeartbeat(intervalMs = 4 * 60 * 1000) {
+        this.stopHeartbeat();
+        this.heartbeatTimer = setInterval(async () => {
+            if (this.enabled === false) return;
+            try {
+                if (!this.socket) throw new Error('socket tidak ada');
+                await this.socket.sendPresenceUpdate('available');
+                this.lastActivityAt = Date.now();
+            } catch (e) {
+                console.warn('[WhatsApp] Heartbeat gagal, paksa reconnect:', e.message);
+                this.forceReconnect('heartbeat gagal');
+            }
+        }, intervalMs);
+        if (this.heartbeatTimer.unref) this.heartbeatTimer.unref();
+        console.log(`[WhatsApp] ❤️ Heartbeat aktif (setiap ${Math.round(intervalMs / 60000)} menit)`);
+    }
+
+    stopHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+
+    /**
+     * Supervisor: pastikan bot selalu tersambung 24 jam.
+     * Kalau service gagal di awal boot (jaringan belum siap) atau socket
+     * mati tanpa event 'close', supervisor akan menyambung ulang.
+     */
+    startSupervisor(intervalMs = 30 * 1000) {
+        if (this.supervisorTimer) return;
+        this.supervisorTimer = setInterval(() => {
+            if (this.enabled === false) return;
+            // Instance lain yang memegang koneksi bot -> jangan berebut
+            if (this.connectionState === 'standby') return;
+            const now = Date.now();
+            const silence = now - (this.lastActivityAt || now);
+            // Bot tidak pernah "ready" -> coba sambungkan lagi
+            if (!this.isConnected && !this.socket && silence > 60000) {
+                console.log('[WhatsApp] 🩺 Supervisor: bot belum tersambung, mencoba initialize() ulang');
+                this.initialize().catch(e => console.error('[WhatsApp] Supervisor gagal:', e.message));
+                return;
+            }
+            // Socket "membeku" (>10 menit tanpa aktivitas) while connected
+            if (this.isConnected && silence > 10 * 60 * 1000) {
+                console.warn('[WhatsApp] 🩺 Supervisor: socket tidak ada aktivitas > 10 menit, paksa reconnect');
+                this.forceReconnect('socket tidak respons');
+            }
+        }, intervalMs);
+        if (this.supervisorTimer.unref) this.supervisorTimer.unref();
+        console.log(`[WhatsApp] 🩺 Supervisor aktif (cek tiap ${Math.round(intervalMs / 1000)} detik)`);
+    }
+
+    /**
+     * Paksa reconnect (dipakai heartbeat & supervisor).
+     */
+    forceReconnect(reason = 'manual') {
+        console.log(`[WhatsApp] ♻️ Force reconnect: ${reason}`);
+        try {
+            if (this.socket) {
+                this.socket.ev.removeAllListeners?.('connection.update');
+                this.socket.end?.(undefined);
+            }
+        } catch (e) { /* abaikan */ }
+        this.socket = null;
+        this.isConnected = false;
+        this.connectionState = 'connecting';
+        this.lastActivityAt = Date.now();
+        setTimeout(() => {
+            this.initialize().catch(e => console.error('[WhatsApp] Gagal reconnect:', e.message));
+        }, 3000);
     }
 
     async initialize() {
@@ -57,6 +147,11 @@ class WhatsAppService {
         if (this.enabled === false) {
             this.connectionState = 'disabled';
             console.log('[WhatsApp] ⏸ Bot dimatikan (switch dashboard) - tidak melakukan koneksi');
+            return;
+        }
+        // Hanya SATU proses yang boleh menyambung bot (aman untuk mode cluster)
+        if (!this.acquireBotLock()) {
+            this.connectionState = 'standby';
             return;
         }
         try {
@@ -81,6 +176,7 @@ class WhatsAppService {
             // Handle connection updates - Generate QR or Pairing Code
             this.socket.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
+                this.lastActivityAt = Date.now();
 
                 if (qr) {
                     this.lastQR = qr;
@@ -157,6 +253,11 @@ class WhatsAppService {
             // Save credentials on update
             this.socket.ev.on('creds.update', saveCreds);
 
+            // Aktifkan heartbeat & supervisor (agar bot jalan 24 jam)
+            this.lastActivityAt = Date.now();
+            this.startHeartbeat();
+            this.startSupervisor();
+
             console.log('[WhatsApp] ✅ Service initialized - ready to authenticate');
         } catch (error) {
             console.error('[WhatsApp] Initialization failed:', error.message);
@@ -181,6 +282,7 @@ class WhatsAppService {
 
         if (!wantEnabled) {
             console.log('[WhatsApp] ⏸ Koneksi bot dimatikan (switch dashboard)');
+            this.stopHeartbeat();
             try {
                 if (this.socket) {
                     this.socket.ev.removeAllListeners?.('connection.update');
@@ -208,6 +310,88 @@ class WhatsAppService {
 
     isEnabled() {
         return this.enabled !== false;
+    }
+
+    /**
+     * Ambil lock file agar HANYA SATU proses yang menyambung bot.
+     * Penting untuk mode cluster (pm2 instances max): kalau semua instance
+     * menyambung dengan file sesi yang sama, sesi bisa rusak & WhatsApp
+     * melakukan "logout" (401) sehingga bot mati.
+     * @returns {boolean} true kalau proses ini pemilik koneksi bot
+     */
+    acquireBotLock() {
+        if (this.ownsLock) return true;
+        const lockPath = path.join(this.sessionPath, '.bot-lock');
+        const now = Date.now();
+        const STALE_MS = 90 * 1000;
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const fd = fs.openSync(lockPath, 'wx');
+                fs.writeSync(fd, JSON.stringify({ pid: process.pid, ts: now }));
+                fs.closeSync(fd);
+                this.ownsLock = true;
+                this.lockPath = lockPath;
+                this.startLockHeartbeat();
+                console.log(`[WhatsApp] 🔒 Lock koneksi bot diambil (pid ${process.pid})`);
+                return true;
+            } catch (e) {
+                // Lock sudah ada -> cek apakah basi (pemilik proses mati)
+                let stale = true;
+                try {
+                    const info = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+                    stale = (now - (info.ts || 0)) > STALE_MS;
+                    if (!stale) {
+                        console.log(`[WhatsApp] ℹ️ Instance lain (pid ${info.pid}) sudah memegang koneksi bot - instance ini tidak menyambung`);
+                    }
+                } catch (err) { /* lock rusak -> dianggap basi */ }
+
+                if (!stale) return false;
+                // Ambil alih lock basi
+                try { fs.unlinkSync(lockPath); } catch (err) { /* abaikan */ }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Perbarui timestamp lock supaya instance lain tahu ini masih hidup.
+     */
+    startLockHeartbeat(intervalMs = 30 * 1000) {
+        this.stopLockHeartbeat();
+        this.lockTimer = setInterval(() => {
+            if (!this.ownsLock || !this.lockPath) return;
+            try {
+                fs.writeFileSync(this.lockPath, JSON.stringify({ pid: process.pid, ts: Date.now() }));
+            } catch (e) { /* abaikan */ }
+        }, intervalMs);
+        if (this.lockTimer.unref) this.lockTimer.unref();
+    }
+
+    stopLockHeartbeat() {
+        if (this.lockTimer) {
+            clearInterval(this.lockTimer);
+            this.lockTimer = null;
+        }
+    }
+
+    /**
+     * Lepas lock (saat proses keluar).
+     */
+    releaseBotLock() {
+        if (!this.ownsLock || !this.lockPath) return;
+        try {
+            const info = JSON.parse(fs.readFileSync(this.lockPath, 'utf8'));
+            if (info && info.pid === process.pid) fs.unlinkSync(this.lockPath);
+        } catch (e) { /* abaikan */ }
+        this.ownsLock = false;
+    }
+
+    /**
+     * Apakah proses ini pemilik koneksi bot?
+     */
+    isLockOwner() {
+        return !!this.ownsLock;
     }
 
     /**
@@ -351,7 +535,8 @@ class WhatsAppService {
             lastQrAt: this.lastQrAt,
             connectAttempts: this.connectAttempts,
             sessionResetAt: this.sessionResetAt,
-            phone: this.connectedPhoneNumber
+            phone: this.connectedPhoneNumber,
+            lockOwner: this.isLockOwner()
         }, {
             sessionPath: this.sessionPath,
             sessionExists,
