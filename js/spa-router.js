@@ -429,10 +429,24 @@ class SPARouter {
                 // flex item menyusut ke lebar konten -> konten terpotong
                 // di kanan.
                 if (pageData.bodyFallback) {
+                    // Halaman "body" (tanpa #main-content/#app) diasumsikan
+                    // body sebagai containing block (full viewport) dengan
+                    // sidebar fixed (overlay). Di SPA, #main-content adalah
+                    // flex child dari #app (display:flex) -> jika tidak
+                    // di-override, flex item menyusut/grow tidak sesuai ->
+                    // konten terpotong atau melebar. Paksa #app & #main-content
+                    // berperilaku seperti body (block, full width) supaya
+                    // .container halaman tujuan menangani offset sidebar sendiri.
+                    const appElBf = document.getElementById('app');
+                    if (appElBf) {
+                        appElBf.style.display = 'block';
+                    }
+                    mainContent.style.display = 'block';
                     mainContent.style.marginLeft = '0';
                     mainContent.style.width = '100%';
                     mainContent.style.flex = 'none';
                     mainContent.style.minWidth = '0';
+                    mainContent.style.maxWidth = 'none';
                 }
             }
 
