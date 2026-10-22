@@ -398,6 +398,11 @@ class SPARouter {
             // tertinggal, konten akan terpotong di kanan (double margin).
             mainContent.removeAttribute('style');
 
+            // Tandai halaman aktif pada #main-content. Dipakai CSS shell
+            // (dashboard) supaya aturan yang memang khusus dashboard
+            // (mis. scale 80% konten) TIDAK bocor ke halaman lain saat SPA.
+            mainContent.setAttribute('data-page', path);
+
             // ============================================================
             // Terapkan LAYOUT halaman tujuan
             // ============================================================
@@ -429,25 +434,51 @@ class SPARouter {
                 // flex item menyusut ke lebar konten -> konten terpotong
                 // di kanan.
                 if (pageData.bodyFallback) {
-                    // Halaman "body" (tanpa #main-content/#app) diasumsikan
-                    // body sebagai containing block (full viewport) dengan
-                    // sidebar fixed (overlay). Di SPA, #main-content adalah
-                    // flex child dari #app (display:flex) -> jika tidak
-                    // di-override, flex item menyusut/grow tidak sesuai ->
-                    // konten terpotong atau melebar. Paksa #app & #main-content
-                    // berperilaku seperti body (block, full width) supaya
-                    // .container halaman tujuan menangani offset sidebar sendiri.
-                    const appElBf = document.getElementById('app');
-                    if (appElBf) {
-                        appElBf.style.display = 'block';
-                    }
+                    // Halaman "body" (tanpa #main-content/#app) memakai body
+                    // sebagai containing block dengan sidebar fixed (overlay),
+                    // dan .container-nya sudah punya margin-left:16rem sendiri.
+                    //
+                    // PENTING: JANGAN ubah #app dari flex -> block. Di dashboard
+                    // #sidebar adalah flex item selebar 0 sehingga tinggi
+                    // calc(100vh - --header-height) (dari unified-header.css)
+                    // TIDAK mendorong konten. Kalau #app jadi block, #sidebar
+                    // menjadi block selebar penuh dan mendorong #main-content
+                    // turun ~447px (gap atas kosong).
+                    //
+                    // Cukup jadikan #main-content flex item yang mengisi sisa
+                    // lebar #app (sidebar tetap 0), dan block agar .container
+                    // halaman tujuan mengalir normal (bukan flex item yang
+                    // shrink-wrap ke lebar konten).
                     mainContent.style.display = 'block';
                     mainContent.style.marginLeft = '0';
-                    mainContent.style.width = '100%';
-                    mainContent.style.flex = 'none';
+                    mainContent.style.width = 'auto';
+                    mainContent.style.flex = '1 1 0%';
                     mainContent.style.minWidth = '0';
                     mainContent.style.maxWidth = 'none';
                 }
+            }
+
+            // ============================================================
+            // NETRALKAN UTILITY TAILWIND MILIK SHELL DASHBOARD
+            // ============================================================
+            // dashboard.html memuat Tailwind CDN. Style-nya tetap hidup di
+            // <head> saat navigasi SPA, padahal halaman tujuan TIDAK memuat
+            // Tailwind pada full page load. Utility `.container{width:100%}`
+            // lalu bocor ke .container halaman tujuan yang tidak set width ->
+            // width:100% + margin-left:16rem = melebar/overflow ke kanan.
+            // Untuk semua halaman selain dashboard, netralkan .container
+            // langsung milik konten (dashboard tetap memakai Tailwind).
+            let scopeStyle = document.getElementById('spa-content-scope-style');
+            if (!scopeStyle) {
+                scopeStyle = document.createElement('style');
+                scopeStyle.id = 'spa-content-scope-style';
+                document.head.appendChild(scopeStyle);
+            }
+            if (path === '/dashboard') {
+                scopeStyle.textContent = '';
+            } else {
+                scopeStyle.textContent =
+                    '#main-content > .container { width: auto !important; margin-right: 0 !important; }';
             }
 
             // Insert HTML content (scripts are in separate pageScripts array)
