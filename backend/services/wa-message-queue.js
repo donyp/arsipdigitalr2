@@ -39,8 +39,93 @@ class WAMessageQueue {
             isOpen: false
         };
 
+        // ---- Guard anti-ban (diatur dari dashboard pengaturan) ----
+        this.antiBan = {
+            enabled: true,
+            max_per_hour: 20,          // batas pesan per grup per jam
+            max_per_day: 60,           // batas pesan per grup per hari
+            warmup_ms: 5000,           // jeda "warm-up" kalau bot lama idle
+            typing_enabled: true,
+            typing_min_ms: 800,
+            typing_max_ms: 2500
+        };
+        // Riwayat pengiriman (untuk menghitung batas jam/hari)
+        this.sentLog = [];
+        this.lastSentAt = null;
+        // Riwayat status pesan (supaya status bisa dicek setelah item
+        // keluar dari antrean)
+        this.history = new Map();
+
         // Start processing loop
         this.startProcessor();
+    }
+
+    /**
+     * Terapkan konfigurasi anti-ban dari dashboard pengaturan.
+     * @param {object} cfg - bagian `antiban` dari settings
+     */
+    setAntiBanConfig(cfg = {}) {
+        if (!cfg) return;
+        this.antiBan = {
+            ...this.antiBan,
+            enabled: cfg.enabled !== false,
+            max_per_hour: Number(cfg.max_per_hour) || this.antiBan.max_per_hour,
+            max_per_day: Number(cfg.max_per_day) || this.antiBan.max_per_day,
+            warmup_ms: Number(cfg.warmup_ms) || 0,
+            typing_enabled: cfg.typing_simulation !== false,
+            typing_min_ms: Number(cfg.typing_min_ms) || 800,
+            typing_max_ms: Number(cfg.typing_max_ms) || 2500
+        };
+        // Interval & batch ikut mengikuti pengaturan
+        if (cfg.min_interval_ms) this.config.minDelay = Number(cfg.min_interval_ms);
+        if (cfg.max_interval_ms) this.config.maxDelay = Number(cfg.max_interval_ms);
+        if (cfg.batch_size) this.config.batchSize = Number(cfg.batch_size);
+        if (cfg.batch_pause_ms) this.config.batchDelay = Number(cfg.batch_pause_ms);
+
+        console.log('[WAQueue] Anti-ban config diterapkan:', JSON.stringify(this.antiBan));
+    }
+
+    /**
+     * Cek batas pengiriman per jam / per hari untuk sebuah target.
+     * @returns {{ok: boolean, reason?: string, waitMs?: number}}
+     */
+    checkRateLimit(target) {
+        if (!this.antiBan.enabled) return { ok: true };
+
+        const now = Date.now();
+        const hour = 60 * 60 * 1000;
+        const day = 24 * 60 * 60 * 1000;
+
+        // bersihkan log lama (> 24 jam)
+        if (this.sentLog.length > 500) {
+            this.sentLog = this.sentLog.filter(s => now - s.at < day);
+        }
+
+        const inHour = this.sentLog.filter(s => s.to === target && now - s.at < hour).length;
+        const inDay = this.sentLog.filter(s => s.to === target && now - s.at < day).length;
+
+        if (this.antiBan.max_per_hour && inHour >= this.antiBan.max_per_hour) {
+            return { ok: false, reason: `Batas ${this.antiBan.max_per_hour} pesan/jam untuk grup ini tercapai`, waitMs: 10 * 60 * 1000 };
+        }
+        if (this.antiBan.max_per_day && inDay >= this.antiBan.max_per_day) {
+            return { ok: false, reason: `Batas ${this.antiBan.max_per_day} pesan/hari untuk grup ini tercapai`, waitMs: 60 * 60 * 1000 };
+        }
+        return { ok: true };
+    }
+
+    /**
+     * Jeda warm-up kalau bot lama tidak mengirim pesan (terlihat seperti
+     * activity manusia, bukan bot yang aktif 24 jam).
+     */
+    async applyWarmup() {
+        const warmup = Number(this.antiBan.warmup_ms) || 0;
+        if (!warmup || !this.lastSentAt) return 0;
+        const idle = Date.now() - this.lastSentAt;
+        if (idle < warmup) return 0;
+        const wait = Math.min(warmup, idle);
+        console.log(`[WAQueue] Warm-up ${Math.round(wait / 1000)}s (bot lama idle)`);
+        await new Promise(resolve => setTimeout(resolve, wait));
+        return wait;
     }
 
     /**
@@ -113,20 +198,41 @@ class WAMessageQueue {
                 }
 
                 try {
-                    // Random delay before sending (1-5 seconds, anti-burst)
+                    // ---- Guard anti-ban: batas per jam / per hari ----
+                    const limit = this.checkRateLimit(item.to);
+                    if (!limit.ok) {
+                        console.warn(`[WAQueue] ⏸ Ditunda (${limit.reason}): ${item.id}`);
+                        item.status = 'deferred';
+                        item.nextRetry = new Date(Date.now() + (limit.waitMs || 60000));
+                        this.queue.push(item);
+                        continue;
+                    }
+
+                    // ---- Warm-up kalau bot lama idle ----
+                    await this.applyWarmup();
+
+                    // Random delay before sending (anti-burst)
                     const delay = Math.random() * (this.config.maxDelay - this.config.minDelay) + this.config.minDelay;
                     await new Promise(resolve => setTimeout(resolve, delay));
 
-                    // Send message
+                    // Send message (dengan konfigurasi simulasi typing)
+                    const typingCfg = {
+                        typing_enabled: this.antiBan.typing_enabled,
+                        typing_min_ms: this.antiBan.typing_min_ms,
+                        typing_max_ms: this.antiBan.typing_max_ms
+                    };
                     if (item.type === 'group') {
-                        await this.waService.sendGroupMessage(item.to, item.message);
+                        await this.waService.sendGroupMessage(item.to, item.message, { typing: typingCfg });
                     } else {
-                        await this.waService.sendMessage(item.to, item.message);
+                        await this.waService.sendMessage(item.to, item.message, { typing: typingCfg });
                     }
 
                     item.status = 'success';
                     this.stats.sent++;
                     this.circuitBreaker.failures = 0; // Reset on success
+                    this.lastSentAt = Date.now();
+                    this.sentLog.push({ to: item.to, at: this.lastSentAt });
+                    this.recordHistory(item.id, 'success', item.retry, null, item.createdAt);
 
                     console.log(`[WAQueue] ✓ Message sent: ${item.id}`);
                 } catch (error) {
@@ -143,6 +249,7 @@ class WAMessageQueue {
                         item.status = 'retry_pending';
                         this.queue.push(item); // Put back in queue
                         this.stats.retried++;
+                        this.recordHistory(item.id, 'retry_pending', item.retry, error.message, item.createdAt);
 
                         console.log(`[WAQueue] ⟳ Retry scheduled for ${item.id} (attempt ${item.retry}/${this.config.maxRetries})`);
                     } else {
@@ -150,6 +257,7 @@ class WAMessageQueue {
                         item.status = 'failed';
                         this.stats.failed++;
                         this.stats.dropped++;
+                        this.recordHistory(item.id, 'failed', item.retry, error.message, item.createdAt);
                         
                         // Update circuit breaker
                         this.circuitBreaker.failures++;
@@ -203,7 +311,7 @@ class WAMessageQueue {
     }
 
     /**
-     * Get message status
+     * Get message status (dari antrean atau dari riwayat)
      */
     getMessageStatus(messageId) {
         const item = this.queue.find(q => q.id === messageId);
@@ -216,7 +324,23 @@ class WAMessageQueue {
                 createdAt: item.createdAt
             };
         }
+        const hist = this.history.get(messageId);
+        if (hist) {
+            return { id: messageId, status: hist.status, retry: hist.retry, error: hist.error, createdAt: hist.createdAt };
+        }
         return null;
+    }
+
+    /**
+     * Simpan status pesan ke riwayat (dibatasi 500 entri terakhir) supaya
+     * status masih bisa dicek setelah item keluar dari antrean.
+     */
+    recordHistory(id, status, retry, error, createdAt) {
+        this.history.set(id, { status, retry, error, createdAt, at: Date.now() });
+        if (this.history.size > 500) {
+            const oldest = this.history.keys().next().value;
+            this.history.delete(oldest);
+        }
     }
 
     /**

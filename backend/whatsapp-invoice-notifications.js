@@ -358,6 +358,35 @@ async function createInvoiceNotifications(invoices, moderatorId, batchId) {
             console.error('[WA-Invoice] Gagal membuat pengumuman otomatis:', annError.message);
         }
 
+        // ============================================================
+        // KIRIM OTOMATIS ke grup WhatsApp zona (Fase 3)
+        // ============================================================
+        // Kalau auto-send aktif untuk zona tsb + grupnya sudah dipetakan +
+        // bot terhubung -> pesan langsung dikirim ke grup (lewat antrean
+        // anti-ban). Kalau tidak, pesan tetap ada di halaman WA Messages
+        // untuk dikirim manual.
+        try {
+            const { dispatchInvoiceToZonaGroups } = require('./wa-auto-dispatch');
+            const zonesForDispatch = Object.values(notifications).map(entry => ({
+                zona_id: entry.zona_id,
+                zona_name: entry.zona_name,
+                message: entry.message,
+                notification_id: entry.notification_id
+            }));
+            if (zonesForDispatch.length) {
+                const dispatchResult = await dispatchInvoiceToZonaGroups({
+                    supabase,
+                    zones: zonesForDispatch
+                });
+                if (dispatchResult.queued.length || dispatchResult.skipped.length) {
+                    console.log(`[WA-Invoice] Auto-send: terkirim ke ${dispatchResult.queued.length} zona, dilewati ${dispatchResult.skipped.length}`);
+                }
+            }
+        } catch (dispatchError) {
+            // Kegagalan auto-send TIDAK boleh menggagalkan yang lain
+            console.error('[WA-Invoice] Gagal auto-send ke grup WA:', dispatchError.message);
+        }
+
         return { notifications, merged: mergedMessages };
     } catch (error) {
         console.error('[WA-Invoice] Error creating notifications:', error);

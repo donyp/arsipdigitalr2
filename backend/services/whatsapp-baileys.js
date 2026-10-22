@@ -34,6 +34,13 @@ class WhatsAppService {
         this.expectedPhoneNumber = null; // Phone user wants to pair
         this.connectedPhoneNumber = null; // Actual connected phone
         this.pairingAttempts = 0;
+
+        // Guard anti-ban (bisa diubah dari dashboard pengaturan)
+        this.antiBan = {
+            typing_enabled: true,
+            typing_min_ms: 800,
+            typing_max_ms: 2500
+        };
     }
 
     async initialize() {
@@ -111,6 +118,47 @@ class WhatsAppService {
         }
     }
 
+    /**
+     * Set konfigurasi anti-ban (dipakai dashboard pengaturan).
+     * @param {object} cfg - { typing_enabled, typing_min_ms, typing_max_ms }
+     */
+    setAntiBanConfig(cfg = {}) {
+        this.antiBan = {
+            typing_enabled: cfg.typing_enabled !== false,
+            typing_min_ms: Number(cfg.typing_min_ms) || 800,
+            typing_max_ms: Number(cfg.typing_max_ms) || 2500
+        };
+        console.log('[WhatsApp] Anti-ban config updated:', JSON.stringify(this.antiBan));
+    }
+
+    /**
+     * Simulasi mengetik (presence 'composing') sebelum pesan dikirim.
+     * Durasi dibuat proporsional dengan panjang pesan supaya terlihat natural
+     * (pesan panjang = lebih lama "mengetik").
+     */
+    async simulateTyping(recipient, message, options = {}) {
+        const cfg = { ...(this.antiBan || {}), ...(options || {}) };
+        if (cfg.typing_enabled === false) return 0;
+
+        const minMs = Number(cfg.typing_min_ms) || 800;
+        const maxMs = Number(cfg.typing_max_ms) || 2500;
+        // 1 karakter ~ 25ms mengetik, dibatasi min..max
+        const byLength = Math.min(maxMs, Math.max(minMs, (message || '').length * 25));
+        const typingTime = Math.random() * (byLength - minMs) + minMs;
+
+        try {
+            await this.socket.presenceSubscribe(recipient);
+            await this.socket.sendPresenceUpdate('composing', recipient);
+            await new Promise(resolve => setTimeout(resolve, typingTime));
+            await this.socket.sendPresenceUpdate('paused', recipient);
+        } catch (e) {
+            // Simulasi typing gagal tidak boleh menggagalkan pengiriman
+            console.warn('[WhatsApp] Gagal simulasi typing:', e.message);
+            return 0;
+        }
+        return typingTime;
+    }
+
     async sendMessage(to, message, options = {}) {
         if (!this.socket || !this.isConnected) {
             throw new Error('WhatsApp not connected');
@@ -120,13 +168,8 @@ class WhatsAppService {
             // Ensure recipient has proper format (628xxxx@s.whatsapp.net for individuals)
             const recipient = to.includes('@') ? to : `${to}@s.whatsapp.net`;
 
-            // Typing simulation
-            await this.socket.presenceSubscribe(recipient);
-            await this.socket.sendPresenceUpdate('composing', recipient);
-            
-            // Random typing time (1-3 seconds)
-            const typingTime = Math.random() * 2000 + 1000;
-            await new Promise(resolve => setTimeout(resolve, typingTime));
+            // Simulasi mengetik (durasi acak + proporsional panjang pesan)
+            await this.simulateTyping(recipient, message, options.typing);
 
             // Send message
             const messageOptions = {
@@ -135,9 +178,6 @@ class WhatsAppService {
             };
 
             const response = await this.socket.sendMessage(recipient, messageOptions);
-
-            // Stop typing
-            await this.socket.sendPresenceUpdate('paused', recipient);
 
             console.log(`[WhatsApp] Message sent to ${to}: ${message.substring(0, 50)}...`);
             return response;
@@ -156,13 +196,8 @@ class WhatsAppService {
             // Ensure group ID has proper format
             const recipient = groupId.includes('@') ? groupId : `${groupId}@g.us`;
 
-            // Typing simulation
-            await this.socket.presenceSubscribe(recipient);
-            await this.socket.sendPresenceUpdate('composing', recipient);
-            
-            // Random typing time (1-3 seconds)
-            const typingTime = Math.random() * 2000 + 1000;
-            await new Promise(resolve => setTimeout(resolve, typingTime));
+            // Simulasi mengetik (durasi acak + proporsional panjang pesan)
+            await this.simulateTyping(recipient, message, options.typing);
 
             // Send message
             const messageOptions = {
@@ -171,9 +206,6 @@ class WhatsAppService {
             };
 
             const response = await this.socket.sendMessage(recipient, messageOptions);
-
-            // Stop typing
-            await this.socket.sendPresenceUpdate('paused', recipient);
 
             console.log(`[WhatsApp] Group message sent to ${groupId}: ${message.substring(0, 50)}...`);
             return response;

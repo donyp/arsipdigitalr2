@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot WhatsApp & Notifikasi | Arsip Digital ANKA</title>
+
+    <script src="/js/dark-mode-init.js"></script>
+    <script src="/js/console-cleaner.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/color-vars.css">
+
+    <style>
+        :root {
+            --color-bg-primary: #ffffff;
+            --color-bg-secondary: #f5f7fa;
+            --color-text-primary: #1f2937;
+            --color-text-secondary: #6b7280;
+            --color-border: #e5e7eb;
+        }
+        html[data-dark-mode="true"] {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #94a3b8;
+            --color-border: #334155;
+        }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--color-bg-secondary); color: var(--color-text-primary); }
+        .glass-card {
+            background: var(--color-bg-primary);
+            border: 1px solid var(--color-border);
+            border-radius: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff; font-weight: 700; border: none; border-radius: 0.6rem;
+            padding: 0.55rem 1rem; cursor: pointer; font-size: 0.85rem;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+        }
+        .btn-primary:hover { opacity: .9; }
+        .btn-secondary {
+            background: var(--color-bg-secondary); color: var(--color-text-primary);
+            border: 1px solid var(--color-border); font-weight: 600; border-radius: 0.6rem;
+            padding: 0.55rem 1rem; cursor: pointer; font-size: 0.85rem;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+        }
+        .btn-danger { background: #ef4444; color:#fff; font-weight:700; border:none; border-radius:0.6rem; padding:0.4rem 0.75rem; cursor:pointer; font-size:0.8rem; }
+        input[type="text"], input[type="number"], select, textarea {
+            border: 1px solid var(--color-border); border-radius: 0.5rem; padding: 0.5rem 0.65rem;
+            background: var(--color-bg-primary); color: var(--color-text-primary); font-size: 0.85rem; width: 100%;
+        }
+        input:focus, select:focus, textarea:focus { outline: 2px solid rgba(102,126,234,.35); border-color:#667eea; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--color-border); font-size: 0.7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--color-text-secondary); }
+        td { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
+        .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: #cbd5e1; border-radius: 24px; transition: .25s; }
+        .slider:before { content: ""; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .25s; }
+        .switch input:checked + .slider { background: #10b981; }
+        .switch input:checked + .slider:before { transform: translateX(18px); }
+        .switch input:disabled + .slider { opacity: .5; cursor: not-allowed; }
+        .badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .55rem; border-radius:999px; font-size:.72rem; font-weight:700; }
+        .badge-ok { background: rgba(16,185,129,.12); color:#059669; }
+        .badge-off { background: rgba(148,163,184,.18); color:#64748b; }
+        .badge-warn { background: rgba(245,158,11,.15); color:#b45309; }
+        .info-box { background: rgba(59,130,246,.07); border: 1px solid rgba(59,130,246,.25); border-radius: .75rem; padding: 1rem; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+    </style>
+</head>
+<body>
+    <div id="app" style="width: 100%; display: flex; margin: 0; padding: 0; overflow-x: hidden;">
+        <div id="sidebar"></div>
+
+        <div id="main-content" style="flex: 1; min-width: 0; transition: all 300ms ease; display: flex; flex-direction: column;">
+            <!-- Header -->
+            <div class="bg-white sticky top-0 z-30 shadow-lg border-b border-gray-100" style="background: linear-gradient(135deg, rgba(102,126,234,.05) 0%, rgba(118,75,162,.05) 100%);">
+                <div class="px-6 py-6">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        <div>
+                            <h2 class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">WhatsApp Automation</h2>
+                            <h1 class="text-3xl font-black text-gray-900 flex items-center gap-3">
+                                <span class="text-4xl">🤖</span>
+                                <span>Dashboard Bot & Notifikasi</span>
+                            </h1>
+                            <p class="text-gray-600 font-medium mt-2">Setup bot WhatsApp, grup per zona, dan guard anti-ban</p>
+                        </div>
+                        <div id="status-container" class="text-right">
+                            <span id="bot-status-badge" class="badge badge-off"><i class="fas fa-circle"></i> <span>Memuat...</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-8 flex-1 overflow-y-auto">
+
+                <!-- 1. Status bot -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-lg" style="background:linear-gradient(135deg,#25d366,#128c7e);"><i class="fas fa-robot"></i></span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">Status Bot WhatsApp</h3>
+                                <p class="text-sm text-gray-600">Bot harus terhubung (scan QR) agar bisa kirim ke grup</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="/whatsapp-setup" class="btn-secondary"><i class="fas fa-qrcode"></i> Scan QR / Pairing</a>
+                            <button class="btn-primary" onclick="loadAll()"><i class="fas fa-rotate"></i> Muat Ulang</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="bot-stats"></div>
+                    <div class="info-box mt-6">
+                        <div class="flex gap-3">
+                            <i class="fas fa-shield-halved text-blue-600 flex-shrink-0 mt-0.5"></i>
+                            <div class="text-sm">
+                                <p class="font-semibold text-gray-900 mb-1">Guard anti-ban aktif</p>
+                                <p class="text-gray-700">Setiap pesan dikirim lewat antrean: jeda acak antar pesan, simulasi mengetik (tipe seperti orang), batas pesan per jam &amp; per hari per grup, jeda antar batch, dan warm-up kalau bot lama tidak aktif.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Mapping zona -> grup -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-1">Grup WhatsApp per Zona</h3>
+                    <p class="text-sm text-gray-600 mb-6">Isi <span class="mono">Group ID</span> (format <span class="mono">1203630...@g.us</span>) agar zona bisa menerima pesan otomatis.</p>
+                    <div class="overflow-x-auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Zona</th>
+                                    <th style="width:34%">Group ID (JID)</th>
+                                    <th>Nama Grup</th>
+                                    <th style="width:90px">Aktif</th>
+                                    <th style="width:150px">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="zona-groups-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. Anti-ban -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-1">Pengaturan Anti-ban Nomor Bot</h3>
+                    <p class="text-sm text-gray-600 mb-6">Atur seberapa "manusiawi" dan seberapa sering bot boleh mengirim pesan.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <label class="flex items-center gap-3">
+                            <span class="switch"><input type="checkbox" id="ab_enabled"><span class="slider"></span></span>
+                            <span class="text-sm font-semibold text-gray-800">Aktifkan guard anti-ban</span>
+                        </label>
+                        <label class="flex items-center gap-3">
+                            <span class="switch"><input type="checkbox" id="ab_typing"><span class="slider"></span></span>
+                            <span class="text-sm font-semibold text-gray-800">Simulasi mengetik (typing) sebelum kirim</span>
+                        </label>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Jeda minimum antar pesan (ms)</label>
+                            <input type="number" id="ab_min_interval" min="500" step="100">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Jeda maksimum antar pesan (ms)</label>
+                            <input type="number" id="ab_max_interval" min="1000" step="100">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Durasi typing minimum (ms)</label>
+                            <input type="number" id="ab_typing_min" min="0" step="100">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Durasi typing maksimum (ms)</label>
+                            <input type="number" id="ab_typing_max" min="0" step="100">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Batas pesan per jam per grup</label>
+                            <input type="number" id="ab_max_hour" min="0" step="1">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Batas pesan per hari per grup</label>
+                            <input type="number" id="ab_max_day" min="0" step="1">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Ukuran batch (pesan per batch)</label>
+                            <input type="number" id="ab_batch_size" min="1" step="1">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Jeda antar batch (ms)</label>
+                            <input type="number" id="ab_batch_pause" min="0" step="1000">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-600 uppercase">Warm-up setelah idle (ms)</label>
+                            <input type="number" id="ab_warmup" min="0" step="1000">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end">
+                        <button class="btn-primary" onclick="saveAntiBan()"><i class="fas fa-save"></i> Simpan Pengaturan Anti-ban</button>
+                    </div>
+                </div>
+
+                <!-- 4. Per zona: pengumuman + kirim otomatis -->
+                <div class="glass-card rounded-2xl p-8 mb-8">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-1">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900">Notifikasi per Zona</h3>
+                            <p class="text-sm text-gray-600">Pilih channel informasi untuk setiap zona (upload invoice PDF).</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="btn-secondary" onclick="applyToAll('announce', true)"><i class="fas fa-check-double"></i> Aktifkan Pengumuman Semua</button>
+                            <button class="btn-secondary" onclick="applyToAll('announce', false)">Nonaktifkan Semua</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto mt-5">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Zona</th>
+                                    <th style="width:190px">Pengumuman otomatis</th>
+                                    <th style="width:210px">Kirim otomatis ke grup WA</th>
+                                </tr>
+                            </thead>
+                            <tbody id="zona-notif-body"></tbody>
+                        </table>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3"><i class="fas fa-info-circle"></i> "Kirim otomatis" butuh grup WA yang sudah dipetakan + bot terhubung. Kalau tidak, pesannya tetap muncul di halaman WA Messages untuk dikirim manual.</p>
+                </div>
+
+                <!-- 5. Log -->
+                <div class="glass-card rounded-2xl p-8">
+                    <h3 class="text-xl font-bold text-gray-900 mb-1">Log Pengiriman ke Grup</h3>
+                    <p class="text-sm text-gray-600 mb-6">30 pengiriman terakhir (otomatis & manual).</p>
+                    <div class="overflow-x-auto">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Waktu</th>
+                                    <th>Zona</th>
+                                    <th>Tipe</th>
+                                    <th>Status</th>
+                                    <th>Pesan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/sidebar.js?v=7&t=1792067064.55694"></script>
+    <script src="/js/spa-page-handler.js"></script>
+    <script>
+    if (typeof window._waBotDashLoaded === 'undefined') {
+        window._waBotDashLoaded = true;
+
+        let ZONAS = [];
+        let GROUPS = [];
+        let SETTINGS = null;
+
+        async function initWaBotDashboard() {
+            window.__waBotInitState = 'init-called';
+            try {
+                await initAuth(['super_admin', 'moderator']);
+                window.__waBotInitState = 'auth-ok';
+                await loadSidebar('whatsapp-bot-dashboard.html');
+                window.__waBotInitState = 'sidebar-ok';
+                await loadAll();
+                window.__waBotInitState = 'loaded';
+            } catch (e) {
+                window.__waBotInitState = 'error: ' + (e && e.message);
+                console.error('[WaBotDash] init error:', e);
+            }
+        }
+
+        // Jalankan init: kalau DOM sudah siap -> langsung, else saat DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initWaBotDashboard, { once: true });
+        } else {
+            initWaBotDashboard();
+        }
+        // Expose handler ke window (dipakai atribut onclick="..." di HTML)
+        window.initWaBotDashboard = initWaBotDashboard;
+        window.loadAll = loadAll;
+        window.saveAntiBan = saveAntiBan;
+        window.saveGroup = saveGroup;
+        window.testGroup = testGroup;
+        window.saveZonaToggles = saveZonaToggles;
+        window.applyToAll = applyToAll;
+
+        async function loadAll() {
+            try {
+                const [statusRes, settingsRes, zonasRes] = await Promise.all([
+                    API.get('/api/whatsapp/bot-status').catch(() => ({})),
+                    API.get('/api/whatsapp/settings').catch(() => ({})),
+                    API.get('/api/zonas').catch(() => [])
+                ]);
+
+                GROUPS = statusRes.groups || [];
+                SETTINGS = settingsRes.settings || null;
+                const rawZonas = Array.isArray(zonasRes) ? zonasRes : (zonasRes.zonas || zonasRes.data || []);
+                ZONAS = rawZonas;
+
+                renderBotStats(statusRes);
+                renderZonaGroups();
+                renderAntiBan();
+                renderZonaNotif();
+                renderLogs(statusRes.logs || []);
+            } catch (e) {
+                console.error('[WaBotDash] gagal memuat data:', e);
+            }
+        }
+
+        function renderBotStats(statusRes) {
+            const bot = statusRes.bot || {};
+            const queue = statusRes.queue || {};
+            const badge = document.getElementById('bot-status-badge');
+            if (bot.ready) {
+                badge.className = 'badge badge-ok';
+                badge.innerHTML = '<i class="fas fa-circle"></i> <span>Bot Terhubung</span>';
+            } else {
+                badge.className = 'badge badge-warn';
+                badge.innerHTML = '<i class="fas fa-circle"></i> <span>Bot Belum Terhubung</span>';
+            }
+
+            const cards = [
+                { label: 'Status Bot', value: bot.ready ? 'Terhubung' : 'Belum connect', icon: 'fa-robot', warn: !bot.ready },
+                { label: 'Nomor Bot', value: bot.phone || '-', icon: 'fa-phone' },
+                { label: 'Antrean', value: (queue.queueSize !== undefined ? queue.queueSize : 0), icon: 'fa-list' },
+                { label: 'Terkirim / Gagal', value: `${queue.sent || 0} / ${queue.failed || 0}`, icon: 'fa-paper-plane', warn: (queue.failed || 0) > 0 }
+            ];
+            document.getElementById('bot-stats').innerHTML = cards.map(c => `
+                <div class="glass-card rounded-xl p-4" style="background:var(--color-bg-secondary);">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas ${c.icon} text-gray-400"></i>
+                        <span class="text-xs font-black text-gray-500 uppercase tracking-wider">${c.label}</span>
+                    </div>
+                    <p class="text-lg font-black" style="color:${c.warn ? '#b45309' : 'var(--color-text-primary)'};">${c.value}</p>
+                </div>`).join('');
+        }
+
+        function groupFor(zonaId) {
+            return GROUPS.find(g => String(g.zona_id) === String(zonaId)) || null;
+        }
+
+        function renderZonaGroups() {
+            const body = document.getElementById('zona-groups-body');
+            body.innerHTML = ZONAS.map(z => {
+                const g = groupFor(z.id);
+                return `
+                <tr>
+                    <td>
+                        <div class="font-bold text-gray-900">${z.nama || ('Zona ' + z.id)}</div>
+                        <div class="text-xs text-gray-500">Kode ${z.kode || '-'} • id ${z.id}</div>
+                    </td>
+                    <td><input type="text" class="mono" id="gid-${z.id}" value="${(g && g.group_id) || ''}" placeholder="120363012345678901@g.us"></td>
+                    <td><input type="text" id="gname-${z.id}" value="${(g && g.group_name) || ''}" placeholder="Nama grup (opsional)"></td>
+                    <td>
+                        <label class="switch"><input type="checkbox" id="gact-${z.id}" ${(g && g.is_active) ? 'checked' : ''}><span class="slider"></span></label>
+                    </td>
+                    <td class="flex gap-2">
+                        <button class="btn-primary" onclick="saveGroup(${z.id})"><i class="fas fa-save"></i> Simpan</button>
+                        <button class="btn-secondary" onclick="testGroup(${z.id})"><i class="fas fa-paper-plane"></i> Uji</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderAntiBan() {
+            const ab = (SETTINGS && SETTINGS.antiban) || {};
+            document.getElementById('ab_enabled').checked = ab.enabled !== false;
+            document.getElementById('ab_typing').checked = ab.typing_simulation !== false;
+            document.getElementById('ab_min_interval').value = ab.min_interval_ms ?? 1500;
+            document.getElementById('ab_max_interval').value = ab.max_interval_ms ?? 6000;
+            document.getElementById('ab_typing_min').value = ab.typing_min_ms ?? 800;
+            document.getElementById('ab_typing_max').value = ab.typing_max_ms ?? 2500;
+            document.getElementById('ab_max_hour').value = ab.max_per_hour ?? 20;
+            document.getElementById('ab_max_day').value = ab.max_per_day ?? 60;
+            document.getElementById('ab_batch_size').value = ab.batch_size ?? 5;
+            document.getElementById('ab_batch_pause').value = ab.batch_pause_ms ?? 30000;
+            document.getElementById('ab_warmup').value = ab.warmup_ms ?? 5000;
+        }
+
+        function renderZonaNotif() {
+            const body = document.getElementById('zona-notif-body');
+            const announceZones = (SETTINGS && SETTINGS.announce_zonas) || {};
+            const autoZones = (SETTINGS && SETTINGS.auto_send_zonas) || {};
+            const globalAnnounce = SETTINGS ? SETTINGS.announce_enabled !== false : true;
+            const globalAuto = SETTINGS ? SETTINGS.auto_send_enabled === true : false;
+
+            body.innerHTML = ZONAS.map(z => {
+                const key = String(z.id);
+                const annOn = Object.prototype.hasOwnProperty.call(announceZones, key) ? !!announceZones[key] : globalAnnounce;
+                const autoOn = Object.prototype.hasOwnProperty.call(autoZones, key) ? !!autoZones[key] : globalAuto;
+                return `
+                <tr>
+                    <td>
+                        <div class="font-bold text-gray-900">${z.nama || ('Zona ' + z.id)}</div>
+                        <div class="text-xs text-gray-500">Kode ${z.kode || '-'}</div>
+                    </td>
+                    <td>
+                        <label class="switch"><input type="checkbox" class="ann-toggle" data-zona="${z.id}" ${annOn ? 'checked' : ''}><span class="slider"></span></label>
+                    </td>
+                    <td>
+                        <label class="switch"><input type="checkbox" class="auto-toggle" data-zona="${z.id}" ${autoOn ? 'checked' : ''}><span class="slider"></span></label>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            body.querySelectorAll('.ann-toggle').forEach(cb => cb.addEventListener('change', saveZonaToggles));
+            body.querySelectorAll('.auto-toggle').forEach(cb => cb.addEventListener('change', saveZonaToggles));
+        }
+
+        function renderLogs(logs) {
+            const body = document.getElementById('logs-body');
+            if (!logs.length) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 py-6">Belum ada riwayat pengiriman</td></tr>';
+                return;
+            }
+            body.innerHTML = logs.map(l => {
+                const status = l.queue_status || '-';
+                const cls = status === 'sent' ? 'badge-ok' : (status === 'failed' ? 'badge-warn' : 'badge-off');
+                const zona = ZONAS.find(z => String(z.id) === String(l.zona_id));
+                return `<tr>
+                    <td class="text-xs text-gray-500">${new Date(l.created_at).toLocaleString('id-ID')}</td>
+                    <td>${zona ? zona.nama : ('Zona ' + l.zona_id)}</td>
+                    <td class="text-xs">${l.message_type || '-'}<div class="text-gray-400">${l.trigger_source || ''}</div></td>
+                    <td><span class="badge ${cls}">${status}</span></td>
+                    <td class="text-xs text-gray-500" style="max-width:320px;">${String(l.message || '').replace(/\\n/g, ' | ').slice(0, 120)}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function saveAntiBan() {
+            const antiban = {
+                enabled: document.getElementById('ab_enabled').checked,
+                typing_simulation: document.getElementById('ab_typing').checked,
+                min_interval_ms: Number(document.getElementById('ab_min_interval').value) || 1500,
+                max_interval_ms: Number(document.getElementById('ab_max_interval').value) || 6000,
+                typing_min_ms: Number(document.getElementById('ab_typing_min').value) || 0,
+                typing_max_ms: Number(document.getElementById('ab_typing_max').value) || 0,
+                max_per_hour: Number(document.getElementById('ab_max_hour').value) || 0,
+                max_per_day: Number(document.getElementById('ab_max_day').value) || 0,
+                batch_size: Number(document.getElementById('ab_batch_size').value) || 5,
+                batch_pause_ms: Number(document.getElementById('ab_batch_pause').value) || 0,
+                warmup_ms: Number(document.getElementById('ab_warmup').value) || 0
+            };
+            try {
+                const res = await API.put('/api/whatsapp/settings', { antiban });
+                SETTINGS = res.settings || SETTINGS;
+                Toast.success('Pengaturan anti-ban tersimpan');
+            } catch (e) {
+                Toast.error('Gagal menyimpan: ' + e.message);
+            }
+        }
+
+        async function saveGroup(zonaId) {
+            const groupId = document.getElementById('gid-' + zonaId).value.trim();
+            const groupName = document.getElementById('gname-' + zonaId).value.trim();
+            const isActive = document.getElementById('gact-' + zonaId).checked;
+            if (!groupId) {
+                Toast.error('Group ID tidak boleh kosong');
+                return;
+            }
+            try {
+                await API.post('/api/whatsapp/zona-groups', {
+                    zona_id: zonaId,
+                    group_id: groupId,
+                    group_name: groupName || ('Zona ' + zonaId),
+                    is_active: isActive
+                });
+                Toast.success('Grup zona tersimpan');
+                await loadAll();
+            } catch (e) {
+                Toast.error('Gagal menyimpan: ' + e.message);
+            }
+        }
+
+        async function testGroup(zonaId) {
+            try {
+                const res = await API.post('/api/whatsapp/bot-test', { zona_id: zonaId });
+                Toast.success(res.message || 'Pesan uji diantrikan');
+                setTimeout(loadAll, 1500);
+            } catch (e) {
+                Toast.error('Gagal: ' + e.message);
+            }
+        }
+
+        async function saveZonaToggles() {
+            const announceZones = {};
+            const autoZones = {};
+            document.querySelectorAll('.ann-toggle').forEach(cb => { announceZones[cb.dataset.zona] = cb.checked; });
+            document.querySelectorAll('.auto-toggle').forEach(cb => { autoZones[cb.dataset.zona] = cb.checked; });
+            try {
+                const res = await API.put('/api/whatsapp/settings', {
+                    announce_zonas: announceZones,
+                    auto_send_zonas: autoZones
+                });
+                SETTINGS = res.settings || SETTINGS;
+                Toast.success('Pengaturan notifikasi zona tersimpan');
+            } catch (e) {
+                Toast.error('Gagal menyimpan: ' + e.message);
+            }
+        }
+
+        async function applyToAll(field, value) {
+            try {
+                const patch = {};
+                patch[field + '_zonas'] = {};
+                ZONAS.forEach(z => { patch[field + '_zonas'][String(z.id)] = value; });
+                if (field === 'announce') patch.announce_enabled = value;
+                if (field === 'auto') patch.auto_send_enabled = value;
+                const res = await API.put('/api/whatsapp/settings', patch);
+                SETTINGS = res.settings || SETTINGS;
+                renderZonaNotif();
+                Toast.success('Pengaturan diterapkan untuk semua zona');
+            } catch (e) {
+                Toast.error('Gagal: ' + e.message);
+            }
+        }
+    }
+    </script>
+</body>
+</html>

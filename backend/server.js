@@ -858,6 +858,11 @@ app.get('/notifikasi', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'whatsapp-messages.html'));
 });
 
+// Dashboard setup bot WhatsApp & notifikasi per zona
+app.get('/whatsapp-bot', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'whatsapp-bot-dashboard.html'));
+});
+
 // Support
 app.get('/support/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'support-dashboard.html'));
@@ -8344,6 +8349,18 @@ app.post('/api/whatsapp/mark-invoice-zona-sent', authenticateToken, async (req, 
 // Dipakai dashboard setup bot WA: toggle pengumuman otomatis, toggle kirim
 // otomatis per zona, dan pengaturan anti-ban nomor bot.
 const { getWaSettings, saveWaSettings } = require('./wa-notification-settings');
+const { setSupabase: setWaAutoDispatchSupabase } = require('./wa-auto-dispatch');
+setWaAutoDispatchSupabase(supabase);
+
+// Terapkan konfigurasi anti-ban ke antrean pesan + service bot (kalau ada)
+try {
+    const { applyAntiBanConfig } = require('./whatsapp-zona-endpoints');
+    getWaSettings(supabase).then(settings => {
+        applyAntiBanConfig(settings.antiban);
+    }).catch(() => {});
+} catch (e) {
+    console.warn('[WA-Settings] Gagal menerapkan anti-ban saat start:', e.message);
+}
 
 app.get('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
@@ -8358,11 +8375,107 @@ app.get('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin'
 app.put('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const settings = await saveWaSettings(supabase, req.body || {});
+        // Langsung terapkan ke antrean pesan + service bot
+        try {
+            const { applyAntiBanConfig } = require('./whatsapp-zona-endpoints');
+            applyAntiBanConfig(settings.antiban);
+        } catch (e) { /* abaikan */ }
         console.log('[WA-Settings] ✅ Pengaturan disimpan oleh', req.user.userId);
         res.json({ success: true, settings });
     } catch (error) {
         console.error('[WA-Settings] Error simpan:', error);
         res.status(500).json({ error: error.message || 'Gagal menyimpan pengaturan' });
+    }
+});
+
+// GET /api/whatsapp/bot-status
+// Status bot + antrean + log pengiriman (untuk dashboard pengaturan)
+app.get('/api/whatsapp/bot-status', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
+    try {
+        const { getWaService, getWaQueue } = require('./whatsapp-zona-endpoints');
+        const service = getWaService();
+        const queue = getWaQueue();
+        const status = service && typeof service.getStatus === 'function' ? service.getStatus() : { connected: false, ready: false };
+
+        const { data: groups } = await supabase
+            .from('whatsapp_zona_groups')
+            .select('*')
+            .order('zona_id', { ascending: true });
+
+        const { data: logs } = await supabase
+            .from('whatsapp_zona_messages')
+            .select('id, zona_id, group_id, message, message_type, trigger_source, queue_status, sent_at, created_at, error_message')
+            .order('created_at', { ascending: false })
+            .limit(30);
+
+        res.json({
+            success: true,
+            bot: {
+                connected: !!status.connected,
+                ready: !!status.ready,
+                phone: service && service.connectedPhoneNumber ? service.connectedPhoneNumber : null
+            },
+            queue: queue ? queue.getStats() : null,
+            groups: groups || [],
+            logs: logs || []
+        });
+    } catch (error) {
+        console.error('[WA-BotStatus] Error:', error);
+        res.status(500).json({ error: error.message || 'Gagal memuat status bot' });
+    }
+});
+
+// POST /api/whatsapp/bot-test
+// Kirim pesan uji ke grup WA sebuah zona (untuk cek mapping + koneksi)
+app.post('/api/whatsapp/bot-test', authenticateToken, authorizeRole('super_admin'), async (req, res) => {
+    try {
+        const { zona_id, message } = req.body;
+        if (!zona_id) {
+            return res.status(400).json({ error: 'zona_id required' });
+        }
+
+        const { getWaService, getWaQueue } = require('./whatsapp-zona-endpoints');
+        const service = getWaService();
+        const queue = getWaQueue();
+
+        if (!service || !service.isReady()) {
+            return res.status(503).json({ error: 'Bot WhatsApp belum terhubung. Scan QR di halaman ini dulu.' });
+        }
+        if (!queue) {
+            return res.status(503).json({ error: 'Antrean pesan tidak tersedia' });
+        }
+
+        const { data: groupRow } = await supabase
+            .from('whatsapp_zona_groups')
+            .select('*')
+            .eq('zona_id', zona_id)
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (!groupRow) {
+            return res.status(404).json({ error: 'Grup WhatsApp untuk zona ini belum dipetakan' });
+        }
+
+        const text = message || `*TEST ARSIP ANKA*\n\nPengiriman pesan uji dari dashboard pengaturan.\nZona: ${zona_id}\nWaktu: ${new Date().toLocaleString('id-ID')}`;
+        const enqueued = await queue.enqueue(groupRow.group_id, text, 'group');
+        if (!enqueued || !enqueued.id) {
+            return res.status(429).json({ error: 'Antrean menolak (circuit breaker aktif). Coba lagi nanti.' });
+        }
+
+        await supabase.from('whatsapp_zona_messages').insert({
+            zona_id,
+            group_id: groupRow.group_id,
+            message: text,
+            message_type: 'manual_send',
+            trigger_source: 'dashboard_test',
+            queue_status: 'queued',
+            sent_by_user_id: req.user.id
+        });
+
+        res.json({ success: true, message: 'Pesan uji diantrikan ke antrean (terkirim sesuai jeda anti-ban)', messageId: enqueued.id });
+    } catch (error) {
+        console.error('[WA-BotTest] Error:', error);
+        res.status(500).json({ error: error.message || 'Gagal mengirim pesan uji' });
     }
 });
 

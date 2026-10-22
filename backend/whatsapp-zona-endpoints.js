@@ -23,6 +23,35 @@ async function initializeZonaEndpoints(supabase) {
     }
 }
 
+/**
+ * Akses instance service & antrean (dipakai modul auto-dispatch dan
+ * endpoint dashboard pengaturan).
+ */
+function getWaService() {
+    return waService;
+}
+
+function getWaQueue() {
+    return waQueue;
+}
+
+/**
+ * Terapkan konfigurasi anti-ban ke antrean pesan + service bot.
+ * @param {object} antibanCfg
+ */
+function applyAntiBanConfig(antibanCfg) {
+    try {
+        if (waQueue) waQueue.setAntiBanConfig(antibanCfg || {});
+        if (waService && typeof waService.setAntiBanConfig === 'function') {
+            waService.setAntiBanConfig(antibanCfg || {});
+        }
+        return true;
+    } catch (e) {
+        console.warn('[WhatsApp Zona] Gagal menerapkan konfigurasi anti-ban:', e.message);
+        return false;
+    }
+}
+
 function registerZonaEndpoints(app, supabase, createAuth) {
     initializeZonaEndpoints(supabase);
 
@@ -64,11 +93,11 @@ function registerZonaEndpoints(app, supabase, createAuth) {
     app.post('/api/whatsapp/zona-groups', createAuth(), async (req, res) => {
         try {
             // Admin only
-            if (req.user?.role !== 'super_admin') {
+            if (req.user?.role !== 'super_admin' && req.user?.role !== 'moderator') {
                 return res.status(403).json({ error: 'Super admin only' });
             }
 
-            const { zona_id, group_id, group_name } = req.body;
+            const { zona_id, group_id, group_name, is_active } = req.body;
 
             if (!zona_id || !group_id) {
                 return res.status(400).json({ error: 'zona_id and group_id required' });
@@ -89,8 +118,8 @@ function registerZonaEndpoints(app, supabase, createAuth) {
                 .upsert({
                     zona_id,
                     group_id: formattedGroupId,
-                    group_name: group_name || `Zona-${zona_id.substring(0, 8)}`,
-                    is_active: true,
+                    group_name: group_name || `Zona-${String(zona_id).substring(0, 8)}`,
+                    is_active: is_active === false ? false : true,
                     updated_at: new Date().toISOString()
                 }, { 
                     onConflict: 'zona_id' 
@@ -404,5 +433,8 @@ Silakan cek dashboard untuk detail lebih lanjut.`;
 
 module.exports = {
     initializeZonaEndpoints,
-    registerZonaEndpoints
+    registerZonaEndpoints,
+    getWaService,
+    getWaQueue,
+    applyAntiBanConfig
 };
