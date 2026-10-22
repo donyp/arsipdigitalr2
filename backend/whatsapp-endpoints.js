@@ -13,12 +13,13 @@ let waQueue = null;
 
 /**
  * Initialize WhatsApp service (call once on app start)
+ * @param {object} options - { enabled: boolean } (switch koneksi bot)
  */
-async function initializeWhatsApp() {
+async function initializeWhatsApp(options = {}) {
     try {
-        waService = await getWhatsAppService();
+        waService = await getWhatsAppService({ enabled: options.enabled !== false });
         waQueue = new WAMessageQueue(waService);
-        console.log('[WhatsApp] Endpoints initialized');
+        console.log('[WhatsApp] Endpoints initialized' + (options.enabled === false ? ' (bot dimatikan)' : ''));
     } catch (error) {
         console.error('[WhatsApp] Failed to initialize:', error.message);
     }

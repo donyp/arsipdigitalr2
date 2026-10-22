@@ -8365,7 +8365,7 @@ app.post('/api/whatsapp/mark-invoice-zona-sent', authenticateToken, async (req, 
 // ============================================================
 // Dipakai dashboard setup bot WA: toggle pengumuman otomatis, toggle kirim
 // otomatis per zona, dan pengaturan anti-ban nomor bot.
-const { getWaSettings, saveWaSettings } = require('./wa-notification-settings');
+const { getWaSettings, saveWaSettings, isBotEnabled, isSystemEnabled } = require('./wa-notification-settings');
 const { setSupabase: setWaAutoDispatchSupabase } = require('./wa-auto-dispatch');
 setWaAutoDispatchSupabase(supabase);
 
@@ -8392,13 +8392,29 @@ app.get('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin'
 app.put('/api/whatsapp/settings', authenticateToken, authorizeRole('super_admin', 'moderator'), async (req, res) => {
     try {
         const settings = await saveWaSettings(supabase, req.body || {});
+
         // Langsung terapkan ke antrean pesan + service bot
         try {
             const { applyAntiBanConfig } = require('./whatsapp-zona-endpoints');
             applyAntiBanConfig(settings.antiban);
         } catch (e) { /* abaikan */ }
-        console.log('[WA-Settings] ✅ Pengaturan disimpan oleh', req.user.userId);
-        res.json({ success: true, settings });
+
+        // Terapkan switch koneksi bot (ON/OFF) langsung
+        let botAction = 'tidak berubah';
+        try {
+            const { getWaService } = require('./whatsapp-zona-endpoints');
+            const service = getWaService();
+            if (service && typeof service.setEnabled === 'function') {
+                const wantEnabled = isBotEnabled(settings);
+                const res2 = await service.setEnabled(wantEnabled);
+                botAction = res2 && res2.changed ? (wantEnabled ? 'dihubungkan' : 'diputuskan') : 'tidak berubah';
+            }
+        } catch (e) {
+            console.warn('[WA-Settings] Gagal menerapkan switch koneksi bot:', e.message);
+        }
+
+        console.log(`[WA-Settings] ✅ Pengaturan disimpan oleh ${req.user.userId} | sistem: ${isSystemEnabled(settings) ? 'ON' : 'OFF'} | bot: ${isBotEnabled(settings) ? 'ON' : 'OFF'} (${botAction})`);
+        res.json({ success: true, settings, botAction });
     } catch (error) {
         console.error('[WA-Settings] Error simpan:', error);
         res.status(500).json({ error: error.message || 'Gagal menyimpan pengaturan' });
@@ -8428,13 +8444,27 @@ app.get('/api/whatsapp/bot-status', authenticateToken, authorizeRole('super_admi
             .order('created_at', { ascending: false })
             .limit(30);
 
+        // Status switch (master switch sistem + koneksi bot)
+        let switchStatus = { systemEnabled: true, botEnabled: true, announceEnabled: true, autoSendEnabled: false };
+        try {
+            const s = await getWaSettings(supabase);
+            switchStatus = {
+                systemEnabled: isSystemEnabled(s),
+                botEnabled: isBotEnabled(s),
+                announceEnabled: s.announce_enabled !== false,
+                autoSendEnabled: s.auto_send_enabled === true
+            };
+        } catch (e) { /* abaikan */ }
+
         res.json({
             success: true,
             bot: {
                 connected: !!status.connected,
                 ready: !!status.ready,
+                enabled: service && typeof service.isEnabled === 'function' ? service.isEnabled() : true,
                 phone: service && service.connectedPhoneNumber ? service.connectedPhoneNumber : null
             },
+            switchStatus,
             diagnostics: diagnostics,
             queue: queue ? queue.getStats() : null,
             groups: groups || [],
@@ -8752,10 +8782,17 @@ app.post('/api/whatsapp/delete-invoice-message', authenticateToken, async (req, 
         // ============================================================
         console.log('[INIT] Initializing WhatsApp Baileys service...');
         try {
-            await initializeWhatsApp();
+            // Hormati switch "Koneksi Bot" dari dashboard: kalau dimatikan, bot
+            // TIDAK melakukan koneksi sama sekali (aman & hemat resource).
+            let waBotEnabled = true;
+            try {
+                const startupSettings = await getWaSettings(supabase);
+                waBotEnabled = isBotEnabled(startupSettings);
+            } catch (e) { /* pakai default */ }
+            await initializeWhatsApp({ enabled: waBotEnabled });
             registerWhatsAppEndpoints(app, createAuth);
             registerZonaEndpoints(app, supabase, createAuth);
-            console.log('[INIT] WhatsApp service initialized ✅');
+            console.log('[INIT] WhatsApp service initialized ✅' + (waBotEnabled ? '' : ' (koneksi bot DIMATIKAN via switch dashboard)'));
         } catch (err) {
             console.error('[INIT] WhatsApp initialization failed:', err.message);
             console.log('[INIT] Continuing without WhatsApp (will attempt connection on next startup)');

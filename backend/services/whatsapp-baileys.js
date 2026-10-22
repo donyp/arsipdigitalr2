@@ -21,7 +21,7 @@ try {
 }
 
 class WhatsAppService {
-    constructor() {
+    constructor(options = {}) {
         this.socket = null;
         this.isConnected = false;
         this.lastQR = null;
@@ -49,9 +49,16 @@ class WhatsAppService {
         this.lastQrAt = null;
         this.connectAttempts = 0;
         this.sessionResetAt = null;    // kapan sesi terakhir di-reset (untuk diagnosa)
+        this.enabled = options.enabled !== false; // switch koneksi bot dari dashboard
     }
 
     async initialize() {
+        // Bot dimatikan lewat switch dashboard -> jangan sambungkan.
+        if (this.enabled === false) {
+            this.connectionState = 'disabled';
+            console.log('[WhatsApp] ⏸ Bot dimatikan (switch dashboard) - tidak melakukan koneksi');
+            return;
+        }
         try {
             // Ensure auth directory exists
             if (!fs.existsSync(this.sessionPath)) {
@@ -125,6 +132,13 @@ class WhatsAppService {
                     };
 
                     if (statusCode !== DisconnectReason.loggedOut) {
+                        // Bot dimatikan lewat switch -> jangan reconnect
+                        if (this.enabled === false) {
+                            console.log('[WhatsApp] ⏸ Bot dimatikan - tidak melakukan reconnect');
+                            this.isConnected = false;
+                            this.connectionState = 'disabled';
+                            return;
+                        }
                         // Backoff progressively: jangan bombardir WhatsApp kalau
                         // IP server diblokir (bisa memperburuk reputasi IP).
                         this.connectAttempts = (this.connectAttempts || 0) + 1;
@@ -148,6 +162,52 @@ class WhatsAppService {
             console.error('[WhatsApp] Initialization failed:', error.message);
             throw error;
         }
+    }
+
+    /**
+     * Nyalakan / matikan koneksi bot (switch "Koneksi Bot" di dashboard).
+     * - OFF: socket diputus (TANPA logout, sesi tetap tersimpan) dan tidak
+     *   melakukan reconnect. Bot jadi 100% tidak menyentuh WhatsApp.
+     * - ON : sambung lagi (pakai sesi yang sudah ada, atau QR baru kalau
+     *   sesi belum pernah dibuat).
+     * @param {boolean} enabled
+     */
+    async setEnabled(enabled) {
+        const wantEnabled = !!enabled;
+        if (wantEnabled === this.enabled) {
+            return { enabled: this.enabled, changed: false };
+        }
+        this.enabled = wantEnabled;
+
+        if (!wantEnabled) {
+            console.log('[WhatsApp] ⏸ Koneksi bot dimatikan (switch dashboard)');
+            try {
+                if (this.socket) {
+                    this.socket.ev.removeAllListeners?.('connection.update');
+                    this.socket.end?.(undefined);
+                }
+            } catch (e) {
+                console.warn('[WhatsApp] Gagal memutus socket:', e.message);
+            }
+            this.socket = null;
+            this.isConnected = false;
+            this.connectionState = 'disabled';
+            this.lastQR = null;
+            return { enabled: false, changed: true };
+        }
+
+        console.log('[WhatsApp] ▶️ Koneksi bot dinyalakan (switch dashboard)');
+        this.connectionState = 'connecting';
+        try {
+            await this.initialize();
+        } catch (e) {
+            console.error('[WhatsApp] Gagal menyambungkan bot:', e.message);
+        }
+        return { enabled: true, changed: true };
+    }
+
+    isEnabled() {
+        return this.enabled !== false;
     }
 
     /**
@@ -365,10 +425,13 @@ class WhatsAppService {
 // Singleton instance
 let waService = null;
 
-async function getWhatsAppService() {
+async function getWhatsAppService(options = {}) {
     if (!waService) {
-        waService = new WhatsAppService();
+        waService = new WhatsAppService(options);
         await waService.initialize();
+    } else if (options.enabled !== undefined && options.enabled !== waService.isEnabled()) {
+        // Service sudah ada (mis. saat ini dimatikan) -> terapkan status baru
+        await waService.setEnabled(options.enabled);
     }
     return waService;
 }

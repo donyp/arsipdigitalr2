@@ -98,6 +98,50 @@
             <!-- Content -->
             <div class="p-8 flex-1 overflow-y-auto">
 
+                <!-- 0. MASTER SWITCH -->
+                <div class="glass-card rounded-2xl p-8 mb-8" id="master-switch-card">
+                    <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center justify-center w-10 h-10 rounded-full text-white font-bold text-lg" style="background:linear-gradient(135deg,#667eea,#764ba2);"><i class="fas fa-power-off"></i></span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">Sistem Notifikasi WhatsApp</h3>
+                                <p class="text-sm text-gray-600">Master switch: matikan seluruh notifikasi otomatis kapan saja</p>
+                            </div>
+                        </div>
+                        <span id="master-status-badge" class="badge badge-ok"><i class="fas fa-circle"></i> <span>AKTIF</span></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="rounded-xl p-5" style="background:var(--color-bg-secondary);">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-bold text-gray-900">Sistem Notifikasi (ON / OFF)</p>
+                                    <p class="text-xs text-gray-600 mt-1">
+                                        <b>ON</b> → pengumuman otomatis + kirim otomatis ke grup WA berjalan (sesuai switch per zona).<br>
+                                        <b>OFF</b> → tidak ada kiriman otomatis &amp; tidak ada pengumuman otomatis. Pesan upload tetap muncul di halaman <b>WA Messages</b> untuk dikirim manual (copy &amp; paste).
+                                    </p>
+                                </div>
+                                <label class="switch" style="flex-shrink:0;"><input type="checkbox" id="sw_system" onchange="saveSwitches()"><span class="slider"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl p-5" style="background:var(--color-bg-secondary);">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-bold text-gray-900">Koneksi Bot WhatsApp (ON / OFF)</p>
+                                    <p class="text-xs text-gray-600 mt-1">
+                                        <b>ON</b> → bot tersambung ke WhatsApp (status & pairing aktif).<br>
+                                        <b>OFF</b> → bot <b>diputuskan</b> dan tidak menyentuh WhatsApp sama sekali (aman kalau bot tidak dipakai / ingin jejak digitalminimal). Sesi pair tetap tersimpan, jadi tinggal dinyalakan lagi.
+                                    </p>
+                                </div>
+                                <label class="switch" style="flex-shrink:0;"><input type="checkbox" id="sw_bot" onchange="saveSwitches()"><span class="slider"></span></label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="switch-note" class="mt-4 text-xs text-gray-600"></div>
+                </div>
+
                 <!-- 1. Status bot -->
                 <div class="glass-card rounded-2xl p-8 mb-8">
                     <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
@@ -552,6 +596,7 @@
         window.testGroup = testGroup;
         window.saveZonaToggles = saveZonaToggles;
         window.applyToAll = applyToAll;
+        window.saveSwitches = saveSwitches;
         window.loadQr = loadQr;
         window.refreshQr = refreshQr;
         window.sendTestMessage = sendTestMessage;
@@ -573,6 +618,7 @@
                 ZONAS = rawZonas;
 
                 renderBotStats(statusRes);
+                renderSwitches(statusRes);
                 renderZonaGroups();
                 renderAntiBan();
                 renderZonaNotif();
@@ -582,12 +628,74 @@
             }
         }
 
+        function renderSwitches(statusRes) {
+            const sw = statusRes.switchStatus || {};
+            const systemOn = sw.systemEnabled !== false;
+            const botOn = sw.botEnabled !== false;
+
+            const sysEl = document.getElementById('sw_system');
+            const botEl = document.getElementById('sw_bot');
+            if (sysEl) sysEl.checked = systemOn;
+            if (botEl) botEl.checked = botOn;
+
+            const badge = document.getElementById('master-status-badge');
+            if (badge) {
+                if (!systemOn) {
+                    badge.className = 'badge badge-off';
+                    badge.innerHTML = '<i class="fas fa-circle"></i> <span>NONAKTIF</span>';
+                } else if (!botOn) {
+                    badge.className = 'badge badge-warn';
+                    badge.innerHTML = '<i class="fas fa-circle"></i> <span>SISTEM ON, BOT MATI</span>';
+                } else {
+                    badge.className = 'badge badge-ok';
+                    badge.innerHTML = '<i class="fas fa-circle"></i> <span>AKTIF</span>';
+                }
+            }
+
+            const note = document.getElementById('switch-note');
+            if (note) {
+                if (!systemOn) {
+                    note.innerHTML = '<i class="fas fa-info-circle"></i> Sistem notifikasi sedang <b>NONAKTIF</b>: tidak ada pesan yang dikirim otomatis ke grup WA dan tidak ada pengumuman otomatis ke user zona. Pesan upload invoice tetap tersedia di halaman <b>WA Messages</b> (kirim manual).';
+                } else if (!botOn) {
+                    note.innerHTML = '<i class="fas fa-info-circle"></i> Koneksi bot sedang <b>DIPUTUS</b>. Nyalakan lagi bila ingin pairing/tes kirim. Sesi yang sudah pair tetap tersimpan.';
+                } else {
+                    note.innerHTML = '<i class="fas fa-info-circle"></i> Sistem aktif. Per-zone: nyalakan <b>kirim otomatis</b> hanya untuk zona yang memang perlu.';
+                }
+            }
+
+            // Matikan tampilan toggle per zona ketika master switch mati
+            const perZoneDisabled = !systemOn;
+            document.querySelectorAll('.ann-toggle, .auto-toggle').forEach(cb => { cb.disabled = perZoneDisabled; });
+        }
+
+        /**
+         * Simpan master switch (sistem + koneksi bot).
+         */
+        async function saveSwitches() {
+            const systemEnabled = !!(document.getElementById('sw_system') || {}).checked;
+            const botEnabled = !!(document.getElementById('sw_bot') || {}).checked;
+            try {
+                const res = await API.put('/api/whatsapp/settings', { system_enabled: systemEnabled, bot_enabled: botEnabled });
+                SETTINGS = res.settings || SETTINGS;
+                const action = res.botAction ? ` | bot: ${res.botAction}` : '';
+                Toast.success(`Pengaturan disimpan: sistem ${systemEnabled ? 'ON' : 'OFF'}, bot ${botEnabled ? 'ON' : 'OFF'}${action}`);
+                renderSwitches({ switchStatus: { systemEnabled, botEnabled } });
+                setTimeout(loadAll, 1200);
+            } catch (e) {
+                Toast.error('Gagal menyimpan: ' + e.message);
+                loadAll();
+            }
+        }
+
         function renderBotStats(statusRes) {
             const bot = statusRes.bot || {};
             const queue = statusRes.queue || {};
             const diag = statusRes.diagnostics || {};
             const badge = document.getElementById('bot-status-badge');
-            if (bot.ready) {
+            if (bot.enabled === false) {
+                badge.className = 'badge badge-off';
+                badge.innerHTML = '<i class="fas fa-circle"></i> <span>Bot Dimatikan (switch)</span>';
+            } else if (bot.ready) {
                 badge.className = 'badge badge-ok';
                 badge.innerHTML = '<i class="fas fa-circle"></i> <span>Bot Terhubung</span>';
             } else {
@@ -596,7 +704,7 @@
             }
 
             const cards = [
-                { label: 'Status Bot', value: bot.ready ? 'Terhubung' : 'Belum connect', icon: 'fa-robot', warn: !bot.ready },
+                { label: 'Status Bot', value: bot.enabled === false ? 'Dimatikan' : (bot.ready ? 'Terhubung' : 'Belum connect'), icon: 'fa-robot', warn: !bot.ready },
                 { label: 'Nomor Bot', value: bot.phone || '-', icon: 'fa-phone' },
                 { label: 'Antrean', value: (queue.queueSize !== undefined ? queue.queueSize : 0), icon: 'fa-list' },
                 { label: 'Terkirim / Gagal', value: `${queue.sent || 0} / ${queue.failed || 0}`, icon: 'fa-paper-plane', warn: (queue.failed || 0) > 0 }

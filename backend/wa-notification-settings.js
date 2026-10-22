@@ -17,6 +17,27 @@ const SETTINGS_KEY = 'wa_notification_settings';
  * pernah disimpan, jadi harus aman (tidak mengirim apa pun tanpa sengaja).
  */
 const DEFAULT_SETTINGS = {
+    // ============================================================
+    // MASTER SWITCH
+    // ============================================================
+    // system_enabled = false ->
+    //   * tidak ada pesan yang dikirim otomatis ke grup WA
+    //   * tidak ada pengumuman otomatis ke user zona
+    //   * pesan upload invoice tetap dibuat di halaman "WA Messages"
+    //     (bisa dikirim manual dengan copy & paste)
+    //   * koneksi bot tetap bisa dibuka dari dashboard bila perlu
+    // system_enabled = true -> semua kanal aktif (sesuai zonanya)
+    system_enabled: true,
+
+    // ============================================================
+    // SWITCH KONEKSI BOT
+    // ============================================================
+    // bot_enabled = false -> bot WhatsApp DISPUTUS (tidak ada koneksi
+    // ke WhatsApp sama sekali). Aman kalau bot tidak dipakai sementara
+    // (mengurangi jejak & risiko banned). Sesi yang sudah pair tetap
+    // tersimpan, jadi tinggal dinyalakan lagi.
+    bot_enabled: true,
+
     // --- Pengumuman otomatis ke user zona (Fase 2) ---
     // true  -> setiap upload invoice PDF membuat pengumuman untuk zonanya
     // false -> tidak ada pengumuman otomatis (hanya pesan WA manual)
@@ -124,12 +145,32 @@ async function saveWaSettings(supabase, patch) {
 }
 
 /**
+ * Apakah sistem notifikasi WA secara keseluruhan aktif?
+ * Kalau OFF -> tidak ada kirim otomatis & tidak ada pengumuman otomatis.
+ * @param {object} settings
+ */
+function isSystemEnabled(settings) {
+    if (!settings) return true;
+    return settings.system_enabled !== false;
+}
+
+/**
+ * Apakah koneksi bot WhatsApp diizinkan?
+ * @param {object} settings
+ */
+function isBotEnabled(settings) {
+    if (!settings) return true;
+    return settings.bot_enabled !== false;
+}
+
+/**
  * Apakah sebuah zona ikut fitur pengumuman otomatis?
  * @param {object} settings
  * @param {number} zonaId
  */
 function isAnnounceEnabledForZone(settings, zonaId) {
     if (!settings) return false;
+    if (!isSystemEnabled(settings)) return false;
     const perZone = settings.announce_zonas || {};
     const key = String(zonaId);
     if (Object.prototype.hasOwnProperty.call(perZone, key)) {
@@ -145,6 +186,7 @@ function isAnnounceEnabledForZone(settings, zonaId) {
  */
 function isAutoSendEnabledForZone(settings, zonaId) {
     if (!settings) return false;
+    if (!isSystemEnabled(settings)) return false;
     const perZone = settings.auto_send_zonas || {};
     const key = String(zonaId);
     if (Object.prototype.hasOwnProperty.call(perZone, key)) {
@@ -158,6 +200,8 @@ module.exports = {
     DEFAULT_SETTINGS,
     getWaSettings,
     saveWaSettings,
+    isSystemEnabled,
+    isBotEnabled,
     isAnnounceEnabledForZone,
     isAutoSendEnabledForZone
 };

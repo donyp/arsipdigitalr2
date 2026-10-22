@@ -16,7 +16,9 @@ const path = require('path');
 const {
     DEFAULT_SETTINGS,
     isAnnounceEnabledForZone,
-    isAutoSendEnabledForZone
+    isAutoSendEnabledForZone,
+    isSystemEnabled,
+    isBotEnabled
 } = require('../wa-notification-settings');
 
 const { buildAnnouncementContent, ANNOUNCEMENT_TYPE } = require('../invoice-upload-announcement');
@@ -55,6 +57,49 @@ describe('WA Notification Settings', () => {
     test('setting null tidak menyebabkan error', () => {
         expect(isAnnounceEnabledForZone(null, 129)).toBe(false);
         expect(isAutoSendEnabledForZone(null, 129)).toBe(false);
+    });
+});
+
+describe('Master Switch Sistem Notifikasi WA', () => {
+
+    test('default: sistem & koneksi bot AKTIF', () => {
+        expect(isSystemEnabled(DEFAULT_SETTINGS)).toBe(true);
+        expect(isBotEnabled(DEFAULT_SETTINGS)).toBe(true);
+    });
+
+    test('sistem OFF mematikan semua kanal otomatis', () => {
+        const off = { ...DEFAULT_SETTINGS, system_enabled: false, announce_enabled: true, auto_send_enabled: true };
+        expect(isSystemEnabled(off)).toBe(false);
+        // pengumuman & kirim otomatis harus ikut mati
+        expect(isAnnounceEnabledForZone(off, 129)).toBe(false);
+        expect(isAutoSendEnabledForZone(off, 129)).toBe(false);
+    });
+
+    test('sistem ON -> kanal ikut aturan per zona', () => {
+        const on = { ...DEFAULT_SETTINGS, system_enabled: true, announce_enabled: true, auto_send_enabled: true, announce_zonas: {}, auto_send_zonas: {} };
+        expect(isAnnounceEnabledForZone(on, 129)).toBe(true);
+        expect(isAutoSendEnabledForZone(on, 129)).toBe(true);
+    });
+
+    test('koneksi bot bisa dimatikan terpisah dari sistem', () => {
+        const s = { ...DEFAULT_SETTINGS, system_enabled: true, bot_enabled: false };
+        expect(isSystemEnabled(s)).toBe(true);
+        expect(isBotEnabled(s)).toBe(false);
+    });
+
+    test('source: service bot punya switch on/off & tidak reconnect kalau dimatikan', () => {
+        const src = fs.readFileSync(path.join(__dirname, '..', 'services', 'whatsapp-baileys.js'), 'utf8');
+        expect(src).toContain('async setEnabled(');
+        expect(src).toContain('isEnabled()');
+        expect(src).toContain('Bot dimatikan - tidak melakukan reconnect');
+        expect(src).toContain('Bot dimatikan (switch dashboard) - tidak melakukan koneksi');
+    });
+
+    test('source: server menerapkan switch bot saat simpan & saat start', () => {
+        const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+        expect(server).toContain('isBotEnabled');
+        expect(server).toContain('setEnabled(wantEnabled)');
+        expect(server).toContain('initializeWhatsApp({ enabled: waBotEnabled })');
     });
 });
 
