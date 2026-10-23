@@ -146,3 +146,26 @@ describe('Halaman buat tiket - admin zona full width', () => {
         expect(html).toMatch(/currentUser\.role === 'admin_zona'[\s\S]{0,400}getElementById\('ticketPageWrap'\)/);
     });
 });
+
+describe('Dashboard Admin Zona - palet light mode', () => {
+    const html = baca('dashboard-admin-zona.html');
+
+    test('background dominan putih + sekunder #3d3b6b', () => {
+        expect(html).toMatch(/--color-bg-primary:\s*#ffffff;/);
+        expect(html).toMatch(/--color-bg-secondary:\s*#ffffff;/);
+        expect(html).toMatch(/--color-text-primary:\s*#3d3b6b;/);
+        expect(html).toMatch(/--color-accent:\s*#3d3b6b;/);
+    });
+
+    test('aksen ungu/biru lama tidak dipakai lagi', () => {
+        expect(html).not.toContain('#667eea');
+        expect(html).not.toContain('#764ba2');
+    });
+
+    test('menu download light mode memakai turunan #3d3b6b', () => {
+        expect(html).toContain('const fileTheme = isDarkMode ?');
+        expect(html).toContain("bg: 'linear-gradient(135deg, #4a477f, #3d3b6b)'");
+        expect(html).toContain("bg: 'linear-gradient(135deg, #57548c, #4a477f)'");
+        expect(html).toContain("bg: 'linear-gradient(135deg, #6b688c, #57548c)'");
+    });
+});
