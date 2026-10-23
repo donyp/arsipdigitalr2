@@ -122,11 +122,18 @@ describe('Backend lampiran support', () => {
         expect(backend).toContain('Ukuran foto maksimal 5 MB');
     });
 
-    test('menyimpan file ke disk lalu mencatat path-nya', () => {
-        expect(backend).toContain("path.join(__dirname, '..', 'uploads', 'support')");
-        expect(backend).toContain('fs.mkdirSync(folder, { recursive: true })');
-        expect(backend).toContain('fs.writeFileSync(fileTersimpan, req.file.buffer)');
+    test('menyimpan foto ke R2 folder khusus support-tickets/<ticketId>/', () => {
+        expect(backend).toContain("require('./support-storage')");
+        expect(backend).toContain('supportStorage.saveAttachmentFile(');
         expect(backend).toContain('file_path: fileTersimpan');
+        // Tidak boleh menyimpan ke disk lokal lagi
+        expect(backend).not.toContain('fs.writeFileSync');
+        expect(backend).not.toContain('fs.mkdirSync');
+
+        const storage = baca('backend/support-storage.js');
+        expect(storage).toContain("process.env.SUPPORT_ATTACHMENT_PREFIX || 'support-tickets'");
+        expect(storage).toContain('R2Storage.uploadFile(buffer, key');
+        expect(storage).toContain('return `${SUPPORT_PREFIX}/${ticketId}/`;');
     });
 
     test('cek hak akses sebelum menyimpan lampiran', () => {
@@ -142,7 +149,8 @@ describe('Backend lampiran support', () => {
 
     test('download mendukung ?inline=1 untuk thumbnail', () => {
         expect(backend).toContain("req.query.inline === '1'");
-        expect(backend).toContain('inline; filename=');
+        expect(backend).toContain("? 'inline' : 'attachment'");
+        expect(backend).toContain('supportStorage.readAttachmentFile(');
     });
 });
 

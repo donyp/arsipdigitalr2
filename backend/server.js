@@ -118,6 +118,7 @@ const BackupManager = require('./backup-manager');
 const registerLoggingEndpoints = require('./logging-endpoints');
 const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
+const createSupportTicketCleanup = require('./support-ticket-cleanup');
 const registerAnnouncementEndpoints = require('./announcement-endpoints');
 const AuditLogger = require('./audit-logger');
 const { initializeWhatsApp, registerWhatsAppEndpoints } = require('./whatsapp-endpoints');
@@ -1902,6 +1903,12 @@ console.log('  ✓ Backup creation, listing, verification');
 console.log('[INIT] Registering Support Ticketing endpoints...');
 registerSupportEndpoints(app, supabase, authenticateToken, authorizeRole, upload, auditLogger);
 console.log('[INIT] Support Ticketing endpoints registered ✅');
+
+// Retensi otomatis: tiket berstatus Closed >= 3 hari dihapus permanen
+// (data tiket + pesan + aktivitas + foto di R2 folder support-tickets/<id>/).
+const supportTicketCleanup = createSupportTicketCleanup({ supabase, auditLogger });
+supportTicketCleanup.registerRoutes(app, { authenticateToken, authorizeRole });
+supportTicketCleanup.start();
 console.log('  ✓ Ticket CRUD, messaging, attachments, status management');
 console.log('  ? Backup restoration & deletion with audit log');
 console.log('  ? Automatic retention policy enforcement');

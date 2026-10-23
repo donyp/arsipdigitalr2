@@ -6,8 +6,7 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
     const crypto = require('crypto');
     const AuditLogger = require('./audit-logger');
     const multer = require('multer');
-    const path = require('path');
-    const fs = require('fs');
+    const supportStorage = require('./support-storage');
 
     // ============================================
     // Lampiran tiket: HANYA FOTO (JPG/PNG/WEBP), maks 5 MB
@@ -15,8 +14,10 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
     // Catatan: `upload` global dari server.js hanya menerima PDF dan memakai
     // memoryStorage (req.file.path tidak ada), sehingga lampiran foto selalu
     // gagal. Modul ini memakai instance multer sendiri.
+    //
+    // File disimpan di Cloudflare R2 pada folder khusus:
+    //     support-tickets/<ticket_id>/<file>
     // ============================================
-    const SUPPORT_UPLOAD_ROOT = path.join(__dirname, '..', 'uploads', 'support');
     const SUPPORT_IMAGE_TYPES = {
         'image/jpeg': '.jpg',
         'image/png': '.png',
@@ -531,16 +532,23 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 return res.status(404).json({ error: 'Ticket not found' });
             }
 
+            const sekarang = new Date().toISOString();
             const updateData = {
                 status: status,
-                updated_at: new Date().toISOString()
+                updated_at: sekarang
             };
 
-            // If status is Resolved or Closed, set the resolved_at or closed_at
+            // closed_at adalah acuan retensi otomatis (hapus setelah 3 hari).
+            // Saat tiket dibuka kembali, closed_at WAJIB dikosongkan supaya
+            // tiket tidak ikut terhapus oleh job retensi.
+            if (status === 'Closed') {
+                updateData.closed_at = sekarang;
+            } else {
+                updateData.closed_at = null;
+            }
+
             if (status === 'Resolved') {
-                updateData.resolved_at = new Date().toISOString();
-            } else if (status === 'Closed') {
-                updateData.closed_at = new Date().toISOString();
+                updateData.resolved_at = sekarang;
             }
 
             const { data: ticket, error: updateError } = await supabase
@@ -862,13 +870,14 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 }
             }
 
-            // Simpan ke disk: uploads/support/<ticketId>/<unik>.<ext>
-            const folder = path.join(SUPPORT_UPLOAD_ROOT, ticketId);
-            fs.mkdirSync(folder, { recursive: true });
-
+            // Simpan ke Cloudflare R2: support-tickets/<ticketId>/<unik>.<ext>
             const namaSimpan = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ekstensi}`;
-            fileTersimpan = path.join(folder, namaSimpan);
-            fs.writeFileSync(fileTersimpan, req.file.buffer);
+            fileTersimpan = await supportStorage.saveAttachmentFile(
+                req.file.buffer,
+                ticketId,
+                namaSimpan,
+                req.file.mimetype
+            );
 
             // Store file info in database
             const { data: attachment, error: insertError } = await supabase
@@ -895,7 +904,7 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
         } catch (error) {
             console.error('[Support] Error uploading attachment:', error);
             if (fileTersimpan) {
-                try { fs.unlinkSync(fileTersimpan); } catch (e) { /* abaikan */ }
+                try { await supportStorage.deleteAttachmentFile(fileTersimpan); } catch (e) { /* abaikan */ }
             }
             res.status(500).json({ error: error.message });
         }
@@ -935,11 +944,19 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
-            // Download / preview file
+            // Download / preview file (R2 atau file lokal lama)
             const filePath = attachment.file_path;
 
-            if (!filePath || !fs.existsSync(filePath)) {
-                return res.status(404).json({ error: 'File not found on server' });
+            if (!filePath) {
+                return res.status(404).json({ error: 'File lampiran tidak tersedia' });
+            }
+
+            let isiFile;
+            try {
+                isiFile = await supportStorage.readAttachmentFile(filePath);
+            } catch (err) {
+                console.warn('[Support] Attachment tidak ditemukan:', filePath, err.message);
+                return res.status(404).json({ error: 'File not found on storage' });
             }
 
             // ?inline=1 -> tampilkan langsung (untuk thumbnail foto).
@@ -950,14 +967,18 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 && attachment.file_type !== 'image/svg+xml';
             const namaAman = String(attachment.file_name || 'lampiran').replace(/["\r\n]/g, '_');
 
+            res.setHeader('Content-Type', attachment.file_type || 'application/octet-stream');
+            res.setHeader('Content-Length', isiFile.length);
+            res.setHeader(
+                'Content-Disposition',
+                `${mintaInline && tipeAman ? 'inline' : 'attachment'}; ` +
+                `filename="${namaAman}"; filename*=UTF-8''${encodeURIComponent(attachment.file_name || 'lampiran')}`
+            );
             if (mintaInline && tipeAman) {
-                res.setHeader('Content-Type', attachment.file_type);
-                res.setHeader('Content-Disposition', `inline; filename="${namaAman}"`);
                 res.setHeader('Cache-Control', 'private, max-age=600');
-                return res.sendFile(path.resolve(filePath));
             }
 
-            res.download(filePath, attachment.file_name);
+            return res.send(isiFile);
         } catch (error) {
             console.error('[Support] Error downloading attachment:', error);
             res.status(500).json({ error: error.message });
