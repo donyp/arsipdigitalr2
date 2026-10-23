@@ -535,6 +535,14 @@
             margin: 0 !important;
         }
 
+        /* Badge pengumuman: tersembunyi sejak paint pertama saat belum ada
+           yang belum dibaca, supaya tidak sempat tampil "0".
+           Ditulis sebagai rule terpisah agar tidak kalah oleh
+           .notification-badge { display: inline-flex !important }. */
+        #announcementBadge[hidden] {
+            display: none !important;
+        }
+
         /* PROFILE MODAL */
         .profile-modal-overlay {
             position: fixed;
@@ -1942,7 +1950,7 @@
                             <button class="btn-action btn-notification-action" id="announcementNotifBtn" onclick="openAnnouncementNotifications()" title="Notifikasi Pengumuman" style="width: 44px; height: 44px; padding: 10px;">
                                 <i class="fas fa-bell"></i>
                             </button>
-                            <span class="notification-badge" id="announcementBadge" data-badge-admin-zona="true">0</span>
+                            <span class="notification-badge" id="announcementBadge" data-badge-admin-zona="true" hidden>0</span>
                         </div>
                         <button class="btn-action btn-logout-action" onclick="logout()" title="Logout">
                             <i class="fas fa-sign-out-alt"></i>
@@ -2227,7 +2235,7 @@
     <script src="/js/utils.js?t=1790610773"></script>
     <script src="/js/sidebar.js?v=7"></script>
     <script src="/js/unified-header.js?v=2"></script>
-    <script src="/js/announcement-notification.js?v=2"></script>
+    <script src="/js/announcement-notification.js?v=3"></script>
 
     <script>
         // ============================================
@@ -2923,7 +2931,11 @@
                 if (search) params.append('search', search);
 
                 let invoices;
-                let totalCount = 0;
+                // PENTING: tanpa `let` -> pakai totalCount global (baris ~2397).
+                // Sebelumnya `let totalCount` di sini men-shadow variabel global
+                // sehingga updatePagination() selalu membaca 0 ("0 - 0 dari 0")
+                // dan tombol Selanjutnya selalu disabled.
+                totalCount = 0;
                 if (hasMonthYearFilter) {
                     // Mode "semua data": ambil bertahap (server membatasi
                     // jumlah baris per request, mis. 500 baris)
@@ -3547,6 +3559,35 @@
             updateThemeToggleButton();
         }
 
+        // ============================================
+        // BADGE PENGUMUMAN
+        // ============================================
+        // Satu tempat untuk menampilkan/menyembunyikan badge pengumuman.
+        //
+        // PENTING: gunakan setProperty(..., 'important'). Menulis
+        // `badge.style.display = 'none'` akan MENGHAPUS prioritas
+        // !important dari deklarasi inline, sehingga rule stylesheet
+        // `.notification-badge { display: inline-flex !important }`
+        // menang -> badge "0" muncul sekejap (lihat riwayat bug).
+        //
+        // Saat count 0, teks juga dikosongkan supaya tidak ada angka "0"
+        // yang tertinggal di DOM.
+        function applyAnnouncementBadge(count) {
+            const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
+            if (!badge) return;
+
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : String(count);
+                badge.hidden = false;
+                badge.style.setProperty('display', 'inline-flex', 'important');
+            } else {
+                badge.textContent = '';
+                badge.hidden = true;
+                badge.style.setProperty('display', 'none', 'important');
+            }
+        }
+        window.applyAnnouncementBadge = applyAnnouncementBadge;
+
         // INITIALIZATION
         // ============================================
         document.addEventListener('DOMContentLoaded', async () => {
@@ -3671,33 +3712,8 @@
                     
                     if (unreadResponse.ok) {
                         const unreadData = await unreadResponse.json();
-                        console.log('[Admin Zone] Unread count data:', unreadData);
-                        
-                        const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
-                        console.log('[Admin Zone] Badge element found:', !!badge);
-                        console.log('[Admin Zone] Badge element ID:', badge?.id);
-                        console.log('[Admin Zone] Badge parent:', badge?.parentElement);
-                        console.log('[Admin Zone] Badge parent class:', badge?.parentElement?.className);
-                        console.log('[Admin Zone] All badges with announcementBadge ID:', document.querySelectorAll('[id*="announcementBadge"]').length);
-                        document.querySelectorAll('[id*="announcementBadge"]').forEach((b, i) => {
-                            console.log(`[Admin Zone] Badge ${i}:`, b, 'text:', b.textContent, 'parent:', b.parentElement?.className, 'data attr:', b.getAttribute('data-badge-admin-zona'));
-                        });
-                        
-                        if (badge && unreadData.unread_count > 0) {
-                            const displayCount = unreadData.unread_count > 99 ? '99+' : unreadData.unread_count;
-                            console.log('[Admin Zone] Setting badge textContent to:', displayCount, 'from:', unreadData.unread_count);
-                            badge.textContent = displayCount;
-                            console.log('[Admin Zone] Badge textContent is now:', badge.textContent);
-                            console.log('[Admin Zone] Badge innerHTML:', badge.innerHTML);
-                            badge.style.display = 'inline-flex !important';
-                            badge.style.setProperty('display', 'inline-flex', 'important');
-                            console.log('[Admin Zone] Badge displayed with count:', displayCount);
-                        } else if (badge) {
-                            console.log('[Admin Zone] Badge exists but unread_count is:', unreadData.unread_count);
-                            badge.style.display = 'none !important';
-                            badge.style.setProperty('display', 'none', 'important');
-                            console.log('[Admin Zone] Badge hidden (no unread)');
-                        }
+                        // Satu tempat untuk semua update badge (lihat applyAnnouncementBadge)
+                        applyAnnouncementBadge(unreadData.unread_count);
                     }
                 } catch (err) {
                     console.error('[Admin Zone] Error loading announcement count:', err);
@@ -3712,17 +3728,7 @@
                         });
                         if (response.ok) {
                             const data = await response.json();
-                            const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
-                            if (badge) {
-                                if (data.unread_count > 0) {
-                                    const displayCount = data.unread_count > 99 ? '99+' : data.unread_count;
-                                    badge.textContent = displayCount;
-                                    badge.style.setProperty('display', 'inline-flex', 'important');
-                                } else {
-                                    badge.style.setProperty('display', 'none', 'important');
-                                    console.log('[Admin Zone] Badge hidden by polling - unread_count is 0');
-                                }
-                            }
+                            applyAnnouncementBadge(data.unread_count);
                         }
                     } catch (err) {
                         console.error('[Admin Zone] Polling error:', err);
@@ -3738,19 +3744,7 @@
                         });
                         if (response.ok) {
                             const data = await response.json();
-                            const badge = document.querySelector('#announcementBadge[data-badge-admin-zona="true"]');
-                            if (badge) {
-                                console.log('[Admin Zone] updateAnnouncementBadge - unread_count:', data.unread_count);
-                                if (data.unread_count > 0) {
-                                    const displayCount = data.unread_count > 99 ? '99+' : data.unread_count;
-                                    badge.textContent = displayCount;
-                                    badge.style.setProperty('display', 'inline-flex', 'important');
-                                    console.log('[Admin Zone] Badge updated to:', displayCount);
-                                } else {
-                                    badge.style.setProperty('display', 'none', 'important');
-                                    console.log('[Admin Zone] Badge hidden - unread_count is 0');
-                                }
-                            }
+                            applyAnnouncementBadge(data.unread_count);
                         }
                     } catch (err) {
                         console.error('[Admin Zone] Error updating badge:', err);
@@ -3813,30 +3807,49 @@
          * Show download menu with file options
          * Files shown depend on what's been uploaded
          */
+        /**
+         * Ambil data invoice terbaru (flag file) dari server.
+         * Dipakai sebagai fallback / sinkronisasi cache, BUKAN untuk menahan
+         * tampilnya popup (dulu popup menunggu request ini -> terasa delay).
+         */
+        async function fetchInvoiceFresh(faktur) {
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch(`/api/invoice/check-faktur/${faktur}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) return null;
+                const result = await response.json();
+                return result.data || null;
+            } catch (err) {
+                console.warn('[Download Modal] Gagal ambil data terbaru:', err.message);
+                return null;
+            }
+        }
+
+        /**
+         * Cari invoice dari cache lokal. Data /api/invoice/list memakai
+         * select('*') sehingga sudah memuat keterangan + kolom path file yang
+         * dibutuhkan menu download (invoice_pdf_path, bukti_bayar_path,
+         * faktur_pajak_path). Tidak perlu request tambahan.
+         */
+        function findCachedInvoice(faktur) {
+            const daftar = (window.allAdminZonaInvoices || [])
+                .concat(typeof allInvoices !== 'undefined' && Array.isArray(allInvoices) ? allInvoices : []);
+            return daftar.find(inv => inv && inv.faktur === faktur) || null;
+        }
+
         async function showAdminZonaDownloadMenu(faktur, invoiceId) {
             try {
                 // Detect dark mode early
                 const isDarkMode = document.body.classList.contains('dark-mode');
                 
-                // Try to fetch fresh invoice data, fallback to local cache
-                let invoice = null;
-                try {
-                    const token = localStorage.getItem('jwt_token');
-                    const response = await fetch(`/api/invoice/check-faktur/${faktur}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (response.ok) {
-                        const result = await response.json();
-                        invoice = result.data;
-                    }
-                } catch (err) {
-                    console.warn('[Download Modal] Could not fetch fresh data:', err.message);
-                }
-                
-                // Fallback: use cached table data if API fails
+                // 1) Pakai cache dulu -> popup tampil seketika (tanpa delay).
+                let invoice = findCachedInvoice(faktur);
+
+                // 2) Cache meleset (jarang): baru minta ke server.
                 if (!invoice) {
-                    const invoices = window.allAdminZonaInvoices || [];
-                    invoice = invoices.find(inv => inv.faktur === faktur);
+                    invoice = await fetchInvoiceFresh(faktur);
                 }
                 
                 if (!invoice) {
@@ -4173,6 +4186,18 @@
                             }, 50);
                         }
                     }
+                });
+
+                // 3) Sinkronisasi flag file di latar belakang (tidak memblokir
+                //    popup). Kalau admin baru mengunggah file setelah daftar
+                //    dimuat, cache diperbarui untuk klik berikutnya.
+                fetchInvoiceFresh(faktur).then(fresh => {
+                    if (!fresh) return;
+                    const cached = findCachedInvoice(faktur);
+                    if (!cached) return;
+                    cached.has_invoice = fresh.has_invoice;
+                    cached.has_bukti_bayar = fresh.has_bukti_bayar;
+                    cached.has_faktur_pajak = fresh.has_faktur_pajak;
                 });
                 
             } catch (error) {

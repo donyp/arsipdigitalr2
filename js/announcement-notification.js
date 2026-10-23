@@ -72,6 +72,8 @@ class AnnouncementNotification {
                 right: 0;
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.5);
+                -webkit-backdrop-filter: blur(6px);
+                backdrop-filter: blur(6px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -263,7 +265,8 @@ class AnnouncementNotification {
                 right: 0;
                 bottom: 0;
                 background: rgba(0, 0, 0, 0.5);
-                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(6px);
+                backdrop-filter: blur(6px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -507,12 +510,23 @@ class AnnouncementNotification {
             
             this.unreadCount = data.unread_count;
 
-            if (badge) {
+            // Update badge halaman (jika ada).
+            //
+            // PENTING: jangan set badge.style.display langsung — menulis
+            // lewat property akan MENGHAPUS prioritas !important dari inline
+            // style, sehingga rule CSS `.notification-badge { display:
+            // inline-flex !important }` menang dan badge "0" muncul sekejap.
+            // Karena itu pakai setProperty(..., 'important') atau helper
+            // halaman (applyAnnouncementBadge) bila tersedia.
+            if (typeof window.applyAnnouncementBadge === 'function') {
+                window.applyAnnouncementBadge(this.unreadCount);
+            } else if (badge) {
                 if (this.unreadCount > 0) {
                     badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
-                    badge.style.display = 'flex';
+                    badge.style.setProperty('display', 'inline-flex', 'important');
                 } else {
-                    badge.style.display = 'none';
+                    badge.textContent = '';
+                    badge.style.setProperty('display', 'none', 'important');
                 }
             }
         } catch (error) {

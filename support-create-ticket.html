@@ -758,6 +758,28 @@
             }
         }
     </style>
+    <script>
+        // Admin zona (customer) tidak punya sidebar. Tandai lebih awal
+        // (sebelum paint pertama) supaya kolom kosong 16rem tidak sempat
+        // muncul dan menu admin tidak berkedip.
+        try {
+            var _u = JSON.parse(localStorage.getItem('user') || '{}');
+            if (_u && _u.role === 'admin_zona') {
+                document.documentElement.setAttribute('data-customer', '1');
+            }
+        } catch (e) { /* abaikan */ }
+    </script>
+    <style>
+        /* Offset sidebar hanya untuk super_admin / moderator.
+           !important diperlukan karena wrapper memakai inline style. */
+        html[data-customer="1"] #ticketPageWrap {
+            margin-left: 0 !important;
+            width: 100% !important;
+        }
+        html[data-customer="1"] #sidebar {
+            display: none !important;
+        }
+    </style>
 </head>
 <script src="/js/notification-system.js"></script>
 <script src="/js/utils.js"></script>
@@ -775,7 +797,7 @@
         }
     </script>
     
-    <div style="min-height: 100vh; background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-tertiary) 100%); margin-left: 16rem;">
+    <div id="ticketPageWrap" style="min-height: 100vh; background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-tertiary) 100%); margin-left: 16rem;">
         <!-- Loading Overlay -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner">
@@ -902,7 +924,8 @@
 
     <script src="/js/config.js"></script>
     <script src="/js/api.js"></script>
-    <script src="/js/auth.js"></script>
+    <!-- auth.js sudah dimuat di atas (baris ~786). Memuat dua kali membuat
+         "Identifier 'currentUser' has already been declared". -->
     <script>
         let selectedFiles = [];
 
@@ -919,6 +942,17 @@
                 return;
             }
 
+            // Admin zona (customer) tidak punya sidebar -> halaman full width.
+            // (auth.js hanya me-reset <main>, sedangkan wrapper halaman ini
+            // memakai <div> dengan margin-left 16rem.)
+            if (currentUser.role === 'admin_zona') {
+                document.documentElement.setAttribute('data-customer', '1');
+                const wrap = document.getElementById('ticketPageWrap');
+                if (wrap) {
+                    wrap.style.marginLeft = '0';
+                    wrap.style.width = '100%';
+                }
+            }
 
             // Initialize custom dropdowns
             initCustomSelects();
