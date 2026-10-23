@@ -28,733 +28,749 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/color-vars.css">
     <style>
-        /* DARK MODE CSS VARIABLES */
+        /* ============================================================
+           DESIGN TOKENS
+           Tema solid — tanpa glassmorphism / backdrop-filter.
+           ============================================================ */
         :root {
-            /* Light mode (default) */
-            --color-bg-primary: #f5f7fa;
+            --color-bg-primary: #f4f5f7;
             --color-bg-secondary: #ffffff;
-            --color-bg-tertiary: #f3f4f6;
-            --color-text-primary: #1f2937;
-            --color-text-secondary: #6b7280;
-            --color-text-tertiary: #9ca3af;
-            --color-border: #e5e7eb;
-            --color-border-dark: #d1d5db;
-            --color-accent: #3b82f6;
+            --color-bg-tertiary: #f1f2f5;
+            --color-text-primary: #111827;
+            --color-text-secondary: #5b6472;
+            --color-text-tertiary: #8b93a1;
+            --color-border: #e2e5ea;
+            --color-border-dark: #cfd4dc;
+            --color-accent: #4f46e5;
+
+            --brand: #4f46e5;
+            --brand-dark: #4338ca;
+            --brand-soft: #eef2ff;
+            --success: #15803d;
+            --danger: #dc2626;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 10px;
+            --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 28px rgba(16, 24, 40, 0.06);
+            --shadow-pop: 0 18px 48px rgba(16, 24, 40, 0.18);
         }
 
         html[data-dark-mode="true"] {
-            /* Dark mode */
-            --color-bg-primary: #0f172a;
-            --color-bg-secondary: #1e293b;
-            --color-bg-tertiary: #334155;
-            --color-text-primary: #f1f5f9;
-            --color-text-secondary: #cbd5e1;
-            --color-text-tertiary: #94a3b8;
-            --color-border: #475569;
-            --color-border-dark: #64748b;
-            --color-accent: #60a5fa;
+            --color-bg-primary: #0b1220;
+            --color-bg-secondary: #131c2b;
+            --color-bg-tertiary: #1b2537;
+            --color-text-primary: #eef2f7;
+            --color-text-secondary: #aab4c4;
+            --color-text-tertiary: #8b97a9;
+            --color-border: #26334a;
+            --color-border-dark: #33425c;
+            --color-accent: #818cf8;
+
+            --brand: #6366f1;
+            --brand-dark: #4f46e5;
+            --brand-soft: #1e2440;
+            --success: #34d399;
+            --danger: #f87171;
+            --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 30px rgba(0, 0, 0, 0.35);
+            --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.6);
         }
-        
+
         * { box-sizing: border-box; }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-tertiary) 100%);
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--color-bg-primary);
             color: var(--color-text-primary);
             margin: 0;
             padding: 0;
-            transition: background 0.3s, color 0.3s;
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            transition: background 0.2s ease, color 0.2s ease;
         }
-        
-        .form-group {
-            margin-bottom: 32px;
-            position: relative;
+
+        /* ============================================================
+           HEADER
+           ============================================================ */
+        .header-bg {
+            background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand) 100%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
-        
-        .form-label {
-            display: block;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: var(--color-text-primary);
-            font-size: 13px;
-            letter-spacing: 0.5px;
+
+        .header-inner {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 26px 24px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 18px;
         }
-        
-        .form-label i {
-            color: #667eea;
-            font-size: 14px;
-        }
-        
-        .form-required {
-            color: #f093fb;
-            font-weight: 900;
-        }
-        
-        .form-input, .form-select, .form-textarea {
-            width: 100%;
-            padding: 16px 20px;
-            border: 2px solid var(--color-border);
-            border-radius: 14px;
-            font-size: 15px;
-            font-family: inherit;
-            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
-            color: var(--color-text-primary);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        }
-        
-        .form-input:hover, .form-select:hover, .form-textarea:hover {
-            border-color: #667eea;
-            background: var(--color-bg-secondary);
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.08);
-        }
-        
-        .form-input:focus, .form-select:focus, .form-textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            background: var(--color-bg-secondary);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15), 0 8px 24px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .form-input::placeholder, .form-textarea::placeholder {
-            color: var(--color-text-tertiary);
-            font-style: italic;
-        }
-        
-        .form-select {
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10' viewBox='0 0 16 10'%3E%3Cpath fill='%23667eea' d='M1 1l7 7 7-7'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 16px center;
-            padding-right: 48px;
-            position: relative;
-        }
-        
-        .form-select option {
-            background: var(--color-bg-secondary);
-            color: var(--color-text-primary);
-            padding: 12px 16px;
-            font-size: 14px;
-        }
-        
-        /* Custom Dropdown Styles */
-        .custom-select-wrapper {
-            position: relative;
-            width: 100%;
-        }
-        
-        .custom-select {
-            width: 100%;
-            padding: 16px 20px;
-            border: 2px solid var(--color-border);
-            border-radius: 14px;
-            font-size: 15px;
-            font-family: inherit;
-            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
-            color: var(--color-text-primary);
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            user-select: none;
-        }
-        
-        .custom-select:hover {
-            border-color: #667eea;
-            background: var(--color-bg-secondary);
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.08);
-        }
-        
-        .custom-select.active {
-            border-color: #667eea;
-            background: var(--color-bg-secondary);
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15), 0 8px 24px rgba(102, 126, 234, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        .custom-select-arrow {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s ease;
-            color: #667eea;
-            font-size: 14px;
-        }
-        
-        .custom-select.active .custom-select-arrow {
-            transform: rotate(180deg);
-        }
-        
-        .custom-select-options {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            right: 0;
-            background: var(--color-bg-secondary);
-            border: 2px solid #667eea;
-            border-radius: 14px;
-            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
-            max-height: 280px;
-            overflow-y: auto;
-            z-index: 1000;
-            opacity: 0;
-            transform: translateY(-10px);
-            pointer-events: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .custom-select-options.active {
-            opacity: 1;
-            transform: translateY(0);
-            pointer-events: all;
-        }
-        
-        .custom-select-option {
-            padding: 14px 20px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 15px;
-            color: var(--color-text-primary);
-        }
-        
-        .custom-select-option:first-child {
-            border-radius: 12px 12px 0 0;
-        }
-        
-        .custom-select-option:last-child {
-            border-radius: 0 0 12px 12px;
-        }
-        
-        .custom-select-option:hover {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            transform: translateX(4px);
-        }
-        
-        .custom-select-option.selected {
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
-            font-weight: 600;
-            color: #667eea;
-        }
-        
-        .custom-select-option.placeholder {
-            color: var(--color-text-tertiary);
-            font-style: italic;
-        }
-        
-        /* Hide native select when using custom */
-        .custom-select-wrapper select {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-        
-        /* Scrollbar for options */
-        .custom-select-options::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .custom-select-options::-webkit-scrollbar-track {
-            background: var(--color-bg-tertiary);
-            border-radius: 4px;
-        }
-        
-        .custom-select-options::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 4px;
-        }
-        
-        .custom-select-options::-webkit-scrollbar-thumb:hover {
-            background: #764ba2;
-        }
-        
-        .form-textarea {
-            min-height: 200px;
-            resize: vertical;
-            line-height: 1.7;
-        }
-        
-        .upload-area {
-            border: 3px dashed var(--color-border-dark);
-            border-radius: 16px;
-            padding: 48px 28px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-secondary) 100%);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .upload-area::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(102, 126, 234, 0.1), transparent);
-            transform: rotate(45deg);
-            transition: all 0.6s;
-        }
-        
-        .upload-area:hover::before {
-            left: 100%;
-        }
-        
-        .upload-area:hover {
-            border-color: #667eea;
-            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
-        }
-        
-        .upload-area.active {
-            border-color: #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, var(--color-bg-secondary) 100%);
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2);
-            transform: scale(1.02);
-        }
-        
-        .upload-icon {
-            font-size: 52px;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-8px); }
-        }
-        
-        .upload-text {
-            font-size: 16px;
-            color: var(--color-text-primary);
-            font-weight: 700;
-            margin-bottom: 6px;
-        }
-        
-        .upload-hint {
-            font-size: 13px;
-            color: var(--color-text-secondary);
-            margin-top: 10px;
-        }
-        
-        .file-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 16px;
-            background: var(--color-bg-tertiary);
-            border: 2px solid var(--color-border);
-            border-radius: 12px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .file-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
-            transform: translateX(4px);
-        }
-        
-        .file-item-icon {
-            color: #667eea;
-            margin-right: 12px;
-            font-size: 16px;
-        }
-        
-        .file-item-name {
-            color: var(--color-text-primary);
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            font-weight: 600;
-        }
-        
-        .file-item-size {
-            color: var(--color-text-secondary);
-            margin-left: 12px;
-            font-size: 12px;
-            background: var(--color-bg-secondary);
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-        
-        .file-remove-btn {
-            background: none;
-            border: none;
-            color: var(--color-text-tertiary);
-            cursor: pointer;
-            padding: 8px 10px;
-            margin-left: 12px;
-            transition: all 0.3s;
-            font-size: 16px;
-            border-radius: 8px;
-        }
-        
-        .file-remove-btn:hover {
-            color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
-            transform: scale(1.1);
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 16px;
-            margin-top: 40px;
-        }
-        
-        .btn {
-            padding: 15px 32px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
-        }
-        
-        .btn:hover::before {
-            width: 300px;
-            height: 300px;
-        }
-        
-        .btn > * {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
-            transform: translateY(-2px);
-        }
-        
-        .btn-primary:active {
-            transform: translateY(0px);
-        }
-        
-        .btn-secondary {
-            background: var(--color-bg-secondary);
-            color: var(--color-text-primary);
-            border: 2px solid var(--color-border-dark);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .btn-secondary:hover {
-            background: var(--color-bg-tertiary);
-            border-color: #667eea;
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.1);
-            transform: translateY(-1px);
-        }
-        
+
         .back-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 48px;
-            height: 48px;
-            color: var(--color-text-secondary);
-            background: var(--color-bg-secondary);
-            border: 2px solid var(--color-border);
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.28);
             border-radius: 12px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-size: 18px;
+            transition: background 0.18s ease, transform 0.18s ease;
+            font-size: 16px;
             text-decoration: none;
         }
-        
+
         .back-btn:hover {
-            background: var(--color-bg-tertiary);
-            color: #667eea;
-            border-color: #667eea;
-            transform: translateX(-4px);
+            background: rgba(255, 255, 255, 0.24);
+            transform: translateX(-2px);
         }
-        
+
+        .back-btn:focus-visible {
+            outline: 3px solid rgba(255, 255, 255, 0.55);
+            outline-offset: 2px;
+        }
+
+        .header-copy h1 {
+            margin: 0;
+            font-size: 26px;
+            line-height: 1.25;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            color: #ffffff;
+        }
+
+        .header-copy p {
+            margin: 6px 0 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.86);
+        }
+
+        /* ============================================================
+           LAYOUT / CARD
+           ============================================================ */
+        .page-shell {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 28px 24px 72px;
+        }
+
+        .form-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            padding: 32px;
+        }
+
+        .form-section + .form-section {
+            margin-top: 32px;
+            padding-top: 28px;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .section-head {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            margin-bottom: 22px;
+        }
+
+        .section-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--brand-soft);
+            color: var(--brand-dark);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        html[data-dark-mode="true"] .section-num {
+            color: #c7d2fe;
+        }
+
+        .section-head h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: -0.2px;
+            color: var(--color-text-primary);
+        }
+
+        .section-head p {
+            margin: 4px 0 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--color-text-secondary);
+        }
+
+        /* ============================================================
+           FORM FIELDS
+           ============================================================ */
+        .form-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
         .two-column {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 28px;
+            gap: 18px;
         }
-        
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.3) 50%, transparent 100%);
-            margin: 40px 0;
-            position: relative;
-        }
-        
-        .divider::before {
-            content: '';
-            position: absolute;
-            top: -1px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 3px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            border-radius: 2px;
-        }
-        
-        .form-hint {
-            font-size: 12px;
-            color: var(--color-text-tertiary);
-            margin-top: 10px;
-            font-style: italic;
+
+        .form-label {
             display: flex;
             align-items: center;
             gap: 6px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+            font-size: 13px;
+            letter-spacing: 0.1px;
         }
-        
-        .form-hint i {
-            color: #667eea;
+
+        .form-required {
+            color: var(--danger);
+            font-weight: 800;
         }
-        
-        .form-card {
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 13px 15px;
+            border: 1px solid var(--color-border-dark);
+            border-radius: var(--radius-md);
+            font-size: 14.5px;
+            font-family: inherit;
             background: var(--color-bg-secondary);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            border: 2px solid var(--color-border);
-            transition: all 0.3s ease;
+            color: var(--color-text-primary);
+            transition: border-color 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: var(--color-text-tertiary);
+        }
+
+        .form-input:hover,
+        .form-select:hover,
+        .form-textarea:hover {
+            border-color: var(--color-text-tertiary);
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.18);
+        }
+
+        html[data-dark-mode="true"] .form-input:focus,
+        html[data-dark-mode="true"] .form-select:focus,
+        html[data-dark-mode="true"] .form-textarea:focus {
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25);
+        }
+
+        .form-input.invalid,
+        .form-select.invalid,
+        .form-textarea.invalid {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
+        }
+
+        .form-select {
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath fill='%2371757f' d='M1 1l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 42px;
+        }
+
+        html[data-dark-mode="true"] .form-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath fill='%23aab4c4' d='M1 1l6 6 6-6'/%3E%3C/svg%3E");
+        }
+
+        .form-select option {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+        }
+
+        .form-textarea {
+            min-height: 168px;
+            resize: vertical;
+            line-height: 1.65;
+        }
+
+        .field-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 7px;
+        }
+
+        .form-hint {
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+            line-height: 1.5;
+        }
+
+        .char-count {
+            font-size: 11.5px;
+            font-variant-numeric: tabular-nums;
+            color: var(--color-text-tertiary);
+            flex-shrink: 0;
+        }
+
+        .char-count.limit {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        .field-error {
+            display: none;
+            margin-top: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--danger);
+        }
+
+        .field-error.show {
+            display: block;
+        }
+
+        /* ============================================================
+           UPLOAD FOTO
+           ============================================================ */
+        .upload-area {
+            border: 2px dashed var(--color-border-dark);
+            border-radius: var(--radius-lg);
+            padding: 30px 22px;
+            text-align: center;
+            cursor: pointer;
+            background: var(--color-bg-tertiary);
+            transition: border-color 0.18s ease, background 0.18s ease;
             position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: var(--brand);
+            background: var(--brand-soft);
+        }
+
+        .upload-area.dragover {
+            border-color: var(--brand);
+            background: var(--brand-soft);
+        }
+
+        .upload-area:focus-visible {
+            outline: 3px solid rgba(79, 70, 229, 0.3);
+            outline-offset: 2px;
+        }
+
+        .upload-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 52px;
+            height: 52px;
+            margin-bottom: 12px;
+            border-radius: 50%;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            color: var(--brand);
+            font-size: 20px;
+        }
+
+        .upload-text {
+            font-size: 14.5px;
+            color: var(--color-text-primary);
+            font-weight: 700;
+        }
+
+        .upload-hint {
+            font-size: 12.5px;
+            color: var(--color-text-secondary);
+            margin-top: 5px;
+        }
+
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 14px;
+            padding: 9px 16px;
+            border-radius: var(--radius-sm);
+            background: var(--brand);
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        .file-error {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(220, 38, 38, 0.08);
+            border: 1px solid rgba(220, 38, 38, 0.28);
+            color: var(--danger);
+            font-size: 12.5px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .file-error.show {
+            display: block;
+        }
+
+        .upload-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .preview-card {
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
             overflow: hidden;
+            background: var(--color-bg-secondary);
+            position: relative;
         }
-        
-        .form-card::before {
-            content: '';
+
+        .preview-thumb {
+            display: block;
+            width: 100%;
+            height: 96px;
+            object-fit: cover;
+            background: var(--color-bg-tertiary);
+        }
+
+        .preview-info {
+            padding: 8px 10px 10px;
+        }
+
+        .preview-name {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .preview-size {
+            display: block;
+            margin-top: 2px;
+            font-size: 11px;
+            color: var(--color-text-secondary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .preview-remove {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-            background-size: 200% 100%;
-            animation: shimmer 3s linear infinite;
+            top: 6px;
+            right: 6px;
+            width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 8px;
+            background: rgba(17, 24, 39, 0.72);
+            color: #ffffff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.16s ease;
         }
-        
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+
+        .preview-remove:hover {
+            background: var(--danger);
         }
-        
-        .header-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+
+        /* ============================================================
+           BUTTONS
+           ============================================================ */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 30px;
+            padding-top: 22px;
+            border-top: 1px solid var(--color-border);
         }
-        
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 140px;
+            padding: 12px 22px;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        .btn-primary {
+            background: var(--brand);
+            color: #ffffff;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--brand-dark);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-secondary);
+            color: var(--color-text-primary);
+            border-color: var(--color-border-dark);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--color-bg-tertiary);
+            border-color: var(--color-text-tertiary);
+        }
+
+        .btn:focus-visible {
+            outline: 3px solid rgba(79, 70, 229, 0.3);
+            outline-offset: 2px;
+        }
+
+        .btn.is-loading .fa-paper-plane {
+            animation: spin 0.9s linear infinite;
+        }
+
+        /* ============================================================
+           LOADING OVERLAY
+           ============================================================ */
         .loading-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            inset: 0;
+            background: rgba(10, 14, 24, 0.62);
             display: none;
             align-items: center;
             justify-content: center;
             z-index: 9999;
         }
-        
+
         .loading-overlay.active {
             display: flex;
         }
-        
+
         .loading-spinner {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 24px;
+            gap: 18px;
+            padding: 28px 34px;
+            border-radius: var(--radius-lg);
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-pop);
+            min-width: 220px;
         }
-        
+
         .spinner {
-            width: 64px;
-            height: 64px;
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-top: 4px solid #667eea;
+            width: 46px;
+            height: 46px;
+            border: 4px solid var(--color-border);
+            border-top-color: var(--brand);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.9s linear infinite;
         }
-        
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
         }
-        
+
         .loading-text {
-            color: white;
+            color: var(--color-text-primary);
             font-weight: 700;
-            font-size: 18px;
-            letter-spacing: 0.5px;
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.5;
         }
-        
+
+        /* ============================================================
+           SUCCESS MODAL
+           ============================================================ */
         .success-modal {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            width: calc(100% - 40px);
+            max-width: 440px;
             background: var(--color-bg-secondary);
-            border-radius: 20px;
-            padding: 48px;
-            max-width: 540px;
-            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow-pop);
+            border: 1px solid var(--color-border);
             z-index: 10000;
             display: none;
             text-align: center;
-            animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid var(--color-border);
         }
-        
+
         .success-modal.active {
             display: block;
+            animation: modalIn 0.25s ease;
         }
-        
-        @keyframes slideUp {
-            from {
-                transform: translate(-50%, calc(-50% + 40px));
-                opacity: 0;
-            }
-            to {
-                transform: translate(-50%, -50%);
-                opacity: 1;
-            }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
         }
-        
+
         .success-icon {
-            width: 96px;
-            height: 96px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            background: rgba(21, 128, 61, 0.12);
+            color: var(--success);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 24px;
-            color: white;
-            font-size: 40px;
-            animation: scaleUp 0.5s ease;
+            margin: 0 auto 18px;
+            font-size: 26px;
         }
-        
-        @keyframes scaleUp {
-            from {
-                transform: scale(0);
-            }
-            to {
-                transform: scale(1);
-            }
-        }
-        
+
         .success-title {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 19px;
+            font-weight: 800;
             color: var(--color-text-primary);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
-        
+
         .success-message {
-            font-size: 14px;
+            font-size: 13.5px;
+            line-height: 1.6;
             color: var(--color-text-secondary);
-            margin-bottom: 12px;
         }
-        
+
         .ticket-number {
-            font-size: 18px;
-            font-weight: 700;
-            color: #4f46e5;
-            padding: 12px 16px;
-            background: var(--color-bg-tertiary);
-            border-radius: 10px;
-            margin: 16px 0;
-            font-family: 'Courier New', monospace;
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--brand-dark);
+            padding: 12px 14px;
+            background: var(--brand-soft);
             border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            margin: 16px 0 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            letter-spacing: 0.5px;
         }
-        
+
+        html[data-dark-mode="true"] .ticket-number {
+            color: #c7d2fe;
+        }
+
+        .success-extra {
+            margin-top: 12px;
+            font-size: 12.5px;
+            line-height: 1.55;
+            color: var(--color-text-secondary);
+        }
+
+        .success-extra.warn {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
         .success-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--brand);
+            color: #ffffff;
             border: none;
-            padding: 15px 40px;
-            border-radius: 12px;
+            padding: 12px 26px;
+            border-radius: var(--radius-md);
+            font-family: inherit;
             font-weight: 700;
             cursor: pointer;
-            margin-top: 28px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 22px;
             font-size: 14px;
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+            transition: background 0.16s ease;
         }
-        
+
         .success-button:hover {
-            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.4);
-            transform: translateY(-2px);
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            background: var(--brand-dark);
         }
-        
-        /* Dark mode overlay background */
-        .loading-overlay {
-            background: rgba(0, 0, 0, 0.5);
-        }
-        
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
         @media (max-width: 768px) {
             .two-column {
                 grid-template-columns: 1fr;
             }
-            
+
+            .page-shell {
+                padding: 18px 14px 56px;
+            }
+
             .form-card {
-                padding: 24px;
+                padding: 20px 16px;
+                border-radius: 14px;
             }
-            
-            .button-group {
-                flex-direction: column;
+
+            .header-inner {
+                padding: 20px 16px;
+                gap: 14px;
             }
-            
-            .success-modal {
-                margin: 20px;
-                max-width: calc(100% - 40px);
+
+            .header-copy h1 {
+                font-size: 21px;
+            }
+
+            .header-copy p {
+                font-size: 12.5px;
+            }
+
+            .form-actions {
+                flex-direction: column-reverse;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+            }
+
+            .upload-preview-grid {
+                grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.001ms !important;
+                transition-duration: 0.001ms !important;
             }
         }
     </style>
@@ -797,129 +813,138 @@
         }
     </script>
     
-    <div id="ticketPageWrap" style="min-height: 100vh; background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-tertiary) 100%); margin-left: 16rem;">
+    <div id="ticketPageWrap" style="min-height: 100vh; margin-left: 16rem;">
         <!-- Loading Overlay -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner">
                 <div class="spinner"></div>
-                <div class="loading-text">Mengirim tiket...</div>
+                <div class="loading-text" id="loadingText">Mengirim tiket...</div>
             </div>
         </div>
 
         <!-- Success Modal -->
-        <div class="success-modal" id="successModal">
+        <div class="success-modal" id="successModal" role="dialog" aria-modal="true" aria-labelledby="successTitle">
             <div class="success-icon">
                 <i class="fas fa-check"></i>
             </div>
-            <div class="success-title">Tiket Berhasil Dibuat!</div>
-            <div class="success-message">Tim support kami akan segera meninjau tiket Anda</div>
+            <div class="success-title" id="successTitle">Tiket Berhasil Dibuat</div>
+            <div class="success-message">Tim support akan segera meninjau laporan Anda.</div>
             <div class="ticket-number" id="ticketNumberDisplay"></div>
+            <div class="success-extra" id="successAttachInfo"></div>
             <button class="success-button" onclick="closeSuccessModal()">Kembali ke Dashboard</button>
         </div>
-        <div class="header-bg">
-            <div style="padding: 40px 28px;">
-                <div style="display: flex; align-items: center; gap: 20px; max-width: 100%;">
-                    <a href="/zona/support" class="back-btn" title="Back" style="background: rgba(255,255,255,0.15); color: white; border: 2px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);">
-                        <i class="fas fa-arrow-left"></i>
-                    </a>
-                    <div>
-                        <h1 style="font-size: 36px; font-weight: 900; color: white; margin: 0; letter-spacing: -1px; text-shadow: 0 2px 10px rgba(0,0,0,0.1);">Buka Tiket Support</h1>
-                        <p style="color: rgba(255,255,255,0.95); font-size: 15px; margin: 10px 0 0 0; font-weight: 500; letter-spacing: 0.3px;">Hubungi tim support kami untuk bantuan lebih lanjut</p>
-                    </div>
+
+        <header class="header-bg">
+            <div class="header-inner">
+                <a href="/zona/support" class="back-btn" title="Kembali ke daftar tiket" aria-label="Kembali">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <div class="header-copy">
+                    <h1>Buka Tiket Support</h1>
+                    <p>Ceritakan kendala Anda — tim support akan merespons secepatnya.</p>
                 </div>
             </div>
-        </div>
+        </header>
 
         <!-- Main Content -->
-        <div style="padding: 40px 28px; display: flex; justify-content: center;">
-            <form id="createTicketForm" onsubmit="submitTicket(event)" class="form-card" style="width: 100%; max-width: 100%;">
+        <main class="page-shell">
+            <form id="createTicketForm" class="form-card" novalidate onsubmit="submitTicket(event)">
 
-                <!-- Department & Priority -->
-                <div class="two-column">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-tag"></i>
-                            Kategori Laporan <span class="form-required">*</span>
-                        </label>
-                        <select id="formCategory" class="form-select" required>
-                            <option value="">Pilih kategori laporan...</option>
-                            <option value="Data Issue">?? Data Issue</option>
-                            <option value="Bug">?? Bug</option>
-                            <option value="Other">?? Lainnya</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-flag"></i>
-                            Prioritas
-                        </label>
-                        <select id="formPriority" class="form-select">
-                            <option value="Low">?? Low</option>
-                            <option value="Medium" selected>?? Medium</option>
-                            <option value="High">?? High</option>
-                            <option value="Urgent">?? Urgent</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- Subject -->
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="fas fa-heading"></i>
-                        Subjek <span class="form-required">*</span>
-                    </label>
-                    <input type="text" id="formSubject" class="form-input" placeholder="Contoh: Tidak bisa download file invoice" required>
-                </div>
-
-                <!-- Description -->
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="fas fa-align-left"></i>
-                        Penjelasan <span class="form-required">*</span>
-                    </label>
-                    <textarea id="formDescription" class="form-textarea" placeholder="Jelaskan masalah atau pertanyaan Anda secara detail...&#10;&#10;Contoh:&#10;- Apa yang terjadi?&#10;- Kapan masalah mulai muncul?&#10;- Langkah apa yang sudah dicoba?" required></textarea>
-                    <div class="form-hint">
-                        <i class="fas fa-lightbulb"></i>
-                        Tulis penjelasan yang jelas dan detail agar kami dapat membantu lebih baik
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <!-- File Upload -->
-                <div class="form-group">
-                    <label class="form-label">
-                        <i class="fas fa-paperclip"></i>
-                        Lampiran (Opsional)
-                    </label>
-                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click();">
-                        <div class="upload-icon">
-                            <i class="fas fa-cloud-arrow-up"></i>
+                <!-- SECTION 1: DETAIL LAPORAN -->
+                <section class="form-section">
+                    <div class="section-head">
+                        <span class="section-num">1</span>
+                        <div>
+                            <h2>Detail Laporan</h2>
+                            <p>Pilih kategori dan prioritas agar laporan cepat ditangani.</p>
                         </div>
-                        <div class="upload-text">Drag & drop atau klik untuk upload file</div>
-                        <div class="upload-hint">Max. 5 file, 2MB per file � JPG, PNG, PDF</div>
-                        <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.pdf" style="display: none;" onchange="handleFileSelect(event)">
                     </div>
-                    <div id="fileList" style="margin-top: 16px;"></div>
-                </div>
 
-                <!-- Divider before buttons -->
-                <div class="divider"></div>
+                    <div class="two-column">
+                        <div class="form-group">
+                            <label class="form-label" for="formCategory">
+                                Kategori Laporan <span class="form-required">*</span>
+                            </label>
+                            <select id="formCategory" class="form-select" required>
+                                <option value="">Pilih kategori laporan...</option>
+                                <option value="Data Issue">Data Issue</option>
+                                <option value="Bug">Bug</option>
+                                <option value="Other">Lainnya</option>
+                            </select>
+                            <div class="field-error" data-error-for="formCategory"></div>
+                        </div>
 
-                <!-- Buttons -->
-                <div class="button-group">
+                        <div class="form-group">
+                            <label class="form-label" for="formPriority">
+                                Prioritas
+                            </label>
+                            <select id="formPriority" class="form-select">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Urgent">Urgent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="formSubject">
+                            Subjek <span class="form-required">*</span>
+                        </label>
+                        <input type="text" id="formSubject" class="form-input" maxlength="120" placeholder="Contoh: Tidak bisa download file invoice" required>
+                        <div class="field-row">
+                            <span class="form-hint">Ringkas dan spesifik.</span>
+                            <span class="char-count" id="subjectCount">0/120</span>
+                        </div>
+                        <div class="field-error" data-error-for="formSubject"></div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label class="form-label" for="formDescription">
+                            Penjelasan <span class="form-required">*</span>
+                        </label>
+                        <textarea id="formDescription" class="form-textarea" maxlength="2000" placeholder="Jelaskan masalah atau pertanyaan Anda secara detail...&#10;&#10;Contoh:&#10;- Apa yang terjadi?&#10;- Kapan masalah mulai muncul?&#10;- Langkah apa yang sudah dicoba?" required></textarea>
+                        <div class="field-row">
+                            <span class="form-hint">Semakin detail, semakin cepat kami bantu.</span>
+                            <span class="char-count" id="descriptionCount">0/2000</span>
+                        </div>
+                        <div class="field-error" data-error-for="formDescription"></div>
+                    </div>
+                </section>
+
+                <!-- SECTION 2: LAMPIRAN FOTO -->
+                <section class="form-section">
+                    <div class="section-head">
+                        <span class="section-num">2</span>
+                        <div>
+                            <h2>Lampiran Foto</h2>
+                            <p>Opsional. Lampiran hanya berupa foto, maksimal 5 foto.</p>
+                        </div>
+                    </div>
+
+                    <div class="upload-area" id="uploadArea" role="button" tabindex="0" aria-label="Pilih foto lampiran">
+                        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple hidden>
+                        <div class="upload-icon">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                        <div class="upload-text">Seret foto ke sini atau klik untuk memilih</div>
+                        <div class="upload-hint">JPG, PNG, WEBP &middot; maks 5 foto &middot; 5 MB per foto</div>
+                        <span class="upload-btn"><i class="fas fa-image"></i> Pilih Foto</span>
+                    </div>
+                    <div class="file-error" id="fileError" role="alert"></div>
+                    <div class="upload-preview-grid" id="fileList"></div>
+                </section>
+
+                <div class="form-actions">
                     <button type="button" class="btn btn-secondary" onclick="window.location.href='/zona/support';">
                         <i class="fas fa-times"></i> Batal
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
                         <i class="fas fa-paper-plane"></i> Kirim Tiket
                     </button>
                 </div>
             </form>
-        </div>
+        </main>
     </div>
 
     <script src="/js/config.js"></script>
@@ -927,16 +952,26 @@
     <!-- auth.js sudah dimuat di atas (baris ~786). Memuat dua kali membuat
          "Identifier 'currentUser' has already been declared". -->
     <script>
+        // ============================================================
+        // LAMPIRAN: HANYA FOTO — maks 5 foto, 5 MB per foto
+        // ============================================================
+        const MAX_FILES = 5;
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+        const ALLOWED_IMAGE_LABEL = 'JPG, PNG, atau WEBP';
+
         let selectedFiles = [];
+        const previewUrls = new WeakMap();
+        let isSubmitting = false;
 
         document.addEventListener('DOMContentLoaded', async () => {
             await initAuth();
-            
+
             if (!currentUser) {
                 document.body.innerHTML = '<div style="padding: 20px; color: red;">Error: Failed to authenticate</div>';
                 return;
             }
-            
+
             if (currentUser.role !== 'admin_zona' && currentUser.role !== 'super_admin') {
                 window.location.href = '/support-dashboard';
                 return;
@@ -954,27 +989,9 @@
                 }
             }
 
-            // Initialize custom dropdowns
-            initCustomSelects();
-
-            // Drag and drop
-            const uploadArea = document.getElementById('uploadArea');
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('active');
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('active');
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('active');
-                const files = Array.from(e.dataTransfer.files);
-                selectedFiles = [...selectedFiles, ...files].slice(0, 5);
-                displayFileList();
-            });
+            initFormInteractions();
+            initCharCounters();
+            initUploadArea();
 
             // Listen for dark mode changes from storage
             window.addEventListener('storage', (e) => {
@@ -991,151 +1008,329 @@
             });
         });
 
-        // Custom Select Dropdown Initialization
-        function initCustomSelects() {
-            const selects = document.querySelectorAll('.form-select');
-            
-            selects.forEach(select => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'custom-select-wrapper';
-                
-                const customSelect = document.createElement('div');
-                customSelect.className = 'custom-select';
-                
-                const selectedValue = document.createElement('span');
-                selectedValue.className = 'custom-select-value';
-                selectedValue.textContent = select.options[select.selectedIndex].text;
-                
-                const arrow = document.createElement('span');
-                arrow.className = 'custom-select-arrow';
-                arrow.innerHTML = '<i class="fas fa-chevron-down"></i>';
-                
-                customSelect.appendChild(selectedValue);
-                customSelect.appendChild(arrow);
-                
-                const optionsContainer = document.createElement('div');
-                optionsContainer.className = 'custom-select-options';
-                
-                Array.from(select.options).forEach((option, index) => {
-                    const customOption = document.createElement('div');
-                    customOption.className = 'custom-select-option';
-                    if (option.selected) customOption.classList.add('selected');
-                    if (option.value === '') customOption.classList.add('placeholder');
-                    customOption.textContent = option.text;
-                    customOption.dataset.value = option.value;
-                    customOption.dataset.index = index;
-                    
-                    customOption.addEventListener('click', () => {
-                        // Update native select
-                        select.selectedIndex = index;
-                        select.dispatchEvent(new Event('change'));
-                        
-                        // Update custom select display
-                        selectedValue.textContent = option.text;
-                        
-                        // Update selected class
-                        optionsContainer.querySelectorAll('.custom-select-option').forEach(opt => {
-                            opt.classList.remove('selected');
-                        });
-                        customOption.classList.add('selected');
-                        
-                        // Close dropdown
-                        customSelect.classList.remove('active');
-                        optionsContainer.classList.remove('active');
-                    });
-                    
-                    optionsContainer.appendChild(customOption);
-                });
-                
-                // Toggle dropdown
-                customSelect.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    
-                    // Close all other dropdowns
-                    document.querySelectorAll('.custom-select').forEach(s => {
-                        if (s !== customSelect) {
-                            s.classList.remove('active');
-                            s.nextElementSibling.classList.remove('active');
-                        }
-                    });
-                    
-                    customSelect.classList.toggle('active');
-                    optionsContainer.classList.toggle('active');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!wrapper.contains(e.target)) {
-                        customSelect.classList.remove('active');
-                        optionsContainer.classList.remove('active');
-                    }
-                });
-                
-                // Wrap native select
-                select.parentNode.insertBefore(wrapper, select);
-                wrapper.appendChild(customSelect);
-                wrapper.appendChild(optionsContainer);
-                wrapper.appendChild(select);
+        // ============================================================
+        // VALIDASI FIELD
+        // ============================================================
+        function initFormInteractions() {
+            ['formCategory', 'formSubject', 'formDescription'].forEach((id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('input', () => clearFieldError(id));
+                el.addEventListener('change', () => clearFieldError(id));
             });
         }
 
-        function handleFileSelect(e) {
-            const files = Array.from(e.target.files);
-            selectedFiles = [...selectedFiles, ...files].slice(0, 5);
-            displayFileList();
+        function showFieldError(id, pesan) {
+            const errorEl = document.querySelector(`[data-error-for="${id}"]`);
+            const input = document.getElementById(id);
+            if (errorEl) {
+                errorEl.textContent = pesan;
+                errorEl.classList.add('show');
+            }
+            if (input) input.classList.add('invalid');
         }
 
-        function displayFileList() {
-            const fileList = document.getElementById('fileList');
+        function clearFieldError(id) {
+            const errorEl = document.querySelector(`[data-error-for="${id}"]`);
+            const input = document.getElementById(id);
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.classList.remove('show');
+            }
+            if (input) input.classList.remove('invalid');
+        }
+
+        function initCharCounters() {
+            const bind = (inputId, countId, max) => {
+                const input = document.getElementById(inputId);
+                const counter = document.getElementById(countId);
+                if (!input || !counter) return;
+
+                const update = () => {
+                    counter.textContent = `${input.value.length}/${max}`;
+                    counter.classList.toggle('limit', input.value.length >= max);
+                };
+
+                input.addEventListener('input', update);
+                update();
+            };
+
+            bind('formSubject', 'subjectCount', 120);
+            bind('formDescription', 'descriptionCount', 2000);
+        }
+
+        // ============================================================
+        // UPLOAD FOTO
+        // ============================================================
+        function initUploadArea() {
+            const area = document.getElementById('uploadArea');
+            const input = document.getElementById('fileInput');
+            if (!area || !input) return;
+
+            area.addEventListener('click', (e) => {
+                // Cegah rekursi: klik pada input (hasil input.click()) tidak
+                // boleh memicu handler area lagi.
+                if (e.target === input) return;
+                input.click();
+            });
+
+            area.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    input.click();
+                }
+            });
+
+            input.addEventListener('change', (e) => {
+                addFiles(Array.from(e.target.files || []));
+                input.value = '';
+            });
+
+            ['dragenter', 'dragover'].forEach((evt) => {
+                area.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    area.classList.add('dragover');
+                });
+            });
+
+            ['dragleave', 'dragend'].forEach((evt) => {
+                area.addEventListener(evt, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    area.classList.remove('dragover');
+                });
+            });
+
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                area.classList.remove('dragover');
+                addFiles(Array.from((e.dataTransfer && e.dataTransfer.files) || []));
+            });
+
+            // Cegah browser membuka file saat foto dijatuhkan di luar area upload
+            window.addEventListener('dragover', (e) => e.preventDefault());
+            window.addEventListener('drop', (e) => e.preventDefault());
+        }
+
+        function addFiles(files) {
+            hideFileError();
+            if (!files.length) return;
+
+            const ditolak = [];
+            let sisaSlot = MAX_FILES - selectedFiles.length;
+
+            files.forEach((file) => {
+                const tipe = (file.type || '').toLowerCase();
+
+                if (!ALLOWED_IMAGE_TYPES.includes(tipe)) {
+                    ditolak.push(`${file.name}: hanya ${ALLOWED_IMAGE_LABEL}`);
+                    return;
+                }
+
+                if (file.size > MAX_FILE_SIZE) {
+                    ditolak.push(`${file.name}: ${formatBytes(file.size)} (maks 5 MB)`);
+                    return;
+                }
+
+                if (file.size === 0) {
+                    ditolak.push(`${file.name}: file kosong`);
+                    return;
+                }
+
+                const duplikat = selectedFiles.some((f) =>
+                    f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+                );
+                if (duplikat) return;
+
+                if (sisaSlot <= 0) {
+                    if (!ditolak.includes('Maksimal 5 foto per tiket')) {
+                        ditolak.push('Maksimal 5 foto per tiket');
+                    }
+                    return;
+                }
+
+                selectedFiles.push(file);
+                sisaSlot -= 1;
+            });
+
+            renderFileList();
+
+            if (ditolak.length > 0) {
+                showFileError(ditolak.slice(0, 3).join(' · '));
+            }
+        }
+
+        function renderFileList() {
+            const list = document.getElementById('fileList');
+            if (!list) return;
+
+            list.innerHTML = '';
+
             if (selectedFiles.length === 0) {
-                fileList.innerHTML = '';
+                hideFileError();
                 return;
             }
-            
-            fileList.innerHTML = selectedFiles.map((file, idx) => `
-                <div class="file-item">
-                    <span class="file-item-icon"><i class="fas fa-file-alt"></i></span>
-                    <span class="file-item-name">${file.name}</span>
-                    <span class="file-item-size">${(file.size / 1024).toFixed(1)}KB</span>
-                    <button type="button" class="file-remove-btn" onclick="removeFile(${idx});" title="Hapus">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `).join('');
+
+            selectedFiles.forEach((file, idx) => {
+                const urlLama = previewUrls.get(file);
+                if (urlLama) URL.revokeObjectURL(urlLama);
+
+                const url = URL.createObjectURL(file);
+                previewUrls.set(file, url);
+
+                const card = document.createElement('div');
+                card.className = 'preview-card';
+
+                const img = document.createElement('img');
+                img.className = 'preview-thumb';
+                img.src = url;
+                img.alt = file.name;
+
+                const info = document.createElement('div');
+                info.className = 'preview-info';
+
+                const name = document.createElement('span');
+                name.className = 'preview-name';
+                name.textContent = file.name;
+                name.title = file.name;
+
+                const size = document.createElement('span');
+                size.className = 'preview-size';
+                size.textContent = formatBytes(file.size);
+
+                info.appendChild(name);
+                info.appendChild(size);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'preview-remove';
+                removeBtn.title = 'Hapus foto';
+                removeBtn.setAttribute('aria-label', `Hapus ${file.name}`);
+                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFile(idx);
+                });
+
+                card.appendChild(img);
+                card.appendChild(info);
+                card.appendChild(removeBtn);
+                list.appendChild(card);
+            });
         }
 
         function removeFile(idx) {
+            const file = selectedFiles[idx];
+            if (file) {
+                const url = previewUrls.get(file);
+                if (url) {
+                    URL.revokeObjectURL(url);
+                    previewUrls.delete(file);
+                }
+            }
+
             selectedFiles.splice(idx, 1);
-            displayFileList();
+            renderFileList();
+        }
+
+        function showFileError(pesan) {
+            const el = document.getElementById('fileError');
+            if (!el) return;
+            el.textContent = pesan;
+            el.classList.add('show');
+        }
+
+        function hideFileError() {
+            const el = document.getElementById('fileError');
+            if (!el) return;
+            el.textContent = '';
+            el.classList.remove('show');
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes && bytes !== 0) return '-';
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        // ============================================================
+        // SUBMIT
+        // ============================================================
+        function showLoading(pesan) {
+            const overlay = document.getElementById('loadingOverlay');
+            const text = document.getElementById('loadingText');
+            if (text && pesan) text.textContent = pesan;
+            if (overlay) overlay.classList.add('active');
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        function setSubmitLoading(loading) {
+            const btn = document.getElementById('submitBtn');
+            if (!btn) return;
+            btn.disabled = loading;
+            btn.classList.toggle('is-loading', loading);
+            btn.innerHTML = loading
+                ? '<i class="fas fa-circle-notch fa-spin"></i> Mengirim...'
+                : '<i class="fas fa-paper-plane"></i> Kirim Tiket';
         }
 
         async function submitTicket(e) {
             e.preventDefault();
-            
+            if (isSubmitting) return;
+
+            const token = localStorage.getItem('jwt_token');
+            const subject = (document.getElementById('formSubject').value || '').trim();
+            const description = (document.getElementById('formDescription').value || '').trim();
+            const category = document.getElementById('formCategory').value;
+            const priority = document.getElementById('formPriority').value;
+
+            let valid = true;
+
+            if (!category) {
+                showFieldError('formCategory', 'Pilih kategori laporan');
+                valid = false;
+            }
+
+            if (!subject) {
+                showFieldError('formSubject', 'Subjek wajib diisi');
+                valid = false;
+            } else if (subject.length < 5) {
+                showFieldError('formSubject', 'Subjek minimal 5 karakter');
+                valid = false;
+            }
+
+            if (!description) {
+                showFieldError('formDescription', 'Penjelasan wajib diisi');
+                valid = false;
+            } else if (description.length < 20) {
+                showFieldError('formDescription', 'Penjelasan minimal 20 karakter');
+                valid = false;
+            }
+
+            if (!valid) {
+                const invalid = document.querySelector('.form-input.invalid, .form-select.invalid, .form-textarea.invalid');
+                if (invalid) invalid.focus();
+                return;
+            }
+
+            const zonaId = currentUser && currentUser.zona_id;
+            if (!zonaId) {
+                Notify.error('Error: Zona tidak ditemukan. Silakan logout dan login kembali.');
+                return;
+            }
+
+            isSubmitting = true;
+            setSubmitLoading(true);
+            showLoading('Mengirim tiket...');
+
             try {
-                const token = localStorage.getItem('jwt_token');
-                const subject = document.getElementById('formSubject').value;
-                const description = document.getElementById('formDescription').value;
-                const category = document.getElementById('formCategory').value;
-                const priority = document.getElementById('formPriority').value;
-
-                if (!subject || !description || !category) {
-                    Notify.error('Silakan isi semua field yang diperlukan');
-                    return;
-                }
-
-                // Get zona_id from currentUser
-                const zonaId = currentUser.zona_id;
-                
-                if (!zonaId) {
-                    Notify.error('Error: Zona tidak ditemukan. Silakan logout dan login kembali.');
-                    return;
-                }
-
-
-                // Show loading overlay
-                document.getElementById('loadingOverlay').classList.add('active');
-
                 const response = await fetch('/api/support/tickets', {
                     method: 'POST',
                     headers: {
@@ -1151,38 +1346,94 @@
                     })
                 });
 
+                const data = await response.json().catch(() => ({}));
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Failed to create ticket');
+                    throw new Error(data.error || 'Gagal membuat tiket');
                 }
 
-                const data = await response.json();
+                // Unggah lampiran foto SETELAH tiket dibuat
+                const hasilLampiran = await uploadAttachments(token, data.ticket.id);
 
-                // Hide loading overlay
-                document.getElementById('loadingOverlay').classList.remove('active');
-
-                // Show success modal
-                document.getElementById('ticketNumberDisplay').textContent = data.ticket.ticket_number;
-                document.getElementById('successModal').classList.add('active');
-
-                // Auto redirect after 2 seconds
-                autoRedirectAfterSuccess();
-
+                hideLoading();
+                tampilkanSukses(data.ticket, hasilLampiran);
             } catch (error) {
-                document.getElementById('loadingOverlay').classList.remove('active');
+                hideLoading();
                 Notify.error(`Error: ${error.message}`);
+            } finally {
+                isSubmitting = false;
+                setSubmitLoading(false);
             }
         }
 
-        function closeSuccessModal() {
-            window.location.href = `/zona/support`;
+        async function uploadAttachments(token, ticketId) {
+            const hasil = { berhasil: 0, gagal: [] };
+            if (!selectedFiles.length) return hasil;
+
+            for (let i = 0; i < selectedFiles.length; i += 1) {
+                const file = selectedFiles[i];
+                showLoading(`Mengunggah foto ${i + 1} dari ${selectedFiles.length}...`);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('attachment', file, file.name);
+
+                    const response = await fetch(`/api/support/tickets/${ticketId}/upload`, {
+                        method: 'POST',
+                        headers: {
+                            // JANGAN set Content-Type: biarkan browser mengisi boundary
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: formData
+                    });
+
+                    const json = await response.json().catch(() => ({}));
+                    if (!response.ok) {
+                        throw new Error(json.error || `HTTP ${response.status}`);
+                    }
+
+                    hasil.berhasil += 1;
+                } catch (err) {
+                    hasil.gagal.push({ nama: file.name, pesan: err.message });
+                }
+            }
+
+            return hasil;
         }
 
-        // Auto redirect after showing success modal
-        function autoRedirectAfterSuccess() {
+        function tampilkanSukses(ticket, hasilLampiran) {
+            document.getElementById('ticketNumberDisplay').textContent = ticket.ticket_number || '-';
+
+            const info = document.getElementById('successAttachInfo');
+            const total = selectedFiles.length;
+
+            if (total === 0) {
+                info.textContent = '';
+                info.classList.remove('warn');
+            } else if (hasilLampiran.gagal.length === 0) {
+                info.textContent = `${hasilLampiran.berhasil} foto berhasil dilampirkan.`;
+                info.classList.remove('warn');
+            } else {
+                const namaGagal = hasilLampiran.gagal.map((g) => g.nama).join(', ');
+                info.textContent = `${hasilLampiran.berhasil} foto terkirim, ${hasilLampiran.gagal.length} gagal (${namaGagal}).`;
+                info.classList.add('warn');
+            }
+
+            document.getElementById('successModal').classList.add('active');
+
+            // Kalau ada lampiran gagal, jangan auto-redirect supaya user sempat membaca
+            autoRedirectAfterSuccess(hasilLampiran.gagal.length > 0 ? 0 : 2200);
+        }
+
+        function closeSuccessModal() {
+            window.location.href = '/zona/support';
+        }
+
+        // Auto redirect setelah modal sukses tampil
+        function autoRedirectAfterSuccess(delay = 2200) {
+            if (!delay) return;
             setTimeout(() => {
-                window.location.href = `/zona/support`;
-            }, 2000); // Redirect after 2 seconds
+                window.location.href = '/zona/support';
+            }, delay);
         }
     </script>
 </body>

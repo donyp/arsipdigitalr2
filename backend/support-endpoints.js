@@ -5,6 +5,44 @@
 module.exports = function registerSupportEndpoints(app, supabase, authenticateToken, authorizeRole, upload, auditLogger) {
     const crypto = require('crypto');
     const AuditLogger = require('./audit-logger');
+    const multer = require('multer');
+    const path = require('path');
+    const fs = require('fs');
+
+    // ============================================
+    // Lampiran tiket: HANYA FOTO (JPG/PNG/WEBP), maks 5 MB
+    //
+    // Catatan: `upload` global dari server.js hanya menerima PDF dan memakai
+    // memoryStorage (req.file.path tidak ada), sehingga lampiran foto selalu
+    // gagal. Modul ini memakai instance multer sendiri.
+    // ============================================
+    const SUPPORT_UPLOAD_ROOT = path.join(__dirname, '..', 'uploads', 'support');
+    const SUPPORT_IMAGE_TYPES = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/webp': '.webp'
+    };
+    const SUPPORT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+
+    const supportUpload = multer({
+        storage: multer.memoryStorage(),
+        limits: { fileSize: SUPPORT_MAX_FILE_SIZE, files: 1 },
+        fileFilter: (req, file, cb) => {
+            if (SUPPORT_IMAGE_TYPES[file.mimetype]) {
+                return cb(null, true);
+            }
+            cb(new Error('Hanya foto JPG, PNG, atau WEBP yang diizinkan'));
+        }
+    });
+
+    function sanitizeSupportFileName(name) {
+        const bersih = String(name || 'foto')
+            .replace(/[\\/:*?"<>|\r\n]/g, '_')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .slice(0, 120);
+        return bersih || 'foto';
+    }
 
     // Generate ticket number: #ANKA[3 random digits]
     function generateTicketNumber() {
@@ -762,26 +800,52 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
     });
 
     // ============================================
-    // POST /api/support/tickets/:id/upload - Upload attachment
+    // POST /api/support/tickets/:id/upload - Upload lampiran (foto saja)
     // ============================================
-    app.post('/api/support/tickets/:id/upload', authenticateToken, upload.single('attachment'), async (req, res) => {
+    app.post('/api/support/tickets/:id/upload', authenticateToken, (req, res, next) => {
+        supportUpload.single('attachment')(req, res, (err) => {
+            if (err) {
+                const pesan = err.code === 'LIMIT_FILE_SIZE'
+                    ? 'Ukuran foto maksimal 5 MB'
+                    : (err.message || 'Gagal mengunggah foto');
+                return res.status(400).json({ error: pesan });
+            }
+            next();
+        });
+    }, async (req, res) => {
+        let fileTersimpan = null;
+
         try {
             const { id: ticketId } = req.params;
             const { message_id } = req.body;
 
             if (!req.file) {
-                return res.status(400).json({ error: 'No file uploaded' });
+                return res.status(400).json({ error: 'Tidak ada foto yang diunggah' });
             }
 
-            // Check ticket exists
+            // Validasi ulang tipe file (defense in depth)
+            const ekstensi = SUPPORT_IMAGE_TYPES[req.file.mimetype];
+            if (!ekstensi) {
+                return res.status(400).json({ error: 'Hanya foto JPG, PNG, atau WEBP yang diizinkan' });
+            }
+
+            // Check ticket exists + authorization
             const { data: ticket, error: ticketError } = await supabase
                 .from('support_tickets')
-                .select('id')
+                .select('id, user_id, zona_id')
                 .eq('id', ticketId)
                 .single();
 
             if (ticketError || !ticket) {
                 return res.status(404).json({ error: 'Ticket not found' });
+            }
+
+            const isOwner = ticket.user_id === req.user.userId;
+            const isModerator = req.user.role === 'moderator' || req.user.role === 'super_admin';
+            const isAdminZona = req.user.role === 'admin_zona' && ticket.zona_id === req.user.zona_id;
+
+            if (!isOwner && !isModerator && !isAdminZona) {
+                return res.status(403).json({ error: 'Unauthorized' });
             }
 
             // If message_id provided, verify it belongs to this ticket
@@ -798,14 +862,22 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 }
             }
 
+            // Simpan ke disk: uploads/support/<ticketId>/<unik>.<ext>
+            const folder = path.join(SUPPORT_UPLOAD_ROOT, ticketId);
+            fs.mkdirSync(folder, { recursive: true });
+
+            const namaSimpan = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ekstensi}`;
+            fileTersimpan = path.join(folder, namaSimpan);
+            fs.writeFileSync(fileTersimpan, req.file.buffer);
+
             // Store file info in database
             const { data: attachment, error: insertError } = await supabase
                 .from('support_attachments')
                 .insert({
                     ticket_id: ticketId,
                     message_id: message_id || null,
-                    file_name: req.file.originalname,
-                    file_path: req.file.path, // Store local path
+                    file_name: sanitizeSupportFileName(req.file.originalname),
+                    file_path: fileTersimpan,
                     file_type: req.file.mimetype,
                     file_size: req.file.size,
                     uploaded_by: req.user.userId
@@ -818,10 +890,13 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             res.json({
                 success: true,
                 attachment: attachment,
-                message: 'File uploaded successfully'
+                message: 'Foto berhasil diunggah'
             });
         } catch (error) {
             console.error('[Support] Error uploading attachment:', error);
+            if (fileTersimpan) {
+                try { fs.unlinkSync(fileTersimpan); } catch (e) { /* abaikan */ }
+            }
             res.status(500).json({ error: error.message });
         }
     });
@@ -860,12 +935,26 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 return res.status(403).json({ error: 'Unauthorized' });
             }
 
-            // Download file
-            const fs = require('fs');
+            // Download / preview file
             const filePath = attachment.file_path;
 
-            if (!fs.existsSync(filePath)) {
+            if (!filePath || !fs.existsSync(filePath)) {
                 return res.status(404).json({ error: 'File not found on server' });
+            }
+
+            // ?inline=1 -> tampilkan langsung (untuk thumbnail foto).
+            // Hanya untuk gambar non-SVG demi keamanan.
+            const mintaInline = req.query.inline === '1' || req.query.inline === 'true';
+            const tipeAman = typeof attachment.file_type === 'string'
+                && attachment.file_type.startsWith('image/')
+                && attachment.file_type !== 'image/svg+xml';
+            const namaAman = String(attachment.file_name || 'lampiran').replace(/["\r\n]/g, '_');
+
+            if (mintaInline && tipeAman) {
+                res.setHeader('Content-Type', attachment.file_type);
+                res.setHeader('Content-Disposition', `inline; filename="${namaAman}"`);
+                res.setHeader('Cache-Control', 'private, max-age=600');
+                return res.sendFile(path.resolve(filePath));
             }
 
             res.download(filePath, attachment.file_name);

@@ -57,3 +57,6 @@ local_files/
 *_dump.html
 backend/error_dump.html
 backend/debug_*.log
+
+# Upload lampiran support (runtime, jangan di-commit)
+uploads/

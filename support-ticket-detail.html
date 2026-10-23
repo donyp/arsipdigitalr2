@@ -326,45 +326,189 @@
             word-break: break-word;
         }
         
-        .message-attachments {
-            margin-top: 12px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
+        .attachment-group {
+            margin-top: 14px;
         }
-        
-        .attachment-item {
-            display: inline-flex;
+
+        .attachment-group-label {
+            font-size: 11.5px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            color: var(--color-text-tertiary);
+            margin-bottom: 8px;
+        }
+
+        .message-attachments {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+            gap: 10px;
+        }
+
+        .attachment-photo {
+            position: relative;
+            display: block;
+            padding: 0;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--color-bg-tertiary);
+            cursor: zoom-in;
+            aspect-ratio: 4 / 3;
+            font-family: inherit;
+        }
+
+        .attachment-photo img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            background: var(--color-bg-tertiary);
+        }
+
+        .attachment-photo:hover img {
+            opacity: 0.92;
+        }
+
+        .attachment-photo .attachment-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
             align-items: center;
+            justify-content: center;
+            color: var(--color-text-tertiary);
+            font-size: 15px;
+        }
+
+        .attachment-photo .attachment-caption {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 14px 8px 6px;
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #ffffff;
+            background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.7));
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: left;
+        }
+
+        .attachment-files {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
-            padding: 8px 12px;
+            margin-top: 8px;
+        }
+
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 12px;
             background: var(--color-bg-tertiary);
             border: 1px solid var(--color-border);
             border-radius: 8px;
-            font-size: 12px;
-            color: var(--color-text-secondary);
-            transition: all 0.2s;
+            font-size: 12.5px;
+            color: var(--color-text-primary);
+            transition: border-color 0.2s, background 0.2s;
             cursor: pointer;
+            font-family: inherit;
+            text-align: left;
         }
-        
+
         .attachment-item:hover {
             border-color: var(--color-accent);
-            background: rgba(79, 70, 229, 0.05);
+            background: rgba(79, 70, 229, 0.06);
         }
-        
+
         .attachment-icon {
             color: var(--color-accent);
         }
-        
-        .attachment-item a {
-            color: var(--color-accent);
-            text-decoration: none;
-            transition: all 0.2s;
+
+        /* Lightbox pratinjau foto */
+        .attachment-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 10050;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(8, 12, 20, 0.88);
         }
-        
-        .attachment-item a:hover {
-            text-decoration: underline;
-            opacity: 0.8;
+
+        .attachment-lightbox.active {
+            display: flex;
+        }
+
+        .attachment-lightbox img {
+            max-width: 100%;
+            max-height: calc(100vh - 120px);
+            border-radius: 12px;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+            background: #0f172a;
+        }
+
+        .attachment-lightbox-close {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .attachment-lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.28);
+        }
+
+        .attachment-lightbox-bar {
+            position: absolute;
+            left: 50%;
+            bottom: 20px;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            max-width: calc(100% - 40px);
+            padding: 9px 14px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-size: 12.5px;
+        }
+
+        .attachment-lightbox-bar span {
+            max-width: 60vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .attachment-lightbox-download {
+            border: none;
+            border-radius: 7px;
+            padding: 6px 10px;
+            background: #6366f1;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .attachment-lightbox-download:hover {
+            background: #4f46e5;
         }
         
         .sidebar {
@@ -916,6 +1060,7 @@
                                 <span class="message-time">${formatDateTimeWIB(ticketData.created_at)}</span>
                             </div>
                             <div class="message-body">${escapeHtml(ticketData.description)}</div>
+                            ${renderAttachmentBlock(ticketData.attachments, 'Lampiran Tiket')}
                         </div>
                     </div>
                 `;
@@ -951,18 +1096,7 @@
                                     <button class="message-delete-btn" onclick="deleteMessage('${msg.id}')" title="Hapus pesan"><i class="fas fa-trash-alt"></i></button>
                                 </div>
                         <div class="message-body">${escapeHtml(msg.message)}</div>
-                                ${msg.attachments && msg.attachments.length > 0 ? `
-                                    <div class="message-attachments">
-                                        ${msg.attachments.map(att => `
-                                            <div class="attachment-item">
-                                                <span class="attachment-icon"><i class="fas fa-file"></i></span>
-                                                <a href="/api/support/tickets/${ticketId}/download/${att.id}" target="_blank">
-                                                    ${att.file_name}
-                                                </a>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                ` : ''}
+                                ${renderAttachmentBlock(msg.attachments, msg.attachments && msg.attachments.length ? 'Lampiran' : '')}
                             </div>
                         </div>
                     `;
@@ -970,11 +1104,172 @@
             }
 
             document.getElementById('messagesContainer').innerHTML = html;
+            hydrateAttachmentImages(document.getElementById('messagesContainer'));
             
             // Add reply form after messages
             addReplyForm();
         }
         
+        // ============================================================
+        // LAMPIRAN (foto) â€” preview butuh Authorization header,
+        // jadi gambar diambil via fetch lalu dijadikan blob URL.
+        // ============================================================
+        const attachmentBlobCache = new Map();
+        let lightboxAttachment = null;
+
+        function isImageAttachment(att) {
+            return typeof att.file_type === 'string' && att.file_type.indexOf('image/') === 0;
+        }
+
+        function semuaLampiran() {
+            const list = [];
+            (ticketData.attachments || []).forEach((a) => list.push(a));
+            (ticketData.messages || []).forEach((m) => {
+                (m.attachments || []).forEach((a) => list.push(a));
+            });
+            return list;
+        }
+
+        function renderAttachmentBlock(attachments, label) {
+            if (!attachments || attachments.length === 0) return '';
+
+            const foto = attachments.filter(isImageAttachment);
+            const file = attachments.filter((a) => !isImageAttachment(a));
+
+            let html = '<div class="attachment-group">';
+            if (label) {
+                html += `<div class="attachment-group-label">${escapeHtml(label)} (${attachments.length})</div>`;
+            }
+
+            if (foto.length > 0) {
+                html += '<div class="message-attachments">';
+                html += foto.map((att) => `
+                    <button type="button" class="attachment-photo" data-attachment-id="${att.id}" title="${escapeHtml(att.file_name || 'Foto')}">
+                        <span class="attachment-loading"><i class="fas fa-spinner fa-spin"></i></span>
+                        <span class="attachment-caption">${escapeHtml(att.file_name || 'Foto')}</span>
+                    </button>
+                `).join('');
+                html += '</div>';
+            }
+
+            if (file.length > 0) {
+                html += '<div class="attachment-files">';
+                html += file.map((att) => `
+                    <button type="button" class="attachment-item" data-download-id="${att.id}">
+                        <span class="attachment-icon"><i class="fas fa-file"></i></span>
+                        <span>${escapeHtml(att.file_name || 'Lampiran')}</span>
+                    </button>
+                `).join('');
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        async function attachmentBlobUrl(att) {
+            if (attachmentBlobCache.has(String(att.id))) {
+                return attachmentBlobCache.get(String(att.id));
+            }
+
+            const token = localStorage.getItem('jwt_token');
+            const response = await fetch(`/api/support/tickets/${ticketId}/download/${att.id}?inline=1`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Gagal memuat foto');
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            attachmentBlobCache.set(String(att.id), url);
+            return url;
+        }
+
+        async function hydrateAttachmentImages(root) {
+            if (!root) return;
+
+            const semua = semuaLampiran();
+            const map = new Map(semua.map((a) => [String(a.id), a]));
+
+            for (const node of root.querySelectorAll('[data-attachment-id]')) {
+                const att = map.get(String(node.getAttribute('data-attachment-id')));
+                if (!att) continue;
+
+                try {
+                    const url = await attachmentBlobUrl(att);
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = att.file_name || 'Lampiran';
+                    img.loading = 'eager';
+
+                    const loading = node.querySelector('.attachment-loading');
+                    if (loading) loading.remove();
+
+                    node.insertBefore(img, node.firstChild);
+                    node.addEventListener('click', () => openAttachmentLightbox(att, url));
+                } catch (err) {
+                    const loading = node.querySelector('.attachment-loading');
+                    if (loading) loading.innerHTML = '<i class="fas fa-triangle-exclamation"></i>';
+                }
+            }
+
+            root.querySelectorAll('[data-download-id]').forEach((btn) => {
+                btn.addEventListener('click', () => downloadAttachmentById(btn.getAttribute('data-download-id')));
+            });
+        }
+
+        function openAttachmentLightbox(att, url) {
+            lightboxAttachment = att;
+            const box = document.getElementById('attachmentLightbox');
+            const img = document.getElementById('attachmentLightboxImg');
+            const name = document.getElementById('attachmentLightboxName');
+            if (!box || !img) return;
+
+            img.src = url;
+            img.alt = att.file_name || 'Lampiran';
+            if (name) name.textContent = att.file_name || 'Lampiran';
+            box.classList.add('active');
+        }
+
+        function closeAttachmentLightbox() {
+            const box = document.getElementById('attachmentLightbox');
+            if (box) box.classList.remove('active');
+            lightboxAttachment = null;
+        }
+
+        function downloadPreviewedAttachment() {
+            if (lightboxAttachment) downloadAttachmentById(lightboxAttachment.id);
+        }
+
+        async function downloadAttachmentById(attId) {
+            const att = semuaLampiran().find((a) => String(a.id) === String(attId));
+
+            try {
+                const token = localStorage.getItem('jwt_token');
+                const response = await fetch(`/api/support/tickets/${ticketId}/download/${attId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Gagal mengunduh lampiran');
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = (att && att.file_name) || 'lampiran';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+            } catch (err) {
+                if (window.Notify && typeof Notify.error === 'function') {
+                    Notify.error(err.message);
+                } else {
+                    alert(err.message);
+                }
+            }
+        }
+
         function addReplyForm() {
             const container = document.getElementById('messagesContainer');
             const replySection = document.createElement('div');
@@ -1216,5 +1511,19 @@
         
         } // End if (typeof window._supportTicketDetailLoaded === 'undefined')
     </script>
+
+    <!-- Lightbox pratinjau lampiran foto -->
+    <div class="attachment-lightbox" id="attachmentLightbox" role="dialog" aria-modal="true" aria-label="Pratinjau foto">
+        <button type="button" class="attachment-lightbox-close" onclick="closeAttachmentLightbox()" aria-label="Tutup">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="attachmentLightboxImg" src="" alt="">
+        <div class="attachment-lightbox-bar">
+            <span id="attachmentLightboxName"></span>
+            <button type="button" class="attachment-lightbox-download" onclick="downloadPreviewedAttachment()">
+                <i class="fas fa-download"></i> Unduh
+            </button>
+        </div>
+    </div>
 </body>
 </html>
