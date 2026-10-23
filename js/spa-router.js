@@ -141,8 +141,8 @@ class SPARouter {
         // ANIMASI PINDAH HALAMAN (SLIDE-UP)
         // ============================================================
         // enabled:false -> animasi mati (kembali ke perilaku lama)
-        // routes     : HANYA halaman di daftar ini yang dianimasikan.
-        //              Menu lain tetap pindah seperti biasa (tanpa animasi).
+        // routes     : daftar route yang dianimasikan. null / kosong =
+        //              SEMUA halaman menu di sidebar dianimasikan.
         // dimAfterMs : baru meredup kalau data lama diambil > N ms
         // loadMs     : durasi meredup saat menunggu data
         // leaveMs    : durasi fade-out singkat tepat sebelum konten ditukar
@@ -150,7 +150,7 @@ class SPARouter {
         // shiftPx    : jarak awal halaman (px) sebelum naik ke posisi
         this.transition = {
             enabled: true,
-            routes: ['/support/admin'],
+            routes: null,
             dimAfterMs: 120,
             loadMs: 120,
             leaveMs: 90,
@@ -349,15 +349,16 @@ class SPARouter {
 
     /**
      * Apakah animasi aktif di navigasi ini?
-     * @param {string} [path] route tujuan. Kalau diisi, animasi hanya
-     *        berlaku untuk route yang terdaftar di transition.routes.
+     * @param {string} [path] route tujuan. Kalau diisi, animasi mengikuti
+     *        daftar transition.routes (null = semua route dianimasikan).
      */
     isTransitionEnabled(path) {
         if (!this.transition || !this.transition.enabled) return false;
         if (this.prefersReducedMotion()) return false;
         // Tanpa path = pemeriksaan internal (mis. saat masuk halaman)
         if (path == null) return true;
-        const routes = this.transition.routes || [];
+        const routes = this.transition.routes;
+        if (!routes || !routes.length) return true;   // semua route
         return routes.includes(this.normalizePath(path));
     }
 
@@ -556,7 +557,11 @@ class SPARouter {
         this.isLoading = true;
         const mainContent = document.getElementById('main-content');
         if (!mainContent) {
+            // Halaman ini tidak punya #main-content (mis. /logs,
+            // /penyimpanan, /kendaraan): tidak bisa ditukar lewat SPA ->
+            // muat ulang penuh supaya klik menu tetap berfungsi.
             this.isLoading = false;
+            window.location.href = path;
             return;
         }
 
@@ -612,6 +617,9 @@ class SPARouter {
             // (dashboard) supaya aturan yang memang khusus dashboard
             // (mis. scale 80% konten) TIDAK bocor ke halaman lain saat SPA.
             mainContent.setAttribute('data-page', path);
+            // Penanda bahwa konten ini hasil tukar SPA -> animasi "page load"
+            // di css/color-vars.css tidak ikut jalan (tidak dobel).
+            mainContent.setAttribute('data-spa-nav', '1');
 
             // ============================================================
             // Terapkan LAYOUT halaman tujuan

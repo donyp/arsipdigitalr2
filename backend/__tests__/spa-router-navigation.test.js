@@ -279,6 +279,7 @@ describe('Animasi masuk halaman (slide-up)', () => {
 
     afterEach(() => {
         router.transition.enabled = true;
+        router.transition.routes = null;
         router.clearTransitionDimTimer();
     });
 
@@ -288,27 +289,37 @@ describe('Animasi masuk halaman (slide-up)', () => {
         expect(router.transition.enterMs).toBeGreaterThanOrEqual(300); // smooth
     });
 
-    test('animasi HANYA untuk menu Support Admin', () => {
-        expect(router.transition.routes).toEqual(['/support/admin']);
+    test('SEMUA menu di sidebar dianimasikan (routes = null)', () => {
+        expect(router.transition.routes).toBeNull();
+        expect(router.isTransitionEnabled('/dashboard')).toBe(true);
+        expect(router.isTransitionEnabled('/notifikasi')).toBe(true);
         expect(router.isTransitionEnabled('/support/admin')).toBe(true);
-        expect(router.isTransitionEnabled('/dashboard')).toBe(false);
-        expect(router.isTransitionEnabled('/renamefaktur')).toBe(false);
-        expect(router.isTransitionEnabled('/toko')).toBe(false);
+        expect(router.isTransitionEnabled('/renamefaktur')).toBe(true);
+        expect(router.isTransitionEnabled('/excel')).toBe(true);
+        expect(router.isTransitionEnabled('/excel/')).toBe(true);   // trailing slash
     });
 
-    test('route lain: tidak ada class animasi sama sekali', () => {
+    test('kalau routes diisi, hanya route itu yang dianimasikan', () => {
+        router.transition.routes = ['/support/admin'];
+        expect(router.isTransitionEnabled('/support/admin')).toBe(true);
+        expect(router.isTransitionEnabled('/dashboard')).toBe(false);
+        router.transition.routes = null;
+    });
+
+    test('startPageTransition: route menu dapat token > 0 (animasi jalan)', () => {
         const el = fakeMain();
+        expect(router.startPageTransition(el, '/dashboard')).toBeGreaterThan(0);
+        router.clearTransitionDimTimer();
+    });
+
+    test('startPageTransition: route di luar daftar (mode dibatasi) -> 0', () => {
+        const el = fakeMain();
+        router.transition.routes = ['/support/admin'];
         const token = router.startPageTransition(el, '/dashboard');
         expect(token).toBe(0);
         expect(el.classes.size).toBe(0);
         expect(router.transitionDimTimer).toBeFalsy();
-    });
-
-    test('route Support Admin: transisi dimulai (token > 0)', () => {
-        const el = fakeMain();
-        const token = router.startPageTransition(el, '/support/admin');
-        expect(token).toBeGreaterThan(0);
-        router.clearTransitionDimTimer();
+        router.transition.routes = null;
     });
 
     test('keyframes slide-up: hanya transform, TANPA opacity', () => {
@@ -380,19 +391,44 @@ describe('Animasi masuk halaman (slide-up)', () => {
         expect(routerSrc).not.toContain("mainContent.style.opacity = '0.5'");
     });
 
-    test('halaman Support Admin tetap dianimasikan saat dibuka langsung', () => {
+    test('semua halaman menu dianimasikan saat dibuka penuh (css/color-vars.css)', () => {
+        const css = require('fs').readFileSync(
+            path.join(__dirname, '..', '..', 'css', 'color-vars.css'), 'utf8'
+        );
+        expect(css).toContain('@keyframes appPageSlideUp');
+        expect(css).toContain('#main-content:not([data-spa-nav])');
+        expect(css).toContain('#sidebar + *');           // halaman tanpa #main-content
+        expect(css).toContain('prefers-reduced-motion');
+        // slide-up murni: hanya transform, tanpa opacity
+        const keyframes = css.slice(css.indexOf('@keyframes appPageSlideUp'));
+        const body = keyframes.slice(0, keyframes.indexOf('}'));
+        expect(body).not.toContain('opacity');
+    });
+
+    test('router menandai data-spa-nav (animasi halaman tidak dobel saat SPA)', () => {
+        expect(routerSrc).toContain("mainContent.setAttribute('data-spa-nav', '1')");
+    });
+
+    test('semua halaman yang punya #main-content memuat spa-router.js', () => {
+        const fs = require('fs');
+        const pages = [
+            'dashboard.html', 'whatsapp-messages.html', 'users.html', 'tokos.html',
+            'zonas.html', 'rename-faktur.html', 'upload-excel.html',
+            'upload-invoice-pdf.html', 'upload-bukti-bayar.html',
+            'upload-faktur-pajak.html', 'support-dashboard.html'
+        ];
+        const missing = pages.filter(p => {
+            const html = fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8');
+            return !html.includes('/js/spa-router.js?v=29');
+        });
+        expect(missing).toEqual([]);
+    });
+
+    test('animasi tidak lagi ditulis ulang per halaman (cukup di color-vars.css)', () => {
         const html = require('fs').readFileSync(
             path.join(__dirname, '..', '..', 'support-dashboard.html'), 'utf8'
         );
-        expect(html).toContain('@keyframes supportPageSlideUp');
-        expect(html).toMatch(/#main-content:not\(\[data-page\]\)\s*\{\s*animation:\s*supportPageSlideUp/);
-    });
-
-    test('halaman lain tidak diberi animasi saat load', () => {
-        const html = require('fs').readFileSync(
-            path.join(__dirname, '..', '..', 'whatsapp-bot-dashboard.html'), 'utf8'
-        );
-        expect(html).not.toContain('appPageSlideUp');
+        expect(html).not.toContain('@keyframes supportPageSlideUp');
     });
 });
 
