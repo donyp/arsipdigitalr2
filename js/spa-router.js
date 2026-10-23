@@ -892,9 +892,19 @@ class SPARouter {
             document.addEventListener = origAddEventListener;
 
             // Simpan callback init yang baru ditangkap (jika ada)
+            //
+            // PENTING: callback dari script INLINE didaftarkan ULANG setiap
+            // kali halaman dibuka (script inline selalu dieksekusi ulang).
+            // Kalau ditumpuk terus, init halaman jalan berkali-kali ->
+            // efek dobel (mis. tombol pengumuman di header dashboard jadi
+            // 1, 2, 3, ... setiap kembali ke dashboard). Jadi callback
+            // inline yang lama DIBUANG dan diganti yang baru.
+            // Callback dari script EKSTERNAL (hanya dieksekusi sekali)
+            // tetap disimpan karena tidak didaftarkan ulang.
             if (capturedInitCallbacks.length > 0) {
-                this.pageInitCallbacks[path] = (this.pageInitCallbacks[path] || [])
-                    .concat(capturedInitCallbacks);
+                const sebelumnya = this.pageInitCallbacks[path] || [];
+                const dariScriptEksternal = sebelumnya.filter(cb => !cb || !cb.__spaInlineInit);
+                this.pageInitCallbacks[path] = dariScriptEksternal.concat(capturedInitCallbacks);
             }
 
             // Jalankan init halaman (callback DOMContentLoaded yang ditangkap,
@@ -1183,7 +1193,13 @@ class SPARouter {
         const origAEL = document.addEventListener.bind(document);
         document.addEventListener = function(type, fn, opts) {
             if (type === 'DOMContentLoaded' && document.readyState !== 'loading') {
-                if (typeof fn === 'function' && capturedInitCallbacks) capturedInitCallbacks.push(fn);
+                if (typeof fn === 'function' && capturedInitCallbacks) {
+                    // Tandai: callback ini berasal dari script inline (yang
+                    // dieksekusi ulang tiap kunjungan) supaya bisa diganti,
+                    // bukan ditumpuk, oleh loadPage().
+                    try { fn.__spaInlineInit = true; } catch (e) { /* abaikan */ }
+                    capturedInitCallbacks.push(fn);
+                }
                 return;
             }
             return origAEL(type, fn, opts);

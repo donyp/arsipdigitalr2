@@ -419,7 +419,7 @@ describe('Animasi masuk halaman (slide-up)', () => {
         ];
         const missing = pages.filter(p => {
             const html = fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8');
-            return !html.includes('/js/spa-router.js?v=29');
+            return !/\/js\/spa-router\.js\?v=\d+/.test(html);
         });
         expect(missing).toEqual([]);
     });
@@ -429,6 +429,46 @@ describe('Animasi masuk halaman (slide-up)', () => {
             path.join(__dirname, '..', '..', 'support-dashboard.html'), 'utf8'
         );
         expect(html).not.toContain('@keyframes supportPageSlideUp');
+    });
+});
+
+// ============================================================
+// INIT HALAMAN TIDAK MENUMPUK SAAT NAVIGASI SPA
+// (gejala: tombol pengumuman di header dashboard jadi 1, 2, 3, ...)
+// ============================================================
+describe('Init halaman tidak menumpuk saat SPA', () => {
+
+    const fs = require('fs');
+    const routerSrc = fs.readFileSync(
+        path.join(__dirname, '..', '..', 'js', 'spa-router.js'), 'utf8'
+    );
+    const dashboardHtml = fs.readFileSync(
+        path.join(__dirname, '..', '..', 'dashboard.html'), 'utf8'
+    );
+
+    test('callback dari script inline ditandai __spaInlineInit', () => {
+        expect(routerSrc).toContain('fn.__spaInlineInit = true');
+    });
+
+    test('callback inline diperbarui (diganti), bukan ditumpuk', () => {
+        expect(routerSrc).toContain('!cb.__spaInlineInit');
+        expect(routerSrc).toContain('dariScriptEksternal.concat(capturedInitCallbacks)');
+        // pola lama yang menumpuk tidak boleh kembali
+        expect(routerSrc).not.toMatch(
+            /this\.pageInitCallbacks\[path\] = \(this\.pageInitCallbacks\[path\] \|\| \[\]\)\s*\.concat\(capturedInitCallbacks\)/
+        );
+    });
+
+    test('tombol pengumuman dashboard diberi id + penanda', () => {
+        expect(dashboardHtml).toContain("announcementBtn.id = 'announcementManageBtn'");
+        expect(dashboardHtml).toContain("announcementBtn.setAttribute('data-announcement-manage', '1')");
+    });
+
+    test('tombol pengumuman hanya dibuat kalau belum ada', () => {
+        expect(dashboardHtml).toContain("querySelectorAll('[data-announcement-manage]')");
+        expect(dashboardHtml).toMatch(/sudahAda\.length === 0[\s\S]{0,500}createElement\('button'\)/);
+        // sisa duplikat dibersihkan
+        expect(dashboardHtml).toContain('if (i > 0) el.remove()');
     });
 });
 

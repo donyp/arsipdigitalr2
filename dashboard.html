@@ -2891,7 +2891,7 @@
     <script src="/js/utils.js?t=1790610773"></script>
     <script src="/js/unified-header.js?v=2"></script>
     <script src="/js/sidebar.js?v=7&t=1792067064.55694"></script>
-    <script src="/js/spa-router.js?v=29&t=1792721600"></script>
+    <script src="/js/spa-router.js?v=30&t=1792722900"></script>
     <script src="/js/invoice-stats-cache.js"></script>
     <script src="/js/invoice-table-utils.js?v=2"></script>
     <script src="/js/dashboard.js?v=1015&t=1790611000"></script>
@@ -2989,21 +2989,30 @@
                 // Add announcement button for moderators (don't reinitialize entire header)
                 if (userAuth.role === 'moderator' || userAuth.role === 'super_admin') {
                     const headerRight = document.querySelector('.header-right');
+                    // Jangan tambah dobel: init dashboard bisa jalan lebih
+                    // dari sekali (navigasi SPA). Kalau tombolnya sudah ada
+                    // (atau ada sisa duplikat), cukup sisakan satu.
                     if (headerRight) {
-                        // Insert announcement button before logout button
-                        const announcementBtn = document.createElement('button');
-                        announcementBtn.className = 'header-btn';
-                        announcementBtn.title = 'Kelola Pengumuman';
-                        announcementBtn.onclick = () => window.location.href = '/pengumuman.html';
-                        announcementBtn.innerHTML = '<i class="fas fa-bell"></i>';
-                        
-                        const logoutBtn = headerRight.querySelector('.logout-btn');
-                        if (logoutBtn) {
-                            headerRight.insertBefore(announcementBtn, logoutBtn);
-                        } else {
-                            headerRight.appendChild(announcementBtn);
+                        const sudahAda = headerRight.querySelectorAll('[data-announcement-manage]');
+                        sudahAda.forEach((el, i) => { if (i > 0) el.remove(); });
+                        if (sudahAda.length === 0) {
+                            // Insert announcement button before logout button
+                            const announcementBtn = document.createElement('button');
+                            announcementBtn.className = 'header-btn';
+                            announcementBtn.id = 'announcementManageBtn';
+                            announcementBtn.setAttribute('data-announcement-manage', '1');
+                            announcementBtn.title = 'Kelola Pengumuman';
+                            announcementBtn.onclick = () => window.location.href = '/pengumuman.html';
+                            announcementBtn.innerHTML = '<i class="fas fa-bell"></i>';
+
+                            const logoutBtn = headerRight.querySelector('.logout-btn');
+                            if (logoutBtn) {
+                                headerRight.insertBefore(announcementBtn, logoutBtn);
+                            } else {
+                                headerRight.appendChild(announcementBtn);
+                            }
+                            console.log('[Dashboard] Added announcement button to existing header');
                         }
-                        console.log('[Dashboard] Added announcement button to existing header');
                     }
                 }
 
