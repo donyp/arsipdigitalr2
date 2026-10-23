@@ -97,6 +97,7 @@
             background: var(--color-bg-primary);
             color: var(--color-text-primary);
             transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
         
         .header {
@@ -112,9 +113,10 @@
         }
         
         .container {
-            max-width: 1400px;
+            max-width: none;
+            width: 100%;
             margin: 0 auto;
-            padding: 0 24px;
+            padding: 0 clamp(16px, 3vw, 40px);
         }
         
         .back-btn {
@@ -204,7 +206,7 @@
         
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 340px;
+            grid-template-columns: minmax(0, 1fr) 380px;
             gap: 24px;
             padding: 28px 0;
         }
@@ -828,6 +830,92 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Lampiran pada balasan moderator */
+        .reply-attach-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .reply-attach-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px dashed var(--color-border);
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reply-attach-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .reply-attach-hint {
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+        }
+
+        .reply-attach-preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .reply-attach-preview:empty {
+            display: none;
+        }
+
+        .reply-attach-item {
+            position: relative;
+            width: 84px;
+            height: 84px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-tertiary);
+        }
+
+        .reply-attach-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .reply-attach-remove {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.75);
+            color: #fff;
+            font-size: 11px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 1100px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <script src="/js/notification-system.js"></script>
@@ -840,15 +928,12 @@
     </script>
     
     <div id="app">
-        <!-- Sidebar -->
-        <div id="sidebar"></div>
-
         <!-- Main Content -->
-        <div id="main-content" style="margin-left: 16rem; width: calc(100% - 16rem);">
+        <div id="main-content">
             <!-- Header -->
             <div class="header">
                 <div class="container">
-                    <a href="javascript:history.back()" class="back-btn">
+                    <a href="/support/admin" class="back-btn">
                         <i class="fas fa-arrow-left"></i> Kembali
                     </a>
                     <div class="header-content">
@@ -928,6 +1013,14 @@
                 <div class="reply-section">
                     <h3>Tambah Balasan</h3>
                     <textarea id="replyMessage" placeholder="Ketik balasan anda di sini..."></textarea>
+                    <div class="reply-attach-row">
+                        <button type="button" class="reply-attach-btn" onclick="document.getElementById('replyAttachmentInput').click()">
+                            <i class="fas fa-paperclip"></i> Lampirkan Foto (opsional)
+                        </button>
+                        <span class="reply-attach-hint">JPG/PNG/WEBP, maks 5 MB per foto, maks 5 foto</span>
+                        <input type="file" id="replyAttachmentInput" accept="image/jpeg,image/png,image/webp" multiple style="display: none;" onchange="handleReplyAttachmentChange(event)">
+                    </div>
+                    <div class="reply-attach-preview" id="replyAttachmentPreview"></div>
                     <div class="reply-buttons">
                         <button class="btn-send" id="btnSendReply" onclick="sendReply()">
                             <i class="fas fa-paper-plane"></i> Kirim Balasan
@@ -945,7 +1038,6 @@
     <script src="/js/auth.js"></script>
     <script src="/js/session-keepalive.js"></script>
     <script src="/js/session-status-checker.js"></script>
-    <script src="/js/sidebar.js?v=7&t=1792067064.55694"></script>
     <script>
         // Prevent redeclaration when SPA router reloads the page
         if (typeof window._supportTicketDetailModeratorLoaded === 'undefined') {
@@ -1387,7 +1479,7 @@
                 // If status changed to Resolved or Closed, redirect to dashboard after 2 seconds
                 if (['Resolved', 'Closed'].includes(newStatus)) {
                     setTimeout(() => {
-                        window.location.href = '/support-dashboard.html';
+                        window.location.href = '/support/admin';
                     }, 1500);
                 }
             } catch (error) {
@@ -1440,17 +1532,74 @@
             }
         }
 
+        // ===== Lampiran balasan (opsional) =====
+        let replyFiles = [];
+        let replyPreviewUrls = [];
+        const REPLY_MAX_FILES = 5;
+        const REPLY_MAX_SIZE = 5 * 1024 * 1024;
+        const REPLY_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+        function handleReplyAttachmentChange(event) {
+            const input = event.target;
+            const daftar = Array.from(input.files || []);
+
+            for (const file of daftar) {
+                if (replyFiles.length >= REPLY_MAX_FILES) {
+                    Notify.error(`Maksimal ${REPLY_MAX_FILES} foto per balasan`);
+                    break;
+                }
+                if (!REPLY_ALLOWED_TYPES.includes(file.type)) {
+                    Notify.error(`${file.name}: hanya JPG, PNG, atau WEBP`);
+                    continue;
+                }
+                if (file.size > REPLY_MAX_SIZE) {
+                    Notify.error(`${file.name}: ukuran maksimal 5 MB`);
+                    continue;
+                }
+                replyFiles.push(file);
+            }
+
+            input.value = '';
+            renderReplyAttachmentPreview();
+        }
+
+        function removeReplyAttachment(index) {
+            replyFiles.splice(index, 1);
+            renderReplyAttachmentPreview();
+        }
+
+        function renderReplyAttachmentPreview() {
+            const box = document.getElementById('replyAttachmentPreview');
+            if (!box) return;
+
+            replyPreviewUrls.forEach((url) => {
+                try { URL.revokeObjectURL(url); } catch (e) { /* abaikan */ }
+            });
+            replyPreviewUrls = [];
+
+            box.innerHTML = replyFiles.map((file, index) => {
+                const url = URL.createObjectURL(file);
+                replyPreviewUrls.push(url);
+                return `
+                    <div class="reply-attach-item">
+                        <img src="${url}" alt="${escapeHtml(file.name)}">
+                        <button type="button" class="reply-attach-remove" onclick="removeReplyAttachment(${index})" aria-label="Hapus foto">&times;</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
         async function sendReply() {
+            const btnSend = document.getElementById('btnSendReply');
+            const statusDiv = document.getElementById('replyStatus');
+
             try {
                 const message = document.getElementById('replyMessage').value.trim();
-                
-                if (!message) {
-                    Notify.error('Pesan tidak boleh kosong');
+
+                if (!message && replyFiles.length === 0) {
+                    Notify.error('Isi pesan atau lampirkan foto terlebih dahulu');
                     return;
                 }
-
-                const btnSend = document.getElementById('btnSendReply');
-                const statusDiv = document.getElementById('replyStatus');
 
                 btnSend.disabled = true;
                 statusDiv.style.display = 'block';
@@ -1465,18 +1614,56 @@
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({
+                        message,
+                        // Izinkan balasan tanpa teks asal ada lampiran.
+                        allow_empty: replyFiles.length > 0
+                    })
                 });
 
                 if (!response.ok) {
-                    const error = await response.json();
+                    const error = await response.json().catch(() => ({}));
                     throw new Error(error.error || 'Failed to send reply');
                 }
 
-                statusDiv.textContent = 'Balasan terkirim!';
-                statusDiv.style.color = '#10b981';
-                statusDiv.classList.remove('loading');
+                const hasil = await response.json().catch(() => ({}));
+                const messageId = hasil && hasil.message ? hasil.message.id : null;
+
+                let gagalUnggah = 0;
+                for (let i = 0; i < replyFiles.length; i++) {
+                    statusDiv.textContent = `Mengunggah foto ${i + 1}/${replyFiles.length}...`;
+
+                    const formData = new FormData();
+                    formData.append('attachment', replyFiles[i], replyFiles[i].name || `foto-${i + 1}`);
+                    if (messageId) formData.append('message_id', messageId);
+
+                    const uploadResp = await fetch(`/api/support/tickets/${ticketId}/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+
+                    if (!uploadResp.ok) {
+                        gagalUnggah++;
+                        const err = await uploadResp.json().catch(() => ({}));
+                        console.warn('[Support] Gagal unggah lampiran balasan:', err.error || uploadResp.status);
+                    }
+                }
+
+                replyFiles = [];
+                const inputFoto = document.getElementById('replyAttachmentInput');
+                if (inputFoto) inputFoto.value = '';
+                renderReplyAttachmentPreview();
                 document.getElementById('replyMessage').value = '';
+
+                statusDiv.classList.remove('loading');
+                if (gagalUnggah > 0) {
+                    statusDiv.textContent = `Balasan terkirim, tetapi ${gagalUnggah} foto gagal diunggah.`;
+                    statusDiv.style.color = '#f59e0b';
+                } else {
+                    statusDiv.textContent = 'Balasan terkirim!';
+                    statusDiv.style.color = '#10b981';
+                }
 
                 // Reload ticket after 1 second
                 setTimeout(() => {
@@ -1485,12 +1672,11 @@
                     statusDiv.style.display = 'none';
                 }, 1000);
             } catch (error) {
-                const statusDiv = document.getElementById('replyStatus');
                 statusDiv.textContent = 'Error: ' + error.message;
                 statusDiv.style.color = '#ef4444';
                 statusDiv.style.display = 'block';
                 statusDiv.classList.remove('loading');
-                document.getElementById('btnSendReply').disabled = false;
+                btnSend.disabled = false;
             }
         }
         function reloadTicket() {

@@ -610,6 +610,22 @@
             font-size: 12px;
             color: #6b7280;
         }
+
+        .belum-dibalas {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #92400e;
+            background: #fef3c7;
+            white-space: nowrap;
+        }
+
+        html[data-dark-mode="true"] .belum-dibalas {
+            color: #fcd34d;
+            background: #78350f;
+        }
         
         .action-col {
             text-align: center;
@@ -779,6 +795,7 @@
             initializeSessionStatusChecker();
         }
     </script>
-    <script src="/js/support-customer.js"></script>
+    <script src="/js/time-utils.js?v=1"></script>
+    <script src="/js/support-customer.js?v=1"></script>
 </body>
 </html>

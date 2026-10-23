@@ -9,9 +9,9 @@ let currentSearch = '';
 let totalPages = 1;
 
 // Cache keys
-const CACHE_TICKETS = 'support_customer_tickets';
-const CACHE_STATS = 'support_customer_stats';
-const CACHE_TIMESTAMP = 'support_customer_cache_timestamp';
+const CACHE_TICKETS = 'support_customer_tickets_v2';
+const CACHE_STATS = 'support_customer_stats_v2';
+const CACHE_TIMESTAMP = 'support_customer_cache_timestamp_v2';
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -308,6 +308,15 @@ function renderTickets(tickets) {
 function renderTicketRow(ticket) {
     const statusClass = (ticket.status || 'Open').toLowerCase().replace(/\s+/g, '-');
     const statusValue = ticket.status || 'Open';
+    const belumDibalas = statusValue !== 'Closed' && !ticket.last_reply_at;
+    const waktuTerakhir = statusValue === 'Closed'
+        ? (ticket.closed_at || ticket.updated_at)
+        : (ticket.last_reply_at || null);
+    const tampilanWaktu = belumDibalas
+        ? '<span class="belum-dibalas">Belum dibalas</span>'
+        : (typeof formatRelativeId === 'function'
+            ? formatRelativeId(waktuTerakhir)
+            : formatDate(waktuTerakhir));
     return `
         <tr onclick="openTicket('${ticket.id}')">
             <td>
@@ -320,7 +329,7 @@ function renderTicketRow(ticket) {
                 <span class="status-dot ${statusClass}"></span>
                 <span class="status-text status-${statusClass}">● ${statusValue}</span>
             </td>
-            <td class="last-update-col">${formatDate(ticket.updated_at)}</td>
+            <td class="last-update-col">${tampilanWaktu}</td>
             <td class="action-col" onclick="event.stopPropagation();">
                 <button onclick="openTicket('${ticket.id}')" title="Lihat Detail">
                     <i class="fas fa-chevron-right"></i>

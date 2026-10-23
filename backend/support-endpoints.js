@@ -63,7 +63,7 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
 
             let query = supabase
                 .from('support_tickets')
-                .select('id, ticket_number, subject, category, priority, status, assigned_to, user_id, zona_id, created_at, updated_at, resolved_at', { count: 'exact' });
+                .select('id, ticket_number, subject, category, priority, status, assigned_to, user_id, zona_id, created_at, updated_at, resolved_at, closed_at', { count: 'exact' });
 
             // Moderator and Super Admin can see all tickets from all zonas
             // Admin Zona can see tickets only from their zona
@@ -144,9 +144,43 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 };
             }));
 
+            // Balasan moderator terakhir per tiket (kolom "Balasan Terakhir").
+            // Satu query untuk semua tiket di halaman ini agar tidak N+1.
+            const lastReplyByTicket = {};
+            const ticketIds = (tickets || []).map((t) => t.id).filter(Boolean);
+            const ownerByTicket = new Map((tickets || []).map((t) => [t.id, t.user_id]));
+            if (ticketIds.length > 0) {
+                try {
+                    const { data: pesanList, error: pesanError } = await supabase
+                        .from('support_messages')
+                        .select('ticket_id, user_id, created_at, is_internal')
+                        .in('ticket_id', ticketIds)
+                        .eq('is_internal', false)
+                        .order('created_at', { ascending: false });
+
+                    if (pesanError) {
+                        console.warn('[Support] Gagal mengambil balasan terakhir:', pesanError.message);
+                    } else {
+                        (pesanList || []).forEach((pesan) => {
+                            if (!pesan.ticket_id || lastReplyByTicket[pesan.ticket_id]) return;
+                            // Balasan moderator = pesan dari user selain pembuat tiket.
+                            if (pesan.user_id && pesan.user_id === ownerByTicket.get(pesan.ticket_id)) return;
+                            lastReplyByTicket[pesan.ticket_id] = pesan.created_at;
+                        });
+                    }
+                } catch (e) {
+                    console.warn('[Support] Gagal mengambil balasan terakhir:', e.message);
+                }
+            }
+
+            const ticketsWithReply = enrichedTickets.map((ticket) => ({
+                ...ticket,
+                last_reply_at: lastReplyByTicket[ticket.id] || null
+            }));
+
             res.json({
                 success: true,
-                tickets: enrichedTickets || [],
+                tickets: ticketsWithReply || [],
                 pagination: {
                     total: count,
                     page: parseInt(page),
@@ -637,10 +671,12 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
     app.post('/api/support/tickets/:id/messages', authenticateToken, async (req, res) => {
         try {
             const { id: ticketId } = req.params;
-            const { message, is_internal = false } = req.body;
+            const { message, is_internal = false, allow_empty = false } = req.body;
+            const teksPesan = typeof message === 'string' ? message.trim() : '';
+            const bolehKosong = allow_empty === true || allow_empty === 'true';
             const startTime = Date.now();
 
-            if (!message || message.trim().length === 0) {
+            if (!teksPesan && !bolehKosong) {
                 const { ipAddress } = AuditLogger.extractClientInfo(req);
                 await auditLogger.log({
                     userId: req.user.userId,
@@ -668,7 +704,7 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
             // Check ticket exists and user has access
             const { data: ticket, error: ticketError } = await supabase
                 .from('support_tickets')
-                .select('id, user_id, status, ticket_number')
+                .select('id, user_id, status, ticket_number, zona_id')
                 .eq('id', ticketId)
                 .single();
 
@@ -695,6 +731,37 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                     severity: 'warning'
                 }).catch(() => {});
                 return res.status(404).json({ error: 'Ticket not found' });
+            }
+
+            // Otorisasi: pemilik tiket, moderator/super_admin, atau admin zona
+            // yang sama. Tanpa ini, user login mana pun bisa membalas tiket orang lain.
+            const isOwner = ticket.user_id === req.user.userId;
+            const isModerator = req.user.role === 'moderator' || req.user.role === 'super_admin';
+            const isAdminZona = req.user.role === 'admin_zona' && ticket.zona_id === req.user.zona_id;
+
+            if (!isOwner && !isModerator && !isAdminZona) {
+                const { ipAddress } = AuditLogger.extractClientInfo(req);
+                await auditLogger.log({
+                    userId: req.user.userId,
+                    userEmail: req.user.email,
+                    userRole: req.user.role,
+                    zonaId: req.user.zona_id || null,
+                    action: 'Add Ticket Message - Unauthorized',
+                    resourceType: 'ticket',
+                    resourceId: ticketId,
+                    resourceName: ticket.ticket_number,
+                    operation: 'CREATE',
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent'] || 'Unknown',
+                    requestPath: `/api/support/tickets/${ticketId}/messages`,
+                    requestMethod: 'POST',
+                    statusCode: 403,
+                    responseMessage: null,
+                    errorMessage: 'Unauthorized',
+                    isSuspicious: true,
+                    severity: 'warning'
+                }).catch(() => {});
+                return res.status(403).json({ error: 'Unauthorized' });
             }
 
             // Internal notes only for moderator/super_admin
@@ -729,7 +796,9 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 .insert({
                     ticket_id: ticketId,
                     user_id: req.user.userId,
-                    message: message,
+                    // Balasan boleh tanpa teks asal ada lampiran; beri penanda
+                    // netral agar thread tetap terbaca.
+                    message: teksPesan || 'Lampiran',
                     is_internal: is_internal
                 })
                 .select()
@@ -761,7 +830,7 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
                 operation: 'CREATE',
                 details: {
                     ticketNumber: ticket.ticket_number,
-                    messageLength: message.length,
+                    messageLength: teksPesan.length,
                     isInternal: is_internal,
                     addTime: totalTime
                 },

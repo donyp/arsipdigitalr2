@@ -496,3 +496,21 @@ if (document.readyState === 'loading') {
     
     observer.observe(document.documentElement, { attributes: true });
 }
+
+// Bfcache: saat kembali dari halaman lain, browser bisa memulihkan shell
+// tanpa header (header dihapus oleh SPA router). Pastikan header dibuat lagi.
+window.addEventListener('pageshow', function (event) {
+    if (!event.persisted) return;
+    if (document.getElementById('unified-header')) return;
+    if (!document.querySelector('#app')) return;
+
+    const isAdminZonaDashboard = window.location.pathname === '/dashboard-admin-zona' ||
+                                 (document.body && document.body.className.includes('admin-zona-dashboard'));
+    if (isAdminZonaDashboard) return;
+
+    if (typeof initializeUnifiedHeader === 'function') {
+        initializeUnifiedHeader();
+        const app = document.getElementById('app');
+        if (app) app.style.setProperty('padding-top', '80px', 'important');
+    }
+});

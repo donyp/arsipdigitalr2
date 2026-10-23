@@ -570,34 +570,10 @@ function formatUserId(userId) {
 }
 
 function getRelativeTime(dateString) {
-    if (!dateString) return '-';
-    
-    try {
-        const date = new Date(dateString);
-        const now = new Date();
-        const seconds = Math.floor((now - date) / 1000);
-        
-        if (seconds < 60) {
-            return 'Baru Saja';
-        } else if (seconds < 3600) {
-            const minutes = Math.floor(seconds / 60);
-            return `${minutes} Menit Yang Lalu`;
-        } else if (seconds < 86400) {
-            const hours = Math.floor(seconds / 3600);
-            return `${hours} Jam Yang Lalu`;
-        } else if (seconds < 604800) {
-            const days = Math.floor(seconds / 86400);
-            return `${days} Hari Yang Lalu`;
-        } else if (seconds < 2592000) {
-            const weeks = Math.floor(seconds / 604800);
-            return `${weeks} Minggu Yang Lalu`;
-        } else {
-            const months = Math.floor(seconds / 2592000);
-            return `${months} Bulan Yang Lalu`;
-        }
-    } catch (e) {
-        return '-';
+    if (typeof formatRelativeId === 'function') {
+        return formatRelativeId(dateString);
     }
+    return '-';
 }
 
 

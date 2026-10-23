@@ -3,7 +3,7 @@
 <head>
     
     <base href="/">
-    <script src="/js/console-cleaner.js"></script>>
+    <script src="/js/console-cleaner.js"></script>
     <meta charset="UTF-8">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -96,13 +96,14 @@
             background: var(--color-bg-primary);
             color: var(--color-text-primary);
             transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
         }
         
         .header {
             background: var(--color-bg-secondary);
             border-bottom: 1px solid var(--color-border);
             padding: 20px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: none;
         }
         
         html[data-dark-mode="true"] .header {
@@ -111,9 +112,10 @@
         }
         
         .container {
-            max-width: 1200px;
+            max-width: none;
+            width: 100%;
             margin: 0 auto;
-            padding: 0 24px;
+            padding: 0 clamp(16px, 3vw, 40px);
         }
         
         .back-btn {
@@ -211,7 +213,7 @@
         
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 340px;
+            grid-template-columns: minmax(0, 1fr) 360px;
             gap: 24px;
             margin-top: 24px;
         }
@@ -220,7 +222,7 @@
             background: var(--color-bg-secondary);
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            box-shadow: none;
             border: 1px solid var(--color-border);
         }
         
@@ -515,7 +517,7 @@
             background: var(--color-bg-secondary);
             border-radius: 12px;
             padding: 24px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: none;
             height: fit-content;
             border: 1px solid var(--color-border);
             position: sticky;
@@ -523,7 +525,7 @@
         }
         
         html[data-dark-mode="true"] .sidebar {
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: none;
             border-color: var(--color-border-dark);
         }
         
@@ -546,12 +548,12 @@
             gap: 12px;
             padding: 12px;
             border-radius: 8px;
-            background: rgba(0,0,0,0.02);
+            background: var(--color-bg-tertiary);
             transition: all 0.2s;
         }
         
         .sidebar-item:hover {
-            background: rgba(79, 70, 229, 0.05);
+            background: var(--color-bg-secondary);
         }
         
         .sidebar-item:last-child {
@@ -737,6 +739,17 @@
             to { transform: rotate(360deg); }
         }
         
+        @media (max-width: 1100px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                top: auto;
+            }
+        }
+
         @media (max-width: 768px) {
             .main-layout {
                 grid-template-columns: 1fr;
@@ -847,6 +860,7 @@
     <script src="/js/config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
     <script src="/js/api.js"></script>
+    <script src="/js/time-utils.js?v=1"></script>
     <script src="/js/auth.js"></script>
     <script>
         // Prevent redeclaration when SPA router reloads the page
@@ -1306,10 +1320,13 @@
 
         function getLastReplyTime(ticket) {
             const messages = ticket.messages || [];
-            if (messages.length === 0) return '-';
-            
-            const lastMessage = messages[messages.length - 1];
-            return formatRelativeTime(lastMessage.created_at);
+            if (messages.length === 0) return 'Belum dibalas';
+
+            // Balasan moderator = pesan dari user selain pembuat tiket.
+            const balasan = messages.filter((msg) => !msg.is_internal && msg.user_id !== ticket.user_id);
+            if (balasan.length === 0) return 'Belum dibalas';
+
+            return formatRelativeTime(balasan[balasan.length - 1].created_at);
         }
 
         function getIndonesianMonth(monthIndex) {
@@ -1363,40 +1380,10 @@
         }
 
         function formatRelativeTime(dateString) {
-            if (!dateString) return '-';
-            
-            // Ensure date is parsed as UTC if no timezone info
-            let date;
-            const hasTimezone = /[Z+\-]\d{2}:?\d{2}$/.test(dateString) || dateString.endsWith('Z');
-            
-            if (!hasTimezone) {
-                const normalizedString = dateString.replace(' ', 'T');
-                date = new Date(normalizedString + 'Z');
-            } else {
-                date = new Date(dateString);
+            if (typeof formatRelativeId === 'function') {
+                return formatRelativeId(dateString);
             }
-            
-            const now = new Date();
-            const diffMs = now - date;
-            const diffMinutes = Math.floor(diffMs / (1000 * 60));
-            const diffHours = diffMs / (1000 * 60 * 60);
-            const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-            if (diffMinutes < 1) {
-                return 'Baru saja';
-            } else if (diffMinutes < 60) {
-                return `${diffMinutes} menit yang lalu`;
-            } else if (diffHours < 24) {
-                return `${Math.floor(diffHours)}h lalu`;
-            } else if (diffDays < 7) {
-                return `${Math.floor(diffDays)}d lalu`;
-            } else {
-                // For older dates, show in format: "13 Agustus 2026"
-                const year = date.getUTCFullYear();
-                const month = getIndonesianMonth(date.getUTCMonth());
-                const day = date.getUTCDate();
-                return `${day} ${month} ${year}`;
-            }
+            return '-';
         }
 
         function escapeHtml(text) {

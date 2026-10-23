@@ -715,11 +715,17 @@ class SPARouter {
             // Header dibuat sebagai sibling #app di body (DI LUAR
             // #main-content) -> tidak ikut tertukar saat konten
             // ditukar, sehingga header greeting dashboard tetap nongket
-            // di halaman lain. Buang yang lama, lalu biarkan script
-            // halaman tujuan membuat ulang header-nya sendiri.
+            // di halaman lain. Buang yang lama, lalu buat ulang untuk
+            // halaman yang memang memakai header global.
             const oldHeader = document.getElementById('unified-header');
             if (oldHeader) oldHeader.remove();
-            if (pageData.hasUnifiedHeader) {
+
+            // PENTING: /dashboard WAJIB punya header, walaupun HTML hasil
+            // fetch tidak terdeteksi memuat unified-header.js (mis. cache).
+            // Tanpa ini, kembali dari halaman tiket bisa menyisakan shell
+            // tanpa header seperti yang dilaporkan.
+            const perluHeader = pageData.hasUnifiedHeader || path === '/dashboard';
+            if (perluHeader) {
                 try {
                     if (typeof window.initializeUnifiedHeader === 'function') {
                         window.initializeUnifiedHeader();
