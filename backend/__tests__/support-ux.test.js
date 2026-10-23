@@ -129,4 +129,13 @@ describe('Regresi UI Support Ticketing', () => {
         const src = baca('js/spa-router.js');
         expect(src).toContain("pageData.hasUnifiedHeader || path === '/dashboard'");
     });
+
+    test('unified header menyuntik CSS-nya sendiri saat dibuka lewat SPA', () => {
+        // Navigasi SPA dari /support/admin (yang tidak memuat
+        // unified-header.css) hanya menyuntik unified-header.js.
+        // Tanpa CSS, header tampil kosong / tidak terlihat.
+        const src = baca('js/unified-header.js');
+        expect(src).toContain('ensureUnifiedHeaderStyles()');
+        expect(src).toContain("link.href = '/css/unified-header.css'");
+    });
 });

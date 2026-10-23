@@ -95,7 +95,31 @@ function createUnifiedHeader(options = {}) {
     return header;
 }
 
+/**
+ * Pastikan CSS header tersedia di dokumen ini.
+ *
+ * Saat navigasi SPA dari halaman yang TIDAK memuat unified-header.css
+ * (mis. /support/admin), router hanya menyuntik unified-header.js.
+ * Tanpa CSS, elemen #unified-header tetap dibuat tetapi tampil tanpa
+ * style (posisi static, teks menyatu dengan latar) sehingga area header
+ * terlihat kosong. Muat CSS-nya di sini agar header selalu benar.
+ */
+function ensureUnifiedHeaderStyles() {
+    const sudahAda = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .some((link) => (link.getAttribute('href') || '').includes('unified-header.css'));
+
+    if (sudahAda) return;
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/css/unified-header.css';
+    link.setAttribute('data-unified-header-style', 'true');
+    document.head.appendChild(link);
+}
+
 function initializeUnifiedHeader(options = {}) {
+    ensureUnifiedHeaderStyles();
+
     // Hindari timer ganda: kalau header di-inisialisasi ulang (mis. saat
     // navigasi SPA), timer tanggal/jam sebelumnya harus dihentikan.
     if (window._unifiedHeaderTimer) {
