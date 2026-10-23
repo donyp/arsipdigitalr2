@@ -141,6 +141,8 @@ class SPARouter {
         // ANIMASI PINDAH HALAMAN (SLIDE-UP)
         // ============================================================
         // enabled:false -> animasi mati (kembali ke perilaku lama)
+        // routes     : HANYA halaman di daftar ini yang dianimasikan.
+        //              Menu lain tetap pindah seperti biasa (tanpa animasi).
         // dimAfterMs : baru meredup kalau data lama diambil > N ms
         // loadMs     : durasi meredup saat menunggu data
         // leaveMs    : durasi fade-out singkat tepat sebelum konten ditukar
@@ -148,6 +150,7 @@ class SPARouter {
         // shiftPx    : jarak awal halaman (px) sebelum naik ke posisi
         this.transition = {
             enabled: true,
+            routes: ['/support/admin'],
             dimAfterMs: 120,
             loadMs: 120,
             leaveMs: 90,
@@ -346,21 +349,40 @@ class SPARouter {
 
     /**
      * Apakah animasi aktif di navigasi ini?
+     * @param {string} [path] route tujuan. Kalau diisi, animasi hanya
+     *        berlaku untuk route yang terdaftar di transition.routes.
      */
-    isTransitionEnabled() {
-        return !!(this.transition && this.transition.enabled) && !this.prefersReducedMotion();
+    isTransitionEnabled(path) {
+        if (!this.transition || !this.transition.enabled) return false;
+        if (this.prefersReducedMotion()) return false;
+        // Tanpa path = pemeriksaan internal (mis. saat masuk halaman)
+        if (path == null) return true;
+        const routes = this.transition.routes || [];
+        return routes.includes(this.normalizePath(path));
     }
 
     /**
      * Fase 1: mulai navigasi.
      * Konten TIDAK langsung meredup - kalau data sudah ada di cache
      * (< dimAfterMs) halaman langsung slide tanpa kedip.
-     * @returns {number} token generasi transisi
+     * @param {string} path route tujuan (menentukan boleh animasi/tidak)
+     * @returns {number} token generasi transisi (0 = tanpa animasi)
      */
-    startPageTransition(mainContent) {
+    startPageTransition(mainContent, path) {
         const token = ++this.transitionToken;
         this.clearTransitionDimTimer();
-        if (!mainContent || !this.isTransitionEnabled()) return token;
+        if (!mainContent) return 0;
+
+        if (!this.isTransitionEnabled(path)) {
+            // Route ini tidak dianimasikan. Pastikan tidak ada sisa class
+            // animasi dari navigasi sebelumnya (mis. user klik Support lalu
+            // cepat klik menu lain sebelum animasinya selesai).
+            try {
+                mainContent.classList.remove('spa-entering', 'spa-swapping', 'spa-loading');
+            } catch (e) { /* abaikan */ }
+            return 0;
+        }
+
         try {
             mainContent.classList.remove('spa-entering', 'spa-swapping', 'spa-loading');
             // Paksa reflow supaya transisi mulai dari kondisi sebelumnya
@@ -559,7 +581,7 @@ class SPARouter {
 
             // Fase 1: konten meredup SEGERA setelah klik (feedback instan).
             // Tidak memblokir fetch -> halaman tidak terasa "diam".
-            const transitionToken = animate ? this.startPageTransition(mainContent) : 0;
+            const transitionToken = animate ? this.startPageTransition(mainContent, path) : 0;
 
             // Fetch content
             let pageData;

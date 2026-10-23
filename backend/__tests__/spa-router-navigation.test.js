@@ -288,6 +288,29 @@ describe('Animasi masuk halaman (slide-up)', () => {
         expect(router.transition.enterMs).toBeGreaterThanOrEqual(300); // smooth
     });
 
+    test('animasi HANYA untuk menu Support Admin', () => {
+        expect(router.transition.routes).toEqual(['/support/admin']);
+        expect(router.isTransitionEnabled('/support/admin')).toBe(true);
+        expect(router.isTransitionEnabled('/dashboard')).toBe(false);
+        expect(router.isTransitionEnabled('/renamefaktur')).toBe(false);
+        expect(router.isTransitionEnabled('/toko')).toBe(false);
+    });
+
+    test('route lain: tidak ada class animasi sama sekali', () => {
+        const el = fakeMain();
+        const token = router.startPageTransition(el, '/dashboard');
+        expect(token).toBe(0);
+        expect(el.classes.size).toBe(0);
+        expect(router.transitionDimTimer).toBeFalsy();
+    });
+
+    test('route Support Admin: transisi dimulai (token > 0)', () => {
+        const el = fakeMain();
+        const token = router.startPageTransition(el, '/support/admin');
+        expect(token).toBeGreaterThan(0);
+        router.clearTransitionDimTimer();
+    });
+
     test('keyframes slide-up: hanya transform, TANPA opacity', () => {
         expect(routerSrc).toContain('@keyframes spaPageSlideUp');
         // from: bergeser ke bawah, tanpa opacity: 0
@@ -355,6 +378,21 @@ describe('Animasi masuk halaman (slide-up)', () => {
 
     test('sisa fade lama (opacity 0.5 inline) sudah dihapus', () => {
         expect(routerSrc).not.toContain("mainContent.style.opacity = '0.5'");
+    });
+
+    test('halaman Support Admin tetap dianimasikan saat dibuka langsung', () => {
+        const html = require('fs').readFileSync(
+            path.join(__dirname, '..', '..', 'support-dashboard.html'), 'utf8'
+        );
+        expect(html).toContain('@keyframes supportPageSlideUp');
+        expect(html).toMatch(/#main-content:not\(\[data-page\]\)\s*\{\s*animation:\s*supportPageSlideUp/);
+    });
+
+    test('halaman lain tidak diberi animasi saat load', () => {
+        const html = require('fs').readFileSync(
+            path.join(__dirname, '..', '..', 'whatsapp-bot-dashboard.html'), 'utf8'
+        );
+        expect(html).not.toContain('appPageSlideUp');
     });
 });
 
