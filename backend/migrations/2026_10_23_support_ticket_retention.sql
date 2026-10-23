@@ -1,7 +1,7 @@
 -- ============================================================
 -- Retensi otomatis tiket support
 -- Tiket berstatus 'Closed' selama >= 3 hari dihapus permanen oleh
--- job backend (support-ticket-cleanup.js), termasuk foto di R2
+-- job backend (support-ticket-retention.js), termasuk foto di R2
 -- pada folder support-tickets/<ticket_id>/.
 --
 -- Jalankan sekali di Supabase SQL Editor.

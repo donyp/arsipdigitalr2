@@ -21,10 +21,10 @@ jest.mock('../r2-storage', () => ({
 const ROOT = path.join(__dirname, '..', '..');
 const baca = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
-const createCleanup = require('../support-ticket-cleanup');
+const createCleanup = require('../support-ticket-retention');
 const { hitungCutoff, pilihTiketKedaluwarsa, HARI_MS } = createCleanup;
 
-const cleanupSrc = baca('backend/support-ticket-cleanup.js');
+const cleanupSrc = baca('backend/support-ticket-retention.js');
 const storageSrc = baca('backend/support-storage.js');
 const backendSrc = baca('backend/support-endpoints.js');
 const serverSrc = baca('backend/server.js');
@@ -281,7 +281,7 @@ describe('Penyimpanan lampiran di R2', () => {
 // ============================================================
 describe('Integrasi retensi ke server', () => {
     test('job didaftarkan & dijalankan saat boot', () => {
-        expect(serverSrc).toContain("require('./support-ticket-cleanup')");
+        expect(serverSrc).toContain("require('./support-ticket-retention')");
         expect(serverSrc).toContain('supportTicketCleanup.registerRoutes(app');
         expect(serverSrc).toContain('supportTicketCleanup.start()');
     });
@@ -324,5 +324,26 @@ describe('Integrasi retensi ke server', () => {
         expect(migrasi).toContain('ADD COLUMN IF NOT EXISTS closed_at');
         expect(migrasi).toContain('idx_support_tickets_status_closed_at');
         expect(migrasi).toContain("WHERE status = 'Closed' AND closed_at IS NULL");
+    });
+
+    // Regresi: nama modul pernah terkena pola .gitignore (backend/*-cleanup.js)
+    // sehingga file tidak ikut ter-commit dan server gagal boot (MODULE_NOT_FOUND).
+    test('modul retensi ada di disk dan tidak terkena pola .gitignore', () => {
+        const namaModul = 'support-ticket-retention.js';
+        expect(fs.existsSync(path.join(ROOT, 'backend', namaModul))).toBe(true);
+
+        const polaIgnore = baca('.gitignore')
+            .split(/\r?\n/)
+            .map((baris) => baris.trim())
+            .filter((baris) => baris && !baris.startsWith('#'));
+
+        const kenaIgnore = polaIgnore.some((pola) => {
+            if (!pola.startsWith('backend/')) return false;
+            const nama = pola.slice('backend/'.length);
+            if (nama.startsWith('*')) return namaModul.endsWith(nama.slice(1));
+            return namaModul === nama;
+        });
+
+        expect(kenaIgnore).toBe(false);
     });
 });
