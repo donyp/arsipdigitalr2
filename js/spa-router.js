@@ -136,6 +136,27 @@ class SPARouter {
         this.loadedScriptNames = new Set();
         this.pageInitCallbacks = {};     // callback DOMContentLoaded per halaman (untuk re-run)
         this.executedInlinePaths = new Set(); // halaman yang inline-script-nya sudah pernah dijalankan
+
+        // ============================================================
+        // ANIMASI PINDAH HALAMAN (SLIDE-UP)
+        // ============================================================
+        // enabled:false -> animasi mati (kembali ke perilaku lama)
+        // dimAfterMs : baru meredup kalau data lama diambil > N ms
+        // loadMs     : durasi meredup saat menunggu data
+        // leaveMs    : durasi fade-out singkat tepat sebelum konten ditukar
+        // enterMs    : durasi halaman baru naik dari bawah
+        // shiftPx    : jarak awal halaman (px) sebelum naik ke posisi
+        this.transition = {
+            enabled: true,
+            dimAfterMs: 120,
+            loadMs: 120,
+            leaveMs: 90,
+            enterMs: 420,
+            shiftPx: 36
+        };
+        this.transitionToken = 0;   // penjaga klik cepat beruntun
+        this.transitionDimTimer = null;
+
         this.collectLoadedScripts();
 
         this.init();
@@ -222,6 +243,9 @@ class SPARouter {
     init() {
         // Setup navigation listeners
         document.addEventListener('click', (e) => this.handleLinkClick(e));
+
+        // CSS animasi transisi (di-inject sekali, berlaku untuk semua halaman)
+        this.installTransitionStyles();
         
         // Setup browser back/forward button
         window.addEventListener('popstate', (e) => {
@@ -237,7 +261,8 @@ class SPARouter {
                 window.location.reload();
                 return;
             }
-            this.loadPage(path, false);
+            // Back/forward juga dianimasikan supaya konsisten
+            this.loadPage(path, true);
         });
 
         // Catat path aktif. Router dimuat DI DALAM halaman itu sendiri,
@@ -249,6 +274,170 @@ class SPARouter {
         // (loader-nya sendiri) -> navigasi berikutnya tidak perlu
         // overlay loader lagi.
         this.isFirstLoad = false;
+    }
+
+    // ============================================================
+    // ANIMASI TRANSISI HALAMAN
+    // ============================================================
+
+    /**
+     * Inject CSS animasi sekali saja.
+     * Ditempel dari router (bukan per-file HTML) supaya SEMUA halaman
+     * otomatis dapat animasi tanpa mengubah 20+ file HTML.
+     */
+    installTransitionStyles() {
+        try {
+            if (!document.createElement || !document.head) return;
+            if (document.getElementById('spa-page-transition-style')) return;
+
+            const t = this.transition;
+            const style = document.createElement('style');
+            style.id = 'spa-page-transition-style';
+            style.textContent = `
+/* ===== Animasi pindah halaman (SPA) ===== */
+#main-content.spa-loading {
+    /* !important: mengalahkan inline "transition: all 300ms" milik halaman */
+    opacity: .55 !important;
+    transition: opacity ${t.loadMs}ms ease-out !important;
+    pointer-events: none !important;
+}
+#main-content.spa-swapping {
+    opacity: 0 !important;
+    transition: opacity ${t.leaveMs}ms ease-in !important;
+    pointer-events: none !important;
+}
+/* Halaman baru: NAIK DARI BAWAH (slide-up), bukan fade */
+#main-content.spa-entering {
+    opacity: 1 !important;
+    transition: none !important;
+    animation: spaPageSlideUp ${t.enterMs}ms cubic-bezier(.16,1,.3,1) both;
+    will-change: transform;
+}
+@keyframes spaPageSlideUp {
+    from { transform: translate3d(0, ${t.shiftPx}px, 0); }
+    to   { transform: translate3d(0, 0, 0); }
+}
+/* Hormati preferensi pengguna yang mematikan animasi */
+@media (prefers-reduced-motion: reduce) {
+    #main-content.spa-loading,
+    #main-content.spa-swapping { transition: none !important; }
+    #main-content.spa-entering {
+        animation: none !important;
+        transform: none !important;
+    }
+}
+`;
+            document.head.appendChild(style);
+        } catch (e) {
+            // Tidak fatal: navigasi tetap jalan tanpa animasi
+        }
+    }
+
+    /**
+     * Apakah pengguna meminta animasi dikurangi?
+     */
+    prefersReducedMotion() {
+        try {
+            return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Apakah animasi aktif di navigasi ini?
+     */
+    isTransitionEnabled() {
+        return !!(this.transition && this.transition.enabled) && !this.prefersReducedMotion();
+    }
+
+    /**
+     * Fase 1: mulai navigasi.
+     * Konten TIDAK langsung meredup - kalau data sudah ada di cache
+     * (< dimAfterMs) halaman langsung slide tanpa kedip.
+     * @returns {number} token generasi transisi
+     */
+    startPageTransition(mainContent) {
+        const token = ++this.transitionToken;
+        this.clearTransitionDimTimer();
+        if (!mainContent || !this.isTransitionEnabled()) return token;
+        try {
+            mainContent.classList.remove('spa-entering', 'spa-swapping', 'spa-loading');
+            // Paksa reflow supaya transisi mulai dari kondisi sebelumnya
+            void mainContent.offsetWidth;
+        } catch (e) { /* abaikan */ }
+
+        this.transitionDimTimer = setTimeout(() => {
+            if (token !== this.transitionToken) return;
+            try {
+                mainContent.classList.add('spa-loading');
+            } catch (e) { /* abaikan */ }
+        }, this.transition.dimAfterMs);
+
+        return token;
+    }
+
+    clearTransitionDimTimer() {
+        if (this.transitionDimTimer) {
+            clearTimeout(this.transitionDimTimer);
+            this.transitionDimTimer = null;
+        }
+    }
+
+    /**
+     * Fase 2: fade-out singkat tepat sebelum konten ditukar.
+     * Menunggu data TIDAK memblokir navigasi.
+     */
+    async finishPageTransitionOut(mainContent, token) {
+        this.clearTransitionDimTimer();
+        if (!mainContent || !this.isTransitionEnabled()) return;
+        if (token !== this.transitionToken) return; // sudah ada navigasi lebih baru
+        try {
+            mainContent.classList.remove('spa-loading');
+            mainContent.classList.add('spa-swapping');
+            void mainContent.offsetWidth;
+        } catch (e) { /* abaikan */ }
+        await new Promise(resolve => setTimeout(resolve, this.transition.leaveMs));
+    }
+
+    /**
+     * Fase 3: halaman baru NAIK DARI BAWAH ke posisinya (slide-up).
+     */
+    enterPage(mainContent) {
+        if (!mainContent) return;
+        this.clearTransitionDimTimer();
+        try {
+            mainContent.classList.remove('spa-loading', 'spa-swapping');
+            mainContent.classList.remove('spa-entering');
+            if (!this.isTransitionEnabled()) return;
+
+            // Reflow -> animasi selalu restart walau class baru dilepas
+            void mainContent.offsetWidth;
+            mainContent.classList.add('spa-entering');
+
+            const el = mainContent;
+            const cleanup = (evt) => {
+                // animationend dari anak-anak #main-content ikut bubble ->
+                // abaikan supaya class tidak dilepas terlalu cepat
+                if (evt && evt.target !== el) return;
+                el.removeEventListener('animationend', cleanup);
+                el.classList.remove('spa-entering');
+            };
+            el.addEventListener('animationend', cleanup);
+            // Jaring pengaman kalau animationend tidak pernah tembak
+            setTimeout(cleanup, this.transition.enterMs + 150);
+        } catch (e) { /* abaikan */ }
+    }
+
+    /**
+     * Bersihkan semua class transisi (dipakai saat error / fallback).
+     */
+    resetPageTransition(mainContent) {
+        this.clearTransitionDimTimer();
+        if (!mainContent) return;
+        try {
+            mainContent.classList.remove('spa-loading', 'spa-swapping', 'spa-entering');
+        } catch (e) { /* abaikan */ }
     }
 
     handleLinkClick(e) {
@@ -368,11 +557,9 @@ class SPARouter {
                 }
             }
 
-            // Fade out content on subsequent navigations (WITHOUT loader)
-            if (animate && !isFirstLoadOfSession) {
-                mainContent.style.opacity = '0.5';
-                mainContent.style.pointerEvents = 'none';
-            }
+            // Fase 1: konten meredup SEGERA setelah klik (feedback instan).
+            // Tidak memblokir fetch -> halaman tidak terasa "diam".
+            const transitionToken = animate ? this.startPageTransition(mainContent) : 0;
 
             // Fetch content
             let pageData;
@@ -387,10 +574,9 @@ class SPARouter {
             let htmlContent = typeof pageData === 'string' ? pageData : pageData.html;
             let pageScripts = typeof pageData === 'object' && pageData.scripts ? pageData.scripts : [];
 
-            // Update content with smooth transition
-            if (animate && !isFirstLoadOfSession) {
-                mainContent.style.transition = 'opacity 0.3s ease';
-                await new Promise(resolve => setTimeout(resolve, 150));
+            // Fase 2: fade-out cepat TEPAT SEBELUM konten ditukar
+            if (animate && transitionToken) {
+                await this.finishPageTransitionOut(mainContent, transitionToken);
             }
 
             // Reset style #main-content ke bersih sebelum menerapkan style
@@ -424,10 +610,6 @@ class SPARouter {
                 }
                 if (layout.mainContentStyle) {
                     mainContent.setAttribute('style', layout.mainContentStyle);
-                    //transition & opacity dipakai router untuk animasi
-                    mainContent.style.transition = 'opacity 0.3s ease';
-                    mainContent.style.opacity = '0.5';
-                    mainContent.style.pointerEvents = 'none';
                 }
                 // Konten "body" sudah punya margin sendiri -> container
                 // tidak boleh menambah offset lagi (hindari dobel 16rem).
@@ -485,8 +667,17 @@ class SPARouter {
 
             // Insert HTML content (scripts are in separate pageScripts array)
             mainContent.innerHTML = htmlContent;
-            mainContent.style.opacity = '1';
-            mainContent.style.pointerEvents = 'auto';
+
+            // Langsung pindah ke atas SEKARANG (bukan 1 detik kemudian)
+            // supaya halaman tidak terlihat "melompat" setelah animasi.
+            try { window.scrollTo(0, 0); } catch (e) { /* abaikan */ }
+
+            // Fase 3: halaman baru naik dari bawah
+            if (animate && transitionToken) {
+                this.enterPage(mainContent);
+            } else {
+                this.resetPageTransition(mainContent);
+            }
 
             // ============================================================
             // HEADER UNIFIED
@@ -744,15 +935,12 @@ class SPARouter {
                     : path;
             } catch (e) { /* abaikan */ }
 
-            // Jalankan navigasi yang diantrikan (klik terakhir yang menang)
-            if (this.pendingPath && this.pendingPath !== path) {
-                const nextPath = this.pendingPath;
-                this.pendingPath = null;
-                setTimeout(() => this.navigate(nextPath), 50);
-            }
+            // CATATAN: navigasi yang diantrikan DIJALANKAN di blok finally
+            // (setelah isLoading=false). Dulu dijadwalkan di sini, padahal
+            // isLoading masih true -> navigate() mengantrikan ulang dan
+            // klik terakhir hilang (halaman tidak pindah).
 
-            // Scroll to top
-            window.scrollTo(0, 0);
+            // (scrollTo sudah dipindah ke tepat setelah konten ditukar)
 
             // Re-initialize any scripts that need to run
             await this.reinitializePageScripts();
@@ -811,6 +999,7 @@ class SPARouter {
                 if (typeof origInitSidebar !== 'undefined') window.initSidebar = origInitSidebar;
                 if (typeof origLoadSidebar !== 'undefined') window.loadSidebar = origLoadSidebar;
                 if (origAddEventListener) document.addEventListener = origAddEventListener;
+                this.resetPageTransition(mainContent);
                 mainContent.style.opacity = '1';
                 mainContent.style.pointerEvents = 'auto';
                 const loader = document.querySelector('.page-loader');
@@ -818,10 +1007,26 @@ class SPARouter {
                 document.body.classList.remove('loading-state');
                 document.documentElement.classList.remove('loading-state');
             } catch (_) { /* abaikan */ }
+            // Halaman akan di-reload penuh -> antrian navigasi tidak relevan
+            this.pendingPath = null;
             window.location.href = path;
             this.isFirstLoad = false;
         } finally {
             this.isLoading = false;
+
+            // ============================================================
+            // JALANKAN NAVIGASI YANG DIANTRIKAN (klik terakhir yang menang)
+            // ============================================================
+            // Dijalankan SETELAH isLoading=false. Kalau dijalankan lebih
+            // awal, navigate() masih melihat isLoading=true -> diantrikan
+            // ulang -> klik terakhir hilang (halaman tidak pindah).
+            const nextPath = this.pendingPath;
+            if (nextPath) {
+                this.pendingPath = null;
+                if (nextPath !== this.currentPage) {
+                    setTimeout(() => this.navigate(nextPath), 0);
+                }
+            }
         }
     }
 

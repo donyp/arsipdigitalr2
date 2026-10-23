@@ -251,3 +251,140 @@ describe('SPA Router - keputusan navigasi', () => {
         });
     });
 });
+
+// ============================================================
+// ANIMASI PINDAH HALAMAN (SLIDE-UP DARI BAWAH)
+// ============================================================
+describe('Animasi masuk halaman (slide-up)', () => {
+
+    const routerSrc = require('fs').readFileSync(
+        path.join(__dirname, '..', '..', 'js', 'spa-router.js'), 'utf8'
+    );
+
+    function fakeMain() {
+        const classes = new Set();
+        return {
+            classes,
+            offsetWidth: 100,
+            style: {},
+            classList: {
+                add: (...cs) => cs.forEach(c => classes.add(c)),
+                remove: (...cs) => cs.forEach(c => classes.delete(c)),
+                contains: (c) => classes.has(c)
+            },
+            addEventListener: () => {},
+            removeEventListener: () => {}
+        };
+    }
+
+    afterEach(() => {
+        router.transition.enabled = true;
+        router.clearTransitionDimTimer();
+    });
+
+    test('konfigurasi memakai slide-up (bukan fade)', () => {
+        expect(router.transition.enabled).toBe(true);
+        expect(router.transition.shiftPx).toBeGreaterThan(10);   // naik dari bawah
+        expect(router.transition.enterMs).toBeGreaterThanOrEqual(300); // smooth
+    });
+
+    test('keyframes slide-up: hanya transform, TANPA opacity', () => {
+        expect(routerSrc).toContain('@keyframes spaPageSlideUp');
+        // from: bergeser ke bawah, tanpa opacity: 0
+        expect(routerSrc).toMatch(/from\s*\{\s*transform:\s*translate3d\(0,\s*\$\{t\.shiftPx\}px,\s*0\);\s*\}/);
+        expect(routerSrc).not.toMatch(/spaPageSlideUp[\s\S]{0,300}opacity/);
+        // saat masuk, opacity dipaksa 1 (tanpa fade-in)
+        expect(routerSrc).toMatch(/\.spa-entering\s*\{[\s\S]{0,200}opacity:\s*1\s*!important/);
+    });
+
+    test('enterPage: menambah class spa-entering dan membersihkan class lain', () => {
+        const el = fakeMain();
+        el.classes.add('spa-loading');
+        el.classes.add('spa-swapping');
+        const orig = router.transition.enterMs;
+        router.transition.enterMs = 0;
+        router.enterPage(el);
+        expect(el.classes.has('spa-entering')).toBe(true);
+        expect(el.classes.has('spa-loading')).toBe(false);
+        expect(el.classes.has('spa-swapping')).toBe(false);
+        router.transition.enterMs = orig;
+    });
+
+    test('startPageTransition: tidak langsung meredup (anti kedip di halaman cache)', () => {
+        const el = fakeMain();
+        const token = router.startPageTransition(el);
+        expect(token).toBeGreaterThan(0);
+        expect(el.classes.has('spa-loading')).toBe(false);
+        router.clearTransitionDimTimer();
+    });
+
+    test('resetPageTransition: membersihkan semua class transisi', () => {
+        const el = fakeMain();
+        el.classes.add('spa-loading');
+        el.classes.add('spa-swapping');
+        el.classes.add('spa-entering');
+        router.resetPageTransition(el);
+        expect(el.classes.size).toBe(0);
+    });
+
+    test('kill switch: transition.enabled=false -> tanpa animasi', () => {
+        router.transition.enabled = false;
+        const el = fakeMain();
+        router.enterPage(el);
+        expect(el.classes.has('spa-entering')).toBe(false);
+    });
+
+    test('menghormati prefers-reduced-motion', () => {
+        expect(routerSrc).toContain('prefers-reduced-motion');
+        expect(typeof router.prefersReducedMotion).toBe('function');
+    });
+
+    test('CSS di-inject dari router (semua halaman dapat animasi tanpa edit HTML)', () => {
+        expect(routerSrc).toContain('installTransitionStyles');
+        expect(routerSrc).toContain('spa-page-transition-style');
+        expect(routerSrc).toContain('document.head.appendChild(style)');
+    });
+
+    test('scroll ke atas dilakukan tepat setelah konten ditukar', () => {
+        const swapIdx = routerSrc.indexOf('mainContent.innerHTML = htmlContent');
+        const scrollIdx = routerSrc.indexOf('window.scrollTo(0, 0)', swapIdx);
+        expect(swapIdx).toBeGreaterThan(-1);
+        expect(scrollIdx).toBeGreaterThan(swapIdx);
+        expect(scrollIdx - swapIdx).toBeLessThan(600);
+    });
+
+    test('sisa fade lama (opacity 0.5 inline) sudah dihapus', () => {
+        expect(routerSrc).not.toContain("mainContent.style.opacity = '0.5'");
+    });
+});
+
+// ============================================================
+// ANTRIAN NAVIGASI (klik menu saat halaman masih memuat)
+// ============================================================
+describe('Navigasi yang diantrikan', () => {
+
+    const routerSrc = require('fs').readFileSync(
+        path.join(__dirname, '..', '..', 'js', 'spa-router.js'), 'utf8'
+    );
+
+    test('klik saat memuat tetap diantrikan (bukan dibuang)', () => {
+        router.isLoading = true;
+        router.pendingPath = null;
+        router.navigate('/zona');
+        expect(router.pendingPath).toBe('/zona');
+        router.isLoading = false;
+        router.pendingPath = null;
+    });
+
+    test('antrian dijalankan SETELAH isLoading=false (bukan sebelumnya)', () => {
+        const clearIdx = routerSrc.indexOf('this.isLoading = false;');
+        const runIdx = routerSrc.indexOf('const nextPath = this.pendingPath;');
+        expect(clearIdx).toBeGreaterThan(-1);
+        expect(runIdx).toBeGreaterThan(clearIdx);
+    });
+
+    test('tidak ada lagi penjadwalan antrian sebelum reinitialize (bug klik hilang)', () => {
+        // Penjadwalan lama: setTimeout(..., 50) sebelum reinitializePageScripts()
+        expect(routerSrc).not.toMatch(/setTimeout\(\(\) => this\.navigate\(nextPath\), 50\)/);
+    });
+});
