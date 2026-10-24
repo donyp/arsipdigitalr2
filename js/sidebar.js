@@ -203,7 +203,9 @@
         textMutedColor: 'rgba(61, 59, 107, 0.7)',
         hoverBg: 'rgba(61, 59, 107, 0.08)',
         borderColor: '#e5e7eb',
-        activeTextColor: '#3d3b6b'
+        activeTextColor: '#3d3b6b',
+        // Garis rail submenu (dropdown tree) - light
+        railColor: 'rgba(61, 59, 107, 0.18)'
     };
 
     // ============================================================
@@ -242,7 +244,9 @@
             textMutedColor: '#cbd5e1',
             hoverBg: 'rgba(37, 99, 235, 0.15)',
             borderColor: '#1e293b',
-            activeTextColor: '#60a5fa'
+            activeTextColor: '#60a5fa',
+            // Garis rail submenu (dropdown tree) - dark
+            railColor: 'rgba(148, 163, 184, 0.3)'
         } : STYLES;
 
         // Build menu HTML
@@ -628,6 +632,7 @@
                         display: flex;
                         flex-direction: column;
                         gap: 0.2rem;
+                        --sidebar-rail-color: ${colors.railColor};
                         pointer-events: ${isExpanded ? 'auto' : 'none'};
                     ">
                     ${childrenHTML}
@@ -757,6 +762,53 @@
             .sidebar-dropdown-content.active {
                 max-height: 500px;
                 opacity: 1;
+            }
+
+            /* ============================================================
+               Gaya garis submenu (dropdown tree) - rail + elbow
+               - Rail vertikal mengikuti posisi tengah ikon induk.
+               - Tiap item non-aktif bercabang (elbow) ke kanan.
+               - Highlight menu aktif TIDAK diubah (tint bg + border kiri
+                 + titik heartbeat tetap seperti semula).
+               ============================================================ */
+            .sidebar-dropdown-content {
+                position: relative;
+            }
+
+            /* Rail vertikal (garis utama) - tinggi mengikuti isi dropdown */
+            .sidebar-dropdown-content::before {
+                content: '';
+                position: absolute;
+                left: 1.4rem;
+                top: 0;
+                bottom: 0;
+                width: 1px;
+                background-color: var(--sidebar-rail-color, rgba(61, 59, 107, 0.18));
+                pointer-events: none;
+            }
+
+            /* Kurva penghubung rail -> item submenu (non-aktif saja) */
+            .sidebar-child-item:not(.active)::after {
+                content: '';
+                position: absolute;
+                left: calc(1.4rem - 3px);
+                top: 0;
+                width: 12px;
+                height: 50%;
+                border-left: 1px solid var(--sidebar-rail-color, rgba(61, 59, 107, 0.18));
+                border-bottom: 1px solid var(--sidebar-rail-color, rgba(61, 59, 107, 0.18));
+                border-bottom-left-radius: 8px;
+                pointer-events: none;
+            }
+
+            /* Item aktif: highlight existing dipertahankan, tanpa kurva */
+            .sidebar-child-item.active::after {
+                display: none;
+            }
+
+            /* Hover child: jangan geser horizontal supaya posisi garis presisi */
+            .sidebar-child-item:hover:not(.active) {
+                transform: translateX(0);
             }
 
             #main-content {
