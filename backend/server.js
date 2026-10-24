@@ -1531,9 +1531,9 @@ if (ENABLE_CHUNKED_UPLOAD) {
         logger: console
     });
     
-    console.log('[ChunkedUpload] ? Modules initialized (feature flag: ON)');
+    console.log('[ChunkedUpload] ✅ Modules initialized (feature flag: ON)');
 } else {
-    console.log('[ChunkedUpload] ??  Disabled (set ENABLE_CHUNKED_UPLOAD=true to enable)');
+    console.log('[ChunkedUpload] ⏸️ Disabled (set ENABLE_CHUNKED_UPLOAD=true to enable)');
 }
 
 // JWT Secret — WAJIB diset via environment variable, tidak boleh ada fallback hardcoded
@@ -1832,7 +1832,7 @@ console.log('[INIT] Registering Storage Handler endpoints...');
 const registerStorageHandlerEndpoints = require('./storage-handler-endpoints');
 registerStorageHandlerEndpoints(app, supabase, authenticateToken, authorizeRole);
 console.log('[INIT] Storage Handler endpoints registered ✅');
-console.log('  �" R2 File Manager (Browse, Upload, Download, Delete, Rename)');
+console.log('  📁 R2 File Manager (Browse, Upload, Download, Delete, Rename)');
 
 // ============================================================
 // SESSION MANAGEMENT & FAQ ENDPOINTS (Phase 2 Features)
@@ -2234,7 +2234,7 @@ app.post('/api/auth/verify-admin', async (req, res) => {
     }
 });
 
-// POST /api/auth/logout (stateless â€” just for audit logging)
+// POST /api/auth/logout (stateless — just for audit logging)
 app.post('/api/auth/logout', authenticateToken, async (req, res) => {
     try {
         // Log audit
@@ -2267,7 +2267,7 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
     }
 });
 
-// GET /api/auth/me â€” get current user info
+// GET /api/auth/me — get current user info
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
     try {
         const { data: user, error } = await supabase
@@ -2341,7 +2341,7 @@ app.post('/api/logout', authenticateToken, async (req, res) => {
 // FILES ENDPOINTS
 // ============================================================
 
-// GET /api/files â€” list files (auto-filtered by zona for admin_zona)
+// GET /api/files — list files (auto-filtered by zona for admin_zona)
 app.get('/api/files', authenticateToken, authorizeZone, async (req, res) => {
     const startTime = performance.now();
     try {
@@ -5057,7 +5057,7 @@ app.get('/api/users/names', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/users â€” create user
+// POST /api/users — create user
 app.post('/api/users', authenticateToken, sensitiveOpsLimiter, async (req, res) => {
     // Permission check: allow super_admin and moderator only
     if (req.user.role !== 'super_admin' && req.user.role !== 'moderator') {
@@ -5640,7 +5640,7 @@ app.post('/api/admin/recreate-admin-zona-users', authenticateToken, authorizeRol
     }
 });
 
-// PUT /api/users/:id â€” update user
+// PUT /api/users/:id — update user
 app.put('/api/users/:id', authenticateToken, async (req, res) => {
     // Permission check: allow users to update their own profile, or super_admin/moderator to update anyone
     const userId = req.params.id;
@@ -5866,7 +5866,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
     }
 });
 
-// DELETE /api/users/:id â€” Permanent Delete
+// DELETE /api/users/:id — Permanent Delete
 app.delete('/api/users/:id', authenticateToken, requirePermission('manage_users'), async (req, res) => {
     try {
         const userIdToDelete = req.params.id;
@@ -7125,7 +7125,7 @@ app.post('/api/zonas', authenticateToken, requirePermission('manage_zonas'), asy
     }
 });
 
-// PUT /api/zonas/:id â€” Update zone settings
+// PUT /api/zonas/:id — Update zone settings
 app.put('/api/zonas/:id', authenticateToken, requirePermission('manage_zonas'), async (req, res) => {
     try {
         const { nama, wa_recipient } = req.body;
@@ -7142,7 +7142,7 @@ app.put('/api/zonas/:id', authenticateToken, requirePermission('manage_zonas'), 
 });
 
 
-// POST /api/toko â€” Create new shop
+// POST /api/toko — Create new shop
 app.post('/api/toko', authenticateToken, requirePermission('manage_toko'), async (req, res) => {
     try {
         const { kode, nama, zona_id } = req.body;
@@ -7163,7 +7163,7 @@ app.post('/api/toko', authenticateToken, requirePermission('manage_toko'), async
     }
 });
 
-// PUT /api/toko/:id â€” Update shop
+// PUT /api/toko/:id — Update shop
 app.put('/api/toko/:id', authenticateToken, requirePermission('manage_toko'), async (req, res) => {
     try {
         const { kode, nama, zona_id } = req.body;
@@ -7179,7 +7179,7 @@ app.put('/api/toko/:id', authenticateToken, requirePermission('manage_toko'), as
     }
 });
 
-// DELETE /api/toko/:id â€” Delete shop
+// DELETE /api/toko/:id — Delete shop
 app.delete('/api/toko/:id', authenticateToken, requirePermission('manage_toko'), async (req, res) => {
     try {
         // Check if shop still has files linked
@@ -7211,7 +7211,7 @@ app.delete('/api/toko/:id', authenticateToken, requirePermission('manage_toko'),
 // MEDIA CATEGORIES ENDPOINTS (Super Admin only)
 // ============================================================
 
-// GET /api/media-categories â€” list all categories
+// GET /api/media-categories — list all categories
 app.get('/api/media-categories', authenticateToken, async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -7226,7 +7226,7 @@ app.get('/api/media-categories', authenticateToken, async (req, res) => {
     }
 });
 
-// POST /api/media-categories â€” create new category
+// POST /api/media-categories — create new category
 app.post('/api/media-categories', authenticateToken, requirePermission('manage_media_ads'), async (req, res) => {
     try {
         const { nama, emoji, deskripsi, warna } = req.body;
@@ -7270,7 +7270,7 @@ app.post('/api/media-categories', authenticateToken, requirePermission('manage_m
     }
 });
 
-// DELETE /api/media-categories/:id â€” delete category
+// DELETE /api/media-categories/:id — delete category
 app.delete('/api/media-categories/:id', authenticateToken, requirePermission('manage_media_ads'), async (req, res) => {
     try {
         const { error } = await supabase

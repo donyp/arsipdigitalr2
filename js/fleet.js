@@ -72,7 +72,7 @@ function renderTable() {
             <td class="py-5">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-[10px] font-black text-blue-600">
-                        ${(v.driver || '??').substring(0, 2).toUpperCase()}
+                        ${(v.driver || '—').substring(0, 2).toUpperCase()}
                     </div>
                     <p class="text-xs font-bold text-gray-700">${v.driver || '-'}</p>
                 </div>

@@ -30,7 +30,7 @@ const upload = multer({
 
 function cleanNumber(str) {
     if (!str) return '';
-    // Keep original format from PDF (e.g. "100,000,000.00") â€” just trim whitespace
+    // Keep original format from PDF (e.g. "100,000,000.00") — just trim whitespace
     return str.toString().trim();
 }
 
@@ -262,7 +262,7 @@ function parseBSI(text) {
         /^CATATAN:/,
         /^Apabila nasabah|^dengan akhir bulan|^tercantum pada/,
         /^BCA berhak|^Rekening\.$/,
-        /^\s*â€¢\s*$/,
+        /^\s*•\s*$/,
         /^\s*$/,
     ];
 
@@ -1017,11 +1017,11 @@ module.exports = function registerPdfToCsvEndpoints(app, authenticateToken) {
         res.json({ status: 'ok', service: 'pdf-to-csv' });
     });
 
-    console.log('[INIT] PDF to CSV endpoints registered âœ…');
-    console.log('  âœ“ POST /api/pdf-to-csv/detect');
-    console.log('  âœ“ POST /api/pdf-to-csv/convert');
-    console.log('  âœ“ GET  /api/pdf-to-csv/history');
-    console.log('  âœ“ GET  /api/pdf-to-csv/stats');
+    console.log('[INIT] PDF to CSV endpoints registered ✅');
+    console.log('  ✓ POST /api/pdf-to-csv/detect');
+    console.log('  ✓ POST /api/pdf-to-csv/convert');
+    console.log('  ✓ GET  /api/pdf-to-csv/history');
+    console.log('  ✓ GET  /api/pdf-to-csv/stats');
 };
 
 // Helper: save conversion log to DB

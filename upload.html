@@ -112,7 +112,7 @@
                             <div class="flex items-center justify-between mb-3 px-1">
                                 <label class="text-xs font-bold text-gray-500 uppercase tracking-widest">Berkas
                                     Dokumen</label>
-                                <span class="text-[10px] text-gray-600 font-medium tracking-tight">Maks 25MB �
+                                <span class="text-[10px] text-gray-600 font-medium tracking-tight">Maks 25MB •
                                     PDF/JPG/PNG</span>
                             </div>
                             <div id="drop-zone"
@@ -346,7 +346,7 @@
             // Display files with loading status, then check each faktur
             listEl.innerHTML = invoiceFilesToUpload.map(f => `
                 <li class="flex items-center gap-3 p-3 bg-gray-50 rounded text-sm border border-gray-200">
-                    <span class="text-red-600 font-bold">??</span>
+                    <span class="text-red-600 font-bold">⚠️</span>
                     <div class="flex-1">
                         <p class="font-bold text-gray-900">${f.name}</p>
                         <p class="text-xs text-gray-500">${(f.size / 1024 / 1024).toFixed(2)}MB</p>
@@ -385,16 +385,16 @@
                     
                     if (result.exists) {
                         // Found in daftar
-                        statusEl.innerHTML = '??';
+                        statusEl.innerHTML = '✅';
                         statusEl.title = `Found: ${result.data.toko} (${result.data.status})`;
                     } else {
                         // Not found in daftar
-                        statusEl.innerHTML = '??';
+                        statusEl.innerHTML = '❌';
                         statusEl.title = `Not in daftar (${faktur})`;
                     }
                 } catch (error) {
                     const statusEl = document.querySelector(`[data-filename="${file.name}"] span`);
-                    statusEl.innerHTML = '??';
+                    statusEl.innerHTML = '⛔';
                     statusEl.title = 'Error checking faktur';
                 }
             }

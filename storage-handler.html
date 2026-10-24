@@ -748,7 +748,7 @@
             
             // If > 5 files, create ZIP
             if (fileCount > 5) {
-                Notify.info(`?? Preparing ZIP with ${fileCount} files...`);
+                Notify.info(`📦 Preparing ZIP with ${fileCount} files...`);
                 
                 try {
                     const response = await fetch('/api/storage-handler/download-bulk', {
@@ -818,7 +818,7 @@
             }
 
             // If <= 5 files, individual downloads
-            Notify.info(`?? Starting ${fileCount} downloads...`);
+            Notify.info(`⬇️ Starting ${fileCount} downloads...`);
             
             try {
                 const response = await fetch('/api/storage-handler/download-bulk', {
@@ -945,7 +945,7 @@
                     closeUploadModal();
                     refreshBrowser();
                 } else {
-                    Notify.warning(`G��n+� Uploaded ${data.uploaded}, failed ${data.failed}`);
+                    Notify.warning(`⚠️ Uploaded ${data.uploaded}, failed ${data.failed}`);
                 }
             } catch (error) {
                 Notify.error('Upload failed');
@@ -956,7 +956,7 @@
 
         async function downloadFile(filePath) {
             try {
-                Notify.info('?? Preparing download...');
+                Notify.info('⬇️ Preparing download...');
                 
                 console.log('[Download] Requesting signed URL for:', filePath);
                 

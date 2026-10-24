@@ -58,21 +58,21 @@ function handleFileSelected(file) {
     // Strict validation: Extension check
     const ext = file.name.toLowerCase().split('.').pop();
     if (ext !== 'xlsx') {
-        Toast.error('G�� Format file tidak valid', 'Hanya file Microsoft Excel Worksheet (.xlsx) yang diizinkan.\n\nFile lain seperti .xls, .csv, atau format lain tidak didukung.');
+        Toast.error('❌ Format file tidak valid', 'Hanya file Microsoft Excel Worksheet (.xlsx) yang diizinkan.\n\nFile lain seperti .xls, .csv, atau format lain tidak didukung.');
         return;
     }
 
     // MIME type check
     const validMimeTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
     if (!validMimeTypes.includes(file.type)) {
-        Toast.warning('G��n+� MIME type tidak standard', `File type: ${file.type || 'unknown'}\n\nSistem masih akan mencoba memproses file ini.`);
+        Toast.warning('⚠️ MIME type tidak standard', `File type: ${file.type || 'unknown'}\n\nSistem masih akan mencoba memproses file ini.`);
         // Continue anyway - MIME type might not be set correctly on some systems
     }
 
     // Size check
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-        Toast.error('G�� File terlalu besar', `Ukuran file: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\nMaksimal ukuran file: 10MB`);
+        Toast.error('❌ File terlalu besar', `Ukuran file: ${(file.size / 1024 / 1024).toFixed(2)}MB\n\nMaksimal ukuran file: 10MB`);
         return;
     }
 
@@ -224,7 +224,7 @@ async function checkData() {
         document.getElementById('validationResult').style.display = 'block';
 
     } catch (error) {
-        Toast.error(error.message, 'G�� Upload Error');
+        Toast.error(error.message, '❌ Upload Error');
         resetUpload();
     }
 }
@@ -336,7 +336,7 @@ async function uploadData() {
             btnUpload.textContent = originalText;
         }
     } catch (error) {
-        Toast.error(error.message, 'G�� Upload Error');
+        Toast.error(error.message, '❌ Upload Error');
         btnUpload.disabled = false;
         btnUpload.textContent = originalText;
     }
@@ -464,7 +464,7 @@ function displayWhatsappNotifications() {
             margin-bottom: 8px;
             font-size: 13px;
         `;
-        zonaLabel.textContent = `=��� ${notif.zona_name} (${notif.invoice_count} invoice)`;
+        zonaLabel.textContent = `📍 ${notif.zona_name} (${notif.invoice_count} invoice)`;
 
         const messageText = document.createElement('div');
         messageText.style.cssText = `
@@ -496,7 +496,7 @@ function displayWhatsappNotifications() {
             font-size: 12px;
             transition: all 0.2s;
         `;
-        copyButton.textContent = '=��� Salin Pesan';
+        copyButton.textContent = '📋 Salin Pesan';
         copyButton.onmouseover = () => copyButton.style.background = '#1fa857';
         copyButton.onmouseout = () => copyButton.style.background = '#25d366';
         copyButton.onclick = () => copyToClipboard(notif.message, notif.zona_name, copyButton);
@@ -519,7 +519,7 @@ async function copyToClipboard(message, zonaName, buttonElement) {
         
         // Show feedback
         const originalText = buttonElement.textContent;
-        buttonElement.textContent = 'G�� Sudah Disalin!';
+        buttonElement.textContent = '✅ Sudah Disalin!';
         buttonElement.style.background = '#27ae60';
         
         setTimeout(() => {
@@ -562,7 +562,7 @@ async function markAllWhatsappAsSent() {
             document.getElementById('whatsappPanel').style.display = 'none';
             
             if (typeof Toast !== 'undefined') {
-                Toast.success('Semua pesan sudah ditandai sebagai terkirim!', 'G�� Sukses');
+                Toast.success('Semua pesan sudah ditandai sebagai terkirim!', '✅ Sukses');
             }
         } else {
             if (typeof Toast !== 'undefined') {

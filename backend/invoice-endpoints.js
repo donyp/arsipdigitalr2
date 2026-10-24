@@ -1490,7 +1490,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
             
             // Debug: Show sample data if admin_zona returns 0 results
             if (req.user && req.user.role === 'admin_zona' && count === 0) {
-                console.warn(`[Invoice List] ?? Admin_zona ${req.user.userId} (zona_id: ${req.user.zona_id}) returned 0 invoices!`);
+                console.warn(`[Invoice List] ⚠️ Admin_zona ${req.user.userId} (zona_id: ${req.user.zona_id}) returned 0 invoices!`);
                 // Check if invoices exist at all for this zona
                 const { count: checkCount, error: checkErr } = await supabase
                     .from('invoice_file_list')
@@ -3924,7 +3924,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 const { faktur } = req.params;
                 const startTime = Date.now();
                 
-                console.log(`[Invoice Combine] ??  Request for faktur: ${faktur}`);
+                console.log(`[Invoice Combine] 🔗 Request for faktur: ${faktur}`);
                 
                 // Get invoice data
                 const { data: invoice, error: queryError } = await supabase
