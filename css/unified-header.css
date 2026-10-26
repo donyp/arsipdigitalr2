@@ -252,15 +252,15 @@ html.dark-mode {
 }
 
 .refresh-btn:hover i {
-    animation: spin 0.6s linear;
+    animation: none;
 }
 
 .dark-mode-btn:hover i {
-    animation: spin-reverse 0.6s linear;
+    animation: none;
 }
 
 .logout-btn:hover i {
-    animation: spin 0.6s linear;
+    animation: none;
 }
 
 @keyframes spin {
