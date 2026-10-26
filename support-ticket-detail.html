@@ -1495,7 +1495,16 @@
                 document.getElementById('btnSendReply').disabled = false;
             }
         }
-        
+
+        // ===== Ekspos handler inline ke window =====
+        // Fungsi di dalam blok `if` tidak otomatis menjadi properti window,
+        // terutama async function. Tanpa ini handler onclick inline gagal.
+        window.loadTicketDetail = loadTicketDetail;
+        window.deleteMessage = deleteMessage;
+        window.sendReply = sendReply;
+        window.closeAttachmentLightbox = closeAttachmentLightbox;
+        window.downloadPreviewedAttachment = downloadPreviewedAttachment;
+
         } // End if (typeof window._supportTicketDetailLoaded === 'undefined')
     </script>
 

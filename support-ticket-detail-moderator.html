@@ -1705,7 +1705,21 @@
         function reloadTicket() {
             loadTicketDetail();
         }
-        
+
+        // ===== Ekspos handler inline ke window =====
+        // Fungsi yang dideklarasikan di dalam blok `if` tidak otomatis menjadi
+        // properti window (khususnya async function). Tanpa ini, atribut inline
+        // seperti onchange="updateStatus()" gagal dengan ReferenceError.
+        window.loadTicketDetail = loadTicketDetail;
+        window.reloadTicket = reloadTicket;
+        window.updateStatus = updateStatus;
+        window.deleteMessage = deleteMessage;
+        window.handleReplyAttachmentChange = handleReplyAttachmentChange;
+        window.removeReplyAttachment = removeReplyAttachment;
+        window.sendReply = sendReply;
+        window.closeAttachmentLightbox = closeAttachmentLightbox;
+        window.downloadPreviewedAttachment = downloadPreviewedAttachment;
+
         } // End if (typeof window._supportTicketDetailModeratorLoaded === 'undefined')
     </script>
 
