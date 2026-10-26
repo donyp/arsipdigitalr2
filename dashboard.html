@@ -2995,7 +2995,22 @@
             try {
                 // Wait for auth
                 await new Promise(resolve => setTimeout(resolve, 100));
-                
+
+                // Tambahkan tombol "Kelola Pengumuman" sedini mungkin (sebelum auth)
+                // agar muncul bersamaan dengan tombol lain di header.
+                const _hrEarly = document.querySelector('.header-right');
+                if (_hrEarly && !_hrEarly.querySelector('[data-announcement-manage]')) {
+                    const _ab = document.createElement('button');
+                    _ab.className = 'header-btn';
+                    _ab.id = 'announcementManageBtn';
+                    _ab.setAttribute('data-announcement-manage', '1');
+                    _ab.title = 'Kelola Pengumuman';
+                    _ab.onclick = () => window.location.href = '/pengumuman.html';
+                    _ab.innerHTML = '<i class="fas fa-bell"></i>';
+                    const _lb = _hrEarly.querySelector('.logout-btn');
+                    if (_lb) _hrEarly.insertBefore(_ab, _lb); else _hrEarly.appendChild(_ab);
+                }
+
                 const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
                 
                 // Check role: Only moderator and super_admin can access this dashboard
@@ -3024,36 +3039,6 @@
 
                 // Set current date/time greeting
                 setCurrentDate();
-
-                // Add announcement button for moderators (don't reinitialize entire header)
-                if (userAuth.role === 'moderator' || userAuth.role === 'super_admin') {
-                    const headerRight = document.querySelector('.header-right');
-                    // Jangan tambah dobel: init dashboard bisa jalan lebih
-                    // dari sekali (navigasi SPA). Kalau tombolnya sudah ada
-                    // (atau ada sisa duplikat), cukup sisakan satu.
-                    if (headerRight) {
-                        const sudahAda = headerRight.querySelectorAll('[data-announcement-manage]');
-                        sudahAda.forEach((el, i) => { if (i > 0) el.remove(); });
-                        if (sudahAda.length === 0) {
-                            // Insert announcement button before logout button
-                            const announcementBtn = document.createElement('button');
-                            announcementBtn.className = 'header-btn';
-                            announcementBtn.id = 'announcementManageBtn';
-                            announcementBtn.setAttribute('data-announcement-manage', '1');
-                            announcementBtn.title = 'Kelola Pengumuman';
-                            announcementBtn.onclick = () => window.location.href = '/pengumuman.html';
-                            announcementBtn.innerHTML = '<i class="fas fa-bell"></i>';
-
-                            const logoutBtn = headerRight.querySelector('.logout-btn');
-                            if (logoutBtn) {
-                                headerRight.insertBefore(announcementBtn, logoutBtn);
-                            } else {
-                                headerRight.appendChild(announcementBtn);
-                            }
-                            console.log('[Dashboard] Added announcement button to existing header');
-                        }
-                    }
-                }
 
                 // Invoice list content is now embedded directly in dashboard.html
                 // No need to load external files
