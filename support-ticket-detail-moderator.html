@@ -103,12 +103,11 @@
         .header {
             background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             color: white;
-            padding: 24px 0;
+            padding: 14px 0;
             border-bottom: none;
-            box-shadow: 0 8px 32px rgba(231, 76, 60, 0.2);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            box-shadow: 0 2px 10px rgba(231, 76, 60, 0.15);
+            /* Header ikut ter-scroll bersama konten (tidak lagi menutupi pesan). */
+            position: relative;
             animation: slideInDown 0.5s ease-out;
         }
         
@@ -125,12 +124,12 @@
             gap: 8px;
             color: rgba(255,255,255,0.95);
             text-decoration: none;
-            font-size: 14px;
-            margin-bottom: 12px;
+            font-size: 13px;
+            margin-bottom: 8px;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
-            padding: 6px 12px;
+            padding: 4px 10px;
             border-radius: 6px;
         }
         
@@ -147,21 +146,21 @@
         }
         
         .header-left h1 {
-            font-size: 26px;
+            font-size: 20px;
             font-weight: 700;
             margin: 0;
             letter-spacing: -0.5px;
         }
         
         .header-left p {
-            font-size: 14px;
+            font-size: 13px;
             opacity: 0.95;
-            margin: 6px 0 0 0;
+            margin: 4px 0 0 0;
             font-weight: 500;
         }
         
         .ticket-number {
-            font-size: 12px;
+            font-size: 11px;
             opacity: 0.85;
             font-family: 'Courier New', monospace;
             font-weight: 700;
@@ -528,7 +527,7 @@
         .sidebar {
             height: fit-content;
             position: sticky;
-            top: 120px;
+            top: 24px;
             animation: slideInUp 0.6s ease-out 0.1s backwards;
         }
         
@@ -1129,6 +1128,15 @@
         }
 
 
+        function updateBackButtonTarget() {
+            const backBtn = document.querySelector('.header .back-btn');
+            if (!backBtn || !ticketData) return;
+            const sudahSelesai = ['Resolved', 'Closed'].includes(ticketData.status);
+            backBtn.href = sudahSelesai
+                ? '/support/admin?tab=history'
+                : '/support/admin?tab=active';
+        }
+
         function renderTicketDetail() {
             // Set header
             document.getElementById('ticketNumber').textContent = ticketData.ticket_number;
@@ -1145,6 +1153,7 @@
                 }
             }
             document.getElementById('ticketZona').textContent = `${zonaDisplay}`;
+            updateBackButtonTarget();
 
             // Set status dropdown with current status
             const statusSelect = document.getElementById('statusSelect');
@@ -1452,11 +1461,26 @@
             return text.replace(/[&<>"']/g, m => map[m]);
         }
 
-        async function updateStatus() {
+        // Hapus cache daftar tiket dashboard supaya status terbaru langsung tampil.
+        function clearSupportDashboardCache() {
             try {
-                const newStatus = document.getElementById('statusSelect').value;
-                const token = localStorage.getItem('jwt_token');
+                localStorage.removeItem('support_moderator_tickets');
+                localStorage.removeItem('support_moderator_stats');
+            } catch (e) {}
+        }
 
+        async function updateStatus() {
+            const statusSelect = document.getElementById('statusSelect');
+            const newStatus = statusSelect.value;
+            const previousStatus = ticketData && ticketData.status ? ticketData.status : newStatus;
+
+            // Tidak ada perubahan -> tidak perlu request.
+            if (newStatus === previousStatus) return;
+
+            const token = localStorage.getItem('jwt_token');
+            statusSelect.disabled = true;
+
+            try {
                 const response = await fetch(`/api/support/tickets/${ticketId}/status`, {
                     method: 'PUT',
                     headers: {
@@ -1466,26 +1490,25 @@
                     body: JSON.stringify({ status: newStatus })
                 });
 
+                const data = await response.json().catch(() => ({}));
+
                 if (!response.ok) {
-                    throw new Error('Failed to update status');
+                    throw new Error(data.error || `Gagal memperbarui status (HTTP ${response.status})`);
                 }
 
-                const data = await response.json();
                 ticketData.status = newStatus;
-                
-                // Show success message
-                Notify.success('Status tiket berhasil diperbarui');
-                
-                // If status changed to Resolved or Closed, redirect to dashboard after 2 seconds
-                if (['Resolved', 'Closed'].includes(newStatus)) {
-                    setTimeout(() => {
-                        window.location.href = '/support/admin';
-                    }, 1500);
-                }
+
+                // Perbarui UI saat itu juga (tanpa redirect / reload halaman).
+                updateBackButtonTarget();
+                clearSupportDashboardCache();
+
+                Notify.success(`Status tiket diubah menjadi ${newStatus}`);
             } catch (error) {
+                // Kembalikan pilihan dropdown ke status sebelumnya.
+                statusSelect.value = previousStatus;
                 Notify.error('Error: ' + error.message);
-                // Revert dropdown
-                await loadTicketDetail();
+            } finally {
+                statusSelect.disabled = false;
             }
         }
 

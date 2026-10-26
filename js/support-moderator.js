@@ -49,6 +49,13 @@ async function initSupportPage() {
     // Load zonas in background (non-blocking)
     loadZonas().catch(err => {});
     
+    // Hormati tab dari URL (?tab=history / ?tab=active), mis. setelah
+    // status tiket diubah dari halaman detail.
+    const tabFromUrl = new URLSearchParams(window.location.search).get('tab');
+    if (tabFromUrl === 'active' || tabFromUrl === 'history') {
+        setActiveTab(tabFromUrl);
+    }
+    
     // Display cached data immediately
     const cachedTickets = getCache(window.CACHE_TICKETS);
     const cachedStats = getCache(window.CACHE_STATS);
@@ -70,35 +77,46 @@ async function initSupportPage() {
     }).catch(err => {
         console.error('[Support] Error loading data:', err);
     });
-    // Setup event listeners - DISABLED AUTO-LOAD (require explicit "Terapkan" click)
+    // Setup event listeners - filter langsung diterapkan (auto-load).
+    // Pakai properti on* agar aman kalau initSupportPage terpanggil >1x
+    // (listener tidak menumpuk).
     const searchInput = document.getElementById('searchInput');
     const filterStatus = document.getElementById('filterStatus');
     const filterZona = document.getElementById('filterZona');
-    
-    // AUTO-LOAD DISABLED - User must click "Terapkan" button to load data
-    // if (searchInput) {
-    //     searchInput.addEventListener('input', debounce(() => {
-    //         window.currentSearch = searchInput.value;
-    //         window.currentPage = 1;
-    //         loadTickets();
-    //     }, 300));
-    // }
 
-    // if (filterStatus) {
-    //     filterStatus.addEventListener('change', () => {
-    //         window.currentStatus = filterStatus.value;
-    //         window.currentPage = 1;
-    //         loadTickets();
-    //     });
-    // }
+    if (searchInput) {
+        searchInput.oninput = debounce(() => {
+            window.currentSearch = searchInput.value;
+            window.currentPage = 1;
+            loadTickets();
+        }, 300);
+    }
 
-    // if (filterZona) {
-    //     filterZona.addEventListener('change', () => {
-    //         window.currentZona = filterZona.value;
-    //         window.currentPage = 1;
-    //         loadTickets();
-    //     });
-    // }
+    if (filterStatus) {
+        filterStatus.onchange = () => {
+            const nilai = filterStatus.value;
+            window.currentStatus = nilai;
+            window.currentPage = 1;
+
+            // Samakan tab dengan status yang dipilih supaya hasil tidak kosong
+            // (tab "Tiket Aktif" hanya Open/Answered, "History" hanya Resolved/Closed).
+            if (nilai === 'Resolved' || nilai === 'Closed') {
+                setActiveTab('history');
+            } else if (nilai === 'Open' || nilai === 'Answered') {
+                setActiveTab('active');
+            }
+
+            loadTickets();
+        };
+    }
+
+    if (filterZona) {
+        filterZona.onchange = () => {
+            window.currentZona = filterZona.value;
+            window.currentPage = 1;
+            loadTickets();
+        };
+    }
 } // End of variable and function initialization guard
 
 // Listen for both direct page load and SPA navigation
@@ -227,28 +245,24 @@ function debounce(func, wait) {
     };
 }
 
-function switchTab(event, tab) {
+function setActiveTab(tab) {
     window.currentTab = tab;
-    window.currentPage = 1;
-    
-    // Update tab UI
     document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
+        const onclick = btn.getAttribute('onclick') || '';
+        btn.classList.toggle('active', onclick.includes(`'${tab}'`));
     });
-    event.target.closest('.tab-btn')?.classList.add('active');
-    
-    // Set status filter based on tab
-    if (tab === 'active') {
-        // Show only active statuses: Open, Answered
-        window.currentStatus = 'all';
-        // We'll filter on frontend for active tickets
-        loadTickets();
-    } else if (tab === 'history') {
-        // Show only closed statuses: Resolved, Closed
-        window.currentStatus = 'all';
-        // We'll filter on frontend for history tickets
-        loadTickets();
-    }
+}
+
+function switchTab(event, tab) {
+    window.currentPage = 1;
+    setActiveTab(tab);
+
+    // Filter status di server dinetralkan supaya tidak bentrok dengan tab.
+    window.currentStatus = 'all';
+    const filterStatus = document.getElementById('filterStatus');
+    if (filterStatus) filterStatus.value = 'all';
+
+    loadTickets();
 }
 
 async function loadStats() {

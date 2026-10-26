@@ -583,6 +583,9 @@ module.exports = function registerSupportEndpoints(app, supabase, authenticateTo
 
             if (status === 'Resolved') {
                 updateData.resolved_at = sekarang;
+            } else if (status === 'Open' || status === 'Answered') {
+                // Tiket dibuka kembali -> hapus jejak resolved agar konsisten.
+                updateData.resolved_at = null;
             }
 
             const { data: ticket, error: updateError } = await supabase
