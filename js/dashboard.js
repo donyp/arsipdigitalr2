@@ -4334,6 +4334,8 @@ function executeConfirmation() {
 
 async function applyInvoiceFilters() {
     try {
+        const _ov = document.getElementById('dashboardLoadingOverlay');
+        if (_ov) _ov.classList.remove('hidden');
         const status = document.getElementById('filterStatus')?.value || '';
         const toko = document.getElementById('filterToko')?.value || '';
         const keterangan = document.getElementById('filterKeterangan')?.value || '';
@@ -4570,8 +4572,13 @@ async function applyInvoiceFilters() {
         
         // Calculate and display total nominal
         updateTotalNominalDisplay(result.data || []);
-        
+
+        const _ov2 = document.getElementById('dashboardLoadingOverlay');
+        if (_ov2) _ov2.classList.add('hidden');
+
     } catch (error) {
+        const _ov3 = document.getElementById('dashboardLoadingOverlay');
+        if (_ov3) _ov3.classList.add('hidden');
         Toast.error('Error applying filters: ' + error.message, '❌ Error');
     }
 }

@@ -1510,6 +1510,35 @@
             box-shadow: 0 2px 8px var(--color-shadow-sm);
             overflow: hidden;
             border: 1px solid var(--color-border);
+            position: relative;
+        }
+
+        .dashboard-loading-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 20;
+        }
+        html[data-dark-mode="true"] .dashboard-loading-overlay {
+            background: rgba(0, 0, 0, 0.35);
+        }
+        .dashboard-loading-overlay.hidden { display: none; }
+        .dashboard-loading-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(59, 130, 246, 0.25);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        html[data-dark-mode="true"] .dashboard-loading-spinner {
+            border-color: rgba(148, 163, 184, 0.25);
+            border-top-color: #60a5fa;
         }
 
         .invoice-table {
@@ -2663,7 +2692,8 @@
                             </div>
 
                             <!-- Modern Table Section with Enhanced Design -->
-                            <div style="overflow-x: auto; border-radius: 12px;">
+                            <div style="overflow-x: auto; border-radius: 12px; position: relative;">
+                            <div id="dashboardLoadingOverlay" class="dashboard-loading-overlay hidden"><div class="dashboard-loading-spinner"></div></div>
                             <table class="invoice-table" style="width: 100%; border-collapse: collapse; background: var(--color-bg-secondary); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);">
                                 <thead>
                                     <tr style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-bottom: 3px solid rgba(102, 126, 234, 0.3);">
