@@ -4335,7 +4335,7 @@ function executeConfirmation() {
 async function applyInvoiceFilters() {
     try {
         const _ov = document.getElementById('dashboardLoadingOverlay');
-        if (_ov) _ov.classList.remove('hidden');
+        if (_ov) { _ov.classList.remove('hidden'); _ov.style.display = 'flex'; }
         const status = document.getElementById('filterStatus')?.value || '';
         const toko = document.getElementById('filterToko')?.value || '';
         const keterangan = document.getElementById('filterKeterangan')?.value || '';
@@ -4574,11 +4574,11 @@ async function applyInvoiceFilters() {
         updateTotalNominalDisplay(result.data || []);
 
         const _ov2 = document.getElementById('dashboardLoadingOverlay');
-        if (_ov2) _ov2.classList.add('hidden');
+        if (_ov2) { _ov2.classList.add('hidden'); _ov2.style.display = 'none'; }
 
     } catch (error) {
         const _ov3 = document.getElementById('dashboardLoadingOverlay');
-        if (_ov3) _ov3.classList.add('hidden');
+        if (_ov3) { _ov3.classList.add('hidden'); _ov3.style.display = 'none'; }
         Toast.error('Error applying filters: ' + error.message, '❌ Error');
     }
 }
