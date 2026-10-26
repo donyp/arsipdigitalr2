@@ -1608,7 +1608,7 @@
         }
 
         .status-badge::before {
-            content: "?";
+            content: "●";
             margin-right: 6px;
         }
 
@@ -2891,7 +2891,7 @@
     <script src="/js/utils.js?t=1790610773"></script>
     <script src="/js/unified-header.js?v=4"></script>
     <script src="/js/sidebar.js?v=8"></script>
-    <script src="/js/spa-router.js?v=32"></script>
+    <script src="/js/spa-router.js?v=33"></script>
     <script src="/js/invoice-stats-cache.js"></script>
     <script src="/js/invoice-table-utils.js?v=2"></script>
     <script src="/js/dashboard.js?v=1015&t=1790611000"></script>
@@ -3273,7 +3273,7 @@
                     opt.classList.add('selected');
                     const checkmark = opt.querySelector('.checkmark');
                     if (checkmark) {
-                        checkmark.textContent = '?';
+                        checkmark.textContent = '✓';
                     }
                     foundOption = true;
                 }
@@ -3327,7 +3327,7 @@
                                     opt.classList.add('selected');
                                     const checkmark = opt.querySelector('.checkmark');
                                     if (checkmark) {
-                                        checkmark.textContent = '?';
+                                        checkmark.textContent = '✓';
                                     }
                                 }
                             });
@@ -3429,7 +3429,7 @@
                 const label = typeof option === 'object' ? option.label : optionFormatter ? optionFormatter(option) : option;
                 
                 optionEl.innerHTML = `
-                    <span class="checkmark">?</span>
+                    <span class="checkmark">✓</span>
                     <span>${label}</span>
                 `;
                 

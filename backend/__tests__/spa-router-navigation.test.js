@@ -502,3 +502,51 @@ describe('Navigasi yang diantrikan', () => {
         expect(routerSrc).not.toMatch(/setTimeout\(\(\) => this\.navigate\(nextPath\), 50\)/);
     });
 });
+
+// ============================================================
+// REGRESI: fungsi inline (editZona, editToko, dll.) harus
+// dipublikasikan ke window saat navigasi SPA. Dulu regex-nya
+// double-escape (\\n / \\s) sehingga tidak ada fungsi yang
+// ditemukan -> onclick "editZona is not defined" (baru normal
+// setelah full refresh).
+// ============================================================
+describe('Inline script: fungsi untuk onclick dipublikasikan', () => {
+
+    test('fungsi top-level dipublikasikan ke window', async () => {
+        const captured = [];
+        await router.runInlineScriptFresh(`
+            function editZona(id) { return 'edit:' + id; }
+            async function saveZona() { return 'saved'; }
+            function outer() {
+                function nestedOnly() { return 1; }
+            }
+        `, captured);
+
+        expect(typeof global.window.editZona).toBe('function');
+        expect(global.window.editZona('7')).toBe('edit:7');
+        expect(typeof global.window.saveZona).toBe('function');
+        expect(typeof global.window.outer).toBe('function');
+
+        // Function di dalam function lain tidak boleh membuat
+        // seluruh proses publikasi gagal (guard typeof).
+        expect(global.window.nestedOnly).toBeUndefined();
+
+        delete global.window.editZona;
+        delete global.window.saveZona;
+        delete global.window.outer;
+    });
+
+    test('DOMContentLoaded callback tetap ditangkap', async () => {
+        const captured = [];
+        await router.runInlineScriptFresh(`
+            function initPage() { return true; }
+            document.addEventListener('DOMContentLoaded', initPage);
+        `, captured);
+
+        expect(typeof global.window.initPage).toBe('function');
+        expect(captured.length).toBe(1);
+        expect(typeof captured[0]).toBe('function');
+
+        delete global.window.initPage;
+    });
+});

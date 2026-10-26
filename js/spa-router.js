@@ -1191,7 +1191,7 @@ class SPARouter {
         if (!src || !src.trim()) return;
         // Tangkap nama function declaration untuk dipublikasikan
         const fnNames = new Set();
-        const re = /(?:^|[\\n;{}])\\s*(?:async\\s+)?function\\s+([A-Za-z_$][\\w$]*)/g;
+        const re = /(?:^|[\n;{}])\s*(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/g;
         let m;
         while ((m = re.exec(src)) !== null) fnNames.add(m[1]);
 
@@ -1212,16 +1212,16 @@ class SPARouter {
         };
 
         const returnStmt = fnNames.size
-            ? '\\n; return { ' + [...fnNames].join(', ') + ' };'
+            ? '\n; return [' + [...fnNames].map(n => "['" + n + "', typeof " + n + " === 'function' ? " + n + " : null]").join(', ') + '];'
             : '';
         try {
             // eslint-disable-next-line no-new-func
             const fn = new Function(src + returnStmt);
             const result = fn.call(window);
-            if (result && typeof result === 'object') {
-                for (const k of Object.keys(result)) {
-                    if (typeof result[k] === 'function') {
-                        window[k] = result[k];
+            if (Array.isArray(result)) {
+                for (const entry of result) {
+                    if (entry && typeof entry[1] === 'function') {
+                        window[entry[0]] = entry[1];
                     }
                 }
             }
