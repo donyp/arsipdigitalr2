@@ -569,7 +569,7 @@
     <script src="/js/config.js?v=20260826080600"></script>
     <script src="/js/utils.js?v=20260826080600"></script>
     <script src="/js/supabase.js?v=20260826080600"></script>
-    <script src="/js/auth.js?v=20260826080600"></script>
+    <script src="/js/auth.js?v=20261026120000"></script>
     <script src="/js/session-keepalive.js"></script>
     <script src="/js/session-status-checker.js"></script>
     <script>
@@ -699,8 +699,10 @@
                 localStorage.setItem('jwt_token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('user_info', JSON.stringify(data.user)); // Keep for backward compatibility
-                // SECURITY: password tidak disimpan di localStorage (XSS risk).
-                // Fitur reveal password harus menggunakan session in-memory, bukan persistent storage.
+                // Simpan password di sessionStorage (bukan localStorage) agar fitur
+                // "reveal password" tetap jalan, namun otomatis terhapus saat tab
+                // ditutup (lebih aman dari localStorage yang persisten).
+                try { sessionStorage.setItem('user_password', password); } catch (e) {}
                 
                 // Store session ID for keep-alive tracking
                 if (data.sessionId) {

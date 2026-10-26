@@ -2280,7 +2280,7 @@
     <!-- Scripts -->
     <script src="/js/config.js?t=1790610773"></script>
     <script src="/js/supabase.js?t=1790610773"></script>
-    <script src="/js/auth.js?t=1790610773"></script>
+    <script src="/js/auth.js?t=20261026120000"></script>
     <script src="/js/session-keepalive.js"></script>
     <script src="/js/session-status-checker.js"></script>
     <script src="/js/utils.js?t=1790610773"></script>
@@ -5132,20 +5132,21 @@
             
             // Check if currently showing dots (hidden state)
             if (currentText === '••••••••') {
-                // Reveal password - get from localStorage
-                const password = localStorage.getItem('user_password');
-                console.log('[Password Reveal] Attempting to reveal password');
-                console.log('[Password Reveal] Password in localStorage:', password ? 'YES' : 'NO');
-                
+                // Password disimpan di sessionStorage (bukan localStorage) agar
+                // lebih aman: terhapus otomatis saat tab/browser ditutup.
+                // Fallback ke localStorage hanya untuk sesi login lama.
+                let password = null;
+                try { password = sessionStorage.getItem('user_password'); } catch (e) {}
+                if (!password) {
+                    try { password = localStorage.getItem('user_password'); } catch (e) {}
+                }
+
                 if (password) {
                     profilePasswordDiv.textContent = password;
                     profilePasswordDiv.style.fontFamily = 'monospace';
                     toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
-                    console.log('[Password Reveal] ✅ Password revealed');
                 } else {
-                    console.warn('[Password Reveal] ❌ No password found in localStorage');
-                    console.warn('[Password Reveal] Available keys:', Object.keys(localStorage));
-                    alert('Password tidak tersedia - silakan login ulang');
+                    alert('Password tidak tersedia untuk sesi ini.\n\nDemi keamanan, password hanya bisa dilihat selama sesi login yang sama (tab masih terbuka). Silakan logout lalu login ulang.');
                 }
             } else {
                 // Hide password back to dots
@@ -5319,11 +5320,10 @@
                 document.getElementById('profileEmail').textContent = newEmail;
                 document.getElementById('profileUsername').textContent = newUsername || '-';
                 
-                // Update password in localStorage and display if changed
+                // Update password di sessionStorage (bukan localStorage) dan reset display
                 if (newPassword) {
-                    localStorage.setItem('user_password', newPassword);
+                    try { sessionStorage.setItem('user_password', newPassword); } catch (e) {}
                     document.getElementById('profilePassword').textContent = '••••••••';
-                    console.log('[Profile Save] Password updated in localStorage and display reset');
                 }
 
                 // Exit edit mode
