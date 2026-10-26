@@ -704,13 +704,21 @@
                 box-sizing: border-box;
                 flex-shrink: 0;
                 transition:
-                    transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
                     background-color 220ms ease,
                     color 220ms ease,
                     border-color 220ms ease,
-                    box-shadow 220ms ease !important;
-                transform: translateX(0);
+                    box-shadow 240ms ease !important;
+                transform: translateX(0) scale(1);
                 will-change: transform;
+            }
+
+            /* Ikon ikut beranimasi saat item di-hover */
+            .sidebar-item > span:first-child,
+            .sidebar-dropdown-btn > span:first-child,
+            .sidebar-child-item > span:first-child {
+                transform-origin: center;
+                transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1) !important;
             }
 
             .sidebar-item:focus-visible,
@@ -755,8 +763,14 @@
 
             .sidebar-item:hover:not(.active),
             .sidebar-dropdown-btn:hover:not(.expanded) {
-                transform: translateX(4px);
-                box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+                transform: translateX(6px) scale(1.01);
+                box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+            }
+
+            .sidebar-item:hover:not(.active) > span:first-child,
+            .sidebar-dropdown-btn:hover:not(.expanded) > span:first-child,
+            .sidebar-child-item:hover:not(.active) > span:first-child {
+                transform: scale(1.12);
             }
 
             /* Dropdown button expanded state */
@@ -804,6 +818,38 @@
                     opacity 260ms ease,
                     transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
                     visibility 0s linear 0s;
+            }
+
+            /* Item submenu masuk bergantian supaya buka/tutup terasa jelas */
+            @keyframes sidebar-child-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(-8px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .sidebar-dropdown-content.active .sidebar-child-item {
+                animation: sidebar-child-in 280ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+            }
+
+            .sidebar-dropdown-content.active .sidebar-child-item:nth-child(2) {
+                animation-delay: 35ms;
+            }
+
+            .sidebar-dropdown-content.active .sidebar-child-item:nth-child(3) {
+                animation-delay: 70ms;
+            }
+
+            .sidebar-dropdown-content.active .sidebar-child-item:nth-child(4) {
+                animation-delay: 105ms;
+            }
+
+            .sidebar-dropdown-content.active .sidebar-child-item:nth-child(5) {
+                animation-delay: 140ms;
             }
 
             /* ============================================================
@@ -1061,6 +1107,45 @@
             console.warn('[SIDEBAR] Gagal update item aktif:', e.message);
         }
     };
+
+    // ============================================================
+    // RESET CACHE PWA LAMA
+    // ============================================================
+    // Service worker versi lama memakai strategi cache-first sehingga
+    // HTML/JS lama bisa terus dipakai walau server sudah diperbarui.
+    // Bersihkan cache lama sekali, lepas service worker lama, lalu
+    // reload supaya halaman memakai versi terbaru.
+    (function resetLegacyPwaCache() {
+        try {
+            if (typeof navigator === 'undefined' || !navigator.serviceWorker) return;
+            if (!window.caches) return;
+
+            const LEGACY_CACHES = [
+                'arsip-anka-v1',
+                'arsip-anka-static-v1',
+                'arsip-anka-dynamic-v1'
+            ];
+            const RESET_FLAG = 'arsip-legacy-sw-reset-v10';
+
+            window.caches.keys().then((cacheNames) => {
+                const legacyFound = cacheNames.filter((name) => LEGACY_CACHES.includes(name));
+                if (!legacyFound.length) return;
+
+                return Promise.all(legacyFound.map((name) => window.caches.delete(name)))
+                    .then(() => navigator.serviceWorker.getRegistrations().catch(() => []))
+                    .then((registrations) => Promise.all(
+                        registrations.map((registration) => registration.unregister().catch(() => false))
+                    ))
+                    .then(() => {
+                        if (window.sessionStorage.getItem(RESET_FLAG) === 'done') return;
+                        window.sessionStorage.setItem(RESET_FLAG, 'done');
+                        window.location.reload();
+                    });
+            }).catch(() => {});
+        } catch (e) {
+            // Cache API / sessionStorage tidak tersedia: abaikan.
+        }
+    })();
 
     // ============================================================
     // INITIALIZE ON DOM READY

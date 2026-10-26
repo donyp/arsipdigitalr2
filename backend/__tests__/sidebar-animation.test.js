@@ -24,7 +24,7 @@ describe('Sidebar - animasi hover dan dropdown', () => {
             /\.sidebar-item,\s*\.sidebar-dropdown-btn,\s*\.sidebar-child-item\s*\{([\s\S]*?)\}/
         );
         expect(itemBlock).toBeTruthy();
-        expect(itemBlock[1]).toMatch(/transform\s+220ms/);
+        expect(itemBlock[1]).toMatch(/transform\s+240ms/);
         expect(itemBlock[1]).toMatch(/background-color\s+220ms/);
         expect(itemBlock[1]).toMatch(/color\s+220ms/);
         expect(itemBlock[1]).not.toMatch(/transition:\s*all/);
@@ -77,6 +77,32 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(sidebarSrc).not.toContain('parseFloat(dropdownContent.style.maxHeight)');
     });
 
+    test('hover menggeser item, memberi shadow, dan memperbesar ikon', () => {
+        expect(sidebarSrc).toMatch(
+            /\.sidebar-item:hover:not\(\.active\),\s*\.sidebar-dropdown-btn:hover:not\(\.expanded\)\s*\{[^}]*transform:\s*translateX\(6px\)\s*scale\(1\.01\)/
+        );
+        expect(sidebarSrc).toMatch(
+            /\.sidebar-item:hover:not\(\.active\) > span:first-child,[\s\S]*?transform:\s*scale\(1\.12\)/
+        );
+    });
+
+    test('item submenu muncul bergantian (stagger) saat dropdown dibuka', () => {
+        expect(sidebarSrc).toContain('@keyframes sidebar-child-in');
+        expect(sidebarSrc).toMatch(
+            /\.sidebar-dropdown-content\.active \.sidebar-child-item\s*\{[^}]*animation:\s*sidebar-child-in\s+280ms/
+        );
+        expect(sidebarSrc).toMatch(
+            /\.sidebar-dropdown-content\.active \.sidebar-child-item:nth-child\(2\)\s*\{[^}]*animation-delay:\s*35ms/
+        );
+    });
+
+    test('cache PWA lama dibersihkan agar update tidak tertahan cache-first', () => {
+        expect(sidebarSrc).toContain("'arsip-anka-static-v1'");
+        expect(sidebarSrc).toContain('navigator.serviceWorker.getRegistrations()');
+        expect(sidebarSrc).toContain('registration.unregister()');
+        expect(sidebarSrc).toContain('window.location.reload()');
+    });
+
     test('state aksesibilitas dropdown ikut disinkronkan', () => {
         expect(sidebarSrc).toContain("btn.setAttribute('aria-expanded', 'true')");
         expect(sidebarSrc).toContain("btn.setAttribute('aria-expanded', 'false')");
@@ -88,7 +114,7 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(sidebarSrc).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
     });
 
-    test('semua halaman memakai cache-busting sidebar v=9', () => {
+    test('semua halaman memakai cache-busting sidebar v=10', () => {
         const htmlFiles = fs.readdirSync(projectRoot)
             .filter(file => file.endsWith('.html'));
         const sidebarPages = htmlFiles.filter(file => {
@@ -99,8 +125,8 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(sidebarPages.length).toBeGreaterThan(0);
         for (const file of sidebarPages) {
             const html = fs.readFileSync(path.join(projectRoot, file), 'utf8');
-            expect(html).not.toContain('sidebar.js?v=8');
-            expect(html).toContain('sidebar.js?v=9');
+            expect(html).not.toContain('sidebar.js?v=9');
+            expect(html).toContain('sidebar.js?v=10');
         }
     });
 });
