@@ -481,7 +481,6 @@
                     border-left: ${isActive ? '3px solid ' + colors.activeTextColor : '3px solid transparent'};
                     padding-left: calc(${STYLES.menuItemPadding.split(' ')[1]} - 3px);
                     flex-shrink: 0;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 "
             >
                 <span style="
@@ -570,8 +569,11 @@
         return `
             <div class="sidebar-dropdown" data-dropdown-id="${item.id}">
                 <button 
+                    type="button"
                     class="sidebar-dropdown-btn ${isExpanded ? 'expanded' : ''}" 
                     onclick="toggleSidebarDropdown('${item.id}')"
+                    aria-expanded="${isExpanded ? 'true' : 'false'}"
+                    aria-controls="dd-${item.id}"
                     style="
                         display: flex;
                         align-items: center;
@@ -620,7 +622,6 @@
                     <svg class="dropdown-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" style="
                         flex-shrink: 0;
                         opacity: 0.6;
-                        transform: ${isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'};
                     ">
                         <path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
@@ -628,6 +629,7 @@
 
                 <div class="sidebar-dropdown-content ${isExpanded ? 'active' : ''}" 
                     id="dd-${item.id}"
+                    aria-hidden="${isExpanded ? 'false' : 'true'}"
                     style="
                         display: flex;
                         flex-direction: column;
@@ -701,9 +703,21 @@
             .sidebar-child-item {
                 box-sizing: border-box;
                 flex-shrink: 0;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                transition:
+                    transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    background-color 220ms ease,
+                    color 220ms ease,
+                    border-color 220ms ease,
+                    box-shadow 220ms ease !important;
                 transform: translateX(0);
                 will-change: transform;
+            }
+
+            .sidebar-item:focus-visible,
+            .sidebar-dropdown-btn:focus-visible,
+            .sidebar-child-item:focus-visible {
+                outline: 2px solid var(--sidebar-active-color);
+                outline-offset: 2px;
             }
 
             /* Active menu item with pulsing heartbeat */
@@ -732,22 +746,35 @@
 
             /* Smooth hover animation - only for non-active items */
             .sidebar-item:hover:not(.active),
-            .sidebar-dropdown-btn:hover:not(.expanded),
+            .sidebar-dropdown-btn:hover,
             .sidebar-child-item:hover:not(.active) {
-                transform: translateX(4px);
                 background-color: var(--sidebar-hover-bg) !important;
                 color: var(--sidebar-active-color) !important;
                 border-left-color: var(--sidebar-active-color) !important;
             }
 
+            .sidebar-item:hover:not(.active),
+            .sidebar-dropdown-btn:hover:not(.expanded) {
+                transform: translateX(4px);
+                box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            }
+
             /* Dropdown button expanded state */
             .sidebar-dropdown-btn.expanded {
                 transform: translateX(0);
+                background-color: var(--sidebar-hover-bg) !important;
+                color: var(--sidebar-active-color) !important;
+                border-left-color: var(--sidebar-active-color) !important;
+            }
+
+            .sidebar-dropdown-btn .dropdown-arrow {
+                transform-origin: 50% 50%;
+                transition: transform 280ms cubic-bezier(0.22, 0.61, 0.36, 1);
+                will-change: transform;
             }
 
             .sidebar-dropdown-btn.expanded .dropdown-arrow {
                 transform: rotate(180deg);
-                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
 
             .sidebar-dropdown-content {
@@ -756,12 +783,27 @@
                 max-height: 0;
                 opacity: 0;
                 overflow: hidden;
-                transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                visibility: hidden;
+                pointer-events: none;
+                transform: translateY(-4px);
+                will-change: max-height, opacity, transform;
+                transition:
+                    max-height 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    opacity 220ms ease,
+                    transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    visibility 0s linear 300ms;
             }
 
             .sidebar-dropdown-content.active {
                 max-height: 500px;
                 opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+                transition:
+                    max-height 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    opacity 260ms ease,
+                    transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    visibility 0s linear 0s;
             }
 
             /* ============================================================
@@ -826,6 +868,22 @@
                 #main-content {
                     margin-left: 0 !important;
                     width: 100% !important;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .sidebar-item,
+                .sidebar-dropdown-btn,
+                .sidebar-child-item,
+                .sidebar-dropdown-btn .dropdown-arrow,
+                .sidebar-dropdown-content {
+                    transition-duration: 0.01ms !important;
+                    animation-duration: 0.01ms !important;
+                }
+
+                .sidebar-item.active::before,
+                .sidebar-child-item.active::before {
+                    animation: none !important;
                 }
             }
         `;
@@ -901,77 +959,63 @@
     // ============================================================
     // GLOBAL FUNCTIONS (exposed for HTML event handlers)
     // ============================================================
+    function setDropdownExpanded(dropdownContent, expanded) {
+        if (!dropdownContent) return;
+
+        const btn = dropdownContent.previousElementSibling;
+        const dropdownId = dropdownContent.id.replace(/^dd-/, '');
+
+        if (expanded) {
+            // Add the state class first so CSS handles the arrow and colors.
+            dropdownContent.classList.add('active');
+            dropdownContent.style.maxHeight = `${dropdownContent.scrollHeight}px`;
+            dropdownContent.style.opacity = '1';
+            dropdownContent.style.pointerEvents = 'auto';
+            dropdownContent.setAttribute('aria-hidden', 'false');
+
+            if (btn) {
+                btn.classList.add('expanded');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+            sessionStorage.setItem(`sidebar-dropdown-${dropdownId}`, 'true');
+            return;
+        }
+
+        // Lock the current height before collapsing. max-height must animate
+        // from a concrete pixel value (not from the 500px fallback) so the
+        // closing motion matches the real submenu height.
+        const currentHeight = dropdownContent.getBoundingClientRect().height;
+        dropdownContent.style.maxHeight = `${currentHeight}px`;
+        dropdownContent.style.opacity = '1';
+        dropdownContent.classList.remove('active');
+
+        // Force the browser to register the starting height before going to 0.
+        void dropdownContent.offsetHeight;
+
+        dropdownContent.style.maxHeight = '0px';
+        dropdownContent.style.opacity = '0';
+        dropdownContent.style.pointerEvents = 'none';
+        dropdownContent.setAttribute('aria-hidden', 'true');
+
+        if (btn) {
+            btn.classList.remove('expanded');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+        sessionStorage.removeItem(`sidebar-dropdown-${dropdownId}`);
+    }
+
     window.toggleSidebarDropdown = function(dropdownId) {
         const dropdownContent = document.getElementById(`dd-${dropdownId}`);
         if (!dropdownContent) return;
 
-        // Get all dropdown contents
-        const allDropdownContents = document.querySelectorAll('.sidebar-dropdown-content');
-        
-        // Check if this dropdown is currently expanded
-        const isCurrentlyExpanded = parseFloat(dropdownContent.style.maxHeight) > 0;
+        const isCurrentlyExpanded = dropdownContent.classList.contains('active');
 
-        // Close all dropdowns with smooth animation
-        allDropdownContents.forEach(content => {
-            if (content.id !== `dd-${dropdownId}`) {
-                // Close other dropdowns
-                content.style.maxHeight = '0px';
-                content.style.opacity = '0';
-                content.style.pointerEvents = 'none';
-                
-                // Extract dropdown ID from content's id (format: dd-{dropdownId})
-                const otherDropdownId = content.id.replace('dd-', '');
-                
-                // Update arrow rotation for button
-                const btn = content.previousElementSibling;
-                if (btn) {
-                    const arrow = btn.querySelector('.dropdown-arrow');
-                    if (arrow) {
-                        arrow.style.transform = 'rotate(0deg)';
-                    }
-                }
-                
-                // Update sessionStorage for closed dropdown
-                sessionStorage.removeItem(`sidebar-dropdown-${otherDropdownId}`);
-            }
+        // Accordion behavior: close other submenus with the same animation.
+        document.querySelectorAll('.sidebar-dropdown-content.active').forEach(content => {
+            if (content !== dropdownContent) setDropdownExpanded(content, false);
         });
 
-        // Toggle current dropdown
-        if (isCurrentlyExpanded) {
-            // Close current dropdown
-            dropdownContent.style.maxHeight = '0px';
-            dropdownContent.style.opacity = '0';
-            dropdownContent.style.pointerEvents = 'none';
-            
-            // Rotate arrow back
-            const btn = dropdownContent.previousElementSibling;
-            if (btn) {
-                const arrow = btn.querySelector('.dropdown-arrow');
-                if (arrow) {
-                    arrow.style.transform = 'rotate(0deg)';
-                }
-            }
-            
-            // Update expanded state in sessionStorage
-            sessionStorage.removeItem(`sidebar-dropdown-${dropdownId}`);
-        } else {
-            // Open current dropdown
-            dropdownContent.style.maxHeight = '500px';
-            dropdownContent.style.opacity = '1';
-            dropdownContent.style.pointerEvents = 'auto';
-            
-            // Rotate arrow
-            const btn = dropdownContent.previousElementSibling;
-            if (btn) {
-                const arrow = btn.querySelector('.dropdown-arrow');
-                if (arrow) {
-                    arrow.style.transform = 'rotate(180deg)';
-                }
-            }
-            
-            // Update expanded state in sessionStorage
-            sessionStorage.setItem(`sidebar-dropdown-${dropdownId}`, 'true');
-        }
+        setDropdownExpanded(dropdownContent, !isCurrentlyExpanded);
     };
 
     window.toggleDarkMode = function() {
