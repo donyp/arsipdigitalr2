@@ -53,7 +53,10 @@ module.exports = (app, supabase) => {
             // Parse multipart form data
             let bb;
             try {
-                bb = busboy({ headers: req.headers });
+                bb = busboy({
+                    headers: req.headers,
+                    limits: { fileSize: 15 * 1024 * 1024 } // 15MB max per file
+                });
             } catch (bberr) {
                 console.error('[Rename Faktur] Busboy init error:', bberr.message);
                 return res.status(400).json({ error: 'Error initializing form parser: ' + bberr.message });
@@ -73,7 +76,11 @@ module.exports = (app, supabase) => {
                 
                 file.on('end', () => {
                     fileData = Buffer.concat(chunks);
-                    console.log(`[Rename Faktur] File received: ${fileName}, size: ${fileData.length} bytes`);
+                    if (fileData.length > 15 * 1024 * 1024) {
+                        console.error(`[Rename Faktur] File too large: ${fileData.length} bytes`);
+                        fileData = null;
+                    }
+                    console.log(`[Rename Faktur] File received: ${fileName}, size: ${fileData ? fileData.length : 0} bytes`);
                 });
             });
 

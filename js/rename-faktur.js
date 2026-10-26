@@ -104,10 +104,9 @@ function handleFiles(files) {
     // Append new files to existing list
     selectedFiles = selectedFiles.concat(newFiles);
 
-    // Max 25 files limit (safe for 2MB avg file size)
-    // Memory: 25 × 2MB = 50MB raw; ~67MB with base64 overhead (very safe)
-    // Processing time: ~12-13 seconds (acceptable)
-    const MAX_FILES = 25;
+    // Max 50 files limit (avg 2MB/file). Peak memory ~100MB raw; ~133MB base64.
+    // Mitigasi: download streaming + null-out fileData setelah download.
+    const MAX_FILES = 50;
     if (selectedFiles.length > MAX_FILES) {
         const deletedCount = selectedFiles.length - MAX_FILES;
         const deletedFiles = selectedFiles.slice(MAX_FILES).map(f => f.name).join(', ');
@@ -206,7 +205,7 @@ function removeFile(index) {
         maxFilesNote.innerHTML = `
             <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 flex items-center gap-2">
                 <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
-                📋 Maksimal 25 file | <span class="font-bold">${selectedFiles.length}</span> file dipilih
+                📋 Maksimal 50 file | <span class="font-bold">${selectedFiles.length}</span> file dipilih
             </p>
         `;
         filesContainer.appendChild(maxFilesNote);
@@ -233,36 +232,51 @@ async function processFiles() {
     document.getElementById('processButtonContainer').classList.add('hidden');
     showLoadingModal(selectedFiles.length);
 
-    const results = [];
+    let results = [];
     const resultsSection = document.getElementById('resultsSection');
     const resultsList = document.getElementById('resultsList');
 
     try {
-        for (let i = 0; i < selectedFiles.length; i++) {
-            const file = selectedFiles[i];
-            // Update loading modal
-            updateLoadingModal(i + 1, file.name, selectedFiles.length);
-            
+        // Concurrency pool (4 paralel) untuk mempercepat tanpa membebani server.
+        // Hasil tetap identik; urutan hasil dipertahankan via index.
+        const CONCURRENCY = 4;
+        const total = selectedFiles.length;
+        results = new Array(total);
+        let completedCount = 0;
+
+        const runOne = async (index) => {
+            const file = selectedFiles[index];
+            updateLoadingModal(completedCount + 1, file.name, total);
             const result = await processFile(file);
-            results.push(result);
-        }
+            results[index] = result;
+            completedCount++;
+            updateLoadingModal(completedCount, file.name, total);
+
+            // Streaming download: langsung download begitu sukses, lalu
+            // lepas fileData dari memori (mengurangi puncak RAM).
+            if (result && result.success && result.fileData) {
+                try {
+                    downloadFile(result.newName, result.fileData);
+                } catch (e) { /* ignore */ }
+                result.fileData = null;
+            }
+        };
+
+        // Pool sederhana
+        const queue = selectedFiles.map((_, i) => i);
+        const workers = Array.from({ length: Math.min(CONCURRENCY, total) }, async () => {
+            while (queue.length) {
+                const idx = queue.shift();
+                if (idx === undefined) break;
+                await runOne(idx);
+            }
+        });
+        await Promise.all(workers);
 
         // Hide loading modal
         hideLoadingModal();
 
-        // Auto-download successful files - PARALLEL (semua sekaligus)
-        const successFiles = results.filter(r => r.success);
-        if (successFiles.length > 0) {
-            const downloadStart = performance.now();
-            
-            setTimeout(() => {
-                // Download all files in parallel (browser will manage queuing)
-                successFiles.forEach(r => {
-                    downloadFile(r.newName, r.fileData);
-                });
-                
-            }, 300);
-        }
+        const successFiles = results.filter(r => r && r.success);
 
         // Show notification summary only (no history)
         const failedCount = results.filter(r => !r.success).length;
