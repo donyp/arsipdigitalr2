@@ -252,7 +252,7 @@ html.dark-mode {
 }
 
 .refresh-btn:hover i {
-    animation: none;
+    animation: spin 0.6s linear;
 }
 
 .dark-mode-btn:hover i {
