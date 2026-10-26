@@ -695,10 +695,17 @@ class SPARouter {
                     '#main-content > .container { width: auto !important; margin-right: 0 !important; }';
             }
 
-            // Hapus salinan modal halaman sebelumnya yang masih menempel di
-            // body (mis. modal halaman awal yang dibuka full load) supaya
-            // tidak ada dua elemen dengan id yang sama setelah modal baru
-            // dimasukkan ke dalam #main-content.
+            // Hapus kontainer modal SPA sebelumnya. Modal harus berada di
+            // luar #main-content supaya position:fixed tetap relatif ke
+            // viewport (tidak kena `#main-content > div { transform: scale() }`).
+            const oldModalContainer = document.getElementById('spa-page-modals');
+            if (oldModalContainer) oldModalContainer.remove();
+
+            // Hapus salinan modal tujuan yang mungkin masih menempel di body
+            // dari full page load sebelumnya, supaya tidak ada dua elemen
+            // dengan id yang sama. Jangan hapus semua modal luar #main-content:
+            // sebagian modal global (mis. #announcementDetailModal) dibuat
+            // sekali oleh script dan harus tetap hidup antar-navigasi.
             const targetModalIds = (pageData && typeof pageData === 'object' && Array.isArray(pageData.modalIds))
                 ? pageData.modalIds
                 : [];
@@ -713,6 +720,16 @@ class SPARouter {
             // Langsung pindah ke atas SEKARANG (bukan 1 detik kemudian)
             // supaya halaman tidak terlihat "melompat" setelah animasi.
             try { window.scrollTo(0, 0); } catch (e) { /* abaikan */ }
+
+            // Modal ditempel di body, bukan di dalam #main-content.
+            // Dengan begitu posisi popup tetap center viewport dan tidak
+            // ikut ter-scale 80% seperti konten halaman.
+            if (pageData && typeof pageData === 'object' && pageData.modalsHtml) {
+                const modalContainer = document.createElement('div');
+                modalContainer.id = 'spa-page-modals';
+                modalContainer.innerHTML = pageData.modalsHtml;
+                document.body.appendChild(modalContainer);
+            }
 
             // Fase 3: halaman baru naik dari bawah
             if (animate && transitionToken) {
@@ -1208,12 +1225,17 @@ class SPARouter {
             // Modal sering diletakkan di luar #main-content (mis. #userModal
             // di users.html). Tanpa disertakan, getElementById() di fungsi
             // onclick mengembalikan null setelah navigasi SPA.
+            //
+            // PENTING: jangan masukkan modal ke dalam #main-content. Beberapa
+            // halaman memakai aturan `#main-content > div { transform: scale(0.8) }`
+            // untuk konten, dan transform pada modal membuat position:fixed
+            // tidak lagi relatif ke viewport -> popup meleset/terpotong.
             const externalModals = this.collectExternalPageModals(doc, sourceRoot);
-            externalModals.forEach(modal => {
+            const modalsHtml = externalModals.map(modal => {
                 const modalClone = modal.cloneNode(true);
                 modalClone.querySelectorAll('script').forEach(s => s.remove());
-                contentClone.appendChild(modalClone);
-            });
+                return modalClone.outerHTML;
+            }).join('');
             const modalIds = externalModals.map(modal => modal.id).filter(Boolean);
             const contentHtml = contentClone.innerHTML;
 
@@ -1237,6 +1259,7 @@ class SPARouter {
                 html: contentHtml,
                 scripts: scriptData,
                 styles: styleData,
+                modalsHtml: modalsHtml,
                 modalIds: modalIds,
                 hasUnifiedHeader: html.indexOf('unified-header.js') >= 0,
                 bodyFallback: bodyFallback,

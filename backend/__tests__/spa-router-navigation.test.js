@@ -598,13 +598,20 @@ describe('Modal di luar #main-content ikut dibawa saat SPA', () => {
         expect(ids).toEqual(['detailModal', 'someDialog', 'userModal']);
     });
 
-    test('fetchPageContent mengembalikan modalIds & loadPage membersihkan id lama', () => {
+    test('modal ditempel di body, bukan di dalam #main-content', () => {
         const src = require('fs').readFileSync(
             path.join(__dirname, '..', '..', 'js', 'spa-router.js'), 'utf8'
         );
 
-        expect(src).toContain('modalIds: modalIds');
+        expect(src).toContain('modalsHtml: modalsHtml');
         expect(src).toMatch(/collectExternalPageModals\(doc, sourceRoot\)/);
-        expect(src).toMatch(/targetModalIds/);
+        expect(src).toContain('targetModalIds');
+        expect(src).toContain("modalContainer.id = 'spa-page-modals'");
+        expect(src).toContain('document.body.appendChild(modalContainer)');
+
+        // Modal tidak boleh dimasukkan ke contentClone (#main-content),
+        // karena akan kena `#main-content > div { transform: scale(0.8) }`
+        // dan position:fixed-nya meleset.
+        expect(src).not.toMatch(/contentClone\.appendChild\(modalClone\)/);
     });
 });

@@ -308,6 +308,33 @@ class NotificationSystem {
                 transform: translateY(0);
             }
 
+            /* Dark mode (modal confirm/delete) */
+            html[data-dark-mode="true"] .notification-modal {
+                background: var(--color-bg-secondary, #1e293b);
+                border-color: var(--color-border, #475569);
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55), 0 0 1px rgba(255, 255, 255, 0.08);
+                color: var(--color-text-primary, #f1f5f9);
+            }
+
+            html[data-dark-mode="true"] .notification-modal-title {
+                color: var(--color-text-primary, #f1f5f9);
+            }
+
+            html[data-dark-mode="true"] .notification-modal-message {
+                color: var(--color-text-secondary, #cbd5e1);
+            }
+
+            html[data-dark-mode="true"] .notification-modal-btn-secondary {
+                background: var(--color-bg-tertiary, #334155);
+                color: var(--color-text-secondary, #cbd5e1);
+                border-color: var(--color-border, #475569);
+            }
+
+            html[data-dark-mode="true"] .notification-modal-btn-secondary:hover {
+                background: var(--color-border, #475569);
+                border-color: var(--color-text-secondary, #cbd5e1);
+            }
+
             /* Mobile responsive */
             @media (max-width: 640px) {
                 #notification-container {
