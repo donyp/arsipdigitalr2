@@ -18,7 +18,8 @@ async function createModeratorUser() {
         console.log('🔐 Creating Moderator User...\n');
 
         // Hash password with bcrypt
-        const password = 'null123';
+        const password = process.env.MODERATOR_PASSWORD;
+if (!password) { console.error('Set MODERATOR_PASSWORD env var'); process.exit(1); }
         const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(password, salt);
 

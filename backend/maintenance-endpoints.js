@@ -21,7 +21,10 @@ let supabase = createClient(
   }
 );
 
-let JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required');
+}
 
 // Initialize function to set values from server.js
 function initializeSupabase(supabaseClient, jwtSecret) {

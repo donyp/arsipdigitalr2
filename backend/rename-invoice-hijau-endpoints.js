@@ -5,6 +5,10 @@
 
 const busboy = require('busboy');
 const fs = require('fs');
+
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is required');
+}
 const path = require('path');
 const os = require('os');
 let pdfParse;
@@ -742,7 +746,7 @@ module.exports = (app, supabase, auditLogger) => {
             let userIdFromToken = null;
             try {
                 const jwt = require('jsonwebtoken');
-                const secret = process.env.JWT_SECRET || 'change-this-to-a-very-long-random-string';
+                const secret = process.env.JWT_SECRET;
                 console.log('[Failed Rename] Using JWT secret:', secret.substring(0, 10) + '...');
                 
                 const decoded = jwt.verify(token, secret);
@@ -803,7 +807,7 @@ module.exports = (app, supabase, auditLogger) => {
             let userIdFromToken = null;
             try {
                 const jwt = require('jsonwebtoken');
-                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change-this-to-a-very-long-random-string');
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 userIdFromToken = decoded.userId || decoded.id;
             } catch (err) {
                 console.error('[Rename History] Token decode error:', err.message);
@@ -880,7 +884,7 @@ module.exports = (app, supabase, auditLogger) => {
             let userEmail = null;
             try {
                 const jwt = require('jsonwebtoken');
-                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'change-this-to-a-very-long-random-string');
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 userIdFromToken = decoded.userId || decoded.id;
                 userEmail = decoded.email || null;
             } catch (err) {

@@ -11,12 +11,40 @@ const path = require('path');
 
 const MAINTENANCE_FILE = path.join(__dirname, '../data/maintenance-status.json');
 
-// ===== Login rate limit (in-memory, single instance) =====
+// ===== Login rate limit (Redis-backed if available, else in-memory) =====
 const LOGIN_MAX_ATTEMPTS = 3;
 const LOGIN_LOCK_MINUTES = 15;
 const loginAttempts = new Map();
 
-function getLoginAttemptState(key) {
+let redisClient = null;
+let redisReady = false;
+(async () => {
+    if (!process.env.REDIS_HOST && !process.env.REDIS_URL) return;
+    try {
+        const redis = require('redis');
+        const c = process.env.REDIS_URL
+            ? redis.createClient({ url: process.env.REDIS_URL })
+            : redis.createClient({ host: process.env.REDIS_HOST || 'localhost', port: process.env.REDIS_PORT || 6379, password: process.env.REDIS_PASSWORD });
+        c.on('error', () => { redisReady = false; });
+        await c.connect();
+        redisClient = c;
+        redisReady = true;
+    } catch (e) { redisReady = false; }
+})();
+
+async function getLoginAttemptState(key) {
+    if (redisReady && redisClient) {
+        try {
+            const raw = await redisClient.get(`login:attempt:${key}`);
+            if (!raw) return { count: 0, lockedUntil: 0 };
+            const s = JSON.parse(raw);
+            if (s.lockedUntil && s.lockedUntil < Date.now()) {
+                await redisClient.del(`login:attempt:${key}`);
+                return { count: 0, lockedUntil: 0 };
+            }
+            return s;
+        } catch (e) { /* fall through to memory */ }
+    }
     const s = loginAttempts.get(key);
     if (!s) return { count: 0, lockedUntil: 0 };
     if (s.lockedUntil && s.lockedUntil < Date.now()) {
@@ -26,17 +54,24 @@ function getLoginAttemptState(key) {
     return s;
 }
 
-function recordFailedLogin(key) {
-    const s = getLoginAttemptState(key);
+async function recordFailedLogin(key) {
+    const s = await getLoginAttemptState(key);
     s.count = (s.count || 0) + 1;
     if (s.count >= LOGIN_MAX_ATTEMPTS) {
         s.lockedUntil = Date.now() + LOGIN_LOCK_MINUTES * 60 * 1000;
     }
-    loginAttempts.set(key, s);
+    if (redisReady && redisClient) {
+        try { await redisClient.set(`login:attempt:${key}`, JSON.stringify(s), { EX: LOGIN_LOCK_MINUTES * 60 }); } catch (e) {}
+    } else {
+        loginAttempts.set(key, s);
+    }
     return s;
 }
 
-function clearLoginAttempts(key) {
+async function clearLoginAttempts(key) {
+    if (redisReady && redisClient) {
+        try { await redisClient.del(`login:attempt:${key}`); } catch (e) {}
+    }
     loginAttempts.delete(key);
 }
 
@@ -76,7 +111,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             }
 
             const attemptKey = `${clientIp}::${username}`;
-            const attemptState = getLoginAttemptState(attemptKey);
+            const attemptState = await getLoginAttemptState(attemptKey);
             if (attemptState.lockedUntil && attemptState.lockedUntil > Date.now()) {
                 const retryAfter = Math.ceil((attemptState.lockedUntil - Date.now()) / 1000);
                 return res.status(429).json({
@@ -106,7 +141,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
                 if (!users) {
                     console.warn(`[Auth] Maintenance: User not found: ${username}`);
-                    const s = recordFailedLogin(attemptKey);
+                    const s = await recordFailedLogin(attemptKey);
                     return res.status(401).json({
                         success: false,
                         error: 'Username atau password salah',
@@ -165,7 +200,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             if (fetchError || !users) {
                 console.warn(`[Auth] User not found: ${username}`, fetchError?.message);
-                const s = recordFailedLogin(attemptKey);
+                const s = await recordFailedLogin(attemptKey);
                 return res.status(401).json({
                     success: false,
                     error: 'Username atau password salah',
@@ -178,7 +213,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             const passwordValid = await bcrypt.compare(password, users.password_hash);
             if (!passwordValid) {
                 console.warn(`[Auth] Invalid password for user: ${username}`);
-                const s = recordFailedLogin(attemptKey);
+                const s = await recordFailedLogin(attemptKey);
                 return res.status(401).json({
                     success: false,
                     error: 'Username atau password salah',
@@ -279,7 +314,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 console.error('[Auth] Session record exception:', sessionErr.message, sessionErr.stack);
             }
 
-            clearLoginAttempts(attemptKey);
+            await clearLoginAttempts(attemptKey);
 
             console.log('[Auth] 🔐 Login successful for user:', {
                 id: users.id,

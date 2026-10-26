@@ -18,7 +18,8 @@ async function createAdminUser() {
         console.log('🔐 Creating Super Admin User...\n');
 
         // Hash password with bcrypt
-        const password = 'Admin@123456';
+        const password = process.env.ADMIN_PASSWORD;
+if (!password) { console.error('Set ADMIN_PASSWORD env var'); process.exit(1); }
         const salt = await bcrypt.genSalt(12);
         const passwordHash = await bcrypt.hash(password, salt);
 

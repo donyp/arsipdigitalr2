@@ -1546,7 +1546,7 @@ async function loadBugHistory() {
             `;
         }).join('');
     } catch (err) {
-        list.innerHTML = `<p class="text-center py-8 text-red-500 text-[10px] font-black uppercase">${err.message}</p>`;
+        list.innerHTML = `<p class="text-center py-8 text-red-500 text-[10px] font-black uppercase">${String(err && err.message ? err.message : '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`;
     }
 }
 
@@ -1775,7 +1775,7 @@ async function openManageBroadcasts() {
             </div>
         `).join('');
     } catch (err) {
-        list.innerHTML = `<p class="text-center text-red-400 py-10 text-sm">${err.message}</p>`;
+        list.innerHTML = `<p class="text-center text-red-400 py-10 text-sm">${String(err && err.message ? err.message : '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</p>`;
     }
 }
 

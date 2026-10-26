@@ -610,7 +610,7 @@ class AnnouncementNotification {
         
         const typeIcon = this.getTypeIcon(ann.announcement_type);
         const detailType = document.getElementById('detailType');
-        detailType.innerHTML = `${typeIcon}${ann.announcement_type}`;
+        detailType.innerHTML = `${typeIcon}${String(ann.announcement_type || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}`;
         detailType.className = `announcement-item-type ${ann.announcement_type}`;
         
         // Format date with time in WIB timezone - use toLocaleString for consistency

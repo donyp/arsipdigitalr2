@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Arsip Digital ANKA</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" crossorigin="anonymous">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="/css/tailwind.generated.css">
     <link rel="stylesheet" href="/css/style.css">
@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="/css/maintenance-banner.css">
     <script src="/js/zoom-reset.js"></script>
     <script src="/js/maintenance-banner.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" integrity="sha384-nLoOnA/BDh8A/jxqtckg4DumuCGOBYUnNJLZdQz/zfYNp3wcjGSoWTAzgko06G/2" crossorigin="anonymous"></script>
     <!-- Dark mode initialization - prevent flash of light mode -->
     <script>
         (function() {
@@ -699,9 +699,8 @@
                 localStorage.setItem('jwt_token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('user_info', JSON.stringify(data.user)); // Keep for backward compatibility
-                localStorage.setItem('user_password', password); // Store password for reveal feature
-                console.log('[Login] Password stored in localStorage:', password ? 'YES' : 'NO');
-                console.log('[Login] Stored password check:', localStorage.getItem('user_password') ? 'VERIFIED' : 'FAILED');
+                // SECURITY: password tidak disimpan di localStorage (XSS risk).
+                // Fitur reveal password harus menggunakan session in-memory, bukan persistent storage.
                 
                 // Store session ID for keep-alive tracking
                 if (data.sessionId) {
