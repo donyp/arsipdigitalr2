@@ -704,21 +704,25 @@
                 box-sizing: border-box;
                 flex-shrink: 0;
                 transition:
-                    transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                    background-color 220ms ease,
-                    color 220ms ease,
-                    border-color 220ms ease,
-                    box-shadow 240ms ease !important;
-                transform: translateX(0) scale(1);
-                will-change: transform;
+                    background-color 180ms ease,
+                    color 180ms ease,
+                    border-color 180ms ease !important;
             }
 
-            /* Ikon ikut beranimasi saat item di-hover */
+            /* Animasi hover hanya pada isi item. Kotak/hitbox item tidak
+               digeser supaya cursor tidak kehilangan hover (flicker). */
+            .sidebar-item > span,
+            .sidebar-dropdown-btn > span,
+            .sidebar-child-item > span {
+                transform: translate3d(0, 0, 0);
+                backface-visibility: hidden;
+                transition: transform 200ms cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+            }
+
             .sidebar-item > span:first-child,
             .sidebar-dropdown-btn > span:first-child,
             .sidebar-child-item > span:first-child {
                 transform-origin: center;
-                transition: transform 240ms cubic-bezier(0.22, 0.61, 0.36, 1) !important;
             }
 
             .sidebar-item:focus-visible,
@@ -761,21 +765,20 @@
                 border-left-color: var(--sidebar-active-color) !important;
             }
 
-            .sidebar-item:hover:not(.active),
-            .sidebar-dropdown-btn:hover:not(.expanded) {
-                transform: translateX(6px) scale(1.01);
-                box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+            .sidebar-item:hover:not(.active) > span,
+            .sidebar-dropdown-btn:hover:not(.expanded) > span,
+            .sidebar-child-item:hover:not(.active) > span {
+                transform: translate3d(4px, 0, 0);
             }
 
             .sidebar-item:hover:not(.active) > span:first-child,
             .sidebar-dropdown-btn:hover:not(.expanded) > span:first-child,
             .sidebar-child-item:hover:not(.active) > span:first-child {
-                transform: scale(1.12);
+                transform: translate3d(4px, 0, 0) scale(1.08);
             }
 
             /* Dropdown button expanded state */
             .sidebar-dropdown-btn.expanded {
-                transform: translateX(0);
                 background-color: var(--sidebar-hover-bg) !important;
                 color: var(--sidebar-active-color) !important;
                 border-left-color: var(--sidebar-active-color) !important;
@@ -799,23 +802,23 @@
                 overflow: hidden;
                 visibility: hidden;
                 pointer-events: none;
-                transform: translateY(-4px);
-                will-change: max-height, opacity, transform;
+                transform: translate3d(0, -4px, 0);
+                will-change: opacity, transform;
                 transition:
-                    max-height 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                    opacity 220ms ease,
-                    transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                    visibility 0s linear 300ms;
+                    max-height 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    opacity 240ms ease,
+                    transform 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                    visibility 0s linear 260ms;
             }
 
             .sidebar-dropdown-content.active {
                 max-height: 500px;
                 opacity: 1;
                 visibility: visible;
-                transform: translateY(0);
+                transform: translate3d(0, 0, 0);
                 transition:
                     max-height 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                    opacity 260ms ease,
+                    opacity 240ms ease,
                     transform 300ms cubic-bezier(0.22, 0.61, 0.36, 1),
                     visibility 0s linear 0s;
             }
@@ -892,11 +895,6 @@
             /* Item aktif: highlight existing dipertahankan, tanpa kurva */
             .sidebar-child-item.active::after {
                 display: none;
-            }
-
-            /* Hover child: jangan geser horizontal supaya posisi garis presisi */
-            .sidebar-child-item:hover:not(.active) {
-                transform: translateX(0);
             }
 
             #main-content {
@@ -1011,12 +1009,22 @@
         const btn = dropdownContent.previousElementSibling;
         const dropdownId = dropdownContent.id.replace(/^dd-/, '');
 
+        // Batalkan animasi penutupan sebelumnya kalau user membuka/menutup
+        // dropdown lagi dengan cepat.
+        if (dropdownContent._sidebarCloseAnimation) {
+            dropdownContent._sidebarCloseAnimation.cancel();
+            dropdownContent._sidebarCloseAnimation = null;
+            dropdownContent.style.transition = '';
+        }
+
         if (expanded) {
             // Add the state class first so CSS handles the arrow and colors.
             dropdownContent.classList.add('active');
             dropdownContent.style.maxHeight = `${dropdownContent.scrollHeight}px`;
             dropdownContent.style.opacity = '1';
+            dropdownContent.style.visibility = 'visible';
             dropdownContent.style.pointerEvents = 'auto';
+            dropdownContent.style.transition = '';
             dropdownContent.setAttribute('aria-hidden', 'false');
 
             if (btn) {
@@ -1027,19 +1035,12 @@
             return;
         }
 
-        // Lock the current height before collapsing. max-height must animate
-        // from a concrete pixel value (not from the 500px fallback) so the
-        // closing motion matches the real submenu height.
         const currentHeight = dropdownContent.getBoundingClientRect().height;
+        dropdownContent.classList.remove('active');
+        dropdownContent.style.transition = 'none';
         dropdownContent.style.maxHeight = `${currentHeight}px`;
         dropdownContent.style.opacity = '1';
-        dropdownContent.classList.remove('active');
-
-        // Force the browser to register the starting height before going to 0.
-        void dropdownContent.offsetHeight;
-
-        dropdownContent.style.maxHeight = '0px';
-        dropdownContent.style.opacity = '0';
+        dropdownContent.style.visibility = 'visible';
         dropdownContent.style.pointerEvents = 'none';
         dropdownContent.setAttribute('aria-hidden', 'true');
 
@@ -1048,6 +1049,46 @@
             btn.setAttribute('aria-expanded', 'false');
         }
         sessionStorage.removeItem(`sidebar-dropdown-${dropdownId}`);
+
+        let closeAnimation = null;
+
+        const finishClose = () => {
+            dropdownContent.style.maxHeight = '0px';
+            dropdownContent.style.opacity = '0';
+            dropdownContent.style.visibility = 'hidden';
+            dropdownContent.style.transition = '';
+            if (dropdownContent._sidebarCloseAnimation === closeAnimation) {
+                dropdownContent._sidebarCloseAnimation = null;
+            }
+            if (closeAnimation) closeAnimation.cancel();
+        };
+
+        // Web Animations API: mulai dari tinggi yang benar-benar terlihat
+        // dan tidak memerlukan forced reflow / rAF delay. Ini menghilangkan
+        // lompatan kecil di awal animasi close.
+        if (typeof dropdownContent.animate === 'function') {
+            closeAnimation = dropdownContent.animate(
+                [
+                    { maxHeight: `${currentHeight}px`, opacity: 1, transform: 'translate3d(0, 0, 0)' },
+                    { maxHeight: '0px', opacity: 0, transform: 'translate3d(0, -4px, 0)' }
+                ],
+                {
+                    duration: 260,
+                    easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+                    fill: 'forwards'
+                }
+            );
+            dropdownContent._sidebarCloseAnimation = closeAnimation;
+            closeAnimation.addEventListener('finish', finishClose);
+            return;
+        }
+
+        // Fallback browser lama: pakai transisi CSS seperti sebelumnya.
+        dropdownContent.style.transition = '';
+        void dropdownContent.offsetHeight;
+        dropdownContent.style.maxHeight = '0px';
+        dropdownContent.style.opacity = '0';
+        dropdownContent.style.visibility = 'hidden';
     }
 
     window.toggleSidebarDropdown = function(dropdownId) {

@@ -24,10 +24,10 @@ describe('Sidebar - animasi hover dan dropdown', () => {
             /\.sidebar-item,\s*\.sidebar-dropdown-btn,\s*\.sidebar-child-item\s*\{([\s\S]*?)\}/
         );
         expect(itemBlock).toBeTruthy();
-        expect(itemBlock[1]).toMatch(/transform\s+240ms/);
-        expect(itemBlock[1]).toMatch(/background-color\s+220ms/);
-        expect(itemBlock[1]).toMatch(/color\s+220ms/);
+        expect(itemBlock[1]).toMatch(/background-color\s+180ms/);
+        expect(itemBlock[1]).toMatch(/color\s+180ms/);
         expect(itemBlock[1]).not.toMatch(/transition:\s*all/);
+        expect(itemBlock[1]).not.toMatch(/box-shadow/);
     });
 
     test('hover tombol dropdown tetap memberi feedback saat expanded', () => {
@@ -55,11 +55,11 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(closedBlock).toBeTruthy();
         expect(closedBlock[1]).toMatch(/max-height:\s*0/);
         expect(closedBlock[1]).toMatch(/opacity:\s*0/);
-        expect(closedBlock[1]).toMatch(/transform:\s*translateY\(-4px\)/);
+        expect(closedBlock[1]).toMatch(/transform:\s*translate3d\(0, -4px, 0\)/);
         expect(closedBlock[1]).toMatch(/transition:/);
-        expect(closedBlock[1]).toMatch(/max-height\s+300ms/);
-        expect(closedBlock[1]).toMatch(/opacity\s+220ms/);
-        expect(closedBlock[1]).toMatch(/transform\s+300ms/);
+        expect(closedBlock[1]).toMatch(/max-height\s+260ms/);
+        expect(closedBlock[1]).toMatch(/opacity\s+240ms/);
+        expect(closedBlock[1]).toMatch(/transform\s+260ms/);
 
         const activeBlock = sidebarSrc.match(
             /\.sidebar-dropdown-content\.active\s*\{([\s\S]*?)\}/
@@ -67,22 +67,29 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(activeBlock).toBeTruthy();
         expect(activeBlock[1]).toMatch(/max-height:\s*500px/);
         expect(activeBlock[1]).toMatch(/opacity:\s*1/);
-        expect(activeBlock[1]).toMatch(/transform:\s*translateY\(0\)/);
+        expect(activeBlock[1]).toMatch(/transform:\s*translate3d\(0, 0, 0\)/);
     });
 
     test('toggle memakai state class dan tinggi asli submenu', () => {
         expect(sidebarSrc).toContain("dropdownContent.classList.contains('active')");
         expect(sidebarSrc).toContain('dropdownContent.scrollHeight');
         expect(sidebarSrc).toContain('dropdownContent.getBoundingClientRect().height');
-        expect(sidebarSrc).not.toContain('parseFloat(dropdownContent.style.maxHeight)');
+        expect(sidebarSrc).toContain('dropdownContent.animate(');
+        expect(sidebarSrc).toContain('duration: 260');
+        expect(sidebarSrc).not.toContain('_sidebarCloseRaf');
     });
 
-    test('hover menggeser item, memberi shadow, dan memperbesar ikon', () => {
+    test('hover hanya menggeser isi item, bukan kotak/hitbox-nya', () => {
         expect(sidebarSrc).toMatch(
-            /\.sidebar-item:hover:not\(\.active\),\s*\.sidebar-dropdown-btn:hover:not\(\.expanded\)\s*\{[^}]*transform:\s*translateX\(6px\)\s*scale\(1\.01\)/
+            /\.sidebar-item:hover:not\(\.active\) > span,[\s\S]*?transform:\s*translate3d\(4px, 0, 0\)/
         );
         expect(sidebarSrc).toMatch(
-            /\.sidebar-item:hover:not\(\.active\) > span:first-child,[\s\S]*?transform:\s*scale\(1\.12\)/
+            /\.sidebar-item:hover:not\(\.active\) > span:first-child,[\s\S]*?translate3d\(4px, 0, 0\)\s*scale\(1\.08\)/
+        );
+        // Kotak item tidak boleh ikut bergeser/skala karena bisa memicu
+        // hover flicker ketika cursor berada di tepi item.
+        expect(sidebarSrc).not.toMatch(
+            /\.sidebar-item:hover:not\(\.active\),\s*\.sidebar-dropdown-btn:hover:not\(\.expanded\)\s*\{[^}]*transform:/
         );
     });
 
@@ -114,7 +121,7 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(sidebarSrc).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
     });
 
-    test('semua halaman memakai cache-busting sidebar v=10', () => {
+    test('semua halaman memakai cache-busting sidebar v=11', () => {
         const htmlFiles = fs.readdirSync(projectRoot)
             .filter(file => file.endsWith('.html'));
         const sidebarPages = htmlFiles.filter(file => {
@@ -125,8 +132,8 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(sidebarPages.length).toBeGreaterThan(0);
         for (const file of sidebarPages) {
             const html = fs.readFileSync(path.join(projectRoot, file), 'utf8');
-            expect(html).not.toContain('sidebar.js?v=9');
-            expect(html).toContain('sidebar.js?v=10');
+            expect(html).not.toContain('sidebar.js?v=10');
+            expect(html).toContain('sidebar.js?v=11');
         }
     });
 });
