@@ -3694,13 +3694,26 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                             const tmpCache = `${cachedFilePath}.part-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
                             let received = 0;
                             let streamCompleted = false;
+                            let cacheDisabled = false;
+                            let cacheBuffered = 0;
+                            const CACHE_MAX_BUFFER = 64 * 1024 * 1024; // 64 MB
                             const cacheWs = fs.createWriteStream(tmpCache);
+
+                            // Cache bersifat best-effort: error disk TIDAK boleh
+                            // menghentikan download client (atau crash proses).
+                            cacheWs.on('error', (cacheErr) => {
+                                console.warn('[Invoice Download] Cache write error (non-blocking):', cacheErr.message);
+                                cacheDisabled = true;
+                                try { fs.unlinkSync(tmpCache); } catch (_) { /* abaikan */ }
+                            });
 
                             res.setHeader('Content-Type', 'application/pdf');
                             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
                             if (streamInfo.contentLength) res.setHeader('Content-Length', streamInfo.contentLength);
                             res.setHeader('Cache-Control', `private, max-age=${DOWNLOAD_CACHE_TTL_MINUTES * 60}`);
                             res.setHeader('X-Content-Type-Options', 'nosniff');
+                            // Nginx: jangan buffer response download (streaming langsung).
+                            res.setHeader('X-Accel-Buffering', 'no');
                             res.setHeader('ETag', `"${Buffer.from(filePath).toString('hex').substring(0, 16)}"`);
 
                             streamInfo.stream.on('error', (streamErr) => {
@@ -3713,11 +3726,18 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             streamInfo.stream.on('data', (chunk) => {
                                 received += chunk.length;
-                                // Backpressure: jeda bila tulisan disk kelebihan beban
-                                if (!cacheWs.write(chunk)) {
-                                    streamInfo.stream.pause();
-                                    cacheWs.once('drain', () => streamInfo.stream.resume());
+                                // Best-effort cache: JANGAN pause stream ke client
+                                // hanya karena disk cache lambat. Buffer maksimal
+                                // 64 MB; lebih dari itu cache dimatikan.
+                                if (cacheDisabled) return;
+                                cacheBuffered += chunk.length;
+                                if (cacheBuffered > CACHE_MAX_BUFFER) {
+                                    cacheDisabled = true;
+                                    cacheWs.destroy();
+                                    try { fs.unlinkSync(tmpCache); } catch (_) { /* abaikan */ }
+                                    return;
                                 }
+                                cacheWs.write(chunk);
                             });
 
                             streamInfo.stream.on('end', () => { streamCompleted = true; });
@@ -3727,7 +3747,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
 
                             res.on('finish', () => {
                                 cacheWs.end(() => {
-                                    if (streamCompleted) {
+                                    if (streamCompleted && !cacheDisabled) {
                                         try {
                                             fs.renameSync(tmpCache, cachedFilePath);
                                         } catch (renameErr) {
@@ -3847,6 +3867,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                     res.setHeader('Content-Length', fileBuffer.length);
                     res.setHeader('Cache-Control', `private, max-age=${DOWNLOAD_CACHE_TTL_MINUTES * 60}`); // Browser cache terbatas & selalu revalidasi (bukan 24 jam immutable)
                     res.setHeader('X-Content-Type-Options', 'nosniff');
+                    res.setHeader('X-Accel-Buffering', 'no');
                     res.setHeader('ETag', `"${Buffer.from(filePath).toString('hex').substring(0, 16)}"`)
                     
                     // Log to audit trail BEFORE sending response
@@ -4131,6 +4152,7 @@ function registerInvoiceEndpoints(app, supabase, createAuth, R2Storage) {
                 res.setHeader('Content-Disposition', `attachment; filename="${outputFilename}"`);
                 res.setHeader('Content-Length', mergedBuffer.length);
                 res.setHeader('Cache-Control', `private, max-age=${DOWNLOAD_CACHE_TTL_MINUTES * 60}`);
+                res.setHeader('X-Accel-Buffering', 'no');
                 
                 res.send(mergedBuffer);
                 
