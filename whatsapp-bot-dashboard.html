@@ -26,6 +26,16 @@
             --color-text-secondary: #94a3b8;
             --color-border: #334155;
         }
+        /* Dark-mode overrides untuk class Tailwind hardcoded (light-only) */
+        html[data-dark-mode="true"] .text-gray-900,
+        html[data-dark-mode="true"] .text-gray-800 { color: #f1f5f9 !important; }
+        html[data-dark-mode="true"] .text-gray-700 { color: #cbd5e1 !important; }
+        html[data-dark-mode="true"] .bg-white { background-color: #1e293b !important; }
+        html[data-dark-mode="true"] .bg-gray-50,
+        html[data-dark-mode="true"] .bg-gray-100 { background-color: #0f172a !important; }
+        html[data-dark-mode="true"] .border-gray-200,
+        html[data-dark-mode="true"] .border-gray-100 { border-color: #334155 !important; }
+        html[data-dark-mode="true"] .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4) !important; }
         html, body { margin: 0; padding: 0; }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--color-bg-secondary); color: var(--color-text-primary); }
         .glass-card {
