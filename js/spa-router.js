@@ -695,6 +695,18 @@ class SPARouter {
                     '#main-content > .container { width: auto !important; margin-right: 0 !important; }';
             }
 
+            // Hapus salinan modal halaman sebelumnya yang masih menempel di
+            // body (mis. modal halaman awal yang dibuka full load) supaya
+            // tidak ada dua elemen dengan id yang sama setelah modal baru
+            // dimasukkan ke dalam #main-content.
+            const targetModalIds = (pageData && typeof pageData === 'object' && Array.isArray(pageData.modalIds))
+                ? pageData.modalIds
+                : [];
+            if (targetModalIds.length) {
+                const modalSelector = targetModalIds.map(id => `[id="${id}"]`).join(',');
+                document.querySelectorAll(modalSelector).forEach(el => el.remove());
+            }
+
             // Insert HTML content (scripts are in separate pageScripts array)
             mainContent.innerHTML = htmlContent;
 
@@ -1076,6 +1088,49 @@ class SPARouter {
         }
     }
 
+    /**
+     * Ambil modal halaman yang berada di luar subtree konten utama.
+     * Modal seperti ini tidak ikut saat #main-content di-clone, padahal
+     * fungsi onclick tetap membutuhkannya setelah navigasi SPA.
+     */
+    collectExternalPageModals(doc, sourceRoot) {
+        if (!doc || !sourceRoot) return [];
+
+        const candidates = Array.from(doc.querySelectorAll(
+            '[id$="Modal"], [id$="modal"], [id$="-modal"], .modal, .modal-overlay, ' +
+            '.log-detail-modal, .success-modal, .profile-modal-overlay, .modal-backdrop'
+        ));
+
+        const modalClasses = new Set([
+            'modal', 'modal-overlay', 'log-detail-modal',
+            'success-modal', 'profile-modal-overlay', 'modal-backdrop'
+        ]);
+
+        const isModal = (el) => {
+            if (!el) return false;
+
+            const id = (el.id || '').toLowerCase();
+            if (id.endsWith('modal') || id.endsWith('-modal')) return true;
+
+            if (el.classList) {
+                for (const cls of modalClasses) {
+                    if (el.classList.contains(cls)) return true;
+                }
+            }
+
+            const className = typeof el.className === 'string' ? el.className : '';
+            return className.split(/\s+/).some(cls => modalClasses.has(cls));
+        };
+
+        const external = candidates.filter(el => isModal(el) && !sourceRoot.contains(el));
+
+        // Buang modal yang berada di dalam modal lain; clone parent sudah
+        // membawa child-nya. Ini mencegah id ganda.
+        return external.filter(el =>
+            !external.some(other => other !== el && other.contains(el))
+        );
+    }
+
     async fetchPageContent(url) {
         try {
             const response = await fetch(url, {
@@ -1107,6 +1162,10 @@ class SPARouter {
 
             // Strategy 1: Look for main-content div (semua halaman utama punya)
             let mainContent = doc.getElementById('main-content');
+            // sourceRoot = elemen asli yang subtree-nya disalin ke konten.
+            // Dipakai untuk mendeteksi modal yang berada DI LUAR konten
+            // (mis. #userModal di users.html) supaya ikut dibawa saat SPA.
+            let sourceRoot = mainContent;
             let bodyFallback = false;
             
             // Strategy 2: Look for app div and get content (skipping sidebar)
@@ -1119,6 +1178,7 @@ class SPARouter {
                     const sidebar = appClone.querySelector('#sidebar');
                     if (sidebar) sidebar.remove();
                     mainContent = appClone;
+                    sourceRoot = appDiv;
                 } else {
                     // Strategy 3: body content TANPA sidebar/header
                     // (kalau sidebar ikut terbawa, sidebar akan dobel
@@ -1127,6 +1187,7 @@ class SPARouter {
                     bodyClone.querySelectorAll('#sidebar, #unified-header, .page-loader')
                         .forEach(el => el.remove());
                     mainContent = bodyClone;
+                    sourceRoot = doc.body;
                     // Konten jenis ini sudah punya margin sendiri
                     // (mis. margin-left 16rem) -> container tujuan tidak
                     // boleh menambah offset lagi.
@@ -1143,6 +1204,17 @@ class SPARouter {
             // dieksekusi dua kali.
             const contentClone = mainContent.cloneNode(true);
             contentClone.querySelectorAll('script').forEach(s => s.remove());
+
+            // Modal sering diletakkan di luar #main-content (mis. #userModal
+            // di users.html). Tanpa disertakan, getElementById() di fungsi
+            // onclick mengembalikan null setelah navigasi SPA.
+            const externalModals = this.collectExternalPageModals(doc, sourceRoot);
+            externalModals.forEach(modal => {
+                const modalClone = modal.cloneNode(true);
+                modalClone.querySelectorAll('script').forEach(s => s.remove());
+                contentClone.appendChild(modalClone);
+            });
+            const modalIds = externalModals.map(modal => modal.id).filter(Boolean);
             const contentHtml = contentClone.innerHTML;
 
             // Also extract all scripts from the page (both inline and external)
@@ -1165,6 +1237,7 @@ class SPARouter {
                 html: contentHtml,
                 scripts: scriptData,
                 styles: styleData,
+                modalIds: modalIds,
                 hasUnifiedHeader: html.indexOf('unified-header.js') >= 0,
                 bodyFallback: bodyFallback,
                 layout: {

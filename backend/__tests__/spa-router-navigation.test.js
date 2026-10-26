@@ -550,3 +550,61 @@ describe('Inline script: fungsi untuk onclick dipublikasikan', () => {
         delete global.window.initPage;
     });
 });
+
+// ============================================================
+// REGRESI: modal halaman sering berada di luar #main-content.
+// Saat SPA hanya #main-content yang ditukar, modal tidak ikut ->
+// openUserModal() error "Cannot set properties of null".
+// ============================================================
+describe('Modal di luar #main-content ikut dibawa saat SPA', () => {
+
+    const makeEl = (id, className, children = []) => {
+        const el = {
+            id,
+            className,
+            nodeType: 1,
+            children,
+            classList: {
+                contains(cls) { return (className || '').split(/\s+/).includes(cls); }
+            },
+            contains(other) {
+                if (other === el) return true;
+                return children.some(child =>
+                    child === other || (child.contains && child.contains(other))
+                );
+            }
+        };
+        return el;
+    };
+
+    test('modal luar diambil, modal dalam konten tidak diduplikasi', () => {
+        const insideModal = makeEl('insideModal', 'modal');
+        const main = makeEl('main-content', '', [insideModal]);
+        const userModal = makeEl('userModal', '', [makeEl('editUserId', '')]);
+        const classModal = makeEl('someDialog', 'modal');
+        const title = makeEl('userModalTitle', '');
+        const nestedInner = makeEl('nestedModal', 'modal');
+        const nestedOuter = makeEl('detailModal', 'modal', [nestedInner]);
+
+        const doc = {
+            querySelectorAll: () => [
+                insideModal, userModal, classModal, title, nestedOuter, nestedInner
+            ]
+        };
+
+        const result = router.collectExternalPageModals(doc, main);
+        const ids = result.map(el => el.id).sort();
+
+        expect(ids).toEqual(['detailModal', 'someDialog', 'userModal']);
+    });
+
+    test('fetchPageContent mengembalikan modalIds & loadPage membersihkan id lama', () => {
+        const src = require('fs').readFileSync(
+            path.join(__dirname, '..', '..', 'js', 'spa-router.js'), 'utf8'
+        );
+
+        expect(src).toContain('modalIds: modalIds');
+        expect(src).toMatch(/collectExternalPageModals\(doc, sourceRoot\)/);
+        expect(src).toMatch(/targetModalIds/);
+    });
+});
