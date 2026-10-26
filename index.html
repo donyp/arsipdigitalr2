@@ -129,33 +129,35 @@
             align-items: center;
             padding: 60px 40px;
             transition: background 0.3s;
-            animation: fadeInUp 0.6s ease-out;
+            animation: slideInRight 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+
         .left-content {
             position: relative;
-            z-10;
+            z-index: 10;
             color: white;
-            animation: fadeIn 0.6s ease-out;
+            animation: slideInLeft 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
+
+        /* Animasi masuk: hanya transform (tanpa fade/opacity) */
+        @keyframes slideInLeft {
+            from { transform: translateX(-56px); }
+            to   { transform: translateX(0); }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(56px); }
+            to   { transform: translateX(0); }
+        }
+
+        @keyframes riseIn {
+            from { transform: translateY(24px); }
+            to   { transform: translateY(0); }
+        }
+
+        @keyframes popInForm {
+            from { transform: translateY(28px) scale(0.96); }
+            to   { transform: translateY(0) scale(1); }
         }
         .logo-anka {
             width: 200px;
@@ -224,6 +226,7 @@
             height: 20px;
             line-height: 1;
             white-space: nowrap;
+            animation: riseIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
         }
         
         html[data-dark-mode="true"] .left-footer {
@@ -239,17 +242,15 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s;
-            animation: slideInForm 0.7s ease-out 0.1s both;
+            animation: popInForm 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
         }
-        
-        @keyframes slideInForm {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+
+        @media (prefers-reduced-motion: reduce) {
+            .left-content,
+            .right-section,
+            .left-footer,
+            .form-container {
+                animation: none;
             }
         }
         
