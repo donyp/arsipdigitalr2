@@ -259,6 +259,7 @@ window.uploadExcelFile = async function() {
 // ============================================
 let currentPage = 1;
 const PAGE_SIZE = 20;
+const ITEMS_PER_PAGE = 25; // client-side page size for filtered list (fix: previously undefined)
 
 async function loadInvoices(page = 1) {
     try {
