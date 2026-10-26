@@ -4401,6 +4401,10 @@ async function applyInvoiceFilters() {
             
         }
         
+        // Show simple loading spinner in table
+        const _tbody0 = document.getElementById('invoiceTableBody');
+        if (_tbody0) _tbody0.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:60px 40px;"><div style="display:inline-block;width:36px;height:36px;border:3px solid rgba(59,130,246,0.25);border-top-color:#3b82f6;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div style="margin-top:12px;color:#6b7280;font-size:13px;">Memuat data...</div></td></tr>';
+
         // SAVE ACTIVE FILTERS - Used when paginating
         activeInvoiceFilters = {
             status: status,
