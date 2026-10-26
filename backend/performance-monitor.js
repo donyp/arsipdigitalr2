@@ -116,10 +116,9 @@ class PerformanceMonitor {
         const cacheHitRate = this.getCacheHitRate();
         const avgQueryCount = this.getAverageQueryCount();
 
-        if (p99 > this.thresholds.responseTimeP99) {
-            this.addAlert('warning', `P99 response time high: ${p99}ms (threshold: ${this.thresholds.responseTimeP99}ms)`);
-        }
-
+        // P99 response-time warning dinonaktifkan: terlalu sering memicu spam log
+        // (threshold 500ms mudah terlampaui pada endpoint berat). Metrik p99
+        // tetap tersedia via getPercentile() untuk monitoring manual.
         if (errorRate > this.thresholds.errorRate) {
             this.addAlert('warning', `Error rate high: ${(errorRate * 100).toFixed(2)}% (threshold: ${(this.thresholds.errorRate * 100).toFixed(2)}%)`);
         }

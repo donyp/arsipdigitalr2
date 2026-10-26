@@ -11,6 +11,35 @@ const path = require('path');
 
 const MAINTENANCE_FILE = path.join(__dirname, '../data/maintenance-status.json');
 
+// ===== Login rate limit (in-memory, single instance) =====
+const LOGIN_MAX_ATTEMPTS = 3;
+const LOGIN_LOCK_MINUTES = 15;
+const loginAttempts = new Map();
+
+function getLoginAttemptState(key) {
+    const s = loginAttempts.get(key);
+    if (!s) return { count: 0, lockedUntil: 0 };
+    if (s.lockedUntil && s.lockedUntil < Date.now()) {
+        loginAttempts.delete(key);
+        return { count: 0, lockedUntil: 0 };
+    }
+    return s;
+}
+
+function recordFailedLogin(key) {
+    const s = getLoginAttemptState(key);
+    s.count = (s.count || 0) + 1;
+    if (s.count >= LOGIN_MAX_ATTEMPTS) {
+        s.lockedUntil = Date.now() + LOGIN_LOCK_MINUTES * 60 * 1000;
+    }
+    loginAttempts.set(key, s);
+    return s;
+}
+
+function clearLoginAttempts(key) {
+    loginAttempts.delete(key);
+}
+
 /**
  * Get maintenance status
  */
@@ -46,6 +75,20 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 });
             }
 
+            const attemptKey = `${clientIp}::${username}`;
+            const attemptState = getLoginAttemptState(attemptKey);
+            if (attemptState.lockedUntil && attemptState.lockedUntil > Date.now()) {
+                const retryAfter = Math.ceil((attemptState.lockedUntil - Date.now()) / 1000);
+                return res.status(429).json({
+                    success: false,
+                    error: `Terlalu banyak percobaan login gagal. Coba lagi dalam ${Math.ceil(retryAfter / 60)} menit.`,
+                    attempts: attemptState.count,
+                    maxAttempts: LOGIN_MAX_ATTEMPTS,
+                    lockedUntil: attemptState.lockedUntil,
+                    retryAfter
+                });
+            }
+
             console.log(`[Auth] Login attempt for user: ${username}`);
 
             // ===== MAINTENANCE MODE CHECK =====
@@ -63,9 +106,12 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
                 if (!users) {
                     console.warn(`[Auth] Maintenance: User not found: ${username}`);
+                    const s = recordFailedLogin(attemptKey);
                     return res.status(401).json({
                         success: false,
-                        error: 'Username atau password salah'
+                        error: 'Username atau password salah',
+                        attempts: s.count,
+                        maxAttempts: LOGIN_MAX_ATTEMPTS
                     });
                 }
 
@@ -119,9 +165,12 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             if (fetchError || !users) {
                 console.warn(`[Auth] User not found: ${username}`, fetchError?.message);
+                const s = recordFailedLogin(attemptKey);
                 return res.status(401).json({
                     success: false,
-                    error: 'Username atau password salah'
+                    error: 'Username atau password salah',
+                    attempts: s.count,
+                    maxAttempts: LOGIN_MAX_ATTEMPTS
                 });
             }
 
@@ -129,9 +178,12 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             const passwordValid = await bcrypt.compare(password, users.password_hash);
             if (!passwordValid) {
                 console.warn(`[Auth] Invalid password for user: ${username}`);
+                const s = recordFailedLogin(attemptKey);
                 return res.status(401).json({
                     success: false,
-                    error: 'Username atau password salah'
+                    error: 'Username atau password salah',
+                    attempts: s.count,
+                    maxAttempts: LOGIN_MAX_ATTEMPTS
                 });
             }
 
@@ -226,6 +278,8 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             } catch (sessionErr) {
                 console.error('[Auth] Session record exception:', sessionErr.message, sessionErr.stack);
             }
+
+            clearLoginAttempts(attemptKey);
 
             console.log('[Auth] 🔐 Login successful for user:', {
                 id: users.id,

@@ -687,7 +687,10 @@
                 if (!response.ok || !data.success) {
                     throw {
                         status: response.status,
-                        message: data.error || 'Login gagal'
+                        message: data.error || 'Login gagal',
+                        attempts: data.attempts,
+                        maxAttempts: data.maxAttempts,
+                        lockedUntil: data.lockedUntil
                     };
                 }
 
@@ -736,8 +739,16 @@
                 let errorMessage = 'Terjadi kesalahan sistem. Silakan coba lagi.';
                 let errorTitle = 'Login Gagal';
                 
-                if (err.status === 401) {
-                    errorMessage = 'Username atau password salah. Periksa kembali data Anda.';
+                if (err.status === 429) {
+                    const mins = err.lockedUntil ? Math.ceil((err.lockedUntil - Date.now()) / 60000) : 15;
+                    errorMessage = `Terlalu banyak percobaan login gagal. Akun dikunci ${mins} menit. Coba lagi nanti.`;
+                    errorTitle = 'Akun Dikunci';
+                } else if (err.status === 401) {
+                    if (err.attempts && err.maxAttempts) {
+                        errorMessage = `Username atau password salah. Periksa kembali data Anda. (Percobaan ${err.attempts}/${err.maxAttempts})`;
+                    } else {
+                        errorMessage = 'Username atau password salah. Periksa kembali data Anda.';
+                    }
                 } else if (err.status === 403) {
                     errorMessage = err.message || 'Username tidak valid. Hubungi administrator';
                     errorTitle = 'Akses Ditolak';
