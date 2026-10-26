@@ -23,7 +23,7 @@ let supabase = createClient(
 
 let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+    console.error('[Auth] WARNING: JWT_SECRET is not set. Authentication will fail.');
 }
 
 // Initialize function to set values from server.js

@@ -202,12 +202,16 @@ let queryOptimizer; // Will be initialized later
 const app = express();
 const DEFAULT_PORT = 5000;
 
-// Security headers (Helmet)
-const helmet = require('helmet');
-app.use(helmet({
-    contentSecurityPolicy: false, // CSP dituning terpisah (report-only) agar tidak memecah UI
-    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
-}));
+// Security headers (Helmet) - optional, only if installed
+try {
+    const helmet = require('helmet');
+    app.use(helmet({
+        contentSecurityPolicy: false,
+        hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
+    }));
+} catch (e) {
+    console.warn('[Server] helmet not available, skipping security headers:', e.message);
+}
 
 // ============================================================
 // CACHE HEADER HALAMAN HTML (via res.sendFile)

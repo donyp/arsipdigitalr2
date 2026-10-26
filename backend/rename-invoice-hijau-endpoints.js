@@ -7,7 +7,7 @@ const busboy = require('busboy');
 const fs = require('fs');
 
 if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is required');
+    console.error('[Auth] WARNING: JWT_SECRET is not set. Authentication will fail.');
 }
 const path = require('path');
 const os = require('os');
