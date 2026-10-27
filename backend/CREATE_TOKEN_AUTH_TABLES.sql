@@ -8,8 +8,8 @@
 --     dimulai, token baru dibuat & dikirim email, token lama otomatis
 --     nonaktif, dan seluruh verifikasi user di-reset (harus input ulang).
 --   * Admin Zona : tiap user punya token sendiri (dikirim ke email user).
---   * Moderator/Super Admin : SATU token bersama (dikirim ke 1 email
---     yang di-set di dashboard).
+--   * Moderator/Super Admin : tiap user juga punya token SENDIRI (berbeda-beda),
+--     namun semuanya dikirim ke 1 email induk (settings.admin_group_email).
 --
 -- Eksekusi file ini di Supabase SQL Editor.
 -- ============================================================
@@ -17,7 +17,7 @@
 -- 1) Daftar token aktif per scope
 CREATE TABLE IF NOT EXISTS auth_token_keys (
     id            BIGSERIAL PRIMARY KEY,
-    scope         TEXT UNIQUE NOT NULL,     -- 'user:<uuid>' atau 'group:moderator_admin'
+    scope         TEXT UNIQUE NOT NULL,     -- 'user:<uuid>' (tiap user token sendiri)
     token_hash    TEXT NOT NULL,            -- SHA-256 dari token (bukan plaintext)
     token_preview TEXT,                     -- 4 karakter terakhir (untuk tampilan admin)
     created_at    TIMESTAMPTZ DEFAULT now(),

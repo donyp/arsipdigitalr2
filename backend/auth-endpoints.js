@@ -267,6 +267,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                         username: users.username,
                         role: users.role,
                         maskedEmail,
+                        tokenLength: settings.token_length || 6,
                         expiresIn: settings.temp_token_ttl_seconds || 600
                     });
                 }

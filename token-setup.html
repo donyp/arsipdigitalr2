@@ -237,7 +237,7 @@
                             <div class="flex items-center justify-between md:col-span-2" style="gap: 20px;">
                                 <div>
                                     <p class="font-bold text-gray-900">Aktifkan Token Login</p>
-                                    <p class="text-sm text-gray-500">Jika ON, semua admin zona/moderator/super admin wajib input token saat login (pertama kali per hari).</p>
+                                    <p class="text-sm text-gray-500">Jika ON, semua admin zona/moderator/super admin wajib input token saat login (pertama kali per hari). Setiap user punya token berbeda.</p>
                                 </div>
                                 <label class="toggle-switch">
                                     <input type="checkbox" id="toggle-enabled" onchange="toggleEnabled(this.checked)">
@@ -320,7 +320,7 @@
                                 <p class="font-bold mb-1 info-title" style="color: var(--color-text-primary);">Cara kerja sistem token:</p>
                                 <ul class="list-disc list-inside space-y-1" style="color: var(--color-text-secondary);">
                                     <li>Admin Zona: tiap user punya token sendiri, dikirim ke email masing-masing.</li>
-                                    <li>Moderator / Super Admin: satu token bersama, dikirim ke 1 email.</li>
+                                    <li>Moderator / Super Admin: tiap user juga punya token <strong>berbeda-beda</strong>, dikirim ke 1 email induk.</li>
                                     <li>Token berlaku <strong>hanya hari itu</strong> (expire saat jam auto-logout berikutnya).</li>
                                     <li>Setelah user sekali verifikasi token, login berikutnya cukup user + password (tanpa token) sampai reset harian.</li>
                                     <li>Generate &amp; kirim otomatis berjalan <strong>1 jam setelah jam auto-logout</strong>.</li>

@@ -346,6 +346,47 @@
         .login-btn:active {
             transform: translateY(0);
         }
+
+        /* ---------- PIN/Token kotak digit ---------- */
+        .pin-input {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: nowrap;
+        }
+        .pin-input input {
+            width: 46px;
+            height: 56px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--color-text-primary);
+            background: var(--color-bg-primary);
+            border: 2px solid var(--color-border);
+            border-radius: 10px;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .pin-input input::-webkit-outer-spin-button,
+        .pin-input input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .pin-input input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .pin-input input.filled {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+        html[data-dark-mode="true"] .pin-input input.filled {
+            background: #1e1b4b;
+            border-color: #6366f1;
+        }
         .google-btn {
             width: 100%;
             padding: 14px 20px;
@@ -557,8 +598,8 @@
                     </div>
 
                     <div class="form-group">
-                        <div style="position: relative;">
-                            <input type="text" id="token-input" name="token" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••" class="form-input" style="text-align: center; letter-spacing: 12px; font-family: monospace; font-size: 24px; font-weight: 700; padding-left: 12px;" required>
+                        <div class="pin-input" id="pin-input">
+                            <!-- kotak digit di-render dinamis sesuai tokenLength -->
                         </div>
                     </div>
 
@@ -830,18 +871,103 @@
         // =============================================
         let pendingTempToken = null;
         let pendingRole = null;
+        let tokenLength = 6;
+
+        function renderPinInputs() {
+            const container = document.getElementById('pin-input');
+            container.innerHTML = '';
+            for (let i = 0; i < tokenLength; i++) {
+                const inp = document.createElement('input');
+                inp.type = 'text';
+                inp.inputMode = 'numeric';
+                inp.pattern = '[0-9]';
+                inp.maxLength = 1;
+                inp.autocomplete = 'off';
+                inp.classList.add('pin-digit');
+                inp.setAttribute('data-index', i);
+                inp.setAttribute('aria-label', 'Digit ' + (i + 1));
+                container.appendChild(inp);
+            }
+        }
+
+        function getPinValue() {
+            let val = '';
+            document.querySelectorAll('#pin-input input').forEach(i => { val += i.value; });
+            return val;
+        }
+
+        function clearPinInputs() {
+            document.querySelectorAll('#pin-input input').forEach(i => {
+                i.value = '';
+                i.classList.remove('filled');
+            });
+        }
+
+        function focusPinIndex(index) {
+            const inputs = document.querySelectorAll('#pin-input input');
+            if (inputs[index]) inputs[index].focus();
+        }
+
+        function handlePaste(e) {
+            e.preventDefault();
+            const txt = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, tokenLength);
+            const inputs = document.querySelectorAll('#pin-input input');
+            for (let i = 0; i < tokenLength; i++) {
+                inputs[i].value = txt[i] || '';
+                inputs[i].classList.toggle('filled', !!txt[i]);
+            }
+            focusPinIndex(Math.min(txt.length, tokenLength - 1));
+        }
+
+        function setupPinListeners() {
+            const container = document.getElementById('pin-input');
+            const inputs = () => document.querySelectorAll('#pin-input input');
+
+            container.addEventListener('paste', handlePaste);
+
+            container.addEventListener('input', (e) => {
+                const el = e.target;
+                if (!el.classList.contains('pin-digit')) return;
+                el.value = el.value.replace(/\D/g, '');
+                el.classList.toggle('filled', !!el.value);
+                if (el.value) {
+                    const idx = Number(el.getAttribute('data-index'));
+                    focusPinIndex(idx + 1);
+                }
+            });
+
+            container.addEventListener('keydown', (e) => {
+                const el = e.target;
+                if (!el.classList.contains('pin-digit')) return;
+                const idx = Number(el.getAttribute('data-index'));
+                if (e.key === 'Backspace') {
+                    if (!el.value) {
+                        e.preventDefault();
+                        focusPinIndex(idx - 1);
+                    }
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    focusPinIndex(idx - 1);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    focusPinIndex(idx + 1);
+                }
+            });
+        }
 
         function showTokenForm(data) {
             pendingTempToken = data.tempToken;
             pendingRole = data.role;
+            tokenLength = data.tokenLength || 6;
             document.getElementById('login-form').style.display = 'none';
             document.getElementById('token-form').style.display = 'block';
             const hint = document.getElementById('token-email-hint');
             if (data.maskedEmail) {
                 hint.textContent = `Kode telah dikirim ke email ${data.maskedEmail}`;
             }
-            document.getElementById('token-input').value = '';
-            document.getElementById('token-input').focus();
+            renderPinInputs();
+            clearPinInputs();
+            focusPinIndex(0);
         }
 
         function hideTokenForm() {
@@ -849,8 +975,13 @@
             pendingRole = null;
             document.getElementById('token-form').style.display = 'none';
             document.getElementById('login-form').style.display = 'block';
-            document.getElementById('token-input').value = '';
+            clearPinInputs();
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderPinInputs();
+            setupPinListeners();
+        });
 
         document.getElementById('token-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -858,7 +989,7 @@
             isProcessing = true;
 
             const btn = document.getElementById('token-btn');
-            const token = document.getElementById('token-input').value.trim();
+            const token = getPinValue().trim();
             const originalBtnHtml = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = `<span style="display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -876,6 +1007,8 @@
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
+                    clearPinInputs();
+                    focusPinIndex(0);
                     throw { status: response.status, message: data.error || 'Kode salah' };
                 }
 

@@ -24,8 +24,8 @@ describe('token-auth-service — pure helpers', () => {
 
     test('scopeForUser maps roles correctly', () => {
         expect(service.scopeForUser({ id: 'u1', role: 'admin_zona' })).toBe('user:u1');
-        expect(service.scopeForUser({ id: 'u2', role: 'moderator' })).toBe('group:moderator_admin');
-        expect(service.scopeForUser({ id: 'u3', role: 'super_admin' })).toBe('group:moderator_admin');
+        expect(service.scopeForUser({ id: 'u2', role: 'moderator' })).toBe('user:u2');
+        expect(service.scopeForUser({ id: 'u3', role: 'super_admin' })).toBe('user:u3');
         expect(service.scopeForUser({ id: 'u4', role: 'customer' })).toBeNull();
     });
 

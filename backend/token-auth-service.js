@@ -11,8 +11,8 @@
  *
  * Scope:
  *  - Admin Zona   : tiap user token sendiri -> dikirim ke email user masing2.
- *  - Moderator/Super Admin : SATU token bersama -> dikirim ke 1 email yang
- *    di-set di dashboard (settings.admin_group_email).
+ *  - Moderator/Super Admin : tiap user token SENDIRI (berbeda-beda), namun
+ *    semuanya dikirim ke 1 email induk (settings.admin_group_email).
  *
  * Disimpan di tabel system_config key 'token_auth_settings' (JSON) + tabel
  * auth_token_keys / auth_token_verifications / auth_token_logs.
@@ -60,10 +60,14 @@ function generateTokenCode(length = 6) {
     return String(crypto.randomInt(min, max + 1));
 }
 
-/** Scope token untuk sebuah user. */
+/** Scope token untuk sebuah user.
+ *  Setiap user wajib token (admin_zona, moderator, super_admin) punya token SENDIRI.
+ *  Email tujuan tetap bisa diarahkan ke 1 email induk untuk moderator/super_admin
+ *  (lihat generateAndSendTokens / resendTokenForUser). */
 function scopeForUser(user) {
-    if (user.role === 'admin_zona') return `user:${user.id}`;
-    if (user.role === 'moderator' || user.role === 'super_admin') return 'group:moderator_admin';
+    if (user.role === 'admin_zona' || user.role === 'moderator' || user.role === 'super_admin') {
+        return `user:${user.id}`;
+    }
     return null;
 }
 
@@ -113,28 +117,87 @@ async function logEvent(supabase, action, meta) {
 }
 
 /** Kirim email token via Resend. */
-async function sendTokenEmail(email, token, { name } = {}) {
+async function sendTokenEmail(email, token, { name, username, expiresAt } = {}) {
     const { Resend } = require('resend');
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.cloud';
     if (!apiKey) throw new Error('RESEND_API_KEY belum diatur di .env');
     const resend = new Resend(apiKey);
+
+    // Format nama akun + tanggal kedaluwarsa untuk tampilan/print
+    const displayName = name || username || 'Pengguna';
+    const expiryText = expiresAt
+        ? new Date(expiresAt).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })
+        : '-';
+
+    const digitBoxes = String(token).split('').map((d) => (
+        `<span style="display:inline-block;width:44px;height:54px;line-height:54px;margin:0 4px;border:2px solid #3d3b6b;border-radius:8px;font-family:monospace;font-size:32px;font-weight:900;color:#3d3b6b;text-align:center;">${d}</span>`
+    )).join('');
+
+    const html = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:24px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+                    <tr>
+                        <td style="background:#3d3b6b;padding:20px 28px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:0.5px;">ARSIP DIGITAL ANKA</td>
+                                    <td align="right" style="color:#c7d2fe;font-size:12px;font-weight:700;">KODE AKSES LOGIN</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:28px;">
+                            <p style="color:#1f2937;font-size:15px;margin:0 0 4px;">Halo <strong>${displayName}</strong>${username ? ' <span style="color:#6b7280;">(@' + username + ')</span>' : ''},</p>
+                            <p style="color:#4b5563;font-size:14px;margin:0 0 24px;">Berikut kode akses login harian Anda untuk hari ini.</p>
+
+                            <!-- Kode token (siap print) -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
+                                <tr><td align="center" style="padding:20px 16px 0;">
+                                    ${digitBoxes}
+                                </td></tr>
+                                <tr><td align="center" style="padding:12px 16px 20px;color:#6b7280;font-size:12px;">
+                                    Masukkan kode ${String(token).length} digit ini pada halaman login
+                                </td></tr>
+                            </table>
+
+                            <!-- Info kartu (siap print) -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+                                <tr style="background:#f3f4f6;">
+                                    <td style="padding:10px 16px;color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Pemilik Akun</td>
+                                    <td style="padding:10px 16px;color:#111827;font-size:13px;font-weight:700;">${displayName}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:10px 16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Berlaku Hingga</td>
+                                    <td style="padding:10px 16px;border-top:1px solid #e5e7eb;color:#111827;font-size:13px;">${expiryText}</td>
+                                </tr>
+                                <tr style="background:#f3f4f6;">
+                                    <td style="padding:10px 16px;border-top:1px solid #e5e7eb;color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Status</td>
+                                    <td style="padding:10px 16px;border-top:1px solid #e5e7eb;color:#047857;font-size:13px;font-weight:700;">Aktif</td>
+                                </tr>
+                            </table>
+
+                            <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;">Kode hanya berlaku <strong>hari ini</strong> dan akan otomatis kedaluwarsa saat jam reset harian. Jangan bagikan kode ini kepada siapa pun.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 28px;color:#9ca3af;font-size:11px;text-align:center;">
+                            Email ini dikirim otomatis oleh sistem Arsip Digital ANKA. Mohon tidak membalas email ini.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>`;
+
     const { data, error } = await resend.emails.send({
         from,
         to: email,
-        subject: '🔐 Kode Akses Login Harian - Arsip Digital ANKA',
-        html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;">
-            <h2 style="color:#3d3b6b;margin:0 0 8px;">Kode Akses Login Harian</h2>
-            <p style="color:#555;margin:0 0 24px;">Halo${name ? ' <strong>' + name + '</strong>' : ''}, gunakan kode di bawah ini untuk login hari ini.</p>
-            <div style="background:#f5f7fa;border:1px dashed #3d3b6b;border-radius:12px;padding:24px;text-align:center;">
-                <span style="font-size:40px;font-weight:900;letter-spacing:12px;color:#3d3b6b;font-family:monospace;">${token}</span>
-            </div>
-            <p style="color:#888;font-size:13px;margin-top:24px;">
-                Kode hanya berlaku <strong>hari ini</strong>. Jangan bagikan kode ini kepada siapa pun.
-            </p>
-            <p style="color:#999;font-size:12px;">Email ini dikirim otomatis. Mohon tidak membalas email ini.</p>
-        </div>`
+        subject: `🔐 Kode Akses Login Harian ${displayName} - Arsip Digital ANKA`,
+        html
     });
     if (error) throw new Error('Resend: ' + (error.message || JSON.stringify(error)));
     return data;
@@ -167,7 +230,7 @@ async function issueTokenForScope(supabase, scope, email, settings) {
         .select('id');
 
     if (error) throw new Error('Gagal membuat token: ' + error.message);
-    return { tokenId: data[0].id, code, hash, scope, email };
+    return { tokenId: data[0].id, code, hash, scope, email, expiresAt: expiresAt.toISOString() };
 }
 
 /** Hitung waktu auto-logout berikutnya relatif dari sekarang. */
@@ -229,63 +292,37 @@ async function generateAndSendTokens(supabase) {
     let generated = 0;
     let sent = 0;
 
-    // Kumpulkan scope unik. admin_zona -> user:<id>; mod/SA -> 1 scope bersama.
-    const adminScopes = {};
-    const groupUsers = [];
-
     for (const u of users) {
         const scope = scopeForUser(u);
         if (!scope) continue;
-        if (u.role === 'admin_zona') {
-            adminScopes[scope] = { user: u, email: u.email || null };
-        } else {
-            groupUsers.push(u);
-        }
-    }
 
-    // Token admin zona (masing-masing)
-    for (const scope of Object.keys(adminScopes)) {
-        const { user, email } = adminScopes[scope];
+        // Moderator / Super Admin: token tetap BEDA per user, tapi email
+        // dikirim ke 1 email induk (admin_group_email).
+        const email = (u.role === 'admin_zona')
+            ? (u.email || null)
+            : (settings.admin_group_email || u.email || null);
+
         try {
             const t = await issueTokenForScope(supabase, scope, email, settings);
             generated++;
             let sentOk = false;
             if (email) {
                 try {
-                    await sendTokenEmail(email, t.code, { name: user.name || user.username });
+                    await sendTokenEmail(email, t.code, {
+                        name: u.name || u.username,
+                        username: u.username,
+                        expiresAt: t.expiresAt || null
+                    });
                     sentOk = true; sent++;
                     await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', t.tokenId);
                 } catch (e) {
-                    results.push({ scope, email, error: e.message });
+                    results.push({ scope, userId: u.id, email, error: e.message });
                 }
             }
-            await logEvent(supabase, 'generate', { scope, userId: user.id, email, detail: sentOk ? 'sent' : (email ? 'send_failed' : 'no_email') });
-            results.push({ scope, email, sent: sentOk });
+            await logEvent(supabase, 'generate', { scope, userId: u.id, email, detail: sentOk ? 'sent' : (email ? 'send_failed' : 'no_email') });
+            results.push({ scope, userId: u.id, email, sent: sentOk, role: u.role });
         } catch (e) {
-            results.push({ scope, error: e.message });
-        }
-    }
-
-    // Token bersama moderator/super admin
-    if (groupUsers.length > 0) {
-        const groupEmail = settings.admin_group_email;
-        try {
-            const t = await issueTokenForScope(supabase, 'group:moderator_admin', groupEmail, settings);
-            generated++;
-            let sentOk = false;
-            if (groupEmail) {
-                try {
-                    await sendTokenEmail(groupEmail, t.code, { name: 'Moderator / Super Admin' });
-                    sentOk = true; sent++;
-                    await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', t.tokenId);
-                } catch (e) {
-                    results.push({ scope: 'group:moderator_admin', email: groupEmail, error: e.message });
-                }
-            }
-            await logEvent(supabase, 'generate', { scope: 'group:moderator_admin', email: groupEmail, detail: sentOk ? 'sent' : 'send_failed' });
-            results.push({ scope: 'group:moderator_admin', email: groupEmail, sent: sentOk });
-        } catch (e) {
-            results.push({ scope: 'group:moderator_admin', error: e.message });
+            results.push({ scope, userId: u.id, error: e.message });
         }
     }
 
@@ -405,7 +442,7 @@ async function resendTokenForUser(supabase, userId) {
         : settings.admin_group_email;
 
     if (emailTarget) {
-        await sendTokenEmail(emailTarget, t.code, { name: users.name || users.username });
+        await sendTokenEmail(emailTarget, t.code, { name: users.name || users.username, username: users.username, expiresAt: t.expiresAt || null });
         await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', t.tokenId);
     }
     await logEvent(supabase, 'resend', { scope, userId: users.id, email: emailTarget, detail: 'manual resend' });
