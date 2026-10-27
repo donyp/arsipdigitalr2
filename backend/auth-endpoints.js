@@ -374,7 +374,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 } catch (e) {}
                 const msg = verify.reason === 'expired'
                     ? 'Kode sudah kedaluwarsa. Gunakan kode terbaru dari email.'
-                    : 'Kode salah. Periksa kembali kode dari email Anda.';
+                    : 'Silahkan cek kembali token yang terkirim';
                 return res.status(401).json({ success: false, error: msg, reason: verify.reason });
             }
 
@@ -387,7 +387,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             return res.json(result);
         } catch (error) {
             console.error('[Auth] verify-token error:', error.message);
-            return res.status(500).json({ success: false, error: 'Server error' });
+            return res.status(500).json({ success: false, error: 'Silahkan cek kembali token yang terkirim' });
         }
     });
 

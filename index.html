@@ -235,12 +235,11 @@
         .form-container {
             width: 100%;
             max-width: 360px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+            background: #ffffff;
             border-radius: 16px;
             padding: 28px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
             transition: all 0.3s;
             animation: popInForm 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
         }
@@ -255,9 +254,9 @@
         }
         
         html[data-dark-mode="true"] .form-container {
-            background: rgba(30, 41, 59, 0.95);
-            border: 1px solid rgba(71, 85, 105, 0.3);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            background: #1e293b;
+            border: 1px solid #334155;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
         .brand-name {
             font-size: 24px;
@@ -432,10 +431,9 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            color: #3d3b6b;
             cursor: pointer;
             font-size: 20px;
             display: flex;
@@ -443,20 +441,22 @@
             justify-content: center;
             transition: all 0.3s;
             z-index: 50;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         }
         
         .dark-mode-toggle:hover {
-            background: rgba(255, 255, 255, 0.25);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+            background: #f3f4f6;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
         }
         
         html[data-dark-mode="true"] .dark-mode-toggle {
-            background: rgba(71, 85, 105, 0.3);
-            border-color: rgba(71, 85, 105, 0.5);
+            background: #1e293b;
+            border-color: #334155;
+            color: #cbd5e1;
         }
         
         html[data-dark-mode="true"] .dark-mode-toggle:hover {
-            background: rgba(71, 85, 105, 0.5);
+            background: #334155;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         @media (max-width: 1024px) {
@@ -591,9 +591,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </div>
-                        <p style="font-size: 14px; font-weight: 600; color: #3d3b6b; margin: 0 0 4px;">Verifikasi Kode Token</p>
+                        <p style="font-size: 14px; font-weight: 600; color: #3d3b6b; margin: 0 0 4px;">Masukkan Token</p>
                         <p id="token-email-hint" style="font-size: 13px; color: #666; margin: 0;">
-                            Kode telah dikirim ke email Anda.
+                            Kode telah dikirim ke email tujuan.
                         </p>
                     </div>
 
@@ -963,7 +963,7 @@
             document.getElementById('token-form').style.display = 'block';
             const hint = document.getElementById('token-email-hint');
             if (data.maskedEmail) {
-                hint.textContent = `Kode telah dikirim ke email ${data.maskedEmail}`;
+                hint.textContent = `Kode telah dikirim ke email tujuan.`;
             }
             renderPinInputs();
             clearPinInputs();
@@ -1036,10 +1036,10 @@
             } catch (err) {
                 btn.disabled = false;
                 btn.innerHTML = originalBtnHtml;
-                const msg = err.message || 'Kode salah. Periksa kembali.';
+                const msg = err.message || 'Silahkan cek kembali token yang terkirim';
                 await Swal.fire({
                     icon: 'error',
-                    title: 'Verifikasi Gagal',
+                    title: 'Token Salah!',
                     text: msg,
                     confirmButtonText: 'Coba Lagi',
                     confirmButtonColor: '#ef4444',

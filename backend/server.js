@@ -480,7 +480,10 @@ app.use((req, res, next) => {
             if (!data.error.startsWith('Akses ditolak') && 
                 !data.error.startsWith('Token') &&
                 !data.error.startsWith('Email') &&
-                !data.error.startsWith('Password')) {
+                !data.error.startsWith('Password') &&
+                !data.error.startsWith('Silahkan cek kembali token') &&
+                !data.error.startsWith('Kode') &&
+                !data.error.startsWith('Sesi verifikasi')) {
                 data.error = 'An error occurred. Please try again.';
             }
         }

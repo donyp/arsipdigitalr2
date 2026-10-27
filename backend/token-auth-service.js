@@ -12,7 +12,8 @@
  * Scope:
  *  - Admin Zona   : tiap user token sendiri -> dikirim ke email user masing2.
  *  - Moderator/Super Admin : tiap user token SENDIRI (berbeda-beda), namun
- *    semuanya dikirim ke 1 email induk (settings.admin_group_email).
+ *    semuanya dikirim dalam 1 email gabungan ke email induk
+ *    (settings.admin_group_email).
  *
  * Disimpan di tabel system_config key 'token_auth_settings' (JSON) + tabel
  * auth_token_keys / auth_token_verifications / auth_token_logs.
@@ -116,6 +117,13 @@ async function logEvent(supabase, action, meta) {
     } catch (e) { /* audit best-effort */ }
 }
 
+/** Render kotak digit token (untuk email, siap print). */
+function digitBoxesHtml(token) {
+    return String(token).split('').map((d) => (
+        `<span style="display:inline-block;width:44px;height:54px;line-height:54px;margin:0 4px;border:2px solid #3d3b6b;border-radius:8px;font-family:monospace;font-size:32px;font-weight:900;color:#3d3b6b;text-align:center;">${d}</span>`
+    )).join('');
+}
+
 /** Kirim email token via Resend. */
 async function sendTokenEmail(email, token, { name, username, expiresAt } = {}) {
     const { Resend } = require('resend');
@@ -129,10 +137,6 @@ async function sendTokenEmail(email, token, { name, username, expiresAt } = {}) 
     const expiryText = expiresAt
         ? new Date(expiresAt).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })
         : '-';
-
-    const digitBoxes = String(token).split('').map((d) => (
-        `<span style="display:inline-block;width:44px;height:54px;line-height:54px;margin:0 4px;border:2px solid #3d3b6b;border-radius:8px;font-family:monospace;font-size:32px;font-weight:900;color:#3d3b6b;text-align:center;">${d}</span>`
-    )).join('');
 
     const html = `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:24px 0;">
@@ -157,7 +161,7 @@ async function sendTokenEmail(email, token, { name, username, expiresAt } = {}) 
                             <!-- Kode token (siap print) -->
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;">
                                 <tr><td align="center" style="padding:20px 16px 0;">
-                                    ${digitBoxes}
+                                    ${digitBoxesHtml(token)}
                                 </td></tr>
                                 <tr><td align="center" style="padding:12px 16px 20px;color:#6b7280;font-size:12px;">
                                     Masukkan kode ${String(token).length} digit ini pada halaman login
@@ -197,6 +201,93 @@ async function sendTokenEmail(email, token, { name, username, expiresAt } = {}) 
         from,
         to: email,
         subject: `🔐 Kode Akses Login Harian ${displayName} - Arsip Digital ANKA`,
+        html
+    });
+    if (error) throw new Error('Resend: ' + (error.message || JSON.stringify(error)));
+    return data;
+}
+
+/**
+ * Kirim SATU email berisi daftar token untuk banyak user (moderator/super admin),
+ * agar token beda-beda per user tetap terkumpul dalam 1 pesan ke email induk.
+ * entries: [{ name, username, token, expiresAt }]
+ */
+async function sendGroupTokenEmail(email, entries) {
+    const { Resend } = require('resend');
+    const apiKey = process.env.RESEND_API_KEY;
+    const from = process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.cloud';
+    if (!apiKey) throw new Error('RESEND_API_KEY belum diatur di .env');
+    const resend = new Resend(apiKey);
+
+    const expiryText = (entries.length > 0 && entries[0].expiresAt)
+        ? new Date(entries[0].expiresAt).toLocaleString('id-ID', { dateStyle: 'full', timeStyle: 'short' })
+        : '-';
+
+    const rows = entries.map((e) => `
+        <tr>
+            <td style="padding:16px;border-top:1px solid #e5e7eb;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td>
+                            <div style="color:#111827;font-size:14px;font-weight:700;">${e.name}</div>
+                            <div style="color:#6b7280;font-size:12px;">@${e.username}</div>
+                        </td>
+                        <td align="right" style="color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Kode</td>
+                    </tr>
+                </table>
+                <div style="margin-top:10px;">${digitBoxesHtml(e.token)}</div>
+            </td>
+        </tr>
+    `).join('');
+
+    const html = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:24px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+                    <tr>
+                        <td style="background:#3d3b6b;padding:20px 28px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td style="color:#ffffff;font-size:20px;font-weight:900;letter-spacing:0.5px;">ARSIP DIGITAL ANKA</td>
+                                    <td align="right" style="color:#c7d2fe;font-size:12px;font-weight:700;">KODE AKSES LOGIN</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:28px;">
+                            <p style="color:#1f2937;font-size:15px;margin:0 0 4px;">Daftar Kode Akses Login Harian</p>
+                            <p style="color:#4b5563;font-size:14px;margin:0 0 24px;">Berikut kode akses untuk moderator &amp; super admin. Setiap akun memiliki kode yang berbeda.</p>
+
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+                                ${rows}
+                            </table>
+
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+                                <tr>
+                                    <td style="padding:10px 16px;background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Berlaku Hingga</td>
+                                    <td style="padding:10px 16px;background:#f3f4f6;color:#111827;font-size:13px;">${expiryText}</td>
+                                </tr>
+                            </table>
+
+                            <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;">Kode hanya berlaku <strong>hari ini</strong> dan akan otomatis kedaluwarsa saat jam reset harian. Jangan bagikan kode ini kepada siapa pun.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 28px;color:#9ca3af;font-size:11px;text-align:center;">
+                            Email ini dikirim otomatis oleh sistem Arsip Digital ANKA. Mohon tidak membalas email ini.
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>`;
+
+    const { data, error } = await resend.emails.send({
+        from,
+        to: email,
+        subject: `🔐 Daftar Kode Akses Login Harian - Arsip Digital ANKA`,
         html
     });
     if (error) throw new Error('Resend: ' + (error.message || JSON.stringify(error)));
@@ -292,37 +383,81 @@ async function generateAndSendTokens(supabase) {
     let generated = 0;
     let sent = 0;
 
+    // Token moderator/super admin dikumpulkan dulu, dikirim 1 email gabungan.
+    const groupEntries = [];
+
     for (const u of users) {
         const scope = scopeForUser(u);
         if (!scope) continue;
 
-        // Moderator / Super Admin: token tetap BEDA per user, tapi email
-        // dikirim ke 1 email induk (admin_group_email).
-        const email = (u.role === 'admin_zona')
-            ? (u.email || null)
-            : (settings.admin_group_email || u.email || null);
+        if (u.role === 'admin_zona') {
+            // Admin zona: email masing-masing.
+            const email = u.email || null;
+            try {
+                const t = await issueTokenForScope(supabase, scope, email, settings);
+                generated++;
+                let sentOk = false;
+                if (email) {
+                    try {
+                        await sendTokenEmail(email, t.code, {
+                            name: u.name || u.username,
+                            username: u.username,
+                            expiresAt: t.expiresAt || null
+                        });
+                        sentOk = true; sent++;
+                        await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', t.tokenId);
+                    } catch (e) {
+                        results.push({ scope, userId: u.id, email, error: e.message });
+                    }
+                }
+                await logEvent(supabase, 'generate', { scope, userId: u.id, email, detail: sentOk ? 'sent' : (email ? 'send_failed' : 'no_email') });
+                results.push({ scope, userId: u.id, email, sent: sentOk, role: u.role });
+            } catch (e) {
+                results.push({ scope, userId: u.id, error: e.message });
+            }
+        } else {
+            // Moderator / Super Admin: token beda per user, dikirim 1 email ke email induk.
+            const email = settings.admin_group_email || u.email || null;
+            try {
+                const t = await issueTokenForScope(supabase, scope, email, settings);
+                generated++;
+                groupEntries.push({
+                    name: u.name || u.username,
+                    username: u.username,
+                    token: t.code,
+                    expiresAt: t.expiresAt || null,
+                    tokenId: t.tokenId,
+                    scope,
+                    userId: u.id,
+                    role: u.role
+                });
+            } catch (e) {
+                results.push({ scope, userId: u.id, error: e.message });
+            }
+        }
+    }
 
-        try {
-            const t = await issueTokenForScope(supabase, scope, email, settings);
-            generated++;
-            let sentOk = false;
-            if (email) {
-                try {
-                    await sendTokenEmail(email, t.code, {
-                        name: u.name || u.username,
-                        username: u.username,
-                        expiresAt: t.expiresAt || null
-                    });
-                    sentOk = true; sent++;
-                    await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', t.tokenId);
-                } catch (e) {
-                    results.push({ scope, userId: u.id, email, error: e.message });
+    // Kirim 1 email gabungan untuk semua moderator/super admin.
+    if (groupEntries.length > 0) {
+        const groupEmail = settings.admin_group_email || groupEntries[0].email;
+        if (groupEmail) {
+            try {
+                await sendGroupTokenEmail(groupEmail, groupEntries);
+                sent++;
+                for (const g of groupEntries) {
+                    await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', g.tokenId);
+                }
+                await logEvent(supabase, 'generate', { email: groupEmail, detail: 'sent_group', scope: 'group:moderator_admin' });
+                results.push({ scope: 'group:moderator_admin', email: groupEmail, sent: true, role: 'moderator_admin', count: groupEntries.length });
+            } catch (e) {
+                for (const g of groupEntries) {
+                    results.push({ scope: g.scope, userId: g.userId, email: groupEmail, error: e.message });
                 }
             }
-            await logEvent(supabase, 'generate', { scope, userId: u.id, email, detail: sentOk ? 'sent' : (email ? 'send_failed' : 'no_email') });
-            results.push({ scope, userId: u.id, email, sent: sentOk, role: u.role });
-        } catch (e) {
-            results.push({ scope, userId: u.id, error: e.message });
+        } else {
+            for (const g of groupEntries) {
+                results.push({ scope: g.scope, userId: g.userId, email: null, sent: false, role: g.role, detail: 'no_email' });
+            }
         }
     }
 
@@ -499,6 +634,7 @@ module.exports = {
     resendTokenForUser,
     listTokenStatus,
     sendTokenEmail,
+    sendGroupTokenEmail,
     startTokenScheduler,
     nextAutoLogoutDate
 };
