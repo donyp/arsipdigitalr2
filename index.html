@@ -713,14 +713,17 @@
 
                 const data = await response.json();
 
+                // STEP 2 gate: password benar tapi butuh token
+                // (backend mengembalikan success:true + requiresToken:true,
+                //  jadi ini harus dicek SEBELUM cek success)
+                if (data.requiresToken) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalBtnHtml;
+                    showTokenForm(data);
+                    return;
+                }
+
                 if (!response.ok || !data.success) {
-                    // STEP 2 gate: password benar tapi butuh token
-                    if (response.ok && data.requiresToken) {
-                        btn.disabled = false;
-                        btn.innerHTML = originalBtnHtml;
-                        showTokenForm(data);
-                        return;
-                    }
                     throw {
                         status: response.status,
                         message: data.error || 'Login gagal',
