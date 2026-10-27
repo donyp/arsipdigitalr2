@@ -721,6 +721,22 @@ class SPARouter {
             // supaya halaman tidak terlihat "melompat" setelah animasi.
             try { window.scrollTo(0, 0); } catch (e) { /* abaikan */ }
 
+            // ============================================================
+            // URL BARU DIUBAH SEGERA SETELAH KONTEN TERTUKAR
+            // ============================================================
+            // URL (address bar) diperbarui seketika setelah konten ditukar,
+            // BUKAN di akhir loadPage. Sebelumnya pushState dipanggil paling
+            // akhir (setelah semua init + jeda 200ms/400ms) sehingga URL
+            // terasa "lama berubah" / lambat saat pindah halaman.
+            try {
+                if (window.location.pathname !== path) {
+                    window.history.pushState({ page: path }, '', path);
+                }
+            } catch (e) { /* abaikan */ }
+
+            // Catat halaman aktif sekarang juga (konsisten dengan URL)
+            this.currentPage = path;
+
             // Modal ditempel di body, bukan di dalam #main-content.
             // Dengan begitu posisi popup tetap center viewport dan tidak
             // ikut ter-scale 80% seperti konten halaman.
@@ -987,19 +1003,9 @@ class SPARouter {
             }
 
             // ============================================================
-            // URL BARU DIUBAH SETELAH KONTEN SUDAH TERTUKAR
+            // (URL + currentPage sudah diperbarui tepat setelah konten
+            //  ditukar di atas — tidak perlu pushState di sini lagi)
             // ============================================================
-            // Dulu pushState dilakukan sebelum loadPage, sehingga kalau
-            // navigasi batal (mis. sedang memuat) URL sudah berubah tapi
-            // halaman tidak -> user harus klik dua kali.
-            try {
-                if (window.location.pathname !== path) {
-                    window.history.pushState({ page: path }, '', path);
-                }
-            } catch (e) { /* abaikan */ }
-
-            // Update current page
-            this.currentPage = path;
 
             // Acuan path aktif: kalau ada navigasi yang diantrikan, tunggu
             // tujuan berikutnya (biar highlight tidak semphit balik ke
