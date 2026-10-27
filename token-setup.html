@@ -465,13 +465,22 @@
                         return;
                     }
 
-                    if ((r.generated || 0) === 0) {
+                    const total = (r.total || 0);
+                    const errs = (r.results || []).filter(x => x.error);
+
+                    if (total === 0) {
                         Notify.warning('Tidak ada pengguna (admin zona/moderator/super admin) yang ditemukan. Periksa data user di database.');
                         await loadTokenStatus();
                         return;
                     }
 
-                    const errs = (r.results || []).filter(x => x.error);
+                    if ((r.generated || 0) === 0) {
+                        const firstErr = errs.length > 0 ? errs[0].error : 'Gagal membuat token.';
+                        Notify.error('Gagal generate token: ' + firstErr);
+                        await loadTokenStatus();
+                        return;
+                    }
+
                     Notify.success(`Selesai: ${r.generated} token dibuat, ${r.sent} email terkirim.`);
                     if (errs.length > 0) {
                         console.warn('[TokenSetup] Beberapa token gagal dikirim:', errs);

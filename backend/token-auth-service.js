@@ -294,12 +294,15 @@ async function sendGroupTokenEmail(email, entries) {
     return data;
 }
 
-/** Buat token aktif baru untuk sebuah scope (nonaktifkan token lama scope tsb). */
+/** Buat token aktif baru untuk sebuah scope (nonaktifkan token lama scope tsb).
+ *  Catatan: tabel auth_token_keys punya kolom scope UNIQUE, jadi pakai UPSERT
+ *  (onConflict 'scope') agar token lama di-scope tsb ditimpa, bukan insert
+ *  baru yang memicu duplicate-key error. */
 async function issueTokenForScope(supabase, scope, email, settings) {
     // Hitung expires_at = auto-logout berikutnya (hari ini jam auto_logout, atau besok bila sudah lewat)
     const expiresAt = nextAutoLogoutDate(settings.auto_logout_time);
 
-    // Nonaktifkan token lama scope ini
+    // Nonaktifkan token lama scope ini (best-effort; tetap ada untuk berjaga-jaga)
     await supabase.from('auth_token_keys')
         .update({ is_active: false, expires_at: new Date().toISOString() })
         .eq('scope', scope)
@@ -309,18 +312,19 @@ async function issueTokenForScope(supabase, scope, email, settings) {
     const hash = sha256(code);
 
     const { data, error } = await supabase.from('auth_token_keys')
-        .insert([{
+        .upsert([{
             scope,
             token_hash: hash,
             token_preview: code.slice(-4),
             expires_at: expiresAt.toISOString(),
             is_active: true,
             email_sent: false,
+            email_sent_at: null,
             email_address: email
-        }])
+        }], { onConflict: 'scope' })
         .select('id');
 
-    if (error) throw new Error('Gagal membuat token: ' + error.message);
+    if (error) throw new Error('Token gagal dibuat: ' + error.message);
     return { tokenId: data[0].id, code, hash, scope, email, expiresAt: expiresAt.toISOString() };
 }
 
