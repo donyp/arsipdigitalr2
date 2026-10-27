@@ -43,6 +43,10 @@ class SPARouter {
                 url: '/user',
                 hasSidebar: true
             },
+            '/token-setup': {
+                url: '/token-setup',
+                hasSidebar: true
+            },
             '/toko': {
                 url: '/toko',
                 hasSidebar: true
