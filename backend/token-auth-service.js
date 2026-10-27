@@ -334,13 +334,15 @@ function nextAutoLogoutDate(timeStr) {
     return target;
 }
 
-/** Ambil daftar user yang wajib punya token. */
+/** Ambil daftar user yang wajib punya token.
+ *  Catatan: pakai .or() agar user dengan is_active NULL tetap ikut
+ *  (PostgREST .neq() mengecualikan baris NULL). */
 async function getTokenUsers(supabase) {
     const { data, error } = await supabase
         .from('users')
         .select('id, username, email, name, role, is_active')
         .in('role', ['admin_zona', 'moderator', 'super_admin'])
-        .neq('is_active', false);
+        .or('is_active.eq.true,is_active.is.null');
     if (error) throw new Error('Gagal ambil user: ' + error.message);
     return data || [];
 }
@@ -375,7 +377,7 @@ async function generateAndSendTokens(supabase) {
     const settings = await getSettings(supabase);
     if (!settings.enabled) {
         console.log('[TokenAuth] Generator: sistem token nonaktif (enabled=false), skip.');
-        return { generated: 0, sent: 0, results: [] };
+        return { generated: 0, sent: 0, total: 0, disabled: true, results: [] };
     }
 
     const users = await getTokenUsers(supabase);
@@ -461,7 +463,7 @@ async function generateAndSendTokens(supabase) {
         }
     }
 
-    return { generated, sent, total: users.length, results };
+    return { generated, sent, total: users.length, disabled: false, results };
 }
 
 /**
@@ -494,7 +496,8 @@ async function verifyTokenForScope(supabase, scope, code) {
     return { ok: true, tokenId: rec.id };
 }
 
-/** Apakah user sudah terverifikasi untuk token aktif scope-nya? */
+/** Apakah user sudah terverifikasi untuk token aktif scope-nya?
+ *  Return false bila belum, atau timestamp string (verified_at) bila sudah. */
 async function hasActiveVerification(supabase, userId, scope) {
     const { data: keys } = await supabase
         .from('auth_token_keys')
@@ -507,11 +510,12 @@ async function hasActiveVerification(supabase, userId, scope) {
 
     const { data: ver } = await supabase
         .from('auth_token_verifications')
-        .select('id')
+        .select('id, verified_at')
         .eq('token_id', keys[0].id)
         .eq('user_id', userId)
         .limit(1);
-    return ver && ver.length > 0;
+    if (!ver || ver.length === 0) return false;
+    return ver[0].verified_at || true;
 }
 
 async function markUserVerified(supabase, tokenId, userId) {
@@ -536,7 +540,12 @@ async function listTokenStatus(supabase) {
         const scope = scopeForUser(u);
         const key = (keys || []).find(k => k.scope === scope);
         let verified = false;
-        if (key) verified = await hasActiveVerification(supabase, u.id, scope);
+        let verifiedAt = null;
+        if (key) {
+            const v = await hasActiveVerification(supabase, u.id, scope);
+            verified = !!v;
+            verifiedAt = (typeof v === 'string') ? v : null;
+        }
         rows.push({
             userId: u.id,
             username: u.username,
@@ -549,7 +558,8 @@ async function listTokenStatus(supabase) {
             emailSent: key ? key.email_sent : false,
             emailSentAt: key ? key.email_sent_at : null,
             expiresAt: key ? key.expires_at : null,
-            verified
+            verified,
+            verifiedAt
         });
     }
     return { settings, rows };

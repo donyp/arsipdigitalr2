@@ -401,10 +401,10 @@
                     ? `<span class="chip">••••${escapeHtml(r.tokenPreview || '')}</span>`
                     : `<span class="text-gray-400">-</span>`;
                 const emailStatus = r.emailSent
-                    ? `<span class="badge badge-success">Terkirim</span>`
+                    ? `<div><span class="badge badge-success">Terkirim</span><div class="text-[11px] mt-1" style="color:var(--color-text-secondary);">${formatDate(r.emailSentAt)}</div></div>`
                     : `<span class="badge badge-warning">Belum</span>`;
                 const verified = r.verified
-                    ? `<span class="badge badge-success">Ya</span>`
+                    ? `<div><span class="badge badge-success">Ya</span><div class="text-[11px] mt-1" style="color:var(--color-text-secondary);">${formatDate(r.verifiedAt)}</div></div>`
                     : `<span class="badge badge-muted">Belum</span>`;
                 const emailDisplay = r.email ? escapeHtml(r.email) : '<span class="text-gray-400">-</span>';
 
@@ -458,7 +458,24 @@
                 try {
                     Notify.info('Mengirim token... mohon tunggu.');
                     const r = await API.post('/api/auth/token/generate-now');
+
+                    if (r.disabled) {
+                        Notify.warning('Sistem token masih nonaktif. Aktifkan tombol "Aktifkan Token Login" terlebih dahulu.');
+                        await loadTokenStatus();
+                        return;
+                    }
+
+                    if ((r.generated || 0) === 0) {
+                        Notify.warning('Tidak ada pengguna (admin zona/moderator/super admin) yang ditemukan. Periksa data user di database.');
+                        await loadTokenStatus();
+                        return;
+                    }
+
+                    const errs = (r.results || []).filter(x => x.error);
                     Notify.success(`Selesai: ${r.generated} token dibuat, ${r.sent} email terkirim.`);
+                    if (errs.length > 0) {
+                        console.warn('[TokenSetup] Beberapa token gagal dikirim:', errs);
+                    }
                     await loadTokenStatus();
                 } catch (err) {
                     Notify.error('Gagal generate: ' + err.message);
@@ -481,6 +498,13 @@
         function escapeHtml(str) {
             if (!str) return '';
             return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '-';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return '-';
+            return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
         }
 
         document.addEventListener('DOMContentLoaded', initTokenSetupPage);

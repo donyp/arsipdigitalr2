@@ -347,6 +347,22 @@
         }
 
         /* ---------- PIN/Token kotak digit ---------- */
+        .token-icon-box {
+            width: 56px;
+            height: 56px;
+            background: #eef2ff;
+            color: #4f46e5;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            transition: background 0.3s, color 0.3s;
+        }
+        html[data-dark-mode="true"] .token-icon-box {
+            background: #1e1b4b;
+            color: #818cf8;
+        }
         .pin-input {
             display: flex;
             justify-content: center;
@@ -586,13 +602,13 @@
                 <!-- STEP 2: Token Verification Form (hidden by default) -->
                 <form id="token-form" autocomplete="off" style="display: none;">
                     <div style="margin-bottom: 16px; text-align: center;">
-                        <div style="width: 56px; height: 56px; background: #eef2ff; color: #4f46e5; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                        <div class="token-icon-box">
                             <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </div>
-                        <p style="font-size: 14px; font-weight: 600; color: #3d3b6b; margin: 0 0 4px;">Masukkan Token</p>
-                        <p id="token-email-hint" style="font-size: 13px; color: #666; margin: 0;">
+                        <p style="font-size: 14px; font-weight: 600; color: var(--color-text-primary); margin: 0 0 4px;">Masukkan Token</p>
+                        <p id="token-email-hint" style="font-size: 13px; color: var(--color-text-secondary); margin: 0;">
                             Kode telah dikirim ke email tujuan.
                         </p>
                     </div>
@@ -606,7 +622,7 @@
                     <button type="submit" id="token-btn" class="login-btn">Verifikasi</button>
 
                     <div style="display: flex; justify-content: center; margin-top: 12px;">
-                        <button type="button" id="token-back-btn" onclick="hideTokenForm()" style="background: none; border: none; cursor: pointer; color: #666; font-size: 13px; font-weight: 600;">
+                        <button type="button" id="token-back-btn" onclick="hideTokenForm()" style="background: none; border: none; cursor: pointer; color: var(--color-text-secondary); font-size: 13px; font-weight: 600;">
                             ← Kembali
                         </button>
                     </div>
