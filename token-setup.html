@@ -5,12 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan Token Login | Arsip Digital ANKA</title>
+    <!-- DARK MODE - Apply immediately to prevent flash -->
     <script src="/js/dark-mode-init.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/color-vars.css">
     <script src="/js/notification-system.js?v=2"></script>
     <style>
+        /* ============================================================
+           DESIGN TOKENS — solid (tanpa glassmorphism / backdrop-filter)
+           ============================================================ */
         :root {
             --color-bg-primary: #ffffff;
             --color-bg-secondary: #f5f7fa;
@@ -18,7 +22,10 @@
             --color-text-primary: #1f2937;
             --color-text-secondary: #6b7280;
             --color-border: #e5e7eb;
+            --color-accent: #4f46e5;
+            --color-accent-soft: #eef2ff;
         }
+
         html[data-dark-mode="true"] {
             --color-bg-primary: #0f172a;
             --color-bg-secondary: #1e293b;
@@ -26,12 +33,23 @@
             --color-text-primary: #f1f5f9;
             --color-text-secondary: #cbd5e1;
             --color-border: #475569;
+            --color-accent: #818cf8;
+            --color-accent-soft: #1e1b4b;
+            color-scheme: dark;
         }
+
+        html[data-dark-mode="false"],
+        :root {
+            color-scheme: light;
+        }
+
         body {
             background: var(--color-bg-primary);
             color: var(--color-text-primary);
             transition: background 0.3s, color 0.3s;
         }
+
+        /* ---------- Dark-mode overrides untuk utility Tailwind ---------- */
         html[data-dark-mode="true"] .bg-white {
             background-color: var(--color-bg-secondary) !important;
             color: var(--color-text-primary);
@@ -39,24 +57,95 @@
         html[data-dark-mode="true"] .bg-gray-50 {
             background-color: var(--color-bg-primary) !important;
         }
+        html[data-dark-mode="true"] .bg-gray-100 {
+            background-color: var(--color-bg-tertiary) !important;
+        }
         html[data-dark-mode="true"] .text-gray-800,
         html[data-dark-mode="true"] .text-gray-900,
         html[data-dark-mode="true"] .text-gray-700 {
             color: var(--color-text-primary) !important;
         }
         html[data-dark-mode="true"] .text-gray-500,
-        html[data-dark-mode="true"] .text-gray-600 {
+        html[data-dark-mode="true"] .text-gray-600,
+        html[data-dark-mode="true"] .text-gray-400 {
             color: var(--color-text-secondary) !important;
         }
         html[data-dark-mode="true"] .border-gray-100,
-        html[data-dark-mode="true"] .border-gray-200 {
+        html[data-dark-mode="true"] .border-gray-200,
+        html[data-dark-mode="true"] .border-gray-300 {
             border-color: var(--color-border) !important;
         }
+        html[data-dark-mode="true"] table tbody tr:hover,
+        html[data-dark-mode="true"] table tbody tr:hover td {
+            background-color: var(--color-bg-tertiary) !important;
+        }
+
+        /* ---------- Form inputs (solid, dark-aware) ---------- */
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="number"],
+        input[type="time"],
+        select,
+        textarea {
+            background-color: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+            outline: none;
+        }
+        html[data-dark-mode="true"] input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8);
+        }
+
+        /* ---------- Badge status (solid, bukan translusen) ---------- */
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.5;
+            white-space: nowrap;
+        }
+        .badge-success { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
+        .badge-warning { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .badge-muted   { background: #e5e7eb; color: #4b5563; border: 1px solid #d1d5db; }
+        html[data-dark-mode="true"] .badge-success { background: #064e3b; color: #6ee7b7; border-color: #065f46; }
+        html[data-dark-mode="true"] .badge-warning { background: #451a03; color: #fcd34d; border-color: #78350f; }
+        html[data-dark-mode="true"] .badge-muted   { background: #1f2937; color: #9ca3af; border-color: #374151; }
+
+        /* ---------- Chip token preview ---------- */
+        .chip {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        /* ---------- Info box (solid) ---------- */
+        .info-box {
+            background: var(--color-accent-soft);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
+        }
+        .info-box .info-title { color: var(--color-accent); }
+
+        /* ---------- Toggle switch ---------- */
         .toggle-switch {
             position: relative;
             width: 52px;
             height: 28px;
             display: inline-block;
+            flex-shrink: 0;
         }
         .toggle-switch input { display: none; }
         .toggle-slider {
@@ -85,9 +174,34 @@
         .toggle-switch input:checked + .toggle-slider::before {
             transform: translateX(24px);
         }
+        html[data-dark-mode="true"] .toggle-slider { background: #475569; }
+        html[data-dark-mode="true"] .toggle-switch input:checked + .toggle-slider { background: #6366f1; }
+
+        /* ---------- Action button link ---------- */
+        .btn-link {
+            color: var(--color-accent);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            transition: background 0.18s ease;
+        }
+        .btn-link:hover {
+            background: var(--color-accent-soft);
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-50">
+    <!-- Apply dark mode if enabled -->
+    <script>
+        if (localStorage.getItem('dark_mode_enabled') === 'true') {
+            document.documentElement.setAttribute('data-dark-mode', 'true');
+        }
+    </script>
+
     <div style="display: flex; min-height: 100vh;">
         <!-- Sidebar -->
         <div id="sidebar"></div>
@@ -104,7 +218,7 @@
                 <div class="space-y-6">
 
                     <!-- Header + Generate -->
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: 16px;">
                         <div>
                             <h1 class="text-3xl font-bold text-gray-900">Token Login Harian 🔐</h1>
                             <p class="text-gray-500 font-medium mt-1">Kelola token login harian (2FA via email) untuk admin zona, moderator &amp; super admin</p>
@@ -120,7 +234,7 @@
                             <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide"><i class="fas fa-cog mr-2"></i>Pengaturan Sistem</h3>
                         </div>
                         <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="flex items-center justify-between md:col-span-2">
+                            <div class="flex items-center justify-between md:col-span-2" style="gap: 20px;">
                                 <div>
                                     <p class="font-bold text-gray-900">Aktifkan Token Login</p>
                                     <p class="text-sm text-gray-500">Jika ON, semua admin zona/moderator/super admin wajib input token saat login (pertama kali per hari).</p>
@@ -133,19 +247,19 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Email Tujuan Admin/Moderator</label>
-                                <input type="email" id="admin-group-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="admin@example.com">
+                                <input type="email" id="admin-group-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="admin@example.com">
                                 <p class="text-xs text-gray-500 mt-1">Token bersama moderator &amp; super admin akan dikirim ke 1 email ini.</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Jam Auto-Logout (Reset Token)</label>
-                                <input type="time" id="auto-logout-time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <input type="time" id="auto-logout-time" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                 <p class="text-xs text-gray-500 mt-1">Token di-reset jam ini. Generate &amp; kirim otomatis 1 jam setelahnya.</p>
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Panjang Token (digit)</label>
-                                <input type="number" id="token-length" min="4" max="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <input type="number" id="token-length" min="4" max="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
                                 <p class="text-xs text-gray-500 mt-1">Rekomendasi: 6 digit.</p>
                             </div>
 
@@ -199,12 +313,12 @@
                     </div>
 
                     <!-- Info box -->
-                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4" style="background: rgba(79,70,229,0.05);">
+                    <div class="info-box p-4">
                         <div class="flex items-start gap-3">
-                            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
-                            <div class="text-sm text-gray-600">
-                                <p class="font-bold text-gray-700 mb-1">Cara kerja sistem token:</p>
-                                <ul class="list-disc list-inside space-y-1">
+                            <i class="fas fa-info-circle text-blue-500 mt-0.5" style="color: var(--color-accent);"></i>
+                            <div class="text-sm">
+                                <p class="font-bold mb-1 info-title" style="color: var(--color-text-primary);">Cara kerja sistem token:</p>
+                                <ul class="list-disc list-inside space-y-1" style="color: var(--color-text-secondary);">
                                     <li>Admin Zona: tiap user punya token sendiri, dikirim ke email masing-masing.</li>
                                     <li>Moderator / Super Admin: satu token bersama, dikirim ke 1 email.</li>
                                     <li>Token berlaku <strong>hanya hari itu</strong> (expire saat jam auto-logout berikutnya).</li>
@@ -284,21 +398,19 @@
             tbody.innerHTML = rows.map(r => {
                 const role = roleLabel[r.role] || r.role;
                 const tokenCell = r.hasToken
-                    ? `<code class="bg-gray-100 px-2 py-1 rounded text-xs font-mono">••••${r.tokenPreview || ''}</code>`
+                    ? `<span class="chip">••••${escapeHtml(r.tokenPreview || '')}</span>`
                     : `<span class="text-gray-400">-</span>`;
                 const emailStatus = r.emailSent
-                    ? `<span class="px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full">Terkirim</span>`
-                    : `<span class="px-2 py-1 text-xs font-bold text-yellow-700 bg-yellow-100 rounded-full">Belum</span>`;
+                    ? `<span class="badge badge-success">Terkirim</span>`
+                    : `<span class="badge badge-warning">Belum</span>`;
                 const verified = r.verified
-                    ? `<span class="px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full">Ya</span>`
-                    : `<span class="px-2 py-1 text-xs font-bold text-gray-600 bg-gray-100 rounded-full">Belum</span>`;
-                const emailDisplay = r.email || '<span class="text-gray-400">-</span>';
+                    ? `<span class="badge badge-success">Ya</span>`
+                    : `<span class="badge badge-muted">Belum</span>`;
+                const emailDisplay = r.email ? escapeHtml(r.email) : '<span class="text-gray-400">-</span>';
 
                 return `<tr class="border-b border-gray-200 hover:bg-gray-50">
                     <td class="px-6 py-4 font-medium text-gray-900">
-                        <div class="flex items-center gap-2">
-                            <span>${escapeHtml(r.name || r.username || '')}</span>
-                        </div>
+                        <div>${escapeHtml(r.name || r.username || '')}</div>
                         <div class="text-xs text-gray-500">@${escapeHtml(r.username || '')}</div>
                     </td>
                     <td class="px-6 py-4 text-gray-600">${role}</td>
@@ -307,7 +419,7 @@
                     <td class="px-6 py-4">${emailStatus}</td>
                     <td class="px-6 py-4">${verified}</td>
                     <td class="px-6 py-4 text-right">
-                        <button onclick="resendToken('${r.userId}')" class="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-xs font-bold" title="Kirim ulang token">
+                        <button onclick="resendToken('${escapeHtml(r.userId)}')" class="btn-link" title="Kirim ulang token">
                             <i class="fas fa-paper-plane mr-1"></i>Resend
                         </button>
                     </td>
@@ -344,7 +456,6 @@
         async function generateTokensNow() {
             Notify.confirmDelete('Generate Token', 'Generate &amp; kirim token ke semua pengguna sekarang?', async () => {
                 try {
-                    const btn = document.querySelector('[onclick="generateTokensNow()"]');
                     Notify.info('Mengirim token... mohon tunggu.');
                     const r = await API.post('/api/auth/token/generate-now');
                     Notify.success(`Selesai: ${r.generated} token dibuat, ${r.sent} email terkirim.`);
