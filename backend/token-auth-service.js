@@ -582,6 +582,12 @@ async function resendTokenForUser(supabase, userId) {
     if (!scope) throw new Error('Role user tidak memerlukan token');
 
     const settings = await getSettings(supabase);
+    
+    // PENTING: Cek apakah sistem token login aktif. Jika disabled, jangan kirim email.
+    if (!settings.enabled) {
+        console.log('[TokenAuth] Resend: sistem token nonaktif (enabled=false), skip email.');
+        return { scope, email: null, sent: false, disabled: true, detail: 'sistem token nonaktif' };
+    }
 
     // Buat token baru (token lama di-scope ini otomatis dinonaktifkan + verifikasi lama tetap valid
     // sampai reset harian). Kirim token baru ke email tujuan.
