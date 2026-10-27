@@ -121,7 +121,7 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         expect(sidebarSrc).toMatch(/@media \(prefers-reduced-motion: reduce\)/);
     });
 
-    test('semua halaman memakai cache-busting sidebar v=11', () => {
+    test('semua halaman memakai cache-busting sidebar v=12', () => {
         const htmlFiles = fs.readdirSync(projectRoot)
             .filter(file => file.endsWith('.html'));
         const sidebarPages = htmlFiles.filter(file => {
@@ -133,7 +133,7 @@ describe('Sidebar - animasi hover dan dropdown', () => {
         for (const file of sidebarPages) {
             const html = fs.readFileSync(path.join(projectRoot, file), 'utf8');
             expect(html).not.toContain('sidebar.js?v=10');
-            expect(html).toContain('sidebar.js?v=11');
+            expect(html).toContain('sidebar.js?v=12');
         }
     });
 });

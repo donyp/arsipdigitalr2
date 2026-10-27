@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const fs = require('fs');
 const path = require('path');
+const tokenAuth = require('./token-auth-service');
 
 const MAINTENANCE_FILE = path.join(__dirname, '../data/maintenance-status.json');
 
@@ -224,122 +225,59 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             console.log(`[Auth] ✅ Password verified for user: ${username}`);
 
-            // Generate JWT with jti (JWT ID) for forced logout tracking
-            const jti = require('crypto').randomBytes(16).toString('hex');
-            
-            const jwtToken = jwt.sign(
-                {
-                    sub: users.id,  // Standard JWT subject claim
-                    userId: users.id,
-                    id: users.id,
-                    username: users.username,
-                    email: users.email,
-                    role: users.role || 'user',
-                    zona_id: users.zona_id || null,
-                    stage: 'authenticated',
-                    jti: jti  // For forced logout tracking
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
-            );
+            // ============================================================
+            // TOKEN LOGIN HARIAN (2FA email) — gate setelah password valid
+            // ============================================================
+            const settings = await tokenAuth.getSettings(supabase);
+            const scope = tokenAuth.scopeForUser(users);
 
-            // Log successful login
-            try {
-                await supabase
-                    .from('maintenance_access_logs')
-                    .insert([{
-                        user_id: users.id,
-                        username: users.email,
-                        user_role: users.role,
-                        action: 'granted',
-                        ip_address: clientIp,
-                        user_agent: req.headers['user-agent'],
-                        reason: 'Successful login'
-                    }]);
-            } catch (logErr) {
-                console.error('[Auth] Failed to log successful login:', logErr.message);
-            }
+            if (settings.enabled && scope) {
+                // Sudah pernah verifikasi token di periode ini?
+                const alreadyVerified = await tokenAuth.hasActiveVerification(supabase, users.id, scope);
 
-            // Record active session using jti as session_id
-            let sessionId = jti;
-            try {
-                const { data: existing } = await supabase
-                    .from('active_sessions')
-                    .select('session_id')
-                    .eq('session_id', jti);
-
-                if (existing && existing.length > 0) {
-                    // Update existing session
-                    console.log('[Auth] Updating existing session for user:', users.username);
-                    const { error: updateErr } = await supabase
-                        .from('active_sessions')
-                        .update({
-                            last_activity: new Date().toISOString()
-                        })
-                        .eq('session_id', jti);
-                    
-                    if (updateErr) {
-                        console.error('[Auth] Session update error:', updateErr.message, updateErr.details);
-                    }
-                } else {
-                    // Create new session with jti as session_id
-                    console.log('[Auth] Creating new session for user:', users.username, 'with session_id:', jti, 'user_id:', users.id);
-                    const { data: newSession, error: insertError } = await supabase
-                        .from('active_sessions')
-                        .insert([{
-                            session_id: jti,
-                            user_id: users.id,
+                if (!alreadyVerified) {
+                    // Belum verifikasi -> minta token.
+                    // Buat temp-token (JWT pendek) untuk mengamankan langkah verifikasi.
+                    const tempToken = jwt.sign(
+                        {
+                            userId: users.id,
                             username: users.username,
-                            user_role: users.role,
-                            last_activity: new Date().toISOString(),
-                            is_valid: true
-                        }])
-                        .select('session_id');
-                    
-                    if (insertError) {
-                        console.error('[Auth] Session insert FAILED:', {
-                            message: insertError.message,
-                            details: insertError.details,
-                            hint: insertError.hint,
-                            code: insertError.code
-                        });
-                    } else if (newSession && newSession.length > 0) {
-                        sessionId = newSession[0].session_id;
-                        console.log('[Auth] ✅ Session created successfully with ID:', sessionId);
-                    } else {
-                        console.warn('[Auth] Session insert returned no data');
-                    }
+                            role: users.role,
+                            scope,
+                            stage: 'pending-token'
+                        },
+                        process.env.JWT_SECRET,
+                        { expiresIn: `${settings.temp_token_ttl_seconds || 600}s` }
+                    );
+
+                    // Mask email tujuan token (untuk ditampilkan ke user)
+                    const targetEmail = users.role === 'admin_zona'
+                        ? users.email
+                        : settings.admin_group_email;
+                    const maskedEmail = maskEmail(targetEmail || users.email || '');
+
+                    console.log('[Auth] 🔑 Token login diperlukan untuk:', username, '(scope:', scope + ')');
+
+                    return res.json({
+                        success: true,
+                        requiresToken: true,
+                        message: 'Password benar. Masukkan kode token dari email.',
+                        tempToken,
+                        userId: users.id,
+                        username: users.username,
+                        role: users.role,
+                        maskedEmail,
+                        expiresIn: settings.temp_token_ttl_seconds || 600
+                    });
                 }
-            } catch (sessionErr) {
-                console.error('[Auth] Session record exception:', sessionErr.message, sessionErr.stack);
+                // else: sudah verifikasi -> lanjutkan issue session penuh
+                console.log('[Auth] ✅ User sudah terverifikasi token, lanjut login:', username);
             }
 
+            // Issue sesi penuh (JWT + active_sessions)
+            const sessionResult = await issueFullSession(supabase, users, maintenance);
             await clearLoginAttempts(attemptKey);
-
-            console.log('[Auth] 🔐 Login successful for user:', {
-                id: users.id,
-                username: users.username,
-                email: users.email,
-                role: users.role
-            });
-
-            return res.json({
-                success: true,
-                message: 'Login berhasil',
-                token: jwtToken,
-                sessionId: sessionId, // Include session ID for keep-alive
-                user: {
-                    id: users.id,
-                    username: users.username,
-                    email: users.email,
-                    role: users.role || 'user',
-                    is_active: users.is_active
-                },
-                maintenance: {
-                    isActive: maintenance.isActive,
-                    message: maintenance.isActive ? `Sistem dalam mode pemeliharaan. ${maintenance.description || ''}` : null
-                }
-            });
+            return res.json(sessionResult);
         } catch (error) {
             console.error('[Auth] ❌ Login error:', error.message);
             return res.status(500).json({
@@ -391,6 +329,244 @@ module.exports = function registerAuthEndpoints(app, supabase) {
         }
     });
 
+    /**
+     * POST /api/auth/verify-token
+     * Verifikasi kode token (langkah 2). Setelah berhasil -> issue sesi penuh.
+     */
+    app.post('/api/auth/verify-token', async (req, res) => {
+        try {
+            const { tempToken: tmpToken, token } = req.body;
+            if (!tmpToken || !token) {
+                return res.status(400).json({ success: false, error: 'Kode token diperlukan' });
+            }
+
+            let decoded;
+            try {
+                decoded = jwt.verify(tmpToken, process.env.JWT_SECRET);
+            } catch (e) {
+                return res.status(401).json({ success: false, error: 'Sesi verifikasi berakhir. Silakan login ulang.', reason: 'temp_expired' });
+            }
+
+            if (decoded.stage !== 'pending-token') {
+                return res.status(401).json({ success: false, error: 'Sesi verifikasi tidak valid.', reason: 'bad_stage' });
+            }
+
+            const { data: users, error: fetchError } = await supabase
+                .from('users')
+                .select('id, username, email, password_hash, role, zona_id, is_active')
+                .eq('id', decoded.userId)
+                .single();
+
+            if (fetchError || !users) {
+                return res.status(401).json({ success: false, error: 'User tidak ditemukan.' });
+            }
+
+            const scope = tokenAuth.scopeForUser(users);
+            if (!scope) {
+                return res.status(400).json({ success: false, error: 'Role user tidak memerlukan token.' });
+            }
+
+            const verify = await tokenAuth.verifyTokenForScope(supabase, scope, token);
+            if (!verify.ok) {
+                try {
+                    await supabase.from('auth_token_logs').insert([{ action: 'verify_fail', scope, user_id: users.id, detail: verify.reason }]);
+                } catch (e) {}
+                const msg = verify.reason === 'expired'
+                    ? 'Kode sudah kedaluwarsa. Gunakan kode terbaru dari email.'
+                    : 'Kode salah. Periksa kembali kode dari email Anda.';
+                return res.status(401).json({ success: false, error: msg, reason: verify.reason });
+            }
+
+            await tokenAuth.markUserVerified(supabase, verify.tokenId, users.id);
+            try {
+                await supabase.from('auth_token_logs').insert([{ action: 'verify_ok', scope, user_id: users.id, email: users.email }]);
+            } catch (e) {}
+
+            const result = await issueFullSession(supabase, users, { isActive: false, allowedRole: 'moderator' });
+            return res.json(result);
+        } catch (error) {
+            console.error('[Auth] verify-token error:', error.message);
+            return res.status(500).json({ success: false, error: 'Server error' });
+        }
+    });
+
+    /**
+     * GET /api/auth/token/status — status token + daftar user (mod/SA only).
+     */
+    app.get('/api/auth/token/status', async (req, res) => {
+        try {
+            if (!checkAdmin(req, res)) return;
+
+            const status = await tokenAuth.listTokenStatus(supabase);
+            return res.json({ success: true, ...status });
+        } catch (error) {
+            return res.status(500).json({ success: false, error: 'Server error' });
+        }
+    });
+
+    /**
+     * PUT /api/auth/token/settings — update pengaturan token (mod/SA only).
+     */
+    app.put('/api/auth/token/settings', async (req, res) => {
+        try {
+            if (!checkAdmin(req, res)) return;
+
+            const { enabled, admin_group_email, auto_logout_time, temp_token_ttl_seconds, token_length } = req.body || {};
+            const patch = {};
+            if (typeof enabled === 'boolean') patch.enabled = enabled;
+            if (admin_group_email !== undefined) patch.admin_group_email = String(admin_group_email);
+            if (auto_logout_time !== undefined) patch.auto_logout_time = String(auto_logout_time);
+            if (temp_token_ttl_seconds !== undefined) patch.temp_token_ttl_seconds = Number(temp_token_ttl_seconds);
+            if (token_length !== undefined) patch.token_length = Number(token_length);
+
+            const settings = await tokenAuth.saveSettings(supabase, patch);
+            return res.json({ success: true, settings });
+        } catch (error) {
+            return res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    /**
+     * POST /api/auth/token/generate-now — generate + kirim semua token (mod/SA only).
+     */
+    app.post('/api/auth/token/generate-now', async (req, res) => {
+        try {
+            if (!checkAdmin(req, res)) return;
+
+            const r = await tokenAuth.generateAndSendTokens(supabase);
+            return res.json({ success: true, ...r });
+        } catch (error) {
+            return res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    /**
+     * POST /api/auth/token/resend — kirim ulang token untuk user tertentu (mod/SA only).
+     * Body: { userId }
+     */
+    app.post('/api/auth/token/resend', async (req, res) => {
+        try {
+            if (!checkAdmin(req, res)) return;
+
+            const { userId } = req.body || {};
+            if (!userId) return res.status(400).json({ success: false, error: 'userId diperlukan' });
+
+            const r = await tokenAuth.resendTokenForUser(supabase, userId);
+            return res.json({ success: true, ...r });
+        } catch (error) {
+            return res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
 };
+
+/**
+ * Helper: cek Authorization header & role modifier/super_admin.
+ * Mengirim response error otomatis bila gagal. Return true bila lolos.
+ */
+function checkAdmin(req, res) {
+    const auth = req.headers.authorization;
+    const token = auth && auth.split(' ')[1];
+    if (!token) {
+        res.status(401).json({ success: false, error: 'Tidak terautentikasi' });
+        return false;
+    }
+    let decoded;
+    try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (e) {
+        res.status(401).json({ success: false, error: 'Tidak terautentikasi' });
+        return false;
+    }
+    if (decoded.role !== 'moderator' && decoded.role !== 'super_admin') {
+        res.status(403).json({ success: false, error: 'Akses ditolak' });
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Issue sesi penuh (JWT + active_sessions) setelah auth sukses / verifikasi token.
+ */
+async function issueFullSession(supabase, users, maintenance) {
+    const crypto = require('crypto');
+    const jti = crypto.randomBytes(16).toString('hex');
+
+    const jwtToken = jwt.sign(
+        {
+            sub: users.id,
+            userId: users.id,
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            role: users.role || 'user',
+            zona_id: users.zona_id || null,
+            stage: 'authenticated',
+            jti
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    );
+
+    let sessionId = jti;
+    try {
+        const { data: existing } = await supabase
+            .from('active_sessions')
+            .select('session_id')
+            .eq('session_id', jti);
+
+        if (existing && existing.length > 0) {
+            await supabase.from('active_sessions')
+                .update({ last_activity: new Date().toISOString() })
+                .eq('session_id', jti);
+        } else {
+            const { data: newSession, error: insertError } = await supabase
+                .from('active_sessions')
+                .insert([{
+                    session_id: jti,
+                    user_id: users.id,
+                    username: users.username,
+                    user_role: users.role,
+                    last_activity: new Date().toISOString(),
+                    is_valid: true
+                }])
+                .select('session_id');
+            if (!insertError && newSession && newSession.length > 0) {
+                sessionId = newSession[0].session_id;
+            }
+        }
+    } catch (sessionErr) {
+        console.error('[Auth] Session record exception:', sessionErr.message);
+    }
+
+    return {
+        success: true,
+        message: 'Login berhasil',
+        token: jwtToken,
+        sessionId,
+        user: {
+            id: users.id,
+            username: users.username,
+            email: users.email,
+            role: users.role || 'user',
+            is_active: users.is_active
+        },
+        maintenance: {
+            isActive: maintenance.isActive,
+            message: maintenance.isActive ? `Sistem dalam mode pemeliharaan. ${maintenance.description || ''}` : null
+        }
+    };
+}
+
+/** Mask email untuk ditampilkan (contoh: doni***@***.com). */
+function maskEmail(email) {
+    if (!email) return '';
+    const at = email.indexOf('@');
+    if (at < 0) return email;
+    const local = email.slice(0, at);
+    const domain = email.slice(at + 1);
+    const maskedLocal = local.length > 3 ? local.slice(0, 3) + '***' : local[0] + '***';
+    return `${maskedLocal}@${domain}`;
+}
 
 

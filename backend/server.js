@@ -986,6 +986,10 @@ app.get('/user', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'users.html'));
 });
 
+app.get('/token-setup', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'token-setup.html'));
+});
+
 app.get('/toko', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'tokos.html'));
 });
@@ -1831,6 +1835,15 @@ try {
     registerAuthEndpoints(app, supabase);
     console.log('[INIT] ✅ Authentication endpoints registered');
 
+    // Register daily token auth service + scheduler
+    try {
+        const tokenAuth = require('./token-auth-service');
+        tokenAuth.startTokenScheduler(supabase);
+        console.log('[INIT] ✅ Token auth scheduler registered');
+    } catch (e) {
+        console.error('[INIT] ⚠️  Token auth scheduler failed:', e.message);
+    }
+
 } catch (error) {
     console.error('[INIT] ❌ Failed to initialize authentication:', error.message);
     process.exit(1);
@@ -2130,7 +2143,7 @@ const csrfProtection = (req, res, next) => {
     if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) return next();
 
     // Skip untuk endpoint publik yang memang boleh diakses dari mana saja
-    const publicPaths = ['/api/auth/login', '/api/auth/refresh', '/api/share/', '/api/maintenance/'];
+    const publicPaths = ['/api/auth/login', '/api/auth/verify-token', '/api/auth/refresh', '/api/share/', '/api/maintenance/'];
     if (publicPaths.some(p => req.path.startsWith(p))) return next();
 
     const origin = req.headers['origin'];

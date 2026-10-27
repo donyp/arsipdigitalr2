@@ -542,6 +542,35 @@
                     <button type="submit" id="login-btn" class="login-btn">Masuk</button>
                 </form>
 
+                <!-- STEP 2: Token Verification Form (hidden by default) -->
+                <form id="token-form" autocomplete="off" style="display: none;">
+                    <div style="margin-bottom: 16px; text-align: center;">
+                        <div style="width: 56px; height: 56px; background: #eef2ff; color: #4f46e5; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                        <p style="font-size: 14px; font-weight: 600; color: #3d3b6b; margin: 0 0 4px;">Verifikasi Kode Token</p>
+                        <p id="token-email-hint" style="font-size: 13px; color: #666; margin: 0;">
+                            Kode telah dikirim ke email Anda.
+                        </p>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="position: relative;">
+                            <input type="text" id="token-input" name="token" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="••••••" class="form-input" style="text-align: center; letter-spacing: 12px; font-family: monospace; font-size: 24px; font-weight: 700; padding-left: 12px;" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="token-btn" class="login-btn">Verifikasi</button>
+
+                    <div style="display: flex; justify-content: center; margin-top: 12px;">
+                        <button type="button" id="token-back-btn" onclick="hideTokenForm()" style="background: none; border: none; cursor: pointer; color: #666; font-size: 13px; font-weight: 600;">
+                            ← Kembali
+                        </button>
+                    </div>
+                </form>
+
 
             </div>
         </div>
@@ -685,6 +714,13 @@
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
+                    // STEP 2 gate: password benar tapi butuh token
+                    if (response.ok && data.requiresToken) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalBtnHtml;
+                        showTokenForm(data);
+                        return;
+                    }
                     throw {
                         status: response.status,
                         message: data.error || 'Login gagal',
@@ -785,7 +821,99 @@
             }
         `;
         document.head.appendChild(style);
-        
+
+        // =============================================
+        // TOKEN VERIFICATION (STEP 2)
+        // =============================================
+        let pendingTempToken = null;
+        let pendingRole = null;
+
+        function showTokenForm(data) {
+            pendingTempToken = data.tempToken;
+            pendingRole = data.role;
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('token-form').style.display = 'block';
+            const hint = document.getElementById('token-email-hint');
+            if (data.maskedEmail) {
+                hint.textContent = `Kode telah dikirim ke email ${data.maskedEmail}`;
+            }
+            document.getElementById('token-input').value = '';
+            document.getElementById('token-input').focus();
+        }
+
+        function hideTokenForm() {
+            pendingTempToken = null;
+            pendingRole = null;
+            document.getElementById('token-form').style.display = 'none';
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('token-input').value = '';
+        }
+
+        document.getElementById('token-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isProcessing) return;
+            isProcessing = true;
+
+            const btn = document.getElementById('token-btn');
+            const token = document.getElementById('token-input').value.trim();
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span style="width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></span>
+                Verifikasi...
+            </span>`;
+
+            try {
+                const response = await fetch('/api/auth/verify-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tempToken: pendingTempToken, token })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw { status: response.status, message: data.error || 'Kode salah' };
+                }
+
+                // Success: store JWT + redirect
+                localStorage.setItem('jwt_token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('user_info', JSON.stringify(data.user));
+                if (data.sessionId) {
+                    localStorage.setItem('current_session_id', data.sessionId);
+                }
+
+                let dashboardPage = '/dashboard';
+                if (data.user.role === 'admin_zona') dashboardPage = '/zona/dashboard';
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Login Berhasil',
+                    html: 'Anda akan dialihkan ke dalam dashboard',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    timerProgressBar: true
+                });
+                window.location.href = dashboardPage;
+                return;
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+                const msg = err.message || 'Kode salah. Periksa kembali.';
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Verifikasi Gagal',
+                    text: msg,
+                    confirmButtonText: 'Coba Lagi',
+                    confirmButtonColor: '#ef4444',
+                    allowOutsideClick: false
+                });
+            } finally {
+                isProcessing = false;
+            }
+        });
+
         // =============================================
         // DARK MODE IMPLEMENTATION
         // =============================================

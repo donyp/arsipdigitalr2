@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNiIgZmlsbD0iIzdjM2FlZCIvPjx0ZXh0IHg9IjE2IiB5PSIyMyIgZm9udC1mYW1pbHk9IkFyaWFsLHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSJ3aGl0ZSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QTwvdGV4dD48L3N2Zz4=">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Token Login | Arsip Digital ANKA</title>
+    <script src="/js/dark-mode-init.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/color-vars.css">
+    <script src="/js/notification-system.js?v=2"></script>
+    <style>
+        :root {
+            --color-bg-primary: #ffffff;
+            --color-bg-secondary: #f5f7fa;
+            --color-bg-tertiary: #ffffff;
+            --color-text-primary: #1f2937;
+            --color-text-secondary: #6b7280;
+            --color-border: #e5e7eb;
+        }
+        html[data-dark-mode="true"] {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-bg-tertiary: #334155;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-border: #475569;
+        }
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        html[data-dark-mode="true"] .bg-white {
+            background-color: var(--color-bg-secondary) !important;
+            color: var(--color-text-primary);
+        }
+        html[data-dark-mode="true"] .bg-gray-50 {
+            background-color: var(--color-bg-primary) !important;
+        }
+        html[data-dark-mode="true"] .text-gray-800,
+        html[data-dark-mode="true"] .text-gray-900,
+        html[data-dark-mode="true"] .text-gray-700 {
+            color: var(--color-text-primary) !important;
+        }
+        html[data-dark-mode="true"] .text-gray-500,
+        html[data-dark-mode="true"] .text-gray-600 {
+            color: var(--color-text-secondary) !important;
+        }
+        html[data-dark-mode="true"] .border-gray-100,
+        html[data-dark-mode="true"] .border-gray-200 {
+            border-color: var(--color-border) !important;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 52px;
+            height: 28px;
+            display: inline-block;
+        }
+        .toggle-switch input { display: none; }
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .toggle-slider::before {
+            content: "";
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: #4f46e5;
+        }
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(24px);
+        }
+    </style>
+</head>
+<body>
+    <div style="display: flex; min-height: 100vh;">
+        <!-- Sidebar -->
+        <div id="sidebar"></div>
+
+        <!-- Main Content -->
+        <div id="main-content" style="flex: 1; min-width: 0; transition: all 300ms ease; display: flex; flex-direction: column;">
+            <div class="bg-white sticky top-0 z-30 shadow-sm border-b border-gray-100">
+                <div class="px-6 py-4">
+                    <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest">Pengaturan Token Login</h2>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="space-y-6">
+
+                    <!-- Header + Generate -->
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl font-bold text-gray-900">Token Login Harian 🔐</h1>
+                            <p class="text-gray-500 font-medium mt-1">Kelola token login harian (2FA via email) untuk admin zona, moderator &amp; super admin</p>
+                        </div>
+                        <button onclick="generateTokensNow()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition flex items-center gap-2 shadow-lg">
+                            <i class="fas fa-paper-plane"></i> Generate &amp; Kirim Sekarang
+                        </button>
+                    </div>
+
+                    <!-- Settings Card -->
+                    <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide"><i class="fas fa-cog mr-2"></i>Pengaturan Sistem</h3>
+                        </div>
+                        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex items-center justify-between md:col-span-2">
+                                <div>
+                                    <p class="font-bold text-gray-900">Aktifkan Token Login</p>
+                                    <p class="text-sm text-gray-500">Jika ON, semua admin zona/moderator/super admin wajib input token saat login (pertama kali per hari).</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="toggle-enabled" onchange="toggleEnabled(this.checked)">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email Tujuan Admin/Moderator</label>
+                                <input type="email" id="admin-group-email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="admin@example.com">
+                                <p class="text-xs text-gray-500 mt-1">Token bersama moderator &amp; super admin akan dikirim ke 1 email ini.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Jam Auto-Logout (Reset Token)</label>
+                                <input type="time" id="auto-logout-time" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-xs text-gray-500 mt-1">Token di-reset jam ini. Generate &amp; kirim otomatis 1 jam setelahnya.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Panjang Token (digit)</label>
+                                <input type="number" id="token-length" min="4" max="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-xs text-gray-500 mt-1">Rekomendasi: 6 digit.</p>
+                            </div>
+
+                            <div class="flex items-end">
+                                <button onclick="saveSettings()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-lg transition flex items-center gap-2">
+                                    <i class="fas fa-save"></i> Simpan Pengaturan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                            <p class="text-gray-500 text-sm font-medium mb-2">Total Pengguna Token</p>
+                            <p id="stat-total-users" class="text-3xl font-bold text-gray-900">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                            <p class="text-gray-500 text-sm font-medium mb-2">Token Terkirim</p>
+                            <p id="stat-token-sent" class="text-3xl font-bold text-blue-600">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md border border-gray-100">
+                            <p class="text-gray-500 text-sm font-medium mb-2">Sudah Verifikasi</p>
+                            <p id="stat-verified" class="text-3xl font-bold text-green-600">0</p>
+                        </div>
+                    </div>
+
+                    <!-- User token list -->
+                    <div class="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide"><i class="fas fa-list mr-2"></i>Daftar Pengguna &amp; Status Token</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50 border-b border-gray-200">
+                                    <tr>
+                                        <th class="px-6 py-3 font-bold text-gray-700">Pengguna</th>
+                                        <th class="px-6 py-3 font-bold text-gray-700">Role</th>
+                                        <th class="px-6 py-3 font-bold text-gray-700">Email</th>
+                                        <th class="px-6 py-3 font-bold text-gray-700">Token</th>
+                                        <th class="px-6 py-3 font-bold text-gray-700">Status Email</th>
+                                        <th class="px-6 py-3 font-bold text-gray-700">Verifikasi</th>
+                                        <th class="px-6 py-3 text-right font-bold text-gray-700">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="token-users-body">
+                                    <tr class="border-b border-gray-200"><td colspan="7" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Info box -->
+                    <div class="bg-blue-50 border border-blue-100 rounded-lg p-4" style="background: rgba(79,70,229,0.05);">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-info-circle text-blue-500 mt-0.5"></i>
+                            <div class="text-sm text-gray-600">
+                                <p class="font-bold text-gray-700 mb-1">Cara kerja sistem token:</p>
+                                <ul class="list-disc list-inside space-y-1">
+                                    <li>Admin Zona: tiap user punya token sendiri, dikirim ke email masing-masing.</li>
+                                    <li>Moderator / Super Admin: satu token bersama, dikirim ke 1 email.</li>
+                                    <li>Token berlaku <strong>hanya hari itu</strong> (expire saat jam auto-logout berikutnya).</li>
+                                    <li>Setelah user sekali verifikasi token, login berikutnya cukup user + password (tanpa token) sampai reset harian.</li>
+                                    <li>Generate &amp; kirim otomatis berjalan <strong>1 jam setelah jam auto-logout</strong>.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/config.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/sidebar.js?v=12"></script>
+    <script src="/js/spa-page-handler.js"></script>
+    <script src="/js/spa-router.js?v=35"></script>
+    <script>
+        var currentTokenData = { settings: {}, rows: [] };
+
+        async function initTokenSetupPage() {
+            try {
+                const user = await initAuth();
+                if (!user) return;
+                // Hanya moderator / super admin
+                if (user.role !== 'moderator' && user.role !== 'super_admin') {
+                    Notify.error('Akses ditolak. Halaman ini khusus moderator/super admin.');
+                    setTimeout(() => window.location.href = '/dashboard', 1500);
+                    return;
+                }
+                await loadSidebar('token-setup.html');
+                await loadTokenStatus();
+            } catch (err) {
+                console.error('[TokenSetup] init error:', err);
+            }
+        }
+
+        async function loadTokenStatus() {
+            try {
+                const res = await API.get('/api/auth/token/status');
+                currentTokenData = { settings: res.settings || {}, rows: res.rows || [] };
+
+                // Fill settings form
+                document.getElementById('toggle-enabled').checked = !!currentTokenData.settings.enabled;
+                document.getElementById('admin-group-email').value = currentTokenData.settings.admin_group_email || '';
+                document.getElementById('auto-logout-time').value = currentTokenData.settings.auto_logout_time || '00:00';
+                document.getElementById('token-length').value = currentTokenData.settings.token_length || 6;
+
+                renderTokenRows();
+            } catch (err) {
+                Notify.error('Gagal memuat status token: ' + err.message);
+            }
+        }
+
+        function renderTokenRows() {
+            const rows = currentTokenData.rows || [];
+            const tbody = document.getElementById('token-users-body');
+
+            // Stats
+            const sentCount = rows.filter(r => r.emailSent).length;
+            const verifiedCount = rows.filter(r => r.verified).length;
+            document.getElementById('stat-total-users').textContent = rows.length;
+            document.getElementById('stat-token-sent').textContent = sentCount;
+            document.getElementById('stat-verified').textContent = verifiedCount;
+
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr class="border-b border-gray-200"><td colspan="7" class="px-6 py-8 text-center text-gray-500">Tidak ada pengguna dengan role admin zona/moderator/super admin.</td></tr>';
+                return;
+            }
+
+            const roleLabel = { admin_zona: 'Admin Zona', moderator: 'Moderator', super_admin: 'Super Admin' };
+
+            tbody.innerHTML = rows.map(r => {
+                const role = roleLabel[r.role] || r.role;
+                const tokenCell = r.hasToken
+                    ? `<code class="bg-gray-100 px-2 py-1 rounded text-xs font-mono">••••${r.tokenPreview || ''}</code>`
+                    : `<span class="text-gray-400">-</span>`;
+                const emailStatus = r.emailSent
+                    ? `<span class="px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full">Terkirim</span>`
+                    : `<span class="px-2 py-1 text-xs font-bold text-yellow-700 bg-yellow-100 rounded-full">Belum</span>`;
+                const verified = r.verified
+                    ? `<span class="px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full">Ya</span>`
+                    : `<span class="px-2 py-1 text-xs font-bold text-gray-600 bg-gray-100 rounded-full">Belum</span>`;
+                const emailDisplay = r.email || '<span class="text-gray-400">-</span>';
+
+                return `<tr class="border-b border-gray-200 hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium text-gray-900">
+                        <div class="flex items-center gap-2">
+                            <span>${escapeHtml(r.name || r.username || '')}</span>
+                        </div>
+                        <div class="text-xs text-gray-500">@${escapeHtml(r.username || '')}</div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">${role}</td>
+                    <td class="px-6 py-4 text-gray-600">${emailDisplay}</td>
+                    <td class="px-6 py-4">${tokenCell}</td>
+                    <td class="px-6 py-4">${emailStatus}</td>
+                    <td class="px-6 py-4">${verified}</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="resendToken('${r.userId}')" class="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-xs font-bold" title="Kirim ulang token">
+                            <i class="fas fa-paper-plane mr-1"></i>Resend
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function toggleEnabled(checked) {
+            try {
+                await API.put('/api/auth/token/settings', { enabled: checked });
+                const label = checked ? 'diaktifkan' : 'dinonaktifkan';
+                Notify.success(`Token login ${label}.`);
+            } catch (err) {
+                document.getElementById('toggle-enabled').checked = !checked;
+                Notify.error('Gagal mengubah: ' + err.message);
+            }
+        }
+
+        async function saveSettings() {
+            try {
+                const payload = {
+                    admin_group_email: document.getElementById('admin-group-email').value.trim(),
+                    auto_logout_time: document.getElementById('auto-logout-time').value,
+                    token_length: Number(document.getElementById('token-length').value)
+                };
+                await API.put('/api/auth/token/settings', payload);
+                Notify.success('Pengaturan tersimpan.');
+                await loadTokenStatus();
+            } catch (err) {
+                Notify.error('Gagal menyimpan: ' + err.message);
+            }
+        }
+
+        async function generateTokensNow() {
+            Notify.confirmDelete('Generate Token', 'Generate &amp; kirim token ke semua pengguna sekarang?', async () => {
+                try {
+                    const btn = document.querySelector('[onclick="generateTokensNow()"]');
+                    Notify.info('Mengirim token... mohon tunggu.');
+                    const r = await API.post('/api/auth/token/generate-now');
+                    Notify.success(`Selesai: ${r.generated} token dibuat, ${r.sent} email terkirim.`);
+                    await loadTokenStatus();
+                } catch (err) {
+                    Notify.error('Gagal generate: ' + err.message);
+                }
+            });
+        }
+
+        async function resendToken(userId) {
+            Notify.confirmDelete('Kirim Ulang Token', 'Kirim ulang token ke email pengguna ini? (Token lama akan diganti token baru)', async () => {
+                try {
+                    const r = await API.post('/api/auth/token/resend', { userId });
+                    Notify.success(`Token terkirim ke ${r.email || 'email'}.`);
+                    await loadTokenStatus();
+                } catch (err) {
+                    Notify.error('Gagal resend: ' + err.message);
+                }
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+
+        document.addEventListener('DOMContentLoaded', initTokenSetupPage);
+    </script>
+    <script>
+        if (typeof initTokenSetupPage === 'function') {
+            initTokenSetupPage();
+        }
+    </script>
+</body>
+</html>
