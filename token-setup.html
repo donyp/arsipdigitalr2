@@ -365,14 +365,22 @@
                 const res = await API.get('/api/auth/token/status');
                 currentTokenData = { settings: res.settings || {}, rows: res.rows || [] };
 
+                // Guard: jika user sudah pindah menu (halaman tidak aktif),
+                // elemen form sudah tidak ada lagi -> hentikan supaya tidak
+                // error "Cannot set properties of null".
+                const toggleEl = document.getElementById('toggle-enabled');
+                if (!toggleEl) return;
+
                 // Fill settings form
-                document.getElementById('toggle-enabled').checked = !!currentTokenData.settings.enabled;
+                toggleEl.checked = !!currentTokenData.settings.enabled;
                 document.getElementById('admin-group-email').value = currentTokenData.settings.admin_group_email || '';
                 document.getElementById('auto-logout-time').value = currentTokenData.settings.auto_logout_time || '00:00';
                 document.getElementById('token-length').value = currentTokenData.settings.token_length || 6;
 
                 renderTokenRows();
             } catch (err) {
+                // Jangan tampilkan notif kalau halaman sudah tidak aktif
+                if (!document.getElementById('toggle-enabled')) return;
                 Notify.error('Gagal memuat status token: ' + err.message);
             }
         }
