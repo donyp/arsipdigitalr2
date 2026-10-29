@@ -897,6 +897,16 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
+// Clean URL for password reset page
+app.get('/reset', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'reset-password.html'));
+});
+
+// Clean URL for forgot password page
+app.get('/forgot-password', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'forgot-password.html'));
+});
+
 // ============================================================
 // NEW CLEAN ROUTES
 // ============================================================

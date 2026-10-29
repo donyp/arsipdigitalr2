@@ -505,7 +505,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             }
             const resend = new Resend(apiKey);
             const baseUrl = process.env.APP_BASE_URL || (req.protocol + '://' + req.get('host'));
-            const resetLink = `${baseUrl}/reset-password.html?token=${encodeURIComponent(resetToken)}`;
+            const resetLink = `${baseUrl}/reset?token=${encodeURIComponent(resetToken)}`;
 
             const html = `
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:24px 0;">
