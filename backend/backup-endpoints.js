@@ -112,7 +112,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      *   "type": "database|files|config|all"  // optional, if empty do all
      * }
      */
-    router.post('/backups/manual', authenticateToken, async (req, res) => {
+    router.post('/backups/manual', authenticateToken, authorizeRole('moderator', 'super_admin'), async (req, res) => {
         try {
             const { type } = req.body;
             const results = {};
@@ -182,7 +182,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      *   "type": "database|files|config"
      * }
      */
-    router.post('/backups/restore', authenticateToken, async (req, res) => {
+    router.post('/backups/restore', authenticateToken, authorizeRole('moderator', 'super_admin'), async (req, res) => {
         try {
             const { backupName, type } = req.body;
 
@@ -226,7 +226,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * DELETE /api/backups/:backupName
      * Delete a backup from R2
      */
-    router.delete('/backups/:backupName', authenticateToken, async (req, res) => {
+    router.delete('/backups/:backupName', authenticateToken, authorizeRole('moderator', 'super_admin'), async (req, res) => {
         try {
             const { backupName } = req.params;
             const { type } = req.query;
@@ -337,7 +337,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      * POST /api/backups/cleanup
      * Cleanup old backups based on retention policy
      */
-    router.post('/backups/cleanup', authenticateToken, async (req, res) => {
+    router.post('/backups/cleanup', authenticateToken, authorizeRole('moderator', 'super_admin'), async (req, res) => {
         try {
             console.log('[BackupAPI] Starting backup cleanup...');
 
@@ -415,7 +415,7 @@ module.exports = (supabaseClient, backupManager, authenticateToken, authorizeRol
      *   "fileTypes": ["ppn", "non_ppn", "bukti_bayar", "faktur_pajak"]  // array of checked types
      * }
      */
-    router.post('/backups/files/selective', authenticateToken, async (req, res) => {
+    router.post('/backups/files/selective', authenticateToken, authorizeRole('moderator', 'super_admin'), async (req, res) => {
         try {
             const { month, year, fileTypes } = req.body;
 
