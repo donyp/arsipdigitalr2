@@ -120,8 +120,8 @@
         const d = driver({
             showProgress: true,
             allowClose: true,
-            overlayColor: 'rgba(0,0,0,0.55)',
-            stagePadding: 8,
+            overlayColor: 'rgba(0,0,0,0.45)',
+            stagePadding: 10,
             stageRadius: 10,
             popoverClass: 'onboarding-popover',
             nextBtnText: 'Lanjut →',
