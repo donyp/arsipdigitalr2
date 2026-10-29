@@ -411,7 +411,7 @@ async function generateAndSendTokens(supabase) {
                 let sentOk = false;
                 if (email) {
                     try {
-                        await sendTokenEmail(email, t.code, {
+                        await (module.exports.sendTokenEmail || sendTokenEmail)(email, t.code, {
                             name: u.name || u.username,
                             username: u.username,
                             expiresAt: t.expiresAt || null
@@ -454,7 +454,7 @@ async function generateAndSendTokens(supabase) {
         const groupEmail = settings.admin_group_email || groupEntries[0].email;
         if (groupEmail) {
             try {
-                await sendGroupTokenEmail(groupEmail, groupEntries);
+                await (module.exports.sendGroupTokenEmail || sendGroupTokenEmail)(groupEmail, groupEntries);
                 sent++;
                 for (const g of groupEntries) {
                     await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', g.tokenId);
@@ -603,7 +603,7 @@ async function resendTokenForUser(supabase, userId) {
         : settings.admin_group_email;
 
     if (emailTarget) {
-        await sendTokenEmail(emailTarget, t.code, { name: users.name || users.username, username: users.username, expiresAt: t.expiresAt || null });
+        await (module.exports.sendTokenEmail || sendTokenEmail)(emailTarget, t.code, { name: users.name || users.username, username: users.username, expiresAt: t.expiresAt || null });
         await supabase.from('auth_token_keys').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', t.tokenId);
     }
     await logEvent(supabase, 'resend', { scope, userId: users.id, email: emailTarget, detail: 'manual resend' });
