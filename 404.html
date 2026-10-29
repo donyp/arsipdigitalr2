@@ -11,310 +11,131 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
         body {
-            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
-            background: #0a0e1a;
-            color: #00ff9d;
-            overflow: hidden;
-            position: relative;
-            transition: background 0.3s, color 0.3s;
-        }
-        html[data-dark-mode="false"] body {
-            background: #f5f7fa;
-            color: #1f2937;
-        }
-
-        /* Scanlines overlay */
-        .scanlines {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 5;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.08) 0px,
-                rgba(0, 0, 0, 0.08) 1px,
-                transparent 1px,
-                transparent 3px
-            );
-            mix-blend-mode: overlay;
-        }
-        html[data-dark-mode="false"] .scanlines { opacity: 0.15; }
-
-        /* CRT flicker */
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.97; }
-            75% { opacity: 0.99; }
-        }
-        body { animation: flicker 4s infinite; }
-
-        /* Vignette */
-        .vignette {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 4;
-            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
-        }
-        html[data-dark-mode="false"] .vignette { background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.08) 100%); }
-
-        /* Grid background */
-        .grid-bg {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 1;
-            background-image:
-                linear-gradient(rgba(0, 255, 157, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 157, 0.06) 1px, transparent 1px);
-            background-size: 40px 40px;
-            mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-        }
-        html[data-dark-mode="false"] .grid-bg {
-            background-image:
-                linear-gradient(rgba(61, 59, 107, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(61, 59, 107, 0.06) 1px, transparent 1px);
-        }
-
-        /* Floating particles */
-        .particles { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
-        .particle {
-            position: absolute;
-            width: 2px; height: 2px;
-            background: #00ff9d;
-            border-radius: 50%;
-            opacity: 0.6;
-            animation: drift 8s linear infinite;
-            box-shadow: 0 0 6px #00ff9d;
-        }
-        html[data-dark-mode="false"] .particle { background: #3d3b6b; box-shadow: 0 0 6px #3d3b6b; }
-        @keyframes drift {
-            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { transform: translateY(-10vh) translateX(60px); opacity: 0; }
-        }
-
-        .terminal {
-            position: relative;
-            z-index: 10;
-            max-width: 760px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 2rem 1.5rem;
-            font-size: 14px;
-            line-height: 1.7;
-        }
-
-        .term-line {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--color-bg-primary, #ffffff);
+            color: var(--color-text-primary, #1f2937);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.25rem;
-            opacity: 0;
-            animation: typeIn 0.4s ease-out forwards;
-        }
-        .term-line:nth-child(1) { animation-delay: 0.1s; }
-        .term-line:nth-child(2) { animation-delay: 0.3s; }
-        .term-line:nth-child(3) { animation-delay: 0.6s; }
-        .term-line:nth-child(4) { animation-delay: 0.9s; }
-        .term-line:nth-child(5) { animation-delay: 1.2s; }
-        .term-line:nth-child(6) { animation-delay: 1.5s; }
-        .term-line:nth-child(7) { animation-delay: 1.8s; }
-        .term-line:nth-child(8) { animation-delay: 2.1s; }
-        .term-line:nth-child(9) { animation-delay: 2.4s; }
-        .term-line:nth-child(10) { animation-delay: 2.7s; }
-
-        @keyframes typeIn {
-            from { opacity: 0; transform: translateX(-8px); }
-            to { opacity: 1; transform: translateX(0); }
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            transition: background 0.3s, color 0.3s;
         }
 
-        .prompt { color: #00ff9d; font-weight: 700; }
-        html[data-dark-mode="false"] .prompt { color: #3d3b6b; }
-        .cmd { color: #e2e8f0; }
-        html[data-dark-mode="false"] .cmd { color: #1f2937; }
-        .err { color: #ff5555; font-weight: 700; }
-        .warn { color: #fbbf24; }
-        .info { color: #60a5fa; }
-        .dim { color: #64748b; }
-        .ascii-art {
-            color: #00ff9d;
-            font-size: 11px;
-            line-height: 1.1;
-            margin: 1rem 0;
-            white-space: pre;
-            opacity: 0;
-            animation: typeIn 0.6s ease-out 0.4s forwards;
-            text-shadow: 0 0 8px rgba(0, 255, 157, 0.4);
-        }
-        html[data-dark-mode="false"] .ascii-art { color: #3d3b6b; text-shadow: none; }
-
-        .big-404 {
-            font-size: clamp(4rem, 14vw, 9rem);
-            font-weight: 900;
-            letter-spacing: -0.05em;
-            background: linear-gradient(135deg, #00ff9d 0%, #00b8ff 50%, #a78bfa 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 0 0 40px rgba(0, 255, 157, 0.3);
-            margin: 0.5rem 0;
-            opacity: 0;
-            animation: typeIn 0.6s ease-out 0.2s forwards;
-        }
-        html[data-dark-mode="false"] .big-404 {
-            background: linear-gradient(135deg, #3d3b6b 0%, #667eea 50%, #764ba2 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: none;
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 480px;
+            width: 100%;
         }
 
-        .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.1em;
-            background: #00ff9d;
-            margin-left: 4px;
-            vertical-align: text-bottom;
-            animation: blink 1s step-end infinite;
+        /* Single moving animation: floating dot */
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-primary, #667eea);
+            margin: 0 auto 2rem;
+            animation: float 3s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
         }
-        html[data-dark-mode="false"] .cursor { background: #3d3b6b; }
-        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-24px); }
+        }
+        html[data-dark-mode="true"] .dot {
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+        }
+
+        .code {
+            font-size: clamp(5rem, 18vw, 9rem);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            color: var(--color-text-primary, #1f2937);
+            margin-bottom: 0.5rem;
+        }
+
+        .title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--color-text-primary, #1f2937);
+        }
+
+        .desc {
+            font-size: 0.9rem;
+            color: var(--color-text-secondary, #6b7280);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
 
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.6rem 1.2rem;
-            border: 1px solid #00ff9d;
-            color: #00ff9d;
-            background: rgba(0, 255, 157, 0.05);
-            font-family: inherit;
-            font-size: 0.85rem;
-            font-weight: 700;
+            padding: 0.65rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
             text-decoration: none;
-            border-radius: 4px;
             transition: all 0.2s ease;
             cursor: pointer;
+            border: none;
         }
-        .btn:hover {
-            background: #00ff9d;
-            color: #0a0e1a;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
-        }
-        html[data-dark-mode="false"] .btn {
-            border-color: #3d3b6b;
-            color: #3d3b6b;
-            background: rgba(61, 59, 107, 0.05);
-        }
-        html[data-dark-mode="false"] .btn:hover {
-            background: #3d3b6b;
+        .btn-primary {
+            background: var(--color-primary, #667eea);
             color: #fff;
         }
-        .btn-secondary {
-            border-color: #64748b;
-            color: #94a3b8;
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-ghost {
             background: transparent;
+            color: var(--color-text-primary, #1f2937);
+            border: 1px solid var(--color-border, #e5e7eb);
         }
-        .btn-secondary:hover {
-            border-color: #00b8ff;
-            color: #00b8ff;
-            background: rgba(0, 184, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 184, 255, 0.4);
+        .btn-ghost:hover {
+            background: var(--color-bg-secondary, #f5f7fa);
         }
-        html[data-dark-mode="false"] .btn-secondary {
-            border-color: #cbd5e1;
-            color: #64748b;
-        }
-        html[data-dark-mode="false"] .btn-secondary:hover {
-            border-color: #3b82f6;
-            color: #3b82f6;
-            background: rgba(59, 130, 246, 0.1);
+
+        html[data-dark-mode="true"] .btn-ghost:hover {
+            background: var(--color-bg-tertiary, #334155);
         }
 
         .footer {
-            position: fixed;
-            bottom: 1rem;
-            left: 0; right: 0;
-            text-align: center;
-            font-size: 0.7rem;
-            color: #475569;
-            z-index: 10;
-        }
-        html[data-dark-mode="false"] .footer { color: #9ca3af; }
-
-        .actions {
-            display: flex;
-            gap: 0.75rem;
-            flex-wrap: wrap;
-            margin-top: 1.5rem;
-            opacity: 0;
-            animation: typeIn 0.6s ease-out 3s forwards;
+            margin-top: 3rem;
+            font-size: 0.75rem;
+            color: var(--color-text-muted, #9ca3af);
         }
     </style>
 </head>
 <body>
-    <div class="grid-bg"></div>
-    <div class="vignette"></div>
-    <div class="scanlines"></div>
-    <div class="particles" id="particles"></div>
-
-    <main class="terminal">
-        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="cmd">cd /requested/path</span></div>
-        <div class="term-line"><span class="err">bash: cd: /requested/path: No such file or directory</span></div>
-        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="cmd">ls -la</span></div>
-        <div class="term-line"><span class="dim">total 0</span></div>
-        <div class="term-line"><span class="err">ls: cannot access '*': No such file or directory</span></div>
-        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="cmd">echo $?</span></div>
-        <div class="term-line"><span class="warn">404</span></div>
-        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="info">_</span><span class="cursor"></span></div>
-
-        <div class="big-404">404</div>
-
-        <div class="ascii-art">
-   ╔══════════════════════════════════════════════╗
-   ║  PAGE NOT FOUND  ·  HALAMAN TIDAK DITEMUKAN  ║
-   ║  The requested resource does not exist.       ║
-   ╚══════════════════════════════════════════════╝
-        </div>
-
-        <div class="term-line" style="animation-delay: 3.2s;"><span class="dim">// Sepertinya halaman yang Anda cari telah dipindahkan,</span></div>
-        <div class="term-line" style="animation-delay: 3.4s;"><span class="dim">// dihapus, atau tidak pernah ada. Mari kembali ke jalur yang benar.</span></div>
-
+    <div class="container">
+        <div class="dot"></div>
+        <div class="code">404</div>
+        <h1 class="title">Halaman Tidak Ditemukan</h1>
+        <p class="desc">
+            Halaman yang Anda cari tidak tersedia atau telah dipindahkan.
+            Silakan kembali ke halaman utama.
+        </p>
         <div class="actions">
-            <a href="/dashboard" class="btn"><i class="fas fa-home"></i> cd /dashboard</a>
-            <a href="/index.html" class="btn btn-secondary"><i class="fas fa-sign-in-alt"></i> ./login</a>
+            <a href="/dashboard" class="btn btn-primary">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+            <a href="/login" class="btn btn-ghost">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </a>
         </div>
-    </main>
-
-    <div class="footer">
-        <span>exit code 404 · Arsip Digital ANKA · <span id="ts"></span></span>
+        <div class="footer">Arsip Digital ANKA</div>
     </div>
-
-    <script>
-        // Particles
-        (function () {
-            const container = document.getElementById('particles');
-            const count = 30;
-            for (let i = 0; i < count; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = Math.random() * 100 + '%';
-                p.style.animationDelay = (Math.random() * 8) + 's';
-                p.style.animationDuration = (6 + Math.random() * 6) + 's';
-                container.appendChild(p);
-            }
-        })();
-
-        // Timestamp
-        (function () {
-            const el = document.getElementById('ts');
-            const now = new Date();
-            el.textContent = now.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' });
-        })();
-    </script>
 </body>
 </html>
