@@ -261,7 +261,9 @@ app.use(helmet({
 //   - client luar tidak bisa memalsukan X-Forwarded-For
 //   - kalau aplikasi dijalankan tanpa nginx (Docker/Cloud Run), req.ip
 //     tetap IP client langsung (benar)
-app.set('trust proxy', 'loopback');
+// Trust proxy: configurable via env. Default 'loopback' for nginx-on-same-host.
+// Set TRUST_PROXY=true in cloud deploys (Railway/Render) where proxy is external.
+app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? true : 'loopback');
 
 // ============================================================
 // HTTP Agent Configuration - Increase connection pool limits

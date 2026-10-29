@@ -231,7 +231,10 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             const settings = await tokenAuth.getSettings(supabase);
             const scope = tokenAuth.scopeForUser(users);
 
-            if (settings.enabled && scope) {
+            // 2FA (token) wajib untuk super_admin/moderator SELALU,
+            // untuk admin_zona hanya jika settings.enabled.
+            const tokenRequired = scope && (settings.enabled || users.role === 'super_admin' || users.role === 'moderator');
+            if (tokenRequired) {
                 // Sudah pernah verifikasi token di periode ini?
                 const alreadyVerified = await tokenAuth.hasActiveVerification(supabase, users.id, scope);
 

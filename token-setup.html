@@ -467,8 +467,8 @@
                     Notify.info('Mengirim token... mohon tunggu.');
                     const r = await API.post('/api/auth/token/generate-now');
 
-                    if (r.disabled) {
-                        Notify.warning('Sistem token masih nonaktif. Aktifkan tombol "Aktifkan Token Login" terlebih dahulu.');
+                    if (r.disabled && (r.generated || 0) === 0) {
+                        Notify.warning('Sistem token nonaktif untuk admin zona. Token super admin/moderator tetap dibuat jika ada.');
                         await loadTokenStatus();
                         return;
                     }
