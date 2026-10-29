@@ -120,7 +120,7 @@
         const d = driver({
             showProgress: true,
             allowClose: true,
-            overlayColor: 'rgba(0,0,0,0.15)',
+            overlayColor: 'rgba(0,0,0,0.05)',
             stagePadding: 10,
             stageRadius: 10,
             popoverClass: 'onboarding-popover',

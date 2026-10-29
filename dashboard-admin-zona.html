@@ -109,26 +109,28 @@
         /* Highlight stage - terang, tidak gelap */
         .driver-active-element {
             opacity: 1 !important;
-            filter: none !important;
-            box-shadow: 0 0 0 4px #667eea, 0 0 0 8px rgba(102, 126, 234, 0.25), 0 0 30px 8px rgba(102, 126, 234, 0.4) !important;
+            filter: brightness(1.1) !important;
+            box-shadow: 0 0 0 4px #667eea, 0 0 0 8px rgba(102, 126, 234, 0.3), 0 0 40px 10px rgba(102, 126, 234, 0.5) !important;
             border-radius: 10px;
             z-index: 999999999 !important;
+            background-color: var(--color-bg-secondary, #ffffff) !important;
         }
         html[data-dark-mode="true"] .driver-active-element {
             opacity: 1 !important;
-            filter: none !important;
-            box-shadow: 0 0 0 4px #60a5fa, 0 0 0 8px rgba(96, 165, 250, 0.3), 0 0 30px 8px rgba(96, 165, 250, 0.45) !important;
+            filter: brightness(1.1) !important;
+            box-shadow: 0 0 0 4px #60a5fa, 0 0 0 8px rgba(96, 165, 250, 0.35), 0 0 40px 10px rgba(96, 165, 250, 0.5) !important;
             border-radius: 10px;
             z-index: 999999999 !important;
+            background-color: #1e293b !important;
         }
         /* Pastikan semua ancestor tidak dim */
         .driver-active-element,
         .driver-active-element * {
             opacity: 1 !important;
         }
-        /* Overlay lebih terang - elemen highlight terlihat jelas */
+        /* Overlay sangat terang */
         .driver-overlay {
-            opacity: 0.9 !important;
+            opacity: 0.92 !important;
         }
     </style>
     <link rel="stylesheet" href="/css/color-vars.css">
