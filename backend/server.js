@@ -202,27 +202,46 @@ let queryOptimizer; // Will be initialized later
 const app = express();
 const DEFAULT_PORT = 5000;
 
-// Security headers (Helmet) - wajib. Jika tidak terinstall, fail hard.
-const helmet = require('helmet');
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
-            imgSrc: ["'self'", "data:", "https:", "blob:"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
-            connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
-            frameAncestors: ["'none'"],
-            baseUri: ["'self'"],
-            formAction: ["'self'"]
-        }
-    },
-    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-    frameguard: { action: 'deny' },
-    noSniff: true,
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
-}));
+// Security headers (Helmet) - optional, with manual fallback.
+// Helmet mungkin tidak terinstall di production (tidak ada di package.json),
+// jadi wajib ada fallback manual agar server tidak crash (502).
+let helmetAvailable = false;
+try {
+    const helmet = require('helmet');
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+                imgSrc: ["'self'", "data:", "https:", "blob:"],
+                fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
+                connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
+                frameAncestors: ["'none'"],
+                baseUri: ["'self'"],
+                formAction: ["'self'"]
+            }
+        },
+        hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+        frameguard: { action: 'deny' },
+        noSniff: true,
+        referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+    }));
+    helmetAvailable = true;
+    console.log('[Security] Helmet loaded - security headers active.');
+} catch (e) {
+    console.warn('[Security] helmet not available, applying manual security headers:', e.message);
+    // Manual fallback security headers
+    app.use((req, res, next) => {
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        // CSP baseline (allow inline for compatibility)
+        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
+        next();
+    });
+}
 
 // ============================================================
 // CACHE HEADER HALAMAN HTML (via res.sendFile)
