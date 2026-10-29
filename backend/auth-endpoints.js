@@ -492,7 +492,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             // Buat reset token (JWT 1 jam)
             const resetToken = jwt.sign(
                 { userId: user.id, email: user.email, purpose: 'password-reset' },
-                JWT_SECRET,
+                process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );
 
@@ -564,7 +564,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             let decoded;
             try {
-                decoded = jwt.verify(token, JWT_SECRET);
+                decoded = jwt.verify(token, process.env.JWT_SECRET);
             } catch (e) {
                 return res.status(400).json({ success: false, error: 'Link reset tidak valid atau sudah kadaluarsa' });
             }
