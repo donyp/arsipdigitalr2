@@ -486,7 +486,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 return res.status(404).json({ success: false, error: 'Email tidak terdaftar' });
             }
             if (user.is_active === false) {
-                return res.status(403).json({ success: false, error: 'Akun tidak aktif' });
+                return res.status(403).json({ success: false, error: 'Email akun tidak aktif' });
             }
 
             // Buat reset token (JWT 1 jam)
@@ -531,7 +531,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
                 subject: '🔐 Reset Password - Arsip Digital ANKA',
                 html
             });
-            if (sendErr) throw new Error('Resend: ' + (sendErr.message || JSON.stringify(sendErr)));
+            if (sendErr) throw new Error('Gagal kirim email: ' + (sendErr.message || JSON.stringify(sendErr)));
 
             await supabase.from('auth_token_logs').insert([{
                 action: 'forgot_password',
@@ -543,7 +543,8 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             return res.json({ success: true, message: 'Link reset password telah dikirim ke email Anda.' });
         } catch (error) {
-            return res.status(500).json({ success: false, error: error.message });
+            console.error('[ForgotPassword] Error:', error.message);
+            return res.status(500).json({ success: false, error: 'Gagal memproses permintaan: ' + (error.message || 'unknown') });
         }
     });
 
@@ -589,7 +590,8 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             return res.json({ success: true, message: 'Password berhasil diubah. Silakan login.' });
         } catch (error) {
-            return res.status(500).json({ success: false, error: error.message });
+            console.error('[ResetPassword] Error:', error.message);
+            return res.status(500).json({ success: false, error: 'Gagal memproses permintaan: ' + (error.message || 'unknown') });
         }
     });
 

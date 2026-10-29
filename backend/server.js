@@ -515,7 +515,9 @@ app.use((req, res, next) => {
                 !data.error.startsWith('Password') &&
                 !data.error.startsWith('Silahkan cek kembali token') &&
                 !data.error.startsWith('Kode') &&
-                !data.error.startsWith('Sesi verifikasi')) {
+                !data.error.startsWith('Sesi verifikasi') &&
+                !data.error.startsWith('Gagal') &&
+                !data.error.startsWith('Link')) {
                 data.error = 'An error occurred. Please try again.';
             }
         }
