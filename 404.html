@@ -6,223 +6,314 @@
     <title>404 - Halaman Tidak Ditemukan | Arsip Digital ANKA</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <script src="/js/dark-mode-init.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/color-vars.css">
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
         body {
-            margin: 0;
-            min-height: 100vh;
-            background: var(--color-bg-primary);
-            color: var(--color-text-primary);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            background: #0a0e1a;
+            color: #00ff9d;
             overflow: hidden;
+            position: relative;
             transition: background 0.3s, color 0.3s;
         }
-        .bg-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.35;
-            animation: float 12s ease-in-out infinite;
-            pointer-events: none;
-        }
-        .orb-1 { width: 420px; height: 420px; background: #667eea; top: -120px; left: -120px; animation-delay: 0s; }
-        .orb-2 { width: 360px; height: 360px; background: #764ba2; bottom: -100px; right: -100px; animation-delay: 3s; }
-        .orb-3 { width: 280px; height: 280px; background: #3b82f6; top: 40%; left: 60%; animation-delay: 6s; opacity: 0.25; }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(40px, -30px) scale(1.05); }
-            66% { transform: translate(-30px, 40px) scale(0.95); }
+        html[data-dark-mode="false"] body {
+            background: #f5f7fa;
+            color: #1f2937;
         }
 
-        .glitch {
-            position: relative;
-            font-size: clamp(6rem, 18vw, 12rem);
-            font-weight: 900;
-            line-height: 1;
-            letter-spacing: -0.04em;
-            background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-primary-gradient-end, #764ba2) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            animation: glitch 4s infinite;
-        }
-        .glitch::before, .glitch::after {
-            content: '404';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-primary-gradient-end, #764ba2) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            opacity: 0.6;
-        }
-        .glitch::before { animation: glitchTop 2s infinite linear alternate-reverse; clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%); }
-        .glitch::after  { animation: glitchBottom 2.5s infinite linear alternate-reverse; clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%); }
-
-        @keyframes glitch {
-            0%, 90%, 100% { transform: translate(0); }
-            92% { transform: translate(-2px, 1px); }
-            94% { transform: translate(2px, -1px); }
-            96% { transform: translate(-1px, 2px); }
-            98% { transform: translate(1px, -2px); }
-        }
-        @keyframes glitchTop {
-            0%, 90%, 100% { transform: translate(0); }
-            92% { transform: translate(-3px, -1px); }
-            94% { transform: translate(3px, 1px); }
-            96% { transform: translate(-2px, 2px); }
-            98% { transform: translate(2px, -2px); }
-        }
-        @keyframes glitchBottom {
-            0%, 90%, 100% { transform: translate(0); }
-            92% { transform: translate(3px, 1px); }
-            94% { transform: translate(-3px, -1px); }
-            96% { transform: translate(2px, -2px); }
-            98% { transform: translate(-2px, 2px); }
-        }
-
-        .astronaut {
-            animation: astronaut 6s ease-in-out infinite;
-        }
-        @keyframes astronaut {
-            0%, 100% { transform: translateY(0) rotate(-5deg); }
-            50% { transform: translateY(-18px) rotate(5deg); }
-        }
-
-        .stars {
-            position: absolute;
+        /* Scanlines overlay */
+        .scanlines {
+            position: fixed;
             inset: 0;
             pointer-events: none;
-            overflow: hidden;
+            z-index: 5;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.08) 0px,
+                rgba(0, 0, 0, 0.08) 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            mix-blend-mode: overlay;
         }
-        .star {
+        html[data-dark-mode="false"] .scanlines { opacity: 0.15; }
+
+        /* CRT flicker */
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.97; }
+            75% { opacity: 0.99; }
+        }
+        body { animation: flicker 4s infinite; }
+
+        /* Vignette */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 4;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
+        }
+        html[data-dark-mode="false"] .vignette { background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.08) 100%); }
+
+        /* Grid background */
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            background-image:
+                linear-gradient(rgba(0, 255, 157, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 157, 0.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+        }
+        html[data-dark-mode="false"] .grid-bg {
+            background-image:
+                linear-gradient(rgba(61, 59, 107, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(61, 59, 107, 0.06) 1px, transparent 1px);
+        }
+
+        /* Floating particles */
+        .particles { position: fixed; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+        .particle {
             position: absolute;
             width: 2px; height: 2px;
-            background: var(--color-text-primary, #3d3b6b);
+            background: #00ff9d;
             border-radius: 50%;
-            opacity: 0.4;
-            animation: twinkle 3s ease-in-out infinite;
+            opacity: 0.6;
+            animation: drift 8s linear infinite;
+            box-shadow: 0 0 6px #00ff9d;
         }
-        @keyframes twinkle {
-            0%, 100% { opacity: 0.2; transform: scale(1); }
-            50% { opacity: 0.8; transform: scale(1.4); }
+        html[data-dark-mode="false"] .particle { background: #3d3b6b; box-shadow: 0 0 6px #3d3b6b; }
+        @keyframes drift {
+            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateY(-10vh) translateX(60px); opacity: 0; }
         }
 
-        .btn-primary {
-            background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-primary-gradient-end, #764ba2) 100%);
+        .terminal {
+            position: relative;
+            z-index: 10;
+            max-width: 760px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .term-line {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+            opacity: 0;
+            animation: typeIn 0.4s ease-out forwards;
+        }
+        .term-line:nth-child(1) { animation-delay: 0.1s; }
+        .term-line:nth-child(2) { animation-delay: 0.3s; }
+        .term-line:nth-child(3) { animation-delay: 0.6s; }
+        .term-line:nth-child(4) { animation-delay: 0.9s; }
+        .term-line:nth-child(5) { animation-delay: 1.2s; }
+        .term-line:nth-child(6) { animation-delay: 1.5s; }
+        .term-line:nth-child(7) { animation-delay: 1.8s; }
+        .term-line:nth-child(8) { animation-delay: 2.1s; }
+        .term-line:nth-child(9) { animation-delay: 2.4s; }
+        .term-line:nth-child(10) { animation-delay: 2.7s; }
+
+        @keyframes typeIn {
+            from { opacity: 0; transform: translateX(-8px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .prompt { color: #00ff9d; font-weight: 700; }
+        html[data-dark-mode="false"] .prompt { color: #3d3b6b; }
+        .cmd { color: #e2e8f0; }
+        html[data-dark-mode="false"] .cmd { color: #1f2937; }
+        .err { color: #ff5555; font-weight: 700; }
+        .warn { color: #fbbf24; }
+        .info { color: #60a5fa; }
+        .dim { color: #64748b; }
+        .ascii-art {
+            color: #00ff9d;
+            font-size: 11px;
+            line-height: 1.1;
+            margin: 1rem 0;
+            white-space: pre;
+            opacity: 0;
+            animation: typeIn 0.6s ease-out 0.4s forwards;
+            text-shadow: 0 0 8px rgba(0, 255, 157, 0.4);
+        }
+        html[data-dark-mode="false"] .ascii-art { color: #3d3b6b; text-shadow: none; }
+
+        .big-404 {
+            font-size: clamp(4rem, 14vw, 9rem);
+            font-weight: 900;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, #00ff9d 0%, #00b8ff 50%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 40px rgba(0, 255, 157, 0.3);
+            margin: 0.5rem 0;
+            opacity: 0;
+            animation: typeIn 0.6s ease-out 0.2s forwards;
+        }
+        html[data-dark-mode="false"] .big-404 {
+            background: linear-gradient(135deg, #3d3b6b 0%, #667eea 50%, #764ba2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: none;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.1em;
+            background: #00ff9d;
+            margin-left: 4px;
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+        }
+        html[data-dark-mode="false"] .cursor { background: #3d3b6b; }
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.2rem;
+            border: 1px solid #00ff9d;
+            color: #00ff9d;
+            background: rgba(0, 255, 157, 0.05);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #00ff9d;
+            color: #0a0e1a;
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.5);
+        }
+        html[data-dark-mode="false"] .btn {
+            border-color: #3d3b6b;
+            color: #3d3b6b;
+            background: rgba(61, 59, 107, 0.05);
+        }
+        html[data-dark-mode="false"] .btn:hover {
+            background: #3d3b6b;
             color: #fff;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.45);
-        }
-        .btn-ghost {
+        .btn-secondary {
+            border-color: #64748b;
+            color: #94a3b8;
             background: transparent;
-            color: var(--color-text-primary);
-            border: 1px solid var(--color-border, #e5e7eb);
-            transition: background 0.2s ease, transform 0.2s ease;
         }
-        .btn-ghost:hover {
-            background: var(--color-bg-secondary, #f5f7fa);
-            transform: translateY(-2px);
+        .btn-secondary:hover {
+            border-color: #00b8ff;
+            color: #00b8ff;
+            background: rgba(0, 184, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 184, 255, 0.4);
+        }
+        html[data-dark-mode="false"] .btn-secondary {
+            border-color: #cbd5e1;
+            color: #64748b;
+        }
+        html[data-dark-mode="false"] .btn-secondary:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            background: rgba(59, 130, 246, 0.1);
         }
 
-        .fade-in { animation: fadeIn 0.8s ease-out both; }
-        .fade-in-delay { animation: fadeIn 0.8s ease-out 0.2s both; }
-        .fade-in-delay2 { animation: fadeIn 0.8s ease-out 0.4s both; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
+        .footer {
+            position: fixed;
+            bottom: 1rem;
+            left: 0; right: 0;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #475569;
+            z-index: 10;
         }
+        html[data-dark-mode="false"] .footer { color: #9ca3af; }
 
-        html[data-dark-mode="true"] .star { background: #cbd5e1; }
-        html[data-dark-mode="true"] .orb-1 { background: #60a5fa; opacity: 0.2; }
-        html[data-dark-mode="true"] .orb-2 { background: #a78bfa; opacity: 0.2; }
-        html[data-dark-mode="true"] .orb-3 { background: #38bdf8; opacity: 0.15; }
+        .actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+            opacity: 0;
+            animation: typeIn 0.6s ease-out 3s forwards;
+        }
     </style>
 </head>
 <body>
-    <!-- Animated background orbs -->
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-    <div class="bg-orb orb-3"></div>
+    <div class="grid-bg"></div>
+    <div class="vignette"></div>
+    <div class="scanlines"></div>
+    <div class="particles" id="particles"></div>
 
-    <!-- Twinkling stars -->
-    <div class="stars" id="stars"></div>
+    <main class="terminal">
+        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="cmd">cd /requested/path</span></div>
+        <div class="term-line"><span class="err">bash: cd: /requested/path: No such file or directory</span></div>
+        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="cmd">ls -la</span></div>
+        <div class="term-line"><span class="dim">total 0</span></div>
+        <div class="term-line"><span class="err">ls: cannot access '*': No such file or directory</span></div>
+        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="cmd">echo $?</span></div>
+        <div class="term-line"><span class="warn">404</span></div>
+        <div class="term-line"><span class="prompt">anka@arsip:~$</span> <span class="info">_</span><span class="cursor"></span></div>
 
-    <main class="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center">
-        <!-- Floating astronaut illustration -->
-        <div class="astronaut mb-6 fade-in">
-            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="60" cy="60" r="58" fill="url(#g1)" opacity="0.15"/>
-                <circle cx="60" cy="52" r="26" fill="url(#g2)"/>
-                <rect x="42" y="72" width="36" height="30" rx="8" fill="url(#g2)"/>
-                <circle cx="52" cy="48" r="4" fill="#fff"/>
-                <circle cx="68" cy="48" r="4" fill="#fff"/>
-                <path d="M52 60 Q60 66 68 60" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                <rect x="48" y="78" width="6" height="14" rx="3" fill="#fff" opacity="0.7"/>
-                <rect x="66" y="78" width="6" height="14" rx="3" fill="#fff" opacity="0.7"/>
-                <circle cx="38" cy="30" r="6" fill="#fbbf24" opacity="0.9"/>
-                <circle cx="90" cy="80" r="4" fill="#60a5fa" opacity="0.9"/>
-                <circle cx="20" cy="90" r="3" fill="#34d399" opacity="0.9"/>
-                <defs>
-                    <linearGradient id="g1" x1="0" y1="0" x2="120" y2="120"><stop stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient>
-                    <linearGradient id="g2" x1="34" y1="26" x2="86" y2="102"><stop stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient>
-                </defs>
-            </svg>
+        <div class="big-404">404</div>
+
+        <div class="ascii-art">
+   ╔══════════════════════════════════════════════╗
+   ║  PAGE NOT FOUND  ·  HALAMAN TIDAK DITEMUKAN  ║
+   ║  The requested resource does not exist.       ║
+   ╚══════════════════════════════════════════════╝
         </div>
 
-        <!-- Glitch 404 -->
-        <div class="glitch fade-in">404</div>
+        <div class="term-line" style="animation-delay: 3.2s;"><span class="dim">// Sepertinya halaman yang Anda cari telah dipindahkan,</span></div>
+        <div class="term-line" style="animation-delay: 3.4s;"><span class="dim">// dihapus, atau tidak pernah ada. Mari kembali ke jalur yang benar.</span></div>
 
-        <!-- Title -->
-        <h1 class="mt-4 text-2xl sm:text-3xl font-bold fade-in-delay" style="color: var(--color-text-primary);">
-            Halaman Tidak Ditemukan
-        </h1>
-
-        <!-- Description -->
-        <p class="mt-3 max-w-md text-sm sm:text-base fade-in-delay" style="color: var(--color-text-secondary, #6b7280);">
-            Sepertinya halaman yang Anda cari telah dipindahkan, dihapus, atau tidak pernah ada.
-            Jangan khawatir — mari kembali ke jalur yang benar.
-        </p>
-
-        <!-- Action buttons -->
-        <div class="mt-8 flex flex-col sm:flex-row gap-3 fade-in-delay2">
-            <a href="/dashboard" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm">
-                <i class="fas fa-home"></i> Kembali ke Dashboard
-            </a>
-            <a href="/index.html" class="btn-ghost inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm">
-                <i class="fas fa-sign-in-alt"></i> Halaman Login
-            </a>
+        <div class="actions">
+            <a href="/dashboard" class="btn"><i class="fas fa-home"></i> cd /dashboard</a>
+            <a href="/index.html" class="btn btn-secondary"><i class="fas fa-sign-in-alt"></i> ./login</a>
         </div>
-
-        <!-- Footer hint -->
-        <p class="mt-10 text-xs fade-in-delay2" style="color: var(--color-text-muted, #9ca3af);">
-            Kode error: 404 · Arsip Digital ANKA
-        </p>
     </main>
 
+    <div class="footer">
+        <span>exit code 404 · Arsip Digital ANKA · <span id="ts"></span></span>
+    </div>
+
     <script>
-        // Generate twinkling stars
+        // Particles
         (function () {
-            const container = document.getElementById('stars');
-            const count = 40;
+            const container = document.getElementById('particles');
+            const count = 30;
             for (let i = 0; i < count; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                star.style.left = Math.random() * 100 + '%';
-                star.style.top = Math.random() * 100 + '%';
-                star.style.animationDelay = (Math.random() * 3) + 's';
-                star.style.animationDuration = (2 + Math.random() * 3) + 's';
-                container.appendChild(star);
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDelay = (Math.random() * 8) + 's';
+                p.style.animationDuration = (6 + Math.random() * 6) + 's';
+                container.appendChild(p);
             }
+        })();
+
+        // Timestamp
+        (function () {
+            const el = document.getElementById('ts');
+            const now = new Date();
+            el.textContent = now.toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' });
         })();
     </script>
 </body>
