@@ -134,8 +134,23 @@ class PerformanceMonitor {
 
     /**
      * Add alert
+     * Deduplikasi: pesan yang sama tidak dicetak ulang dalam cooldown (default 5 menit)
+     * agar log tidak spam.
      */
     addAlert(level, message) {
+        const now = Date.now();
+        const cooldownMs = 5 * 60 * 1000; // 5 menit
+
+        // Cek apakah alert identik sudah baru saja dicetak
+        if (!this._lastAlertTime) this._lastAlertTime = {};
+        const key = `${level}:${message}`;
+        const lastTime = this._lastAlertTime[key] || 0;
+        if (now - lastTime < cooldownMs) {
+            // Masih dalam cooldown -> skip log (tapi tetap catat di alerts array? skip juga)
+            return;
+        }
+        this._lastAlertTime[key] = now;
+
         const alert = {
             timestamp: new Date().toISOString(),
             level,  // 'info', 'warning', 'critical'
