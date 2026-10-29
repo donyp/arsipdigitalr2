@@ -36,6 +36,19 @@ function createChunkedUploadEndpoints(options = {}) {
           error: 'Missing required fields: fileName, fileSize'
         });
       }
+
+      // Validate file extension against allowlist (defense in depth)
+      const allowedExt = ['pdf', 'xlsx', 'xls', 'jpg', 'jpeg', 'png', 'csv'];
+      const ext = String(fileName).toLowerCase().split('.').pop();
+      if (!allowedExt.includes(ext)) {
+        return res.status(400).json({
+          error: `Ekstensi file .${ext} tidak diizinkan. Format yang diizinkan: ${allowedExt.join(', ')}`
+        });
+      }
+      // Reject path traversal / suspicious filename
+      if (/[\\/]/.test(fileName) || fileName.includes('..')) {
+        return res.status(400).json({ error: 'Nama file tidak valid' });
+      }
       
       if (fileSize > 500 * 1024 * 1024) { // 500MB limit
         return res.status(413).json({

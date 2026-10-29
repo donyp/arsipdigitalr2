@@ -24,9 +24,9 @@
             }
 
             // Get session ID from localStorage or sessionStorage
-            let sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
+            let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
             if (!sessionId) {
-                sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
+                sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
             }
 
             if (!sessionId) {
@@ -113,8 +113,9 @@
      */
     window.setSessionId = function(sessionId) {
         try {
-            localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
-            console.log('[SessionKeepalive] Session ID stored:', sessionId);
+            sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+            localStorage.removeItem(SESSION_STORAGE_KEY);  // migrate away from localStorage
+            console.log('[SessionKeepalive] Session ID stored (sessionStorage):', sessionId);
         } catch (error) {
             console.warn('[SessionKeepalive] Could not store session ID:', error);
         }

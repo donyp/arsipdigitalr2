@@ -3,6 +3,17 @@
 // Replaces direct Supabase/Drive calls
 // ============================================================
 
+// Global HTML escape helper (XSS mitigation) - idempotent
+window.escapeHtml = window.escapeHtml || function (str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
 let archives = [];
 let filteredArchives = []; // Kept for legacy compatibility
 let selectedIds = [];
@@ -3164,7 +3175,7 @@ async function renderInvoiceTable(invoices) {
         }
         
         return `
-            <tr style="transition: background 0.2s; border-bottom: 2px solid #34495e;" data-faktur="${inv.faktur}" data-file-status='${JSON.stringify(inv.fileStatus)}'>
+            <tr style="transition: background 0.2s; border-bottom: 2px solid #34495e;" data-faktur="${escapeHtml(inv.faktur)}" data-file-status='${JSON.stringify(inv.fileStatus)}'>
                 <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">
                     <span style="display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; ${statusStyle}">
                         ${statusText}
@@ -3174,8 +3185,8 @@ async function renderInvoiceTable(invoices) {
                 <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle; letter-spacing: 0.05em;"><strong>${inv.faktur || '-'}</strong></td>
                 <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${inv.metode_bayar || '-'}</td>
                 <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${tipe}</td>
-                <td style="padding: 15px 12px; font-size: ${konsumenFontSize}; color: #2c3e50; vertical-align: middle;">${konsumenText}</td>
-                <td style="padding: 15px 12px; font-size: ${tokoFontSize}; color: #2c3e50; vertical-align: middle;">${tokoText}</td>
+                <td style="padding: 15px 12px; font-size: ${konsumenFontSize}; color: #2c3e50; vertical-align: middle;">${escapeHtml(konsumenText)}</td>
+                <td style="padding: 15px 12px; font-size: ${tokoFontSize}; color: #2c3e50; vertical-align: middle;">${escapeHtml(tokoText)}</td>
                 <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${formatCurrency(inv.total_jumlah_jual)}</td>
                 <td style="padding: 15px 12px; font-size: 14px; color: #2c3e50; vertical-align: middle;">${inv.keterangan || '-'}</td>
                 ${(currentUser?.role === 'super_admin' || currentUser?.role === 'moderator') ? `

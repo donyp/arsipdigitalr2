@@ -116,7 +116,7 @@ async function loginWithCredentials(email, password) {
             setSessionId(sessionId);
             console.log('[Auth] Session ID stored and keep-alive initialized');
         } else {
-            localStorage.setItem('current_session_id', sessionId);
+            sessionStorage.setItem('current_session_id', sessionId);
             console.log('[Auth] Session ID stored to localStorage');
         }
     }
@@ -141,7 +141,7 @@ async function loginWithCredentials(email, password) {
         const { sessionToken } = await API.post('/api/sessions/create', {
             userId: user.id
         });
-        localStorage.setItem('sessionToken', sessionToken);
+        sessionStorage.setItem('sessionToken', sessionToken);
     } catch (err) {
         // Non-blocking - continue login even if session creation fails
     }

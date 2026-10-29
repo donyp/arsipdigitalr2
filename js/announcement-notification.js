@@ -633,7 +633,13 @@ class AnnouncementNotification {
         const looksLikeHtml = /<\/?[a-z][^>]*>/i.test(rawContent);
         if (looksLikeHtml) {
             detailContent.classList.remove('plain-text');
-            detailContent.innerHTML = rawContent;
+            // Sanitize HTML to prevent stored XSS (DOMPurify with safe allowlist)
+            const safeHtml = (typeof DOMPurify !== 'undefined')
+                ? DOMPurify.sanitize(rawContent, { USE_PROFILES: { html: true } })
+                : rawContent.replace(/<script[\s\S]*?<\/script>/gi, '')
+                           .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+                           .replace(/\son\w+\s*=\s*'[^']*'/gi, '');
+            detailContent.innerHTML = safeHtml;
         } else {
             detailContent.classList.add('plain-text');
             detailContent.textContent = rawContent;

@@ -31,11 +31,16 @@ const API = {
      * Get or create a unique device session ID
      */
     getSessionId() {
-        let sid = localStorage.getItem('device_session_id');
+        // Use sessionStorage for device session id (clears on tab close, reduces XSS exposure)
+        let sid = sessionStorage.getItem('device_session_id');
+        if (!sid) {
+            sid = localStorage.getItem('device_session_id');  // migrate legacy
+        }
         if (!sid) {
             sid = 'sid_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-            localStorage.setItem('device_session_id', sid);
         }
+        sessionStorage.setItem('device_session_id', sid);
+        localStorage.removeItem('device_session_id');
         return sid;
     },
 

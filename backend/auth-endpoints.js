@@ -459,6 +459,137 @@ module.exports = function registerAuthEndpoints(app, supabase) {
         }
     });
 
+    /**
+     * POST /api/auth/forgot-password — kirim link reset password ke email.
+     * Body: { email }
+     * Jika email tidak terdaftar -> gagal (404). Jika terdaftar -> kirim link.
+     */
+    app.post('/api/auth/forgot-password', async (req, res) => {
+        try {
+            const { email } = req.body || {};
+            if (!email || typeof email !== 'string') {
+                return res.status(400).json({ success: false, error: 'Email harus diisi' });
+            }
+            const cleanEmail = email.trim().toLowerCase();
+
+            // Cari user berdasarkan email
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('id, username, email, name, is_active')
+                .eq('email', cleanEmail)
+                .maybeSingle();
+
+            if (error || !user) {
+                return res.status(404).json({ success: false, error: 'Email tidak terdaftar' });
+            }
+            if (user.is_active === false) {
+                return res.status(403).json({ success: false, error: 'Akun tidak aktif' });
+            }
+
+            // Buat reset token (JWT 1 jam)
+            const resetToken = jwt.sign(
+                { userId: user.id, email: user.email, purpose: 'password-reset' },
+                JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+
+            // Kirim email via Resend
+            const { Resend } = require('resend');
+            const apiKey = process.env.RESEND_API_KEY;
+            const from = process.env.RESEND_FROM_EMAIL || 'noreply@arsipdigitalanka.cloud';
+            if (!apiKey) {
+                return res.status(500).json({ success: false, error: 'Email service belum dikonfigurasi' });
+            }
+            const resend = new Resend(apiKey);
+            const baseUrl = process.env.APP_BASE_URL || (req.protocol + '://' + req.get('host'));
+            const resetLink = `${baseUrl}/reset-password.html?token=${encodeURIComponent(resetToken)}`;
+
+            const html = `
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f7fa;padding:24px 0;">
+                <tr><td align="center">
+                    <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
+                        <tr><td style="background:#3d3b6b;padding:20px 28px;color:#ffffff;font-size:20px;font-weight:900;">ARSIP DIGITAL ANKA</td></tr>
+                        <tr><td style="padding:28px;">
+                            <p style="color:#1f2937;font-size:15px;margin:0 0 4px;">Halo <strong>${user.name || user.username}</strong>,</p>
+                            <p style="color:#4b5563;font-size:14px;margin:0 0 24px;">Kami menerima permintaan reset password untuk akun Anda. Klik tombol di bawah untuk mengatur password baru.</p>
+                            <p style="text-align:center;margin:24px 0;">
+                                <a href="${resetLink}" style="display:inline-block;background:#3d3b6b;color:#ffffff;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">Reset Password</a>
+                            </p>
+                            <p style="color:#9ca3af;font-size:12px;margin:24px 0 0;">Link ini berlaku selama <strong>1 jam</strong>. Jika Anda tidak meminta reset password, abaikan email ini.</p>
+                        </td></tr>
+                        <tr><td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 28px;color:#9ca3af;font-size:11px;text-align:center;">Email ini dikirim otomatis. Mohon tidak membalas.</td></tr>
+                    </table>
+                </td></tr>
+            </table>`;
+
+            const { data, error: sendErr } = await resend.emails.send({
+                from,
+                to: cleanEmail,
+                subject: '🔐 Reset Password - Arsip Digital ANKA',
+                html
+            });
+            if (sendErr) throw new Error('Resend: ' + (sendErr.message || JSON.stringify(sendErr)));
+
+            await supabase.from('auth_token_logs').insert([{
+                action: 'forgot_password',
+                scope: 'password-reset',
+                user_id: user.id,
+                email: cleanEmail,
+                detail: 'reset link sent'
+            }]).catch(() => {});
+
+            return res.json({ success: true, message: 'Link reset password telah dikirim ke email Anda.' });
+        } catch (error) {
+            return res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
+    /**
+     * POST /api/auth/reset-password — set password baru dengan token reset.
+     * Body: { token, newPassword }
+     */
+    app.post('/api/auth/reset-password', async (req, res) => {
+        try {
+            const { token, newPassword } = req.body || {};
+            if (!token || !newPassword) {
+                return res.status(400).json({ success: false, error: 'Token dan password baru diperlukan' });
+            }
+            if (String(newPassword).length < 6) {
+                return res.status(400).json({ success: false, error: 'Password minimal 6 karakter' });
+            }
+
+            let decoded;
+            try {
+                decoded = jwt.verify(token, JWT_SECRET);
+            } catch (e) {
+                return res.status(400).json({ success: false, error: 'Link reset tidak valid atau sudah kadaluarsa' });
+            }
+            if (decoded.purpose !== 'password-reset' || !decoded.userId) {
+                return res.status(400).json({ success: false, error: 'Token tidak valid' });
+            }
+
+            const hash = await bcrypt.hash(newPassword, 10);
+            const { error } = await supabase
+                .from('users')
+                .update({ password_hash: hash })
+                .eq('id', decoded.userId);
+
+            if (error) throw new Error(error.message);
+
+            await supabase.from('auth_token_logs').insert([{
+                action: 'reset_password',
+                scope: 'password-reset',
+                user_id: decoded.userId,
+                email: decoded.email,
+                detail: 'password updated'
+            }]).catch(() => {});
+
+            return res.json({ success: true, message: 'Password berhasil diubah. Silakan login.' });
+        } catch (error) {
+            return res.status(500).json({ success: false, error: error.message });
+        }
+    });
+
 };
 
 /**

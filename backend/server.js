@@ -202,16 +202,27 @@ let queryOptimizer; // Will be initialized later
 const app = express();
 const DEFAULT_PORT = 5000;
 
-// Security headers (Helmet) - optional, only if installed
-try {
-    const helmet = require('helmet');
-    app.use(helmet({
-        contentSecurityPolicy: false,
-        hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
-    }));
-} catch (e) {
-    console.warn('[Server] helmet not available, skipping security headers:', e.message);
-}
+// Security headers (Helmet) - wajib. Jika tidak terinstall, fail hard.
+const helmet = require('helmet');
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com", "https://cdn.jsdelivr.net", "https://fonts.googleapis.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com"],
+            imgSrc: ["'self'", "data:", "https:", "blob:"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com", "data:"],
+            connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
+            frameAncestors: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"]
+        }
+    },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    frameguard: { action: 'deny' },
+    noSniff: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
+}));
 
 // ============================================================
 // CACHE HEADER HALAMAN HTML (via res.sendFile)
