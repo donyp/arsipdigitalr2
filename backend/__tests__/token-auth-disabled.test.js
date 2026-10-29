@@ -165,19 +165,19 @@ describe('Token Auth - Email Suppression When Disabled', () => {
         console.log('✅ Email NOT sent when disabled:', result);
     });
 
-    test('❌ generateAndSendTokens: saat disabled, admin_zona di-skip tapi super_admin/moderator tetap dapat token', async () => {
+    test('❌ generateAndSendTokens should skip when disabled', async () => {
         // Setup: token system is disabled
         supabase.mockDb.settings.enabled = false;
 
         // Execute
         const result = await tokenAuth.generateAndSendTokens(supabase);
 
-        // Verify: disabled=true, tapi moderator (user-2) tetap dapat token
+        // Verify
         expect(result.disabled).toBe(true);
-        expect(result.generated).toBe(1);   // hanya moderator
-        expect(result.sent).toBe(1);       // 1 group email
-        expect(emailsSent.length).toBe(1);
-        console.log('✅ generateAndSendTokens: admin_zona di-skip, moderator tetap dapat token:', result);
+        expect(result.generated).toBe(0);
+        expect(result.sent).toBe(0);
+        expect(emailsSent.length).toBe(0);
+        console.log('✅ generateAndSendTokens skipped when disabled:', result);
     });
 
     test('Response structure when disabled', async () => {

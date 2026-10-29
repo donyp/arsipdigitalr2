@@ -379,15 +379,12 @@ async function resetTokens(supabase) {
  */
 async function generateAndSendTokens(supabase) {
     const settings = await getSettings(supabase);
-    const users = await getTokenUsers(supabase);
-    const isDisabled = !settings.enabled;
-
-    // Jika sistem disabled, tetap generate token untuk super_admin & moderator
-    // (admin_zona tidak wajib token saat disabled).
-    if (isDisabled) {
-        console.log('[TokenAuth] Generator: sistem token nonaktif (enabled=false), tapi super_admin/moderator tetap wajib token.');
+    if (!settings.enabled) {
+        console.log('[TokenAuth] Generator: sistem token nonaktif (enabled=false), skip.');
+        return { generated: 0, sent: 0, total: 0, disabled: true, results: [] };
     }
 
+    const users = await getTokenUsers(supabase);
     const results = [];
     let generated = 0;
     let sent = 0;
@@ -398,9 +395,6 @@ async function generateAndSendTokens(supabase) {
     for (const u of users) {
         const scope = scopeForUser(u);
         if (!scope) continue;
-
-        // Skip admin_zona saat sistem disabled
-        if (isDisabled && u.role === 'admin_zona') continue;
 
         if (u.role === 'admin_zona') {
             // Admin zona: email masing-masing.
@@ -473,7 +467,7 @@ async function generateAndSendTokens(supabase) {
         }
     }
 
-    return { generated, sent, total: users.length, disabled: isDisabled, results };
+    return { generated, sent, total: users.length, disabled: false, results };
 }
 
 /**
@@ -624,8 +618,8 @@ function startTokenScheduler(supabase) {
         cron.schedule(resetCron, async () => {
             console.log(`[TokenAuth] [CRON] Reset token @ ${time}`);
             try {
-                // Reset selalu dijalankan (untuk super_admin/moderator yang wajib token),
-                // meskipun sistem disabled untuk admin_zona.
+                const settings = await getSettings(supabase);
+                if (!settings.enabled) { console.log('[TokenAuth] Reset skip (disabled)'); return; }
                 await resetTokens(supabase);
             } catch (e) { console.error('[TokenAuth] Reset error:', e.message); }
         });
