@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Halaman Tidak Ditemukan | Arsip Digital ANKA</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <script src="/js/dark-mode-init.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/color-vars.css">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            transition: background 0.3s, color 0.3s;
+        }
+        .bg-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+            animation: float 12s ease-in-out infinite;
+            pointer-events: none;
+        }
+        .orb-1 { width: 420px; height: 420px; background: #667eea; top: -120px; left: -120px; animation-delay: 0s; }
+        .orb-2 { width: 360px; height: 360px; background: #764ba2; bottom: -100px; right: -100px; animation-delay: 3s; }
+        .orb-3 { width: 280px; height: 280px; background: #3b82f6; top: 40%; left: 60%; animation-delay: 6s; opacity: 0.25; }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(40px, -30px) scale(1.05); }
+            66% { transform: translate(-30px, 40px) scale(0.95); }
+        }
+
+        .glitch {
+            position: relative;
+            font-size: clamp(6rem, 18vw, 12rem);
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-primary-gradient-end, #764ba2) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: glitch 4s infinite;
+        }
+        .glitch::before, .glitch::after {
+            content: '404';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-primary-gradient-end, #764ba2) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            opacity: 0.6;
+        }
+        .glitch::before { animation: glitchTop 2s infinite linear alternate-reverse; clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%); }
+        .glitch::after  { animation: glitchBottom 2.5s infinite linear alternate-reverse; clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%); }
+
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-2px, 1px); }
+            94% { transform: translate(2px, -1px); }
+            96% { transform: translate(-1px, 2px); }
+            98% { transform: translate(1px, -2px); }
+        }
+        @keyframes glitchTop {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(-3px, -1px); }
+            94% { transform: translate(3px, 1px); }
+            96% { transform: translate(-2px, 2px); }
+            98% { transform: translate(2px, -2px); }
+        }
+        @keyframes glitchBottom {
+            0%, 90%, 100% { transform: translate(0); }
+            92% { transform: translate(3px, 1px); }
+            94% { transform: translate(-3px, -1px); }
+            96% { transform: translate(2px, -2px); }
+            98% { transform: translate(-2px, 2px); }
+        }
+
+        .astronaut {
+            animation: astronaut 6s ease-in-out infinite;
+        }
+        @keyframes astronaut {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-18px) rotate(5deg); }
+        }
+
+        .stars {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            width: 2px; height: 2px;
+            background: var(--color-text-primary, #3d3b6b);
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.4); }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary, #667eea) 0%, var(--color-primary-gradient-end, #764ba2) 100%);
+            color: #fff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(102, 126, 234, 0.45);
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border, #e5e7eb);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .btn-ghost:hover {
+            background: var(--color-bg-secondary, #f5f7fa);
+            transform: translateY(-2px);
+        }
+
+        .fade-in { animation: fadeIn 0.8s ease-out both; }
+        .fade-in-delay { animation: fadeIn 0.8s ease-out 0.2s both; }
+        .fade-in-delay2 { animation: fadeIn 0.8s ease-out 0.4s both; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        html[data-dark-mode="true"] .star { background: #cbd5e1; }
+        html[data-dark-mode="true"] .orb-1 { background: #60a5fa; opacity: 0.2; }
+        html[data-dark-mode="true"] .orb-2 { background: #a78bfa; opacity: 0.2; }
+        html[data-dark-mode="true"] .orb-3 { background: #38bdf8; opacity: 0.15; }
+    </style>
+</head>
+<body>
+    <!-- Animated background orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <!-- Twinkling stars -->
+    <div class="stars" id="stars"></div>
+
+    <main class="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center">
+        <!-- Floating astronaut illustration -->
+        <div class="astronaut mb-6 fade-in">
+            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="60" cy="60" r="58" fill="url(#g1)" opacity="0.15"/>
+                <circle cx="60" cy="52" r="26" fill="url(#g2)"/>
+                <rect x="42" y="72" width="36" height="30" rx="8" fill="url(#g2)"/>
+                <circle cx="52" cy="48" r="4" fill="#fff"/>
+                <circle cx="68" cy="48" r="4" fill="#fff"/>
+                <path d="M52 60 Q60 66 68 60" stroke="#fff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                <rect x="48" y="78" width="6" height="14" rx="3" fill="#fff" opacity="0.7"/>
+                <rect x="66" y="78" width="6" height="14" rx="3" fill="#fff" opacity="0.7"/>
+                <circle cx="38" cy="30" r="6" fill="#fbbf24" opacity="0.9"/>
+                <circle cx="90" cy="80" r="4" fill="#60a5fa" opacity="0.9"/>
+                <circle cx="20" cy="90" r="3" fill="#34d399" opacity="0.9"/>
+                <defs>
+                    <linearGradient id="g1" x1="0" y1="0" x2="120" y2="120"><stop stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient>
+                    <linearGradient id="g2" x1="34" y1="26" x2="86" y2="102"><stop stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient>
+                </defs>
+            </svg>
+        </div>
+
+        <!-- Glitch 404 -->
+        <div class="glitch fade-in">404</div>
+
+        <!-- Title -->
+        <h1 class="mt-4 text-2xl sm:text-3xl font-bold fade-in-delay" style="color: var(--color-text-primary);">
+            Halaman Tidak Ditemukan
+        </h1>
+
+        <!-- Description -->
+        <p class="mt-3 max-w-md text-sm sm:text-base fade-in-delay" style="color: var(--color-text-secondary, #6b7280);">
+            Sepertinya halaman yang Anda cari telah dipindahkan, dihapus, atau tidak pernah ada.
+            Jangan khawatir — mari kembali ke jalur yang benar.
+        </p>
+
+        <!-- Action buttons -->
+        <div class="mt-8 flex flex-col sm:flex-row gap-3 fade-in-delay2">
+            <a href="/dashboard" class="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm">
+                <i class="fas fa-home"></i> Kembali ke Dashboard
+            </a>
+            <a href="/index.html" class="btn-ghost inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm">
+                <i class="fas fa-sign-in-alt"></i> Halaman Login
+            </a>
+        </div>
+
+        <!-- Footer hint -->
+        <p class="mt-10 text-xs fade-in-delay2" style="color: var(--color-text-muted, #9ca3af);">
+            Kode error: 404 · Arsip Digital ANKA
+        </p>
+    </main>
+
+    <script>
+        // Generate twinkling stars
+        (function () {
+            const container = document.getElementById('stars');
+            const count = 40;
+            for (let i = 0; i < count; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = (Math.random() * 3) + 's';
+                star.style.animationDuration = (2 + Math.random() * 3) + 's';
+                container.appendChild(star);
+            }
+        })();
+    </script>
+</body>
+</html>

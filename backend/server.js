@@ -9531,6 +9531,21 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
 
 
 // ============================================================
+// 404 HANDLER - serve custom 404 page for unmatched GET routes
+// (must be registered BEFORE error handler, AFTER all routes)
+// ============================================================
+app.use((req, res, next) => {
+    // Only handle GET requests for HTML pages (not API, not static assets)
+    if (req.method !== 'GET') return next();
+    if (req.path.startsWith('/api/')) return next();
+    if (req.path.startsWith('/js/') || req.path.startsWith('/css/') || req.path.startsWith('/logo/')) return next();
+    if (/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|map)$/i.test(req.path)) return next();
+
+    // Serve custom 404 page
+    res.status(404).sendFile(path.join(__dirname, '..', '404.html'));
+});
+
+// ============================================================
 // ERROR HANDLER MIDDLEWARE (must be last)
 // ============================================================
 // This should be registered AFTER all other middleware and routes
