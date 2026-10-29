@@ -178,18 +178,15 @@
     window.resetOnboardingTour = resetTour;
 
     // Auto-init setelah auth siap (full page load)
+    // Gunakan event 'spa-page-loaded' atau timeout sederhana, TANPA polling berat
     function tryInit() {
-        // Tunggu initAuth selesai (currentUser tersedia) atau timeout
-        let attempts = 0;
-        const check = () => {
-            attempts++;
-            if (window.currentUser || attempts > 20) {
-                init();
-            } else {
-                setTimeout(check, 300);
-            }
-        };
-        check();
+        // Jika sudah completed, skip (cepat)
+        if (isCompleted()) return;
+        // Tunggu elemen utama siap dengan timeout tunggal
+        setTimeout(() => {
+            if (isCompleted()) return;
+            if (document.querySelector('.stats-grid')) init();
+        }, 1500);
     }
 
     if (document.readyState === 'loading') {
