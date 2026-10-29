@@ -533,13 +533,15 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             });
             if (sendErr) throw new Error('Gagal kirim email: ' + (sendErr.message || JSON.stringify(sendErr)));
 
-            await supabase.from('auth_token_logs').insert([{
-                action: 'forgot_password',
-                scope: 'password-reset',
-                user_id: user.id,
-                email: cleanEmail,
-                detail: 'reset link sent'
-            }]).catch(() => {});
+            try {
+                await supabase.from('auth_token_logs').insert([{
+                    action: 'forgot_password',
+                    scope: 'password-reset',
+                    user_id: user.id,
+                    email: cleanEmail,
+                    detail: 'reset link sent'
+                }]);
+            } catch (e) { /* audit best-effort */ }
 
             return res.json({ success: true, message: 'Link reset password telah dikirim ke email Anda.' });
         } catch (error) {
@@ -580,13 +582,15 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             if (error) throw new Error(error.message);
 
-            await supabase.from('auth_token_logs').insert([{
-                action: 'reset_password',
-                scope: 'password-reset',
-                user_id: decoded.userId,
-                email: decoded.email,
-                detail: 'password updated'
-            }]).catch(() => {});
+            try {
+                await supabase.from('auth_token_logs').insert([{
+                    action: 'reset_password',
+                    scope: 'password-reset',
+                    user_id: decoded.userId,
+                    email: decoded.email,
+                    detail: 'password updated'
+                }]);
+            } catch (e) { /* audit best-effort */ }
 
             return res.json({ success: true, message: 'Password berhasil diubah. Silakan login.' });
         } catch (error) {
