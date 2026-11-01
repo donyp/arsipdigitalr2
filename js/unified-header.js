@@ -238,8 +238,9 @@ function loadUserGreeting() {
     try {
         // Set user name in unified header (both .user-name span and dashboard greeting)
         const userEl = document.querySelector('.user-name');
-        if (!userEl) {
-            console.log('[loadUserGreeting] Header element not found');
+        const dashboardUserEl = document.getElementById('dashboard-user-greeting');
+        if (!userEl && !dashboardUserEl) {
+            console.log('[loadUserGreeting] No greeting element found');
             return;
         }
         
@@ -319,14 +320,13 @@ function loadUserGreeting() {
         }
         
         console.log('[loadUserGreeting] Setting greeting to:', userName);
-        userEl.textContent = userName;
-        console.log('[loadUserGreeting] ✅ Greeting updated');
-        
-        // Also update dashboard.html element if exists
-        const dashboardUserEl = document.getElementById('dashboard-user-greeting');
+        if (userEl) {
+            userEl.textContent = userName;
+        }
         if (dashboardUserEl) {
             dashboardUserEl.textContent = userName;
         }
+        console.log('[loadUserGreeting] ✅ Greeting updated');
         
         // Retry after 500ms if still default (in case localStorage not ready yet)
         if (userName === 'User') {

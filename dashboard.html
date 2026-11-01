@@ -2200,6 +2200,23 @@
                                                 } else {
                                                     console.error('[Dashboard Greeting] ❌ Element not found!');
                                                 }
+
+                                                // Retry with window.currentUser (real name from /api/auth/me) if still role-like
+                                                setTimeout(() => {
+                                                    try {
+                                                        const cu = window.currentUser;
+                                                        if (!cu) return;
+                                                        let better = null;
+                                                        if (cu.name && !/moderator|super_admin/i.test(cu.name)) better = cu.name;
+                                                        else if (cu.username && !/moderator|super_admin|^admin/i.test(cu.username)) better = cu.username;
+                                                        if (better && better !== userName) {
+                                                            const el2 = document.getElementById('dashboard-user-greeting');
+                                                            if (el2) el2.textContent = better;
+                                                            const u2 = document.querySelector('.user-name');
+                                                            if (u2) u2.textContent = better;
+                                                        }
+                                                    } catch (e) {}
+                                                }, 800);
                                                 
                                                 // Also update unified-header if it exists
                                                 const unifiedUserEl = document.querySelector('.user-name');
@@ -2915,12 +2932,12 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="/js/config.js?t=1735689600"></script>
     <script src="/js/supabase.js?t=1735689600"></script>
-    <script src="/js/auth.js?t=1735689600"></script>
+    <script src="/js/auth.js?t=202611010001"></script>
     <script src="/js/session-keepalive.js"></script>
     <script src="/js/session-status-checker.js"></script>
     <script src="/js/auto-logout.js?t=1790610773"></script>
     <script src="/js/utils.js?t=1790610773"></script>
-    <script src="/js/unified-header.js?v=4"></script>
+    <script src="/js/unified-header.js?v=5"></script>
     <script src="/js/sidebar.js?v=12"></script>
     <script src="/js/spa-router.js?v=36"></script>
     <script src="/js/invoice-stats-cache.js"></script>
