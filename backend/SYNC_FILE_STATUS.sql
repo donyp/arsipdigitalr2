@@ -52,7 +52,7 @@ SET
         WHERE ifx.faktur = ifl.faktur
     ),
     -- Update file paths dari invoice_files
-    invoice_pdf_path = (
+    invoice_path = (
         SELECT file_path
         FROM invoice_files ifx
         WHERE ifx.faktur = ifl.faktur 

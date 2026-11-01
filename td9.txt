@@ -1,0 +1,161 @@
+﻿node.exe : Warning: Ignoring extra certs from `C:\Users\ANKA BEKASI\AppData\Roaming\9router\mitm\rootCA.crt`, load 
+failed: error:80000003:system library::No such process
+At line:1 char:1
++ & "D:\nodejs/node.exe" "D:\nodejs/node_modules/npm/bin/npx-cli.js" je ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Warning: Ignori...No such process:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Warning: Ignoring extra certs from `C:\Users\ANKA BEKASI\AppData\Roaming\9router\mitm\rootCA.crt`, load failed: 
+error:80000003:system library::No such process
+  console.log
+    
+    ======================================================================
+
+      at Object.log (__tests__/token-auth-disabled.test.js:227:9)
+
+  console.log
+    UNIT TEST: Token Auth Email Suppression When Disabled
+
+      at Object.log (__tests__/token-auth-disabled.test.js:228:9)
+
+  console.log
+    ======================================================================
+
+      at Object.log (__tests__/token-auth-disabled.test.js:229:9)
+
+  console.log
+    
+    Test scenarios:
+
+      at Object.log (__tests__/token-auth-disabled.test.js:230:9)
+
+  console.log
+      1. Email sent when system is ENABLED Γ£ô
+
+      at Object.log (__tests__/token-auth-disabled.test.js:231:9)
+
+  console.log
+      2. Email NOT sent when system is DISABLED Γ£ô
+
+      at Object.log (__tests__/token-auth-disabled.test.js:232:9)
+
+  console.log
+      3. generateAndSendTokens skips when disabled Γ£ô
+
+      at Object.log (__tests__/token-auth-disabled.test.js:233:9)
+
+  console.log
+      4. Response structure validates correctly Γ£ô
+
+      at Object.log (__tests__/token-auth-disabled.test.js:234:9)
+
+  console.log
+      5. Multiple transitions handled Γ£ô
+
+      at Object.log (__tests__/token-auth-disabled.test.js:235:9)
+
+  console.log
+    
+    Expected outcomes:
+
+      at Object.log (__tests__/token-auth-disabled.test.js:236:9)
+
+  console.log
+      Γ¥î enabled=false  ΓåÆ sent=false, disabled=true, no email
+
+      at Object.log (__tests__/token-auth-disabled.test.js:237:9)
+
+  console.log
+      Γ£à enabled=true   ΓåÆ sent=true, no disabled flag, email sent
+
+      at Object.log (__tests__/token-auth-disabled.test.js:238:9)
+
+  console.log
+    ======================================================================
+
+      at Object.log (__tests__/token-auth-disabled.test.js:239:9)
+
+  console.log
+    Γ£à Email sent when enabled: {
+      email: 'admin@zona1.com',
+      token: '918635',
+      opts: {
+        name: 'Admin Zona 1',
+        username: 'admin_zona',
+        expiresAt: '2026-10-29T17:00:00.000Z'
+      }
+    }
+
+      at Object.log (__tests__/token-auth-disabled.test.js:150:17)
+
+  console.log
+    [TokenAuth] Resend: sistem token nonaktif (enabled=false), skip email.
+
+      at Object.log [as resendTokenForUser] (token-auth-service.js:588:17)
+
+  console.log
+    Γ£à Email NOT sent when disabled: {
+      scope: 'user:user-1',
+      email: null,
+      sent: false,
+      disabled: true,
+      detail: 'sistem token nonaktif'
+    }
+
+      at Object.log (__tests__/token-auth-disabled.test.js:165:17)
+
+  console.log
+    [TokenAuth] Generator: sistem token nonaktif (enabled=false), skip.
+
+      at Object.log [as generateAndSendTokens] (token-auth-service.js:383:17)
+
+  console.log
+    Γ£à generateAndSendTokens skipped when disabled: { generated: 0, sent: 0, total: 0, disabled: true, results: [] }
+
+      at Object.log (__tests__/token-auth-disabled.test.js:180:17)
+
+  console.log
+    [TokenAuth] Resend: sistem token nonaktif (enabled=false), skip email.
+
+      at Object.log [as resendTokenForUser] (token-auth-service.js:588:17)
+
+  console.log
+    Γ£à Response structure correct: {
+      scope: 'user:user-1',
+      email: null,
+      sent: false,
+      disabled: true,
+      detail: 'sistem token nonaktif'
+    }
+
+      at Object.log (__tests__/token-auth-disabled.test.js:198:17)
+
+  console.log
+    [TokenAuth] Resend: sistem token nonaktif (enabled=false), skip email.
+
+      at Object.log [as resendTokenForUser] (token-auth-service.js:588:17)
+
+  console.log
+    [TokenAuth] Resend: sistem token nonaktif (enabled=false), skip email.
+
+      at Object.log [as resendTokenForUser] (token-auth-service.js:588:17)
+
+  console.log
+    Γ£à Multiple transitions handled correctly
+
+      at Object.log (__tests__/token-auth-disabled.test.js:222:17)
+
+PASS __tests__/token-auth-disabled.test.js
+  Token Auth - Email Suppression When Disabled
+    ΓêÜ Γ£à Email SHOULD be sent when token system is ENABLED (6 ms)
+    ΓêÜ Γ¥î Email SHOULD NOT be sent when token system is DISABLED (11 ms)
+    ΓêÜ Γ¥î generateAndSendTokens should skip when disabled (2 ms)
+    ΓêÜ Response structure when disabled (8 ms)
+    ΓêÜ Multiple enabled/disabled transitions (4 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        1.706 s, estimated 3 s
+Ran all test suites matching /token-auth-disabled/i.
