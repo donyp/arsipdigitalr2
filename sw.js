@@ -3,7 +3,7 @@
 // Provides offline functionality and caching
 // ============================================================
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `arsip-anka-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `arsip-anka-dynamic-${CACHE_VERSION}`;
 const LEGACY_CACHE = /^arsip-anka-(v1|static-v1|dynamic-v1)$/;

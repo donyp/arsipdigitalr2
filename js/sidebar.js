@@ -279,8 +279,8 @@
                 overflow: hidden;
                 transition: background-color 0.3s ease, border-color 0.3s ease;
             ">
-                <!-- Brand with ANKA Logo (klik untuk hide/show sidebar) -->
-                <div data-sidebar-toggle="1" onclick="window.toggleSidebarCollapse()" title="Sembunyikan/Tampilkan Sidebar" style="
+                <!-- Brand with ANKA Logo -->
+                <div style="
                     padding: 1rem 0.8rem;
                     border-bottom: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
@@ -288,7 +288,6 @@
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    cursor: pointer;
                 ">
                     <div class="logo-anka-light" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div>
                     <div class="logo-anka-dark" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>
@@ -308,7 +307,7 @@
                 </nav>
 
                 <!-- Quick Actions Footer - HIDDEN: Moved to unified header -->
-                <div data-sidebar-footer style="
+                <div style="
                     padding: 0.8rem 0.6rem;
                     border-top: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
@@ -371,8 +370,6 @@
 
         // Adjust main content margin
         adjustMainContent();
-        // Apply collapse state (hide/show sidebar)
-        applySidebarCollapseState();
     }
 
     // ============================================================
@@ -1109,47 +1106,6 @@
         setDropdownExpanded(dropdownContent, !isCurrentlyExpanded);
     };
 
-    // ============================================================
-    // SIDEBAR COLLAPSE (hide ke samping, buka via logo Anka)
-    // ============================================================
-    function isSidebarCollapsed() {
-        return localStorage.getItem('sidebar_collapsed') === 'true';
-    }
-
-    function applySidebarCollapseState() {
-
-        const sidebar = document.getElementById('sidebar');
-        const container = sidebar ? sidebar.querySelector('.sidebar-container') : null;
-        const mainContent = document.getElementById('main-content');
-        const collapsed = isSidebarCollapsed();
-
-        if (sidebar) sidebar.classList.toggle('sidebar-collapsed', collapsed);
-        if (container) {
-            container.classList.toggle('sidebar-collapsed', collapsed);
-            container.style.transition = 'width 300ms ease, transform 300ms ease';
-            container.style.width = collapsed ? '10rem' : '16rem';
-            const nav = container.querySelector('.sidebar-nav');
-            if (nav) nav.style.display = collapsed ? 'none' : 'flex';
-            const footer = container.querySelector('[data-sidebar-footer]');
-            if (footer) footer.style.display = collapsed ? 'none' : 'block';
-        }
-        if (mainContent) {
-            mainContent.style.marginLeft = collapsed ? '10rem' : '16rem';
-            mainContent.style.width = collapsed ? 'calc(100% - 10rem)' : 'calc(100% - 16rem)';
-            mainContent.style.transition = 'all 300ms ease';
-        }
-    }
-
-    function setSidebarCollapsed(collapsed) {
-        localStorage.setItem('sidebar_collapsed', collapsed ? 'true' : 'false');
-        applySidebarCollapseState();
-    }
-
-    window.toggleSidebarCollapse = function() {
-
-        setSidebarCollapsed(!isSidebarCollapsed());
-    };
-
     window.toggleDarkMode = function() {
         const isDark = localStorage.getItem('dark_mode_enabled') === 'true';
         const newDarkState = !isDark;
@@ -1253,7 +1209,5 @@
             renderSidebar();
         }
     });
-
-
 
 })();
