@@ -40,7 +40,7 @@ export function setup() {
         return { token: null };
     }
 
-    return { token: loginRes.json('token') };
+    return { token: loginRes.json('token'), sessionId: loginRes.json('sessionId') };
 }
 
 export default function (data) {
@@ -71,13 +71,17 @@ export default function (data) {
     sleep(1);
 
     group('Session - check', () => {
-        const sid = __ENV.SESSION_ID || '';
+        const sid = (data && data.sessionId) ? data.sessionId : (__ENV.SESSION_ID || '');
+        if (!sid) {
+            // Skip if no sessionId available
+            return;
+        }
         const res = http.post(
             `${BASE_URL}/api/maintenance/check-session`,
             JSON.stringify({ sessionId: sid }),
             { headers: { ...headers, 'Content-Type': 'application/json' } }
         );
-        check(res, { 'check-session ok': (r) => r.status === 200 || r.status === 401 }) || errorRate.add(1);
+        check(res, { 'check-session ok': (r) => r.status === 200 }) || errorRate.add(1);
     });
     sleep(1);
 }
