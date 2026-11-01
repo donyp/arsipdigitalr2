@@ -1123,7 +1123,9 @@
         const mainContent = document.getElementById('main-content');
         const collapsed = isSidebarCollapsed();
 
+        if (sidebar) sidebar.classList.toggle('sidebar-collapsed', collapsed);
         if (container) {
+            container.classList.toggle('sidebar-hidden', collapsed);
             container.style.transition = 'transform 300ms ease';
             container.style.transform = collapsed ? 'translateX(-100%)' : 'translateX(0)';
         }
