@@ -280,7 +280,7 @@
                 transition: background-color 0.3s ease, border-color 0.3s ease;
             ">
                 <!-- Brand with ANKA Logo (klik untuk hide/show sidebar) -->
-                <div data-sidebar-toggle="1" title="Sembunyikan/Tampilkan Sidebar" style="
+                <div data-sidebar-toggle="1" onclick="window.toggleSidebarCollapse()" title="Sembunyikan/Tampilkan Sidebar" style="
                     padding: 1rem 0.8rem;
                     border-bottom: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
@@ -1142,6 +1142,7 @@
             btn.id = 'sidebar-toggle-logo';
             btn.setAttribute('data-sidebar-toggle', '1');
             btn.title = 'Tampilkan Sidebar';
+            btn.onclick = function() { window.toggleSidebarCollapse(); };
             btn.style.cssText = 'position:fixed;top:1rem;left:1rem;width:52px;height:52px;z-index:9999;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(15,23,42,0.9);box-shadow:0 4px 12px rgba(0,0,0,0.35);backdrop-filter:blur(6px);pointer-events:auto;';
             btn.innerHTML = '<div class="logo-anka-light" style="width:32px;height:32px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div><div class="logo-anka-dark" style="width:32px;height:32px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>';
             document.body.appendChild(btn);
@@ -1263,13 +1264,6 @@
         }
     });
 
-    // Delegated click handler for sidebar toggle (robust)
-    document.addEventListener('click', (e) => {
-        const t = e.target && e.target.closest ? e.target.closest('[data-sidebar-toggle]') : null;
-        if (t) {
-            console.log('[SIDEBAR] delegated toggle click');
-            if (typeof window.toggleSidebarCollapse === 'function') window.toggleSidebarCollapse();
-        }
-    });
+
 
 })();
