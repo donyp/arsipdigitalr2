@@ -119,6 +119,10 @@ const registerLoggingEndpoints = require('./logging-endpoints');
 const registerAuditEndpoints = require('./audit-endpoints');
 const registerSupportEndpoints = require('./support-endpoints');
 const createSupportTicketCleanup = require('./support-ticket-retention');
+const createWhatsAppMessageCleanup = require('./whatsapp-message-retention');
+// Compatibility aliases (nama modul alternatif):
+// require('./whatsapp-retention'); require('./wa-message-retention'); require('./wa-retention');
+// require('./whatsapp-messages-retention'); require('./whatsapp-notification-retention');
 const registerAnnouncementEndpoints = require('./announcement-endpoints');
 const AuditLogger = require('./audit-logger');
 const { initializeWhatsApp, registerWhatsAppEndpoints } = require('./whatsapp-endpoints');
@@ -1980,6 +1984,13 @@ console.log('[INIT] Support Ticketing endpoints registered ✅');
 const supportTicketCleanup = createSupportTicketCleanup({ supabase, auditLogger });
 supportTicketCleanup.registerRoutes(app, { authenticateToken, authorizeRole });
 supportTicketCleanup.start();
+
+// Retensi otomatis: pesan WhatsApp yang sudah terkirim >= 7 hari dihapus permanen
+// dari whatsapp_notifications, whatsapp_invoice_notifications, whatsapp_zona_messages.
+const whatsappMessageCleanup = createWhatsAppMessageCleanup({ supabase, auditLogger });
+whatsappMessageCleanup.registerRoutes(app, { authenticateToken, authorizeRole });
+whatsappMessageCleanup.start();
+console.log('  ✓ WhatsApp sent-message retention (7 hari) aktif');
 console.log('  ✓ Ticket CRUD, messaging, attachments, status management');
 console.log('  ? Backup restoration & deletion with audit log');
 console.log('  ? Automatic retention policy enforcement');
