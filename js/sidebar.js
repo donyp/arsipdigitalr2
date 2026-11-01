@@ -1127,15 +1127,15 @@
         if (container) {
             container.classList.toggle('sidebar-collapsed', collapsed);
             container.style.transition = 'width 300ms ease, transform 300ms ease';
-            container.style.width = collapsed ? '6rem' : '16rem';
+            container.style.width = collapsed ? '10rem' : '16rem';
             const nav = container.querySelector('.sidebar-nav');
             if (nav) nav.style.display = collapsed ? 'none' : 'flex';
             const footer = container.querySelector('[data-sidebar-footer]');
             if (footer) footer.style.display = collapsed ? 'none' : 'block';
         }
         if (mainContent) {
-            mainContent.style.marginLeft = collapsed ? '6rem' : '16rem';
-            mainContent.style.width = collapsed ? 'calc(100% - 6rem)' : 'calc(100% - 16rem)';
+            mainContent.style.marginLeft = collapsed ? '10rem' : '16rem';
+            mainContent.style.width = collapsed ? 'calc(100% - 10rem)' : 'calc(100% - 16rem)';
             mainContent.style.transition = 'all 300ms ease';
         }
     }
