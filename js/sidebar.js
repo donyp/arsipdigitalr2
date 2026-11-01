@@ -279,8 +279,8 @@
                 overflow: hidden;
                 transition: background-color 0.3s ease, border-color 0.3s ease;
             ">
-                <!-- Brand with ANKA Logo -->
-                <div style="
+                <!-- Brand with ANKA Logo (klik untuk hide/show sidebar) -->
+                <div onclick="toggleSidebarCollapse()" title="Sembunyikan/Tampilkan Sidebar" style="
                     padding: 1rem 0.8rem;
                     border-bottom: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
@@ -288,6 +288,7 @@
                     display: flex;
                     align-items: center;
                     justify-content: center;
+                    cursor: pointer;
                 ">
                     <div class="logo-anka-light" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div>
                     <div class="logo-anka-dark" style="width:140px;height:50px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>
@@ -370,6 +371,8 @@
 
         // Adjust main content margin
         adjustMainContent();
+        // Apply collapse state (hide/show sidebar)
+        applySidebarCollapseState();
     }
 
     // ============================================================
@@ -1104,6 +1107,52 @@
         });
 
         setDropdownExpanded(dropdownContent, !isCurrentlyExpanded);
+    };
+
+    // ============================================================
+    // SIDEBAR COLLAPSE (hide ke samping, buka via logo Anka)
+    // ============================================================
+    function isSidebarCollapsed() {
+        return localStorage.getItem('sidebar_collapsed') === 'true';
+    }
+
+    function applySidebarCollapseState() {
+        const sidebar = document.getElementById('sidebar');
+        const container = sidebar ? sidebar.querySelector('.sidebar-container') : null;
+        const mainContent = document.getElementById('main-content');
+        const collapsed = isSidebarCollapsed();
+
+        if (container) {
+            container.style.transition = 'transform 300ms ease';
+            container.style.transform = collapsed ? 'translateX(-100%)' : 'translateX(0)';
+        }
+        if (mainContent) {
+            mainContent.style.marginLeft = collapsed ? '0' : '16rem';
+            mainContent.style.width = collapsed ? '100%' : 'calc(100% - 16rem)';
+            mainContent.style.transition = 'all 300ms ease';
+        }
+
+        // Floating logo toggle (hanya terlihat saat sidebar tersembunyi)
+        let btn = document.getElementById('sidebar-toggle-logo');
+        if (!btn) {
+            btn = document.createElement('div');
+            btn.id = 'sidebar-toggle-logo';
+            btn.title = 'Tampilkan Sidebar';
+            btn.style.cssText = 'position:fixed;top:1rem;left:1rem;width:48px;height:48px;z-index:1200;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(15,23,42,0.85);box-shadow:0 4px 12px rgba(0,0,0,0.25);backdrop-filter:blur(6px);';
+            btn.innerHTML = '<div class="logo-anka-light" style="width:32px;height:32px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div><div class="logo-anka-dark" style="width:32px;height:32px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>';
+            btn.onclick = function() { toggleSidebarCollapse(); };
+            document.body.appendChild(btn);
+        }
+        btn.style.display = collapsed ? 'flex' : 'none';
+    }
+
+    function setSidebarCollapsed(collapsed) {
+        localStorage.setItem('sidebar_collapsed', collapsed ? 'true' : 'false');
+        applySidebarCollapseState();
+    }
+
+    window.toggleSidebarCollapse = function() {
+        setSidebarCollapsed(!isSidebarCollapsed());
     };
 
     window.toggleDarkMode = function() {
