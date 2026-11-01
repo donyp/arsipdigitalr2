@@ -308,7 +308,7 @@
                 </nav>
 
                 <!-- Quick Actions Footer - HIDDEN: Moved to unified header -->
-                <div style="
+                <div data-sidebar-footer style="
                     padding: 0.8rem 0.6rem;
                     border-top: 1px solid ${colors.borderColor};
                     flex-shrink: 0;
@@ -1125,29 +1125,19 @@
 
         if (sidebar) sidebar.classList.toggle('sidebar-collapsed', collapsed);
         if (container) {
-            container.classList.toggle('sidebar-hidden', collapsed);
-            container.style.transition = 'transform 300ms ease';
-            container.style.transform = collapsed ? 'translateX(-100%)' : 'translateX(0)';
+            container.classList.toggle('sidebar-collapsed', collapsed);
+            container.style.transition = 'width 300ms ease, transform 300ms ease';
+            container.style.width = collapsed ? '6rem' : '16rem';
+            const nav = container.querySelector('.sidebar-nav');
+            if (nav) nav.style.display = collapsed ? 'none' : 'flex';
+            const footer = container.querySelector('[data-sidebar-footer]');
+            if (footer) footer.style.display = collapsed ? 'none' : 'block';
         }
         if (mainContent) {
-            mainContent.style.marginLeft = collapsed ? '0' : '16rem';
-            mainContent.style.width = collapsed ? '100%' : 'calc(100% - 16rem)';
+            mainContent.style.marginLeft = collapsed ? '6rem' : '16rem';
+            mainContent.style.width = collapsed ? 'calc(100% - 6rem)' : 'calc(100% - 16rem)';
             mainContent.style.transition = 'all 300ms ease';
         }
-
-        // Floating logo toggle (hanya terlihat saat sidebar tersembunyi)
-        let btn = document.getElementById('sidebar-toggle-logo');
-        if (!btn) {
-            btn = document.createElement('div');
-            btn.id = 'sidebar-toggle-logo';
-            btn.setAttribute('data-sidebar-toggle', '1');
-            btn.title = 'Tampilkan Sidebar';
-            btn.onclick = function() { window.toggleSidebarCollapse(); };
-            btn.style.cssText = 'position:fixed;top:1rem;left:1rem;width:52px;height:52px;z-index:9999;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:12px;background:rgba(15,23,42,0.9);box-shadow:0 4px 12px rgba(0,0,0,0.35);backdrop-filter:blur(6px);pointer-events:auto;';
-            btn.innerHTML = '<div class="logo-anka-light" style="width:32px;height:32px;background-size:contain;background-repeat:no-repeat;background-position:center;display:block;"></div><div class="logo-anka-dark" style="width:32px;height:32px;background-size:contain;background-repeat:no-repeat;background-position:center;display:none;"></div>';
-            document.body.appendChild(btn);
-        }
-        btn.style.display = 'flex';
     }
 
     function setSidebarCollapsed(collapsed) {
