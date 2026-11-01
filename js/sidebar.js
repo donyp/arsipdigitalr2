@@ -1117,6 +1117,7 @@
     }
 
     function applySidebarCollapseState() {
+        console.log('[SIDEBAR] applySidebarCollapseState, collapsed:', isSidebarCollapsed());
         const sidebar = document.getElementById('sidebar');
         const container = sidebar ? sidebar.querySelector('.sidebar-container') : null;
         const mainContent = document.getElementById('main-content');
@@ -1152,6 +1153,7 @@
     }
 
     window.toggleSidebarCollapse = function() {
+        console.log('[SIDEBAR] toggleSidebarCollapse called, collapsed now:', !isSidebarCollapsed());
         setSidebarCollapsed(!isSidebarCollapsed());
     };
 
