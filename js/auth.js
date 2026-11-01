@@ -48,6 +48,10 @@ async function initAuth(requiredRole = null) {
         currentUser = user;
         window.currentUser = user;  // Expose globally for other pages
         updateUserUI();
+        // Refresh greeting with real name now that user info is loaded
+        if (typeof loadUserGreeting === 'function') {
+            try { loadUserGreeting(); } catch (e) { console.warn('loadUserGreeting error:', e); }
+        }
 
     } catch (err) {
         API.clearAuth();
@@ -261,13 +265,22 @@ function updateUserUI() {
 
     // Update user name displays (use username from auth, fallback to name or email)
     document.querySelectorAll('[data-user-name]').forEach(el => {
-        const displayName = currentUser.username || currentUser.name || currentUser.email || 'User';
+        let displayName = 'User';
+        if (currentUser.name && !/moderator|super_admin|admin/i.test(currentUser.name)) {
+            displayName = currentUser.name;
+        } else if (currentUser.username && !/moderator|super_admin|^admin/i.test(currentUser.username)) {
+            displayName = currentUser.username;
+        } else if (currentUser.email) {
+            displayName = currentUser.email.split('@')[0];
+        } else if (currentUser.name || currentUser.username) {
+            displayName = currentUser.name || currentUser.username;
+        }
         el.textContent = displayName;
     });
 
     // Update user name initials
     document.querySelectorAll('[data-user-name-initials]').forEach(el => {
-        const name = currentUser.name || 'User';
+        const name = currentUser.name || currentUser.username || 'User';
         const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
         el.textContent = initials;
     });
@@ -286,7 +299,7 @@ function updateUserUI() {
     document.querySelectorAll('[data-user-avatar]').forEach(el => {
         const avatarUrl = currentUser.avatar && currentUser.avatar.trim() 
             ? currentUser.avatar
-            : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=6366f1&color=fff&size=200`;
+            : `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || currentUser.username || 'User')}&background=6366f1&color=fff&size=200`;
         el.src = avatarUrl;
     });
 

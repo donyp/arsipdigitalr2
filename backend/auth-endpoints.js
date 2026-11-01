@@ -195,7 +195,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
             // Get user by username
             const { data: users, error: fetchError } = await supabase
                 .from('users')
-                .select('id, username, email, password_hash, role, zona_id, is_active')
+                .select('id, username, email, name, password_hash, role, zona_id, is_active')
                 .eq('username', username)
                 .single();
 
@@ -354,7 +354,7 @@ module.exports = function registerAuthEndpoints(app, supabase) {
 
             const { data: users, error: fetchError } = await supabase
                 .from('users')
-                .select('id, username, email, password_hash, role, zona_id, is_active')
+                .select('id, username, email, name, password_hash, role, zona_id, is_active')
                 .eq('id', decoded.userId)
                 .single();
 
@@ -685,6 +685,7 @@ async function issueFullSession(supabase, users, maintenance) {
         user: {
             id: users.id,
             username: users.username,
+            name: users.name || users.username,
             email: users.email,
             role: users.role || 'user',
             is_active: users.is_active

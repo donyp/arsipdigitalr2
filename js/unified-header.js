@@ -245,15 +245,32 @@ function loadUserGreeting() {
         
         // Try to get from localStorage
         let userName = 'User';
-        
+
+        // Prefer live currentUser (from auth.js) which has the real name
+        try {
+            if (window.currentUser && (window.currentUser.name || window.currentUser.username) && userName === 'User') {
+                const cu = window.currentUser;
+                if (cu.name && cu.name !== cu.role && cu.name !== 'moderator' && cu.name !== 'super_admin') {
+                    userName = cu.name;
+                } else if (cu.username && cu.username !== 'moderator' && cu.username !== 'super_admin' && !cu.username.startsWith('admin')) {
+                    userName = cu.username;
+                } else if (cu.name) {
+                    userName = cu.name;
+                } else if (cu.username) {
+                    userName = cu.username;
+                }
+                console.log('[loadUserGreeting] Using window.currentUser name:', userName);
+            }
+        } catch (e) {}
+
         // First try user_name (simple string)
         const userNameDirect = localStorage.getItem('user_name');
-        if (userNameDirect) {
+        if (userNameDirect && userName === 'User') {
             console.log('[loadUserGreeting] Using user_name:', userNameDirect);
             userName = userNameDirect;
         }
         // Then try user object (JSON)
-        else {
+        if (userName === 'User') {
             const userObj = localStorage.getItem('user');
             console.log('[loadUserGreeting] user object:', userObj ? userObj.substring(0, 100) : 'NOT FOUND');
             if (userObj) {
