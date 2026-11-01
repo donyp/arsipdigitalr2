@@ -7,7 +7,7 @@
 class MaintenanceBanner {
     constructor(options = {}) {
         this.options = {
-            pollInterval: 10000, // Check every 10 seconds
+            pollInterval: 60000, // Check every 60 seconds
             showBanner: true,
             autoHideAfterEnd: true,
             ...options

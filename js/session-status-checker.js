@@ -9,9 +9,9 @@
 (function() {
     'use strict';
 
-    const SESSION_CHECK_INTERVAL = 10 * 1000; // Normal: Check every 10 seconds
-    const FAST_CHECK_INTERVAL = 2 * 1000; // Fast: Check every 2 seconds (untuk instant logout detection)
-    const FAST_CHECK_DURATION = 30 * 1000; // Duration to use fast polling (30 seconds)
+    const SESSION_CHECK_INTERVAL = 60 * 1000; // Normal: Check every 60 seconds
+    const FAST_CHECK_INTERVAL = 5 * 1000; // Fast: Check every 5 seconds (untuk instant logout detection)
+    const FAST_CHECK_DURATION = 15 * 1000; // Duration to use fast polling (15 seconds)
     let sessionCheckInterval = null;
     let isCheckingSession = false;
 

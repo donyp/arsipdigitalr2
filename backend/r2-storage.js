@@ -189,7 +189,7 @@ function readSyncQueue() {
         const data = require('fs').readFileSync(syncQueuePath, 'utf8');
         return JSON.parse(data);
     } catch (error) {
-        console.log('[R2Sync] Queue file not found or corrupted, starting fresh');
+        // Queue file not found or corrupted, starting fresh (silent)
         return {};
     }
 }

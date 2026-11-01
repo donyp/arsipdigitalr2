@@ -41,8 +41,6 @@ function initializeSupabase(supabaseClient, jwtSecret) {
  * Verifies JWT token 
  */
 function authenticateToken(req, res, next) {
-    console.log('[Auth] authenticateToken called for path:', req.path);
-    
     const authHeader = req.headers['authorization'];
     const token = (authHeader && authHeader.split(' ')[1]);
 
@@ -58,8 +56,6 @@ function authenticateToken(req, res, next) {
         }
         
         try {
-            console.log('[Auth] Token decoded, userId:', decoded.userId);
-            
             // For now, just use the token payload directly (less risky)
             req.user = {
                 id: decoded.userId || decoded.sub,
@@ -70,7 +66,6 @@ function authenticateToken(req, res, next) {
                 permissions: decoded.permissions || []
             };
             
-            console.log('[Auth] User set:', req.user.email, 'role:', req.user.role);
             next();
         } catch (err) {
             console.error('[Auth] Error:', err.message, err.stack);
@@ -945,7 +940,7 @@ router.post('/check-session', authenticateToken, async (req, res) => {
             maintenanceForcedLogout = true;
         }
         
-        console.log('[Maintenance] Session validity check for', jti, ':', isValid, 'forced_logout:', maintenanceForcedLogout);
+        // (log removed to avoid spam)
 
         res.json({
             isValid: isValid,
