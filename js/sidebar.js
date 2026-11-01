@@ -1144,7 +1144,7 @@
             btn.onclick = function() { toggleSidebarCollapse(); };
             document.body.appendChild(btn);
         }
-        btn.style.display = collapsed ? 'flex' : 'none';
+        btn.style.display = 'flex';
     }
 
     function setSidebarCollapsed(collapsed) {
